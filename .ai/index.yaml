@@ -1,0 +1,66 @@
+# Purpose: AI navigation index for thai-lint repository
+# Scope: Repository structure, available resources, commands, and documentation
+# Overview: Provides AI agents with a quick reference to navigate the thai-lint repository structure,
+#     locate key files, understand available commands, and access documentation. Essential for AI agents
+#     to quickly orient themselves when working on the AI linter project.
+
+version: "1.0"
+project:
+  name: thai-lint
+  type: cli
+  purpose: The AI Linter - Lint and governance for AI-generated code across multiple languages
+  status: in-development
+  version: "0.1.0"
+
+structure:
+  source:
+    location: src/
+    description: Main source code for CLI application and linters
+
+  tests:
+    location: tests/
+    description: Test files for CLI and linter functionality
+
+  docs:
+    location: docs/
+    description: User-facing documentation
+
+  ai_navigation:
+    location: .ai/
+    description: AI agent navigation and context
+
+documentation:
+  location: .ai/docs/
+  files:
+    - PROJECT_CONTEXT.md
+
+howto:
+  location: .ai/howto/
+  files: []
+
+templates:
+  location: .ai/templates/
+  files: []
+
+commands:
+  # Will be added as tooling is installed
+  # test: make test
+  # lint: make lint
+  # format: make format
+  # cli: python -m src.cli
+
+key_files:
+  readme: README.md
+  gitignore: .gitignore
+  agents: AGENTS.md
+
+architecture:
+  pattern: cli-application
+  # Python CLI tool with Click framework
+  # Multi-language linter support (extensible architecture)
+
+notes_for_agents:
+  - This is a CLI application for linting AI-generated code
+  - Designed to work across multiple programming languages
+  - Focus on catching common AI mistakes and anti-patterns
+  - Update this file as the project structure evolves
