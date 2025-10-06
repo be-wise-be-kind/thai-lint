@@ -1,0 +1,35 @@
+[project]
+name = "thai-lint"
+version = "0.1.0"
+description = "The AI Linter - Lint and governance for AI-generated code"
+authors = [
+    {name = "Steve Jackson",email = "your.email@example.com"}
+]
+readme = "README.md"
+requires-python = "^3.11"
+dependencies = [
+]
+
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.poetry.group.dev.dependencies]
+ruff = "^0.13.3"
+mypy = "^1.18.2"
+bandit = "^1.8.6"
+pytest = "^8.4.2"
+pytest-asyncio = "^1.2.0"
+pytest-cov = "^7.0.0"
+pylint = "^3.3.9"
+flake8 = "^7.3.0"
+flake8-docstrings = "^1.7.0"
+flake8-bugbear = "^24.12.12"
+flake8-comprehensions = "^3.17.0"
+flake8-simplify = "^0.22.0"
+radon = "^6.0.1"
+xenon = "^0.9.3"
+safety = "^3.6.2"
+pip-audit = "^2.9.0"
+
