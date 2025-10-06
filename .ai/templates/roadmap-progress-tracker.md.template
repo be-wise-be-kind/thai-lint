@@ -1,0 +1,123 @@
+# {{FEATURE_NAME}} - Progress Tracker & AI Agent Handoff Document
+
+**Purpose**: Primary AI agent handoff document for {{FEATURE_NAME}} with current progress tracking and implementation guidance
+
+**Scope**: {{FEATURE_SCOPE_DESCRIPTION}}
+
+**Overview**: Primary handoff document for AI agents working on the {{FEATURE_NAME}} feature.
+    Tracks current implementation progress, provides next action guidance, and coordinates AI agent work across
+    multiple pull requests. Contains current status, prerequisite validation, PR dashboard, detailed checklists,
+    implementation strategy, success metrics, and AI agent instructions. Essential for maintaining development
+    continuity and ensuring systematic feature implementation with proper validation and testing.
+
+**Dependencies**: {{LIST_DEPENDENCIES}}
+
+**Exports**: Progress tracking, implementation guidance, AI agent coordination, and feature development roadmap
+
+**Related**: AI_CONTEXT.md for feature overview, PR_BREAKDOWN.md for detailed tasks{{ADDITIONAL_DOCS}}
+
+**Implementation**: Progress-driven coordination with systematic validation, checklist management, and AI agent handoff procedures
+
+---
+
+## 🤖 Document Purpose
+This is the **PRIMARY HANDOFF DOCUMENT** for AI agents working on the {{FEATURE_NAME}} feature. When starting work on any PR, the AI agent should:
+1. **Read this document FIRST** to understand current progress and feature requirements
+2. **Check the "Next PR to Implement" section** for what to do
+3. **Reference the linked documents** for detailed instructions
+4. **Update this document** after completing each PR
+
+## 📍 Current Status
+**Current PR**: {{CURRENT_PR_STATUS}}
+**Infrastructure State**: {{INFRASTRUCTURE_STATE}}
+**Feature Target**: {{FEATURE_TARGET_DESCRIPTION}}
+
+## 📁 Required Documents Location
+```
+roadmap/{{FEATURE_FOLDER}}/
+├── AI_CONTEXT.md          # Overall feature architecture and context
+├── PR_BREAKDOWN.md        # Detailed instructions for each PR
+├── PROGRESS_TRACKER.md    # THIS FILE - Current progress and handoff notes
+{{ADDITIONAL_FILES}}
+```
+
+## 🎯 Next PR to Implement
+
+### ➡️ START HERE: {{NEXT_PR_TITLE}}
+
+**Quick Summary**:
+{{NEXT_PR_SUMMARY}}
+
+**Pre-flight Checklist**:
+{{PREFLIGHT_CHECKLIST}}
+
+**Prerequisites Complete**:
+{{PREREQUISITES_STATUS}}
+
+---
+
+## Overall Progress
+**Total Completion**: {{COMPLETION_PERCENTAGE}}% ({{COMPLETED_PRS}}/{{TOTAL_PRS}} PRs completed)
+
+```
+[{{PROGRESS_BAR}}] {{COMPLETION_PERCENTAGE}}% Complete
+```
+
+---
+
+## PR Status Dashboard
+
+| PR | Title | Status | Completion | Complexity | Priority | Notes |
+|----|-------|--------|------------|------------|----------|-------|
+{{PR_STATUS_TABLE}}
+
+### Status Legend
+- 🔴 Not Started
+- 🟡 In Progress
+- 🟢 Complete
+- 🔵 Blocked
+- ⚫ Cancelled
+
+---
+
+{{PR_DETAILED_SECTIONS}}
+
+---
+
+## 🚀 Implementation Strategy
+
+{{IMPLEMENTATION_STRATEGY}}
+
+## 📊 Success Metrics
+
+### Technical Metrics
+{{TECHNICAL_METRICS}}
+
+### Feature Metrics
+{{FEATURE_METRICS}}
+
+## 🔄 Update Protocol
+
+After completing each PR:
+1. Update the PR status to 🟢 Complete
+2. Fill in completion percentage
+3. Add any important notes or blockers
+4. Update the "Next PR to Implement" section
+5. Update overall progress percentage
+6. Commit changes to the progress document
+
+## 📝 Notes for AI Agents
+
+### Critical Context
+{{CRITICAL_CONTEXT}}
+
+### Common Pitfalls to Avoid
+{{COMMON_PITFALLS}}
+
+### Resources
+{{RESOURCES}}
+
+## 🎯 Definition of Done
+
+The feature is considered complete when:
+{{DEFINITION_OF_DONE}}

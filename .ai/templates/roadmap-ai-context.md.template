@@ -1,0 +1,74 @@
+# {{FEATURE_NAME}} - AI Context
+
+**Purpose**: AI agent context document for implementing {{FEATURE_NAME}}
+
+**Scope**: {{FEATURE_SCOPE}}
+
+**Overview**: Comprehensive context document for AI agents working on the {{FEATURE_NAME}} feature.
+    {{FEATURE_OVERVIEW}}
+
+**Dependencies**: {{DEPENDENCIES_LIST}}
+
+**Exports**: {{EXPORTS_DESCRIPTION}}
+
+**Related**: PR_BREAKDOWN.md for implementation tasks, PROGRESS_TRACKER.md for current status{{ADDITIONAL_RELATIONS}}
+
+**Implementation**: {{IMPLEMENTATION_APPROACH}}
+
+---
+
+## Overview
+{{DETAILED_OVERVIEW}}
+
+## Project Background
+{{PROJECT_BACKGROUND}}
+
+## Feature Vision
+{{FEATURE_VISION_POINTS}}
+
+## Current Application Context
+{{CURRENT_APP_CONTEXT}}
+
+## Target Architecture
+
+### Core Components
+{{CORE_COMPONENTS}}
+
+### User Journey
+{{USER_JOURNEY_STEPS}}
+
+### {{ADDITIONAL_ARCHITECTURE_SECTION}}
+
+## Key Decisions Made
+
+{{KEY_DECISIONS_SECTIONS}}
+
+## Integration Points
+
+### With Existing Features
+{{EXISTING_FEATURE_INTEGRATIONS}}
+
+### {{ADDITIONAL_INTEGRATION_SECTIONS}}
+
+## Success Metrics
+{{SUCCESS_METRICS}}
+
+## Technical Constraints
+{{TECHNICAL_CONSTRAINTS}}
+
+## AI Agent Guidance
+
+### When {{PRIMARY_ACTION}}
+{{PRIMARY_ACTION_GUIDANCE}}
+
+### When {{SECONDARY_ACTION}}
+{{SECONDARY_ACTION_GUIDANCE}}
+
+### Common Patterns
+{{COMMON_PATTERNS}}
+
+## Risk Mitigation
+{{RISK_MITIGATION_STRATEGIES}}
+
+## Future Enhancements
+{{FUTURE_ENHANCEMENTS}}

@@ -1,0 +1,77 @@
+# {{FEATURE_NAME}} - PR Breakdown
+
+**Purpose**: Detailed implementation breakdown of {{FEATURE_NAME}} into manageable, atomic pull requests
+
+**Scope**: Complete feature implementation from {{START_POINT}} through {{END_POINT}}
+
+**Overview**: Comprehensive breakdown of the {{FEATURE_NAME}} feature into {{NUM_PRS}} manageable, atomic
+    pull requests. Each PR is designed to be self-contained, testable, and maintains application functionality
+    while incrementally building toward the complete feature. Includes detailed implementation steps, file
+    structures, testing requirements, and success criteria for each PR.
+
+**Dependencies**: {{DEPENDENCIES}}
+
+**Exports**: PR implementation plans, file structures, testing strategies, and success criteria for each development phase
+
+**Related**: AI_CONTEXT.md for feature overview, PROGRESS_TRACKER.md for status tracking{{ADDITIONAL_RELATED}}
+
+**Implementation**: Atomic PR approach with detailed step-by-step implementation guidance and comprehensive testing validation
+
+---
+
+## 🚀 PROGRESS TRACKER - MUST BE UPDATED AFTER EACH PR!
+
+### ✅ Completed PRs
+- ⬜ None yet - Planning phase just completed
+
+### 🎯 NEXT PR TO IMPLEMENT
+➡️ **START HERE: PR1** - {{FIRST_PR_TITLE}}
+
+### 📋 Remaining PRs
+{{PR_CHECKLIST}}
+
+**Progress**: 0% Complete (0/{{NUM_PRS}} PRs)
+
+---
+
+## Overview
+This document breaks down the {{FEATURE_NAME}} feature into manageable, atomic PRs. Each PR is designed to be:
+- Self-contained and testable
+- Maintains a working application
+- Incrementally builds toward the complete feature
+- Revertible if needed
+
+---
+
+{{PR_SECTIONS}}
+
+---
+
+## Implementation Guidelines
+
+### Code Standards
+{{CODE_STANDARDS}}
+
+### Testing Requirements
+{{TESTING_REQUIREMENTS}}
+
+### Documentation Standards
+{{DOCUMENTATION_STANDARDS}}
+
+### Security Considerations
+{{SECURITY_CONSIDERATIONS}}
+
+### Performance Targets
+{{PERFORMANCE_TARGETS}}
+
+## Rollout Strategy
+
+{{ROLLOUT_PHASES}}
+
+## Success Metrics
+
+### Launch Metrics
+{{LAUNCH_METRICS}}
+
+### Ongoing Metrics
+{{ONGOING_METRICS}}

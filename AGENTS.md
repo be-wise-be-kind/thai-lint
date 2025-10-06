@@ -26,6 +26,50 @@ See `.ai/howto/` for step-by-step guides on common tasks.
 ### Templates
 See `.ai/templates/` for reusable file templates and boilerplate.
 
+## Roadmap-Driven Development
+
+### When User Requests Planning
+
+If the user says any of the following:
+- "I want to plan out..."
+- "I want to roadmap..."
+- "Create a roadmap for..."
+- "Plan the implementation of..."
+- "Break down the feature..."
+
+**Your Actions**:
+1. **Read** `.ai/howtos/how-to-roadmap.md` for roadmap workflow guidance
+2. **Use templates** from `.ai/templates/roadmap-*.md.template`
+3. **Create roadmap** in `.roadmap/planning/[feature-name]/`
+4. **Follow** the three-document structure:
+   - PROGRESS_TRACKER.md (required - primary handoff document)
+   - PR_BREAKDOWN.md (required for multi-PR features)
+   - AI_CONTEXT.md (optional - architectural context)
+
+### When User Requests Continuation
+
+If the user says any of the following:
+- "I want to continue with..."
+- "Continue the roadmap for..."
+- "What's next in..."
+- "Resume work on..."
+
+**Your Actions**:
+1. **Check** `.roadmap/in-progress/` for active roadmaps
+2. **Read** the roadmap's `PROGRESS_TRACKER.md` FIRST
+3. **Follow** the "Next PR to Implement" section
+4. **Update** PROGRESS_TRACKER.md after completing each PR
+
+### Roadmap Lifecycle
+
+```
+planning/ → in-progress/ → complete/
+   ↓             ↓              ↓
+Created      Implementing    Archived
+```
+
+See `.ai/howtos/how-to-roadmap.md` for detailed workflow instructions.
+
 ## Development Guidelines
 
 ### Code Style

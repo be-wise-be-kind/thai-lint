@@ -92,12 +92,35 @@ templates:
     - file-header-typescript.template
     - file-header-yaml.template
     - README.template
+    - roadmap-progress-tracker.md.template
+    - roadmap-pr-breakdown.md.template
+    - roadmap-ai-context.md.template
   documentation:
     - .ai/templates/file-header-markdown.template
     - .ai/templates/file-header-python.template
     - .ai/templates/file-header-typescript.template
     - .ai/templates/file-header-yaml.template
     - .ai/templates/README.template
+
+roadmaps:
+  location: .roadmap/
+  guide: .ai/howtos/how-to-roadmap.md
+  workflow_docs: .ai/docs/ROADMAP_WORKFLOW.md
+
+  structure:
+    planning: .roadmap/planning/
+    in_progress: .roadmap/in-progress/
+    complete: .roadmap/complete/
+
+  templates:
+    progress_tracker: .ai/templates/roadmap-progress-tracker.md.template
+    pr_breakdown: .ai/templates/roadmap-pr-breakdown.md.template
+    ai_context: .ai/templates/roadmap-ai-context.md.template
+
+  three_document_structure:
+    - PROGRESS_TRACKER.md (required - primary handoff)
+    - PR_BREAKDOWN.md (required for multi-PR)
+    - AI_CONTEXT.md (optional - architecture)
 
 commands:
   # Will be added as tooling is installed
