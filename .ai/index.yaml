@@ -134,6 +134,23 @@ key_files:
   gitignore: .gitignore
   agents: AGENTS.md
 
+repository:
+  environment-setup:
+    description: "Environment variable handling with direnv and .env files"
+    documentation:
+      - path: "docs/repository/environment-variables-best-practices.md"
+        description: "Best practices for environment variable management"
+      - path: "docs/repository/ENVIRONMENT_STANDARDS.md"
+        description: "Environment variable standards and requirements"
+    howtos:
+      - path: "howtos/repository/environment-setup-readme.md"
+        description: "Environment setup how-to guide"
+    configuration:
+      - path: ".envrc"
+        description: "Direnv configuration for auto-loading .env"
+      - path: ".env.example"
+        description: "Template for environment variables"
+
 architecture:
   pattern: cli-application
   # Python CLI tool with Click framework
