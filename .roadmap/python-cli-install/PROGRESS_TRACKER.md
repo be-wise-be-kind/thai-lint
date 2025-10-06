@@ -100,7 +100,7 @@
 | PR1 | Foundation | Install foundation/ai-folder plugin | ✅ Complete | PR0 complete | Foundation installed (commit 28d26f0) |
 | PR2 | Languages | Install Python plugin | ✅ Complete | PR1 complete | Python tooling installed (commit 9aeae69) |
 | PR3 | Infrastructure | Install Docker + CI/CD plugins | ✅ Complete | PR2 complete | GitHub Actions CI/CD installed (commit a09dd2c) |
-| PR4 | Standards | Install security, docs, pre-commit plugins | ✅ Complete | PR3 complete | Standards plugins installed (commit {{COMMIT_HASH}}) |
+| PR4 | Standards | Install security, docs, pre-commit plugins | ✅ Complete | PR3 complete | Standards plugins installed (commit 8feb89b) |
 | PR5 | Application | Copy CLI code, configure, install deps | 🔴 Not Started | PR4 complete | Installs app code |
 | PR6 | Finalization | Validate setup, create AGENTS.md | 🔴 Not Started | PR5 complete | Final validation |
 
