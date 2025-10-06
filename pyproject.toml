@@ -1,35 +1,179 @@
-[project]
-name = "thai-lint"
-version = "0.1.0"
-description = "The AI Linter - Lint and governance for AI-generated code"
-authors = [
-    {name = "Steve Jackson",email = "your.email@example.com"}
-]
-readme = "README.md"
-requires-python = "^3.11"
-dependencies = [
-]
-
+# Purpose: Python project configuration for CLI application using Poetry for dependency management
+# Scope: Package metadata, dependencies, build configuration, and development tooling setup
+# Overview: Comprehensive project configuration using Poetry for isolated virtual environments and dependency
+#     management. Defines package metadata for PyPI distribution, runtime and development dependencies,
+#     CLI entry points for installation, and configuration for development tools (ruff, pytest, mypy).
+#     Uses Poetry to ensure isolated environments and prevent corrupting the user's machine.
+# Dependencies: Poetry (>=1.5.0) for dependency management and virtual environment isolation
+# Exports: Package configuration for Poetry, build tools, and development tooling
+# Interfaces: Poetry build backend, isolated venv, ruff/pytest/mypy configuration
+# Environment: Poetry-managed virtual environment (Python {{PYTHON_VERSION}})
+# Related: poetry.lock, .ai/howtos/python-cli/how-to-package-cli-tool.md
+# Philosophy: Don't corrupt the user's machine - all deps in isolated Poetry venv
 
 [build-system]
-requires = ["poetry-core>=2.0.0,<3.0.0"]
+requires = ["poetry-core>=1.0.0"]
 build-backend = "poetry.core.masonry.api"
 
+[tool.poetry]
+name = "thai-lint"
+version = "1.0.0"
+description = "The AI Linter - Lint and governance for AI-generated code"
+authors = ["Steve Jackson <steve@example.com>"]
+license = "MIT"
+readme = "README.md"
+homepage = "https://github.com/{{GITHUB_USERNAME}}/thai-lint"
+repository = "https://github.com/{{GITHUB_USERNAME}}/thai-lint"
+documentation = "https://github.com/{{GITHUB_USERNAME}}/thai-lint#readme"
+keywords = ["cli", "command-line", "tool"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3 :: Only",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: Utilities",
+    "Environment :: Console",
+]
+packages = [{include = "src"}]
+
+[tool.poetry.dependencies]
+python = "^3.11"
+click = "^8.1.0"
+pyyaml = "^6.0"
+
 [tool.poetry.group.dev.dependencies]
-ruff = "^0.13.3"
-mypy = "^1.18.2"
-bandit = "^1.8.6"
+# Core testing and linting
 pytest = "^8.4.2"
-pytest-asyncio = "^1.2.0"
-pytest-cov = "^7.0.0"
-pylint = "^3.3.9"
-flake8 = "^7.3.0"
+pytest-asyncio = "^0.23.0"
+pytest-cov = "^4.1.0"
+ruff = "^0.13.0"
+mypy = "^1.18.1"
+types-pyyaml = "^6.0.0"
+bandit = "^1.7.5"
+
+# Comprehensive linters
+pylint = "^3.3.3"
+flake8 = "^7.1.0"
 flake8-docstrings = "^1.7.0"
-flake8-bugbear = "^24.12.12"
-flake8-comprehensions = "^3.17.0"
-flake8-simplify = "^0.22.0"
+flake8-bugbear = "^24.11.19"
+flake8-comprehensions = "^3.15.0"
+flake8-simplify = "^0.21.0"
+
+# Complexity analysis
 radon = "^6.0.1"
 xenon = "^0.9.3"
-safety = "^3.6.2"
-pip-audit = "^2.9.0"
 
+# Comprehensive security
+safety = "^3.2.11"
+pip-audit = "^2.8.0"
+
+[tool.poetry.scripts]
+thai-lint = "src.cli:cli"
+
+# Ruff configuration
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # pyflakes
+    "I",   # isort
+    "N",   # pep8-naming
+    "UP",  # pyupgrade
+    "B",   # flake8-bugbear
+    "C4",  # flake8-comprehensions
+    "PTH", # flake8-use-pathlib
+]
+ignore = [
+    "E501",  # line too long (handled by formatter)
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["D", "S101"]  # Allow assert in tests
+
+# pytest configuration
+[tool.pytest.ini_options]
+minversion = "7.0"
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = [
+    "-v",
+    "--strict-markers",
+    "--tb=short",
+    "--cov=src",
+    "--cov-report=term-missing",
+    "--cov-report=html",
+]
+
+# Coverage configuration
+[tool.coverage.run]
+source = ["src"]
+omit = [
+    "tests/*",
+    "*/__init__.py",
+]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+    "if TYPE_CHECKING:",
+]
+
+# mypy configuration
+[tool.mypy]
+python_version = "3.11"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+check_untyped_defs = true
+no_implicit_optional = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+warn_no_return = true
+strict_equality = true
+
+[[tool.mypy.overrides]]
+module = "tests.*"
+disallow_untyped_defs = false
+
+# Pylint configuration
+[tool.pylint.messages_control]
+disable = [
+    "C0111",  # missing-docstring (handled by flake8-docstrings)
+    "R0903",  # too-few-public-methods (often fine for CLIs)
+]
+
+[tool.pylint.format]
+max-line-length = 120
+
+# Flake8 configuration (in .flake8 file, not pyproject.toml)
+# Note: Flake8 doesn't support pyproject.toml natively
+# Create .flake8 file with:
+# [flake8]
+# max-line-length = 120
+# extend-ignore = E203, E501
+# docstring-convention = google
+
+# Radon configuration
+[tool.radon]
+cc_min = "C"  # Warn on complexity >= C
+show_complexity = true
+
+# Xenon configuration
+[tool.xenon]
+max-absolute = "B"
+max-modules = "B"
+max-average = "A"

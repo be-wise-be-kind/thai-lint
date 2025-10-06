@@ -1,0 +1,402 @@
+"""
+Purpose: Template for configuration management modules with YAML/JSON support
+
+Scope: Configuration loading, validation, merging, and persistence
+
+Overview: This template provides a complete configuration management system with support for
+    multiple file formats (YAML, JSON), schema validation, default values, multi-source merging,
+    and safe persistence. Use this template to create robust configuration handling for CLI
+    applications with proper error handling and validation.
+
+Placeholders:
+  {{APP_NAME}}: Application name for config directory
+    - Type: string (lowercase with hyphens)
+    - Example: "my-cli-tool"
+    - Required: yes
+
+  {{DEFAULT_KEY_1}}: First default configuration key
+    - Type: string
+    - Example: "log_level"
+    - Required: yes
+
+  {{DEFAULT_VALUE_1}}: Default value for first key
+    - Type: string | number | boolean
+    - Example: "INFO" or 3
+    - Required: yes
+
+  {{DEFAULT_KEY_2}}: Second default configuration key
+    - Type: string
+    - Example: "output_format"
+    - Required: yes
+
+  {{DEFAULT_VALUE_2}}: Default value for second key
+    - Type: string | number | boolean
+    - Example: "text"
+    - Required: yes
+
+Usage:
+  1. Copy template:
+     cp .ai/templates/python-cli/config-loader.py.template src/config.py
+
+  2. Replace placeholders:
+     - {{APP_NAME}}: Replace with your application name
+     - {{DEFAULT_KEY_*}}: Replace with your config keys
+     - {{DEFAULT_VALUE_*}}: Replace with default values
+
+  3. Remove this template header (lines 1-45)
+
+  4. Add additional config keys and validation as needed
+
+  5. Validate:
+     python -c "from src.config import load_config; print(load_config())"
+
+Related: .ai/howtos/python-cli/how-to-handle-config-files.md, .ai/docs/python-cli-architecture.md
+"""
+
+"""
+Purpose: Configuration management for {{APP_NAME}} CLI application
+
+Scope: Load, validate, save, and merge configuration from YAML/JSON files
+
+Overview: Provides comprehensive configuration management with multi-source loading, schema
+    validation, default values, and safe persistence. Supports both YAML and JSON formats,
+    searches multiple config file locations, merges configurations with precedence rules,
+    and validates all values against schema. Includes error handling and logging.
+
+Dependencies: PyYAML for YAML parsing, json for JSON parsing, pathlib for paths
+
+Exports: load_config(), save_config(), validate_config(), merge_configs(), ConfigError
+
+Interfaces: Configuration dictionaries, file paths, validation results
+"""
+
+from pathlib import Path
+from typing import Dict, Any, Optional, List, Tuple
+import yaml
+import json
+import logging
+
+logger = logging.getLogger(__name__)
+
+
+class ConfigError(Exception):
+    """Configuration-related errors."""
+    pass
+
+
+# Default configuration values
+DEFAULT_CONFIG: Dict[str, Any] = {
+    '{{DEFAULT_KEY_1}}': '{{DEFAULT_VALUE_1}}',
+    '{{DEFAULT_KEY_2}}': '{{DEFAULT_VALUE_2}}',
+    # Add more default values as needed
+}
+
+# Configuration file search paths (in priority order)
+# Lower index = higher priority
+CONFIG_LOCATIONS: List[Path] = [
+    Path.cwd() / 'config.yaml',  # Current directory
+    Path.cwd() / 'config.json',
+    Path.home() / '.config' / '{{APP_NAME}}' / 'config.yaml',  # User config
+    Path.home() / '.config' / '{{APP_NAME}}' / 'config.json',
+    Path('/etc/{{APP_NAME}}/config.yaml'),  # System config (Unix)
+]
+
+
+def load_config(config_path: Optional[Path] = None) -> Dict[str, Any]:
+    """
+    Load configuration with fallback to defaults.
+
+    Searches default locations if no explicit path provided. Validates
+    configuration after loading and merges with defaults.
+
+    Args:
+        config_path: Explicit path to config file. If None, searches
+                     CONFIG_LOCATIONS in order.
+
+    Returns:
+        Configuration dictionary with defaults merged in.
+
+    Raises:
+        ConfigError: If config file exists but cannot be parsed or is invalid.
+
+    Example:
+        >>> config = load_config()
+        >>> config = load_config(Path('custom-config.yaml'))
+    """
+    # Start with defaults
+    config = DEFAULT_CONFIG.copy()
+
+    # If explicit path provided, use it
+    if config_path:
+        if not config_path.exists():
+            logger.warning(f"Config file not found: {config_path}, using defaults")
+            return config
+
+        user_config = _load_config_file(config_path)
+        config = merge_configs(config, user_config)
+        logger.info(f"Loaded config from: {config_path}")
+
+        # Validate merged config
+        is_valid, errors = validate_config(config)
+        if not is_valid:
+            error_msg = "Configuration validation failed:\n" + \
+                        "\n".join(f"  - {e}" for e in errors)
+            raise ConfigError(error_msg)
+
+        return config
+
+    # Search default locations
+    for location in CONFIG_LOCATIONS:
+        if location.exists():
+            try:
+                user_config = _load_config_file(location)
+                config = merge_configs(config, user_config)
+                logger.info(f"Loaded config from: {location}")
+
+                # Validate merged config
+                is_valid, errors = validate_config(config)
+                if not is_valid:
+                    error_msg = "Configuration validation failed:\n" + \
+                                "\n".join(f"  - {e}" for e in errors)
+                    raise ConfigError(error_msg)
+
+                return config
+            except ConfigError:
+                # Try next location if this one fails
+                logger.warning(f"Failed to load config from {location}, trying next location")
+                continue
+
+    logger.info("No config file found, using defaults")
+    return config
+
+
+def _load_config_file(path: Path) -> Dict[str, Any]:
+    """
+    Load config from YAML or JSON file based on extension.
+
+    Args:
+        path: Path to configuration file.
+
+    Returns:
+        Configuration dictionary.
+
+    Raises:
+        ConfigError: If file cannot be parsed.
+    """
+    try:
+        with open(path, 'r') as f:
+            if path.suffix in ['.yaml', '.yml']:
+                data = yaml.safe_load(f)
+                return data if data is not None else {}
+            elif path.suffix == '.json':
+                return json.load(f)
+            else:
+                raise ConfigError(f"Unsupported config format: {path.suffix}")
+    except yaml.YAMLError as e:
+        raise ConfigError(f"Invalid YAML in {path}: {e}")
+    except json.JSONDecodeError as e:
+        raise ConfigError(f"Invalid JSON in {path}: {e}")
+    except Exception as e:
+        raise ConfigError(f"Failed to load config from {path}: {e}")
+
+
+def save_config(config: Dict[str, Any], config_path: Optional[Path] = None):
+    """
+    Save configuration to file.
+
+    Creates parent directory if it doesn't exist. Format determined by
+    file extension.
+
+    Args:
+        config: Configuration dictionary to save.
+        config_path: Path to save config. If None, uses first CONFIG_LOCATIONS entry.
+
+    Raises:
+        ConfigError: If config cannot be saved.
+
+    Example:
+        >>> save_config({'key': 'value'})
+        >>> save_config({'key': 'value'}, Path('my-config.yaml'))
+    """
+    path = config_path or CONFIG_LOCATIONS[0]
+
+    # Create parent directory if needed
+    path.parent.mkdir(parents=True, exist_ok=True)
+
+    # Validate before saving
+    is_valid, errors = validate_config(config)
+    if not is_valid:
+        error_msg = "Cannot save invalid configuration:\n" + \
+                    "\n".join(f"  - {e}" for e in errors)
+        raise ConfigError(error_msg)
+
+    # Save based on extension
+    try:
+        with open(path, 'w') as f:
+            if path.suffix in ['.yaml', '.yml']:
+                yaml.dump(config, f, default_flow_style=False, sort_keys=False)
+            elif path.suffix == '.json':
+                json.dump(config, f, indent=2, sort_keys=False)
+            else:
+                raise ConfigError(f"Unsupported config format: {path.suffix}")
+
+        logger.info(f"Saved config to: {path}")
+    except Exception as e:
+        raise ConfigError(f"Failed to save config to {path}: {e}")
+
+
+def validate_config(config: Dict[str, Any]) -> Tuple[bool, List[str]]:
+    """
+    Validate configuration schema and values.
+
+    Args:
+        config: Configuration dictionary to validate.
+
+    Returns:
+        Tuple of (is_valid, error_messages). is_valid is True if no errors,
+        error_messages is list of validation error strings.
+
+    Example:
+        >>> is_valid, errors = validate_config(config)
+        >>> if not is_valid:
+        ...     for error in errors:
+        ...         print(f"Error: {error}")
+    """
+    errors = []
+
+    # Check required keys
+    required_keys = ['{{DEFAULT_KEY_1}}']
+    for key in required_keys:
+        if key not in config:
+            errors.append(f"Missing required key: {key}")
+
+    # TODO: Add validation for {{DEFAULT_KEY_1}}
+    # Example:
+    # if '{{DEFAULT_KEY_1}}' in config:
+    #     valid_values = ['option1', 'option2', 'option3']
+    #     if config['{{DEFAULT_KEY_1}}'] not in valid_values:
+    #         errors.append(
+    #             f"Invalid {{DEFAULT_KEY_1}}: {config['{{DEFAULT_KEY_1}}']}. "
+    #             f"Must be one of: {', '.join(valid_values)}"
+    #         )
+
+    # TODO: Add validation for {{DEFAULT_KEY_2}}
+    # Example:
+    # if '{{DEFAULT_KEY_2}}' in config:
+    #     if not isinstance(config['{{DEFAULT_KEY_2}}'], str):
+    #         errors.append("{{DEFAULT_KEY_2}} must be a string")
+
+    # TODO: Add validation for numeric values
+    # Example:
+    # if 'timeout' in config:
+    #     if not isinstance(config['timeout'], (int, float)) or config['timeout'] <= 0:
+    #         errors.append("timeout must be a positive number")
+
+    return len(errors) == 0, errors
+
+
+def merge_configs(base: Dict[str, Any], override: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Merge two configurations, with override taking precedence.
+
+    Recursively merges nested dictionaries. Override values completely
+    replace base values for non-dict types.
+
+    Args:
+        base: Base configuration.
+        override: Override configuration (takes precedence).
+
+    Returns:
+        Merged configuration dictionary.
+
+    Example:
+        >>> base = {'a': 1, 'b': {'c': 2, 'd': 3}}
+        >>> override = {'b': {'d': 4}, 'e': 5}
+        >>> merged = merge_configs(base, override)
+        >>> # Result: {'a': 1, 'b': {'c': 2, 'd': 4}, 'e': 5}
+    """
+    result = base.copy()
+
+    for key, value in override.items():
+        if key in result and isinstance(result[key], dict) and isinstance(value, dict):
+            # Recursively merge nested dicts
+            result[key] = merge_configs(result[key], value)
+        else:
+            # Override value
+            result[key] = value
+
+    return result
+
+
+def get_config_path() -> Optional[Path]:
+    """
+    Find the first existing config file in CONFIG_LOCATIONS.
+
+    Returns:
+        Path to config file if found, None otherwise.
+
+    Example:
+        >>> path = get_config_path()
+        >>> if path:
+        ...     print(f"Config at: {path}")
+    """
+    for location in CONFIG_LOCATIONS:
+        if location.exists():
+            return location
+    return None
+
+
+def load_config_for_environment(
+    env: str = 'development',
+    config_path: Optional[Path] = None
+) -> Dict[str, Any]:
+    """
+    Load environment-specific configuration.
+
+    Loads base config then merges environment-specific overrides from
+    config.{env}.yaml or config.{env}.json.
+
+    Args:
+        env: Environment name (development, staging, production, etc.).
+        config_path: Optional base config path.
+
+    Returns:
+        Merged configuration for specified environment.
+
+    Example:
+        >>> dev_config = load_config_for_environment('development')
+        >>> prod_config = load_config_for_environment('production')
+    """
+    # Load base config
+    base_config = load_config(config_path)
+
+    # Look for environment-specific config
+    env_config_names = [f"config.{env}.yaml", f"config.{env}.json"]
+    env_locations = [
+        Path.cwd() / name for name in env_config_names
+    ] + [
+        Path.home() / '.config' / '{{APP_NAME}}' / name
+        for name in env_config_names
+    ]
+
+    # Merge environment-specific settings
+    for location in env_locations:
+        if location.exists():
+            try:
+                env_config = _load_config_file(location)
+                merged = merge_configs(base_config, env_config)
+                logger.info(f"Loaded {env} config from: {location}")
+
+                # Validate merged config
+                is_valid, errors = validate_config(merged)
+                if not is_valid:
+                    logger.warning(f"Invalid {env} config: {errors}")
+                    continue
+
+                return merged
+            except ConfigError as e:
+                logger.warning(f"Failed to load {env} config from {location}: {e}")
+                continue
+
+    logger.info(f"No {env}-specific config found, using base config")
+    return base_config

@@ -1,0 +1,207 @@
+"""
+Purpose: Template for setup.py with comprehensive package configuration
+
+Scope: Legacy setuptools configuration for backwards compatibility
+
+Overview: This template provides a setup.py file for projects that need backwards compatibility
+    with older Python packaging tools. Modern projects should use pyproject.toml exclusively,
+    but this template is useful for legacy environments or tools that don't yet support PEP 517.
+    Includes all standard metadata, dependencies, entry points, and classifiers.
+
+Placeholders:
+  {{PACKAGE_NAME}}: Python package name (lowercase with hyphens)
+    - Type: string
+    - Example: "my-cli-tool"
+    - Required: yes
+
+  {{VERSION}}: Package version (semantic versioning)
+    - Type: string (MAJOR.MINOR.PATCH)
+    - Example: "1.0.0"
+    - Required: yes
+
+  {{DESCRIPTION}}: Short package description
+    - Type: string
+    - Example: "A powerful CLI tool for data processing"
+    - Required: yes
+
+  {{AUTHOR_NAME}}: Package author name
+    - Type: string
+    - Example: "John Doe"
+    - Required: yes
+
+  {{AUTHOR_EMAIL}}: Package author email
+    - Type: string (valid email)
+    - Example: "john.doe@example.com"
+    - Required: yes
+
+  {{GITHUB_USERNAME}}: GitHub username
+    - Type: string
+    - Example: "johndoe"
+    - Required: yes
+
+  {{CLI_ENTRYPOINT}}: Main CLI function path
+    - Type: string (module:function format)
+    - Example: "src.cli:cli"
+    - Required: yes
+
+  {{CLI_COMMAND_NAME}}: Command name for CLI installation
+    - Type: string (lowercase with hyphens)
+    - Example: "my-cli-tool"
+    - Required: yes
+
+Usage:
+  1. Copy template:
+     cp .ai/templates/python-cli/setup.py.template setup.py
+
+  2. Replace all placeholders with actual values
+
+  3. Remove this template header (lines 1-55)
+
+  4. Test setup:
+     pip install -e .
+
+  5. Verify CLI installation:
+     {{CLI_COMMAND_NAME}} --help
+
+Note: Modern Python packaging (PEP 517/518) uses pyproject.toml instead of setup.py.
+      Only use this template if you need backwards compatibility with older tools.
+
+Related: .ai/howtos/python-cli/how-to-package-cli-tool.md, pyproject.toml
+"""
+
+#!/usr/bin/env python
+"""
+Purpose: Package setup configuration for {{PACKAGE_NAME}}
+
+Scope: Legacy setuptools configuration for backwards compatibility
+
+Overview: Provides package metadata, dependencies, and entry points using setuptools.
+    This file exists for backwards compatibility with older packaging tools. Modern
+    installations should use pyproject.toml. Includes all package metadata, runtime
+    and development dependencies, CLI entry points, and PyPI classifiers.
+
+Dependencies: setuptools for package building
+
+Exports: Package configuration for setuptools
+
+Interfaces: setuptools build system, pip installation
+"""
+
+from setuptools import setup, find_packages
+from pathlib import Path
+
+# Read README for long description
+readme_file = Path(__file__).parent / 'README.md'
+long_description = readme_file.read_text() if readme_file.exists() else ''
+
+# Read requirements
+requirements_file = Path(__file__).parent / 'requirements.txt'
+if requirements_file.exists():
+    requirements = requirements_file.read_text().strip().split('\n')
+else:
+    requirements = [
+        'click>=8.0.0',
+        'pyyaml>=6.0',
+    ]
+
+# Development requirements
+dev_requirements = [
+    'pytest>=7.0.0',
+    'pytest-cov>=4.0.0',
+    'ruff>=0.1.0',
+    'mypy>=1.0.0',
+]
+
+setup(
+    # Package metadata
+    name='{{PACKAGE_NAME}}',
+    version='{{VERSION}}',
+    description='{{DESCRIPTION}}',
+    long_description=long_description,
+    long_description_content_type='text/markdown',
+
+    # Author information
+    author='{{AUTHOR_NAME}}',
+    author_email='{{AUTHOR_EMAIL}}',
+
+    # Project URLs
+    url='https://github.com/{{GITHUB_USERNAME}}/{{PACKAGE_NAME}}',
+    project_urls={
+        'Documentation': 'https://{{PACKAGE_NAME}}.readthedocs.io',
+        'Source': 'https://github.com/{{GITHUB_USERNAME}}/{{PACKAGE_NAME}}',
+        'Tracker': 'https://github.com/{{GITHUB_USERNAME}}/{{PACKAGE_NAME}}/issues',
+    },
+
+    # License
+    license='MIT',
+
+    # Package discovery
+    packages=find_packages(where='.', include=['src*']),
+    package_dir={'': '.'},
+
+    # Python version requirement
+    python_requires='>=3.11',
+
+    # Dependencies
+    install_requires=requirements,
+    extras_require={
+        'dev': dev_requirements,
+    },
+
+    # Entry points for CLI
+    entry_points={
+        'console_scripts': [
+            '{{CLI_COMMAND_NAME}}={{CLI_ENTRYPOINT}}',
+            # Add additional CLI aliases if needed
+            # 'short-alias={{CLI_ENTRYPOINT}}',
+        ],
+    },
+
+    # Package data
+    include_package_data=True,
+    package_data={
+        'src': ['py.typed'],
+    },
+
+    # PyPI classifiers
+    classifiers=[
+        # Development status
+        'Development Status :: 4 - Beta',
+
+        # Intended audience
+        'Intended Audience :: Developers',
+        'Intended Audience :: System Administrators',
+
+        # License
+        'License :: OSI Approved :: MIT License',
+
+        # Python versions
+        'Programming Language :: Python :: 3',
+        'Programming Language :: Python :: 3.11',
+        'Programming Language :: Python :: 3.12',
+        'Programming Language :: Python :: 3 :: Only',
+
+        # Topics
+        'Topic :: Software Development :: Libraries :: Python Modules',
+        'Topic :: System :: Systems Administration',
+        'Topic :: Utilities',
+
+        # Operating systems
+        'Operating System :: OS Independent',
+
+        # Environment
+        'Environment :: Console',
+    ],
+
+    # Keywords for PyPI search
+    keywords=[
+        'cli',
+        'command-line',
+        'tool',
+        'automation',
+        # Add more relevant keywords
+    ],
+
+    # Zip safety
+    zip_safe=False,
+)

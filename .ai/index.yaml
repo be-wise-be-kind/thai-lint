@@ -116,6 +116,14 @@ architecture:
   # Python CLI tool with Click framework
   # Multi-language linter support (extensible architecture)
 
+application:
+  type: cli
+  stack: [python, click, docker]
+  howtos: .ai/howtos/python-cli/
+  templates: .ai/templates/python-cli/
+  primary_language: python
+  frameworks: [click, pytest]
+
 notes_for_agents:
   - This is a CLI application for linting AI-generated code
   - Designed to work across multiple programming languages

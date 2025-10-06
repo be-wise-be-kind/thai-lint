@@ -1,0 +1,250 @@
+"""
+Purpose: Template for creating new CLI modules with Click framework
+
+Scope: CLI entrypoint with command structure, options, and error handling
+
+Overview: This template provides a starting point for creating CLI modules with Click decorators.
+    Includes command group setup, common options, context management, logging configuration,
+    and error handling patterns. Follow this structure for consistent CLI development with
+    proper help text, type validation, and testing support.
+
+Placeholders:
+  {{MODULE_NAME}}: Python module name in snake_case
+    - Type: string (valid Python identifier)
+    - Example: "data_processor" or "api_client"
+    - Required: yes
+
+  {{MODULE_DESCRIPTION}}: Brief description of module functionality
+    - Type: string
+    - Example: "Data processing commands for ETL operations"
+    - Required: yes
+
+  {{COMMAND_NAME}}: Name of the CLI command
+    - Type: string (lowercase with hyphens)
+    - Example: "process-data" or "fetch-api"
+    - Required: yes
+
+  {{COMMAND_DESCRIPTION}}: Description of what the command does
+    - Type: string
+    - Example: "Process input data and generate output"
+    - Required: yes
+
+Usage:
+  1. Copy template:
+     cp .ai/templates/python-cli/cli-entrypoint.py.template src/{{MODULE_NAME}}.py
+
+  2. Replace placeholders:
+     - {{MODULE_NAME}}: Replace with your module name
+     - {{MODULE_DESCRIPTION}}: Replace with module description
+     - {{COMMAND_NAME}}: Replace with command name
+     - {{COMMAND_DESCRIPTION}}: Replace with command description
+
+  3. Remove this template header (lines 1-40)
+
+  4. Customize commands and options as needed
+
+  5. Validate:
+     python -m src.{{MODULE_NAME}} --help
+
+Related: .ai/howtos/python-cli/how-to-add-cli-command.md, .ai/docs/python-cli-architecture.md
+"""
+
+"""
+Purpose: {{MODULE_DESCRIPTION}}
+
+Scope: CLI commands for {{MODULE_NAME}} functionality
+
+Overview: This module provides CLI commands for {{MODULE_NAME}} using Click framework.
+    Includes command definitions, option parsing, error handling, and integration with
+    configuration and logging systems. Commands are organized into groups for better
+    organization and support comprehensive help text and validation.
+
+Dependencies: click for CLI framework, logging for output, typing for type hints
+
+Exports: {{MODULE_NAME}}_cli command group, individual commands
+
+Interfaces: Click CLI commands, configuration context, logging integration
+"""
+
+import click
+import logging
+from pathlib import Path
+from typing import Optional
+
+# Configure logging
+logger = logging.getLogger(__name__)
+
+
+@click.group()
+@click.option('--verbose', '-v', is_flag=True, help='Enable verbose output')
+@click.option('--config', '-c', type=click.Path(exists=True), help='Config file path')
+@click.pass_context
+def {{MODULE_NAME}}_cli(ctx, verbose: bool, config: Optional[str]):
+    """
+    {{MODULE_DESCRIPTION}}
+
+    This command group provides {{MODULE_NAME}} functionality with comprehensive
+    configuration and logging support.
+    """
+    # Ensure context object exists
+    ctx.ensure_object(dict)
+
+    # Configure logging level
+    level = logging.DEBUG if verbose else logging.INFO
+    logging.basicConfig(
+        level=level,
+        format='%(asctime)s | %(levelname)-8s | %(message)s',
+        datefmt='%Y-%m-%d %H:%M:%S'
+    )
+
+    # Load configuration if provided
+    if config:
+        # TODO: Load configuration from file
+        ctx.obj['config_path'] = Path(config)
+        logger.debug(f"Using config file: {config}")
+
+    ctx.obj['verbose'] = verbose
+
+
+@{{MODULE_NAME}}_cli.command('{{COMMAND_NAME}}')
+@click.argument('input_file', type=click.Path(exists=True))
+@click.argument('output_file', type=click.Path())
+@click.option('--format', '-f', type=click.Choice(['json', 'yaml', 'text']),
+              default='text', help='Output format')
+@click.option('--overwrite', is_flag=True, help='Overwrite output file if exists')
+@click.pass_context
+def {{COMMAND_NAME}}_command(
+    ctx,
+    input_file: str,
+    output_file: str,
+    format: str,
+    overwrite: bool
+):
+    """
+    {{COMMAND_DESCRIPTION}}
+
+    INPUT_FILE: Path to input file to process
+
+    OUTPUT_FILE: Path where output will be written
+
+    Examples:
+
+        \b
+        # Basic usage
+        cli {{COMMAND_NAME}} input.txt output.txt
+
+        \b
+        # With JSON format
+        cli {{COMMAND_NAME}} input.txt output.json --format json
+
+        \b
+        # Overwrite existing output
+        cli {{COMMAND_NAME}} input.txt output.txt --overwrite
+    """
+    verbose = ctx.obj.get('verbose', False)
+
+    try:
+        # Validate inputs
+        input_path = Path(input_file)
+        output_path = Path(output_file)
+
+        if output_path.exists() and not overwrite:
+            raise click.ClickException(
+                f"Output file already exists: {output_path}. Use --overwrite to replace."
+            )
+
+        if verbose:
+            logger.info(f"Processing {input_path} -> {output_path}")
+            logger.info(f"Output format: {format}")
+
+        # TODO: Implement command logic here
+        # Example:
+        # 1. Read input file
+        # 2. Process data
+        # 3. Write output file
+
+        with open(input_path, 'r') as infile:
+            content = infile.read()
+
+        # Process content based on format
+        if format == 'json':
+            # Convert to JSON
+            processed = content  # TODO: Actual conversion
+        elif format == 'yaml':
+            # Convert to YAML
+            processed = content  # TODO: Actual conversion
+        else:
+            # Keep as text
+            processed = content
+
+        # Write output
+        with open(output_path, 'w') as outfile:
+            outfile.write(processed)
+
+        click.echo(f"✓ Successfully processed {input_path} to {output_path}")
+
+        if verbose:
+            logger.info("Processing complete")
+
+    except FileNotFoundError as e:
+        raise click.ClickException(f"File not found: {e.filename}")
+    except PermissionError as e:
+        raise click.ClickException(f"Permission denied: {e.filename}")
+    except Exception as e:
+        logger.exception("Unexpected error occurred")
+        raise click.ClickException(f"Processing failed: {str(e)}")
+
+
+@{{MODULE_NAME}}_cli.command('validate')
+@click.argument('file_path', type=click.Path(exists=True))
+@click.pass_context
+def validate_command(ctx, file_path: str):
+    """
+    Validate input file format and content.
+
+    FILE_PATH: Path to file to validate
+    """
+    verbose = ctx.obj.get('verbose', False)
+
+    try:
+        path = Path(file_path)
+
+        if verbose:
+            logger.info(f"Validating {path}")
+
+        # TODO: Implement validation logic
+        is_valid = True
+        errors = []
+
+        if is_valid:
+            click.secho(f"✓ {path} is valid", fg='green')
+        else:
+            click.secho(f"✗ {path} is invalid", fg='red')
+            for error in errors:
+                click.echo(f"  - {error}")
+            raise click.Abort()
+
+    except Exception as e:
+        logger.exception("Validation failed")
+        raise click.ClickException(f"Validation error: {str(e)}")
+
+
+@{{MODULE_NAME}}_cli.command('info')
+@click.pass_context
+def info_command(ctx):
+    """Display module information and configuration."""
+    verbose = ctx.obj.get('verbose', False)
+    config_path = ctx.obj.get('config_path')
+
+    click.echo("Module: {{MODULE_NAME}}")
+    click.echo("Description: {{MODULE_DESCRIPTION}}")
+
+    if config_path:
+        click.echo(f"Config: {config_path}")
+
+    if verbose:
+        click.echo("Verbose: enabled")
+
+
+if __name__ == '__main__':
+    {{MODULE_NAME}}_cli()
