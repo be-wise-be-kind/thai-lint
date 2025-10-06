@@ -38,7 +38,7 @@
 
 ## 📍 Current Status
 
-**Current PR**: PR3 (Infrastructure)
+**Current PR**: PR4 (Standards)
 **Installation Target**: /home/stevejackson/Projects/thai-lint
 **Project Name**: thai-lint
 
@@ -46,9 +46,9 @@
 
 ## 🎯 Next PR to Implement
 
-### ➡️ START HERE: PR3 - Install Docker and CI/CD
+### ➡️ START HERE: PR4 - Install Security, Documentation, Pre-commit Hooks
 
-**What this PR does**: Install infrastructure/docker and infrastructure/github-actions plugins. Creates Dockerfile, docker-compose.yml, and GitHub Actions workflows for test, lint, build.
+**What this PR does**: Install standards/security, standards/documentation, and standards/pre-commit-hooks plugins. Sets up Gitleaks, documentation standards, and pre-commit hooks for quality gates.
 
 **Pre-flight Checklist**:
 - [ ] Previous PR is marked complete in this document
@@ -70,10 +70,10 @@
 
 ## Overall Progress
 
-**Total Completion**: 29% (2/7 PRs completed)
+**Total Completion**: 43% (3/7 PRs completed)
 
 ```
-[████░░░░░░░░░░] 29%
+[██████░░░░░░░░] 43%
 ```
 
 ---
@@ -99,7 +99,7 @@
 | PR0 | Planning | Create roadmap | ✅ Complete | None | MUST be completed first |
 | PR1 | Foundation | Install foundation/ai-folder plugin | ✅ Complete | PR0 complete | Foundation installed (commit 28d26f0) |
 | PR2 | Languages | Install Python plugin | ✅ Complete | PR1 complete | Python tooling installed (commit 9aeae69) |
-| PR3 | Infrastructure | Install Docker + CI/CD plugins | 🔴 Not Started | PR2 complete | Creates docker-compose.yml |
+| PR3 | Infrastructure | Install Docker + CI/CD plugins | ✅ Complete | PR2 complete | GitHub Actions CI/CD installed (commit a09dd2c) |
 | PR4 | Standards | Install security, docs, pre-commit plugins | 🔴 Not Started | PR3 complete | Sets up quality gates |
 | PR5 | Application | Copy CLI code, configure, install deps | 🔴 Not Started | PR4 complete | Installs app code |
 | PR6 | Finalization | Validate setup, create AGENTS.md | 🔴 Not Started | PR5 complete | Final validation |
