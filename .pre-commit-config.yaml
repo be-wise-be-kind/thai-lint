@@ -1,0 +1,186 @@
+# Purpose: Pre-commit hooks configuration for code quality enforcement
+# Scope: Repository-wide automated code quality checks before commits
+# Overview: Configures pre-commit hooks to prevent main branch commits, auto-fix issues,
+#     and run comprehensive linting on only the changed files being committed. Dynamically
+#     detects Python and TypeScript/JavaScript files and runs appropriate linting tools.
+#     All hooks execute in Docker containers for consistent environments. Includes pre-push
+#     hooks for comprehensive validation before pushing code.
+# Dependencies: pre-commit, make, docker, ruff, flake8, mypy, pylint, bandit, eslint, prettier
+# Exports: Pre-commit hook configuration for the repository
+# Interfaces: Triggered automatically on git commit and git push, can be run manually with pre-commit run
+# Environment: Development, requires Docker containers running for linting execution
+# Related: Makefile (lint-fix, lint-all, test-all targets), docker-compose.yml (linting containers)
+# Implementation: Branch protection, auto-fixes, then comprehensive file-specific linting in Docker
+
+repos:
+
+  # Local hooks - run in Docker containers
+  - repo: local
+    hooks:
+
+      # ============================================================================
+      # BRANCH PROTECTION - Must run first, prevents commits to protected branches
+      # ============================================================================
+      - id: no-commit-to-main
+        name: Prevent commits to main branch
+        entry: bash -c 'branch=$(git rev-parse --abbrev-ref HEAD); if [ "$branch" = "main" ] || [ "$branch" = "master" ]; then echo "❌ Direct commits to main/master branch are not allowed! Create a feature branch instead."; exit 1; fi'
+        language: system
+        pass_filenames: false
+        stages: [pre-commit]
+        always_run: true
+
+      # ============================================================================
+      # AUTO-FIX - Runs second, fixes issues before validation (ensures containers running)
+      # ============================================================================
+      - id: make-lint-fix
+        name: Auto-fix linting issues
+        entry: bash -c 'make lint-fix && git add -u'
+        language: system
+        pass_filenames: false
+        stages: [pre-commit]
+        verbose: true
+
+      # ============================================================================
+      # PYTHON LINTERS - Run in Python linting container on changed .py files only
+      # Dynamically detects Python files and only runs if .py files are being committed
+      # ============================================================================
+
+      - id: python-ruff
+        name: Ruff (Python format + lint)
+        entry: bash -c 'files=$(git diff --cached --name-only --diff-filter=ACM | grep -E "\.py$" | grep -E "^(app|tools)/" || true); if [ -n "$files" ]; then make lint-ensure-containers >/dev/null 2>&1; docker exec durable-code-python-linter-$(git rev-parse --abbrev-ref HEAD | tr "/" "-" | tr "[:upper:]" "[:lower:]") bash -c "cd /workspace && ruff format --check $files && ruff check $files"; fi'
+        language: system
+        files: \.(py)$
+        pass_filenames: false
+        stages: [pre-commit]
+
+      - id: python-flake8
+        name: Flake8 (Python style)
+        entry: bash -c 'app_files=$(git diff --cached --name-only --diff-filter=ACM | grep -E "^app/.*\.py$" || true); tools_files=$(git diff --cached --name-only --diff-filter=ACM | grep -E "^tools/.*\.py$" || true); if [ -n "$app_files" ]; then make lint-ensure-containers >/dev/null 2>&1; docker exec durable-code-python-linter-$(git rev-parse --abbrev-ref HEAD | tr "/" "-" | tr "[:upper:]" "[:lower:]") bash -c "cd /workspace && flake8 $app_files"; fi; if [ -n "$tools_files" ]; then docker exec durable-code-python-linter-$(git rev-parse --abbrev-ref HEAD | tr "/" "-" | tr "[:upper:]" "[:lower:]") bash -c "cd /workspace && flake8 $tools_files --config tools/.flake8"; fi'
+        language: system
+        files: \.(py)$
+        pass_filenames: false
+        stages: [pre-commit]
+
+      - id: python-mypy
+        name: MyPy (Python type checking)
+        entry: bash -c 'files=$(git diff --cached --name-only --diff-filter=ACM | grep -E "^app/.*\.py$" | sed "s|^app/||" | tr "\n" " " || true); if [ -n "$files" ]; then make lint-ensure-containers >/dev/null 2>&1; docker exec durable-code-python-linter-$(git rev-parse --abbrev-ref HEAD | tr "/" "-" | tr "[:upper:]" "[:lower:]") bash -c "cd /workspace/app && MYPY_CACHE_DIR=/tmp/mypy_cache mypy $files"; fi'
+        language: system
+        files: ^app/.*\.py$
+        pass_filenames: false
+        stages: [pre-commit]
+
+      - id: python-pylint
+        name: Pylint (Python code analysis)
+        entry: bash -c 'files=$(git diff --cached --name-only --diff-filter=ACM | grep -E "\.py$" | grep -E "^(app|tools)/" || true); if [ -n "$files" ]; then make lint-ensure-containers >/dev/null 2>&1; docker exec durable-code-python-linter-$(git rev-parse --abbrev-ref HEAD | tr "/" "-" | tr "[:upper:]" "[:lower:]") bash -c "cd /workspace && pylint $files"; fi'
+        language: system
+        files: \.(py)$
+        pass_filenames: false
+        stages: [pre-commit]
+
+      - id: python-bandit
+        name: Bandit (Python security)
+        entry: bash -c 'files=$(git diff --cached --name-only --diff-filter=ACM | grep -E "\.py$" | grep -E "^(app|tools)/" || true); if [ -n "$files" ]; then make lint-ensure-containers >/dev/null 2>&1; docker exec durable-code-python-linter-$(git rev-parse --abbrev-ref HEAD | tr "/" "-" | tr "[:upper:]" "[:lower:]") bash -c "cd /workspace && bandit $files"; fi'
+        language: system
+        files: \.(py)$
+        pass_filenames: false
+        stages: [pre-commit]
+
+      - id: python-xenon
+        name: Xenon (Python complexity)
+        entry: bash -c 'files=$(git diff --cached --name-only --diff-filter=ACM | grep -E "^app/.*\.py$" || true); if [ -n "$files" ]; then make lint-ensure-containers >/dev/null 2>&1; docker exec durable-code-python-linter-$(git rev-parse --abbrev-ref HEAD | tr "/" "-" | tr "[:upper:]" "[:lower:]") bash -c "cd /workspace && xenon --max-absolute B --max-modules B --max-average A $files"; fi'
+        language: system
+        files: ^app/.*\.py$
+        pass_filenames: false
+        stages: [pre-commit]
+
+      # ============================================================================
+      # TYPESCRIPT/JAVASCRIPT LINTERS - Run in JS linting container on changed files
+      # Dynamically detects TypeScript/JavaScript files and only runs if present
+      # ============================================================================
+
+      - id: typescript-check
+        name: TypeScript type checking
+        entry: bash -c 'if git diff --cached --name-only --diff-filter=ACM | grep -qE "frontend/.*\.(ts|tsx)$"; then make lint-ensure-containers >/dev/null 2>&1; docker exec durable-code-js-linter-$(git rev-parse --abbrev-ref HEAD | tr "/" "-" | tr "[:upper:]" "[:lower:]") sh -c "cd /workspace/frontend && npm run typecheck"; fi'
+        language: system
+        files: ^frontend/.*\.(ts|tsx)$
+        pass_filenames: false
+        stages: [pre-commit]
+
+      - id: eslint
+        name: ESLint (JavaScript/TypeScript)
+        entry: bash -c 'files=$(git diff --cached --name-only --diff-filter=ACM | grep -E "^frontend/.*\.(ts|tsx|js|jsx)$" | sed "s|^frontend/||" || true); if [ -n "$files" ]; then make lint-ensure-containers >/dev/null 2>&1; docker exec durable-code-js-linter-$(git rev-parse --abbrev-ref HEAD | tr "/" "-" | tr "[:upper:]" "[:lower:]") sh -c "cd /workspace/frontend && npm run lint -- $files"; fi'
+        language: system
+        files: ^frontend/.*\.(ts|tsx|js|jsx)$
+        pass_filenames: false
+        stages: [pre-commit]
+
+      - id: stylelint
+        name: Stylelint (CSS)
+        entry: bash -c 'files=$(git diff --cached --name-only --diff-filter=ACM | grep -E "^frontend/.*\.css$" | sed "s|^frontend/||" || true); if [ -n "$files" ]; then make lint-ensure-containers >/dev/null 2>&1; docker exec durable-code-js-linter-$(git rev-parse --abbrev-ref HEAD | tr "/" "-" | tr "[:upper:]" "[:lower:]") sh -c "cd /workspace/frontend && npm run lint:css -- $files"; fi'
+        language: system
+        files: ^frontend/.*\.css$
+        pass_filenames: false
+        stages: [pre-commit]
+
+      - id: prettier-check
+        name: Prettier (Frontend formatting)
+        entry: bash -c 'files=$(git diff --cached --name-only --diff-filter=ACM | grep -E "^frontend/.*\.(ts|tsx|js|jsx|css)$" | sed "s|^frontend/||" || true); if [ -n "$files" ]; then make lint-ensure-containers >/dev/null 2>&1; docker exec durable-code-js-linter-$(git rev-parse --abbrev-ref HEAD | tr "/" "-" | tr "[:upper:]" "[:lower:]") sh -c "cd /workspace/frontend && npm run format:check -- $files"; fi'
+        language: system
+        files: ^frontend/.*\.(ts|tsx|js|jsx|css)$
+        pass_filenames: false
+        stages: [pre-commit]
+
+      # ============================================================================
+      # CUSTOM DESIGN LINTERS - Project-specific linting rules
+      # Run on changed Python and Markdown files only
+      # ============================================================================
+
+      - id: design-linters
+        name: Custom design linters
+        entry: bash -c 'files=$(git diff --cached --name-only --diff-filter=ACM | grep -E "\.(py|md)$" | xargs || true); if [ -n "$files" ]; then make lint-ensure-containers >/dev/null 2>&1; docker exec durable-code-python-linter-$(git rev-parse --abbrev-ref HEAD | tr "/" "-" | tr "[:upper:]" "[:lower:]") bash -c "cd /workspace && PYTHONPATH=/workspace/tools python -m design_linters --categories all --format text --fail-on-error $files"; fi'
+        language: system
+        files: \.(py|md)$
+        pass_filenames: false
+        stages: [pre-commit]
+
+      # ============================================================================
+      # LINTING RULE ENFORCEMENT - Ensures no skip directives without justification
+      # Prevents bypassing linting rules with noqa, nosec, etc. without comments
+      # ============================================================================
+
+      - id: no-skip-enforcement
+        name: Linting rule skip enforcement
+        entry: bash -c 'files=$(git diff --cached --name-only --diff-filter=ACM | grep -E "\.(py|ts|tsx|tf|sh)$" | xargs || true); if [ -n "$files" ]; then make lint-ensure-containers >/dev/null 2>&1; docker exec durable-code-python-linter-$(git rev-parse --abbrev-ref HEAD | tr "/" "-" | tr "[:upper:]" "[:lower:]") bash -c "cd /workspace && PYTHONPATH=/workspace/tools python -m design_linters --categories enforcement --format text --fail-on-error $files"; fi'
+        language: system
+        files: \.(py|ts|tsx|tf|sh)$
+        pass_filenames: false
+        stages: [pre-commit]
+
+      # ============================================================================
+      # PRE-PUSH HOOKS - Comprehensive validation before pushing code
+      # These run on 'git push' and are more thorough than pre-commit hooks
+      # ============================================================================
+
+      - id: check-uncommitted-changes
+        name: Check for uncommitted changes
+        entry: bash -c 'UNCOMMITTED=$(git status --porcelain); if [ -n "$UNCOMMITTED" ]; then echo "❌ Error - You have uncommitted changes. Please commit or stash before pushing."; git status --short; exit 1; fi'
+        language: system
+        pass_filenames: false
+        stages: [pre-push]
+        always_run: true
+
+      - id: pre-push-lint-all
+        name: Run comprehensive linting before push
+        entry: bash -c 'if [ -z "$PRE_PUSH_SKIP" ]; then make lint-all; else echo "⚠️  Linting skipped via PRE_PUSH_SKIP"; fi'
+        language: system
+        pass_filenames: false
+        stages: [pre-push]
+        always_run: true
+
+      - id: pre-push-test-all
+        name: Run all tests before push
+        entry: bash -c 'if [ -z "$PRE_PUSH_SKIP" ]; then make test-ensure-containers && make test-all; else echo "⚠️  Tests skipped via PRE_PUSH_SKIP"; fi'
+        language: system
+        pass_filenames: false
+        stages: [pre-push]
+        always_run: true

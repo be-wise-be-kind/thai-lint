@@ -1,0 +1,97 @@
+# Purpose: Template for creating standardized YAML configuration file headers
+# Scope: All YAML configuration files (.yml, .yaml) in any project
+# Overview: This template provides the standard header structure for YAML configuration files.
+#     When used, it generates a complete file header with all mandatory and recommended fields
+#     following the atemporal documentation principle. The generated header includes project-specific
+#     information and helps developers and operators quickly understand the configuration's purpose,
+#     scope, and impact without examining all configuration values. Use this template as the starting
+#     point for all new YAML configuration files including docker-compose, CI/CD workflows, and
+#     application configuration files.
+#
+# Placeholders:
+#   {{CONFIG_NAME}}: Configuration file name or purpose
+#     - Type: string
+#     - Example: "Production Docker Compose Configuration" or "Development Environment Setup"
+#     - Required: yes
+#
+#   {{PURPOSE}}: Brief description of configuration purpose (1-2 lines)
+#     - Type: string
+#     - Example: "Docker Compose configuration for development environment with hot-reloading"
+#     - Required: yes
+#
+#   {{SCOPE}}: What this configuration applies to
+#     - Type: string
+#     - Example: "All application services for local development including backend, frontend, database"
+#     - Required: yes
+#
+#   {{OVERVIEW}}: Comprehensive explanation of configuration's role (3-5+ lines)
+#     - Type: string (multiline)
+#     - Example: "Orchestrates multi-container Docker application for local development with hot-reloading support, volume mounts for source code, and service networking..."
+#     - Required: yes
+#
+#   {{DEPENDENCIES}}: Services, tools, or other configs that use this configuration
+#     - Type: string
+#     - Example: "Docker engine, Docker Compose, Dockerfiles in .docker/dockerfiles/, .env file"
+#     - Required: yes
+#
+#   {{EXPORTS}}: Key configuration sections, environment variables, or settings
+#     - Type: string
+#     - Example: "Docker Compose services for development, networks, volumes, and service orchestration"
+#     - Required: yes
+#
+#   {{ENVIRONMENT}}: Target deployment environments
+#     - Type: string
+#     - Example: "Local development only (not for production use)"
+#     - Required: no
+#     - Default: Can be omitted if environment is obvious
+#
+#   {{RELATED}}: Links to related configuration files or documentation
+#     - Type: string
+#     - Example: "Dockerfile.backend, Dockerfile.frontend, production docker-compose.prod.yml"
+#     - Required: no
+#     - Default: Can be omitted if no related files
+#
+#   {{IMPLEMENTATION}}: Configuration management patterns or validation rules
+#     - Type: string
+#     - Example: "Docker Compose v3.8, healthcheck-based service dependencies, named volumes"
+#     - Required: no
+#     - Default: Can be omitted if no special patterns
+#
+# Usage:
+#   1. Copy template:
+#      cp .ai/templates/file-header-yaml.template config/{{CONFIG_NAME}}.yml
+#
+#   2. Replace all placeholders with actual values:
+#      - {{CONFIG_NAME}}: Replace with configuration name (use in filename)
+#      - {{PURPOSE}}: Replace with brief description (1-2 lines)
+#      - {{SCOPE}}: Replace with what this configures
+#      - {{OVERVIEW}}: Replace with comprehensive explanation (3-5+ lines)
+#      - {{DEPENDENCIES}}: Replace with actual dependencies
+#      - {{EXPORTS}}: Replace with configuration sections
+#      - {{ENVIRONMENT}}: Replace or remove if not applicable
+#      - {{RELATED}}: Replace or remove if not applicable
+#      - {{IMPLEMENTATION}}: Replace or remove if not applicable
+#
+#   3. Remove this template header (lines 1-XX before the actual file header)
+#
+#   4. Add your YAML configuration after the header
+#
+#   5. Validate YAML syntax:
+#      yamllint config/{{CONFIG_NAME}}.yml
+#      # or
+#      python3 -c "import yaml; yaml.safe_load(open('config/{{CONFIG_NAME}}.yml'))"
+#
+# Related: FILE_HEADER_STANDARDS.md, Docker plugin documentation
+
+# Purpose: {{PURPOSE}}
+# Scope: {{SCOPE}}
+# Overview: {{OVERVIEW}}
+# Dependencies: {{DEPENDENCIES}}
+# Exports: {{EXPORTS}}
+# Environment: {{ENVIRONMENT}}
+# Related: {{RELATED}}
+# Implementation: {{IMPLEMENTATION}}
+
+# Your YAML configuration starts here
+# version: '3.8'
+# ...

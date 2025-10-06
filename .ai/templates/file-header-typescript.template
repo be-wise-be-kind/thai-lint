@@ -1,0 +1,98 @@
+/**
+ * Purpose: Template for creating standardized TypeScript/JavaScript file headers
+ * Scope: All TypeScript and JavaScript files (.ts, .tsx, .js, .jsx) in any project
+ * Overview: This template provides the standard JSDoc header structure for TypeScript and JavaScript files.
+ *     When used, it generates a complete file header with all mandatory and recommended fields following
+ *     the atemporal documentation principle and JSDoc conventions. The generated header includes
+ *     project-specific information and helps developers quickly understand the component or module's
+ *     purpose, props/interfaces, and dependencies without reading the code. Use this template as the
+ *     starting point for all new TypeScript/JavaScript files including React components, modules, and utilities.
+ *
+ * Placeholders:
+ *   {{MODULE_NAME}}: Component or module name in PascalCase or camelCase
+ *     - Type: string (valid TypeScript/JavaScript identifier)
+ *     - Example: "AuthenticationForm" or "apiClient"
+ *     - Required: yes
+ *
+ *   {{PURPOSE}}: Brief description of component/module functionality (1-2 lines)
+ *     - Type: string
+ *     - Example: "User authentication form component with validation and error handling"
+ *     - Required: yes
+ *
+ *   {{SCOPE}}: What this file handles in the application
+ *     - Type: string
+ *     - Example: "Login and registration forms across the application"
+ *     - Required: yes
+ *
+ *   {{OVERVIEW}}: Comprehensive summary of component/module's role (3-5+ lines)
+ *     - Type: string (multiline)
+ *     - Example: "Provides reusable authentication form with real-time validation, error handling, and accessible design..."
+ *     - Required: yes
+ *
+ *   {{DEPENDENCIES}}: Key libraries, components, or services this file depends on
+ *     - Type: string
+ *     - Example: "React, react-hook-form for validation, auth service for API calls"
+ *     - Required: yes (for code files)
+ *
+ *   {{EXPORTS}}: Main components, functions, types, or constants this file provides
+ *     - Type: string
+ *     - Example: "AuthForm component as default, AuthFormProps interface, AuthFormSchema type"
+ *     - Required: yes (for code files)
+ *
+ *   {{PROPS_INTERFACES}}: Key interfaces this component accepts or module provides
+ *     - Type: string
+ *     - Example: "AuthFormProps { mode: 'login' | 'register', onSuccess: (user) => void }"
+ *     - Required: no (required for React components)
+ *     - Default: Can be omitted for non-component modules
+ *
+ *   {{STATE_BEHAVIOR}}: Important state management or behavioral patterns used
+ *     - Type: string
+ *     - Example: "Form state managed by react-hook-form, loading state for async operations"
+ *     - Required: no
+ *     - Default: Can be omitted if no notable state management
+ *
+ * Usage:
+ *   1. Copy template:
+ *      cp .ai/templates/file-header-typescript.template src/components/{{MODULE_NAME}}.tsx
+ *
+ *   2. Replace all placeholders with actual values:
+ *      - {{MODULE_NAME}}: Replace with component/module name (use in filename)
+ *      - {{PURPOSE}}: Replace with brief description (1-2 lines)
+ *      - {{SCOPE}}: Replace with component/module responsibilities
+ *      - {{OVERVIEW}}: Replace with comprehensive explanation (3-5+ lines)
+ *      - {{DEPENDENCIES}}: Replace with actual dependencies
+ *      - {{EXPORTS}}: Replace with actual exports
+ *      - {{PROPS_INTERFACES}}: Replace or remove if not applicable
+ *      - {{STATE_BEHAVIOR}}: Replace or remove if not applicable
+ *
+ *   3. Remove this template header comment (lines 1-XX before the actual file header)
+ *
+ *   4. Add your component/module code after the header
+ *
+ *   5. Validate TypeScript syntax:
+ *      npx tsc --noEmit src/components/{{MODULE_NAME}}.tsx
+ *
+ * Related: FILE_HEADER_STANDARDS.md, TypeScript plugin documentation
+ */
+
+/**
+ * Purpose: {{PURPOSE}}
+ *
+ * Scope: {{SCOPE}}
+ *
+ * Overview: {{OVERVIEW}}
+ *
+ * Dependencies: {{DEPENDENCIES}}
+ *
+ * Exports: {{EXPORTS}}
+ *
+ * Props/Interfaces: {{PROPS_INTERFACES}}
+ *
+ * State/Behavior: {{STATE_BEHAVIOR}}
+ */
+
+// Module imports go here
+// import React from 'react';
+// import { useState } from 'react';
+
+// Your component/module code starts here

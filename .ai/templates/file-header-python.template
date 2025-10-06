@@ -1,0 +1,98 @@
+"""
+Purpose: Template for creating standardized Python file headers
+Scope: All Python modules and scripts (.py files) in any project
+Overview: This template provides the standard docstring header structure for Python files.
+    When used, it generates a complete file header with all mandatory and recommended fields
+    following the atemporal documentation principle and Python docstring conventions. The
+    generated header includes project-specific information and helps developers quickly
+    understand the module's purpose, exports, and dependencies without reading the code.
+    Use this template as the starting point for all new Python modules.
+
+Placeholders:
+  {{MODULE_NAME}}: Python module name in snake_case
+    - Type: string (valid Python identifier)
+    - Example: "user_service" or "task_repository"
+    - Required: yes
+
+  {{PURPOSE}}: Brief description of module functionality (1-2 lines)
+    - Type: string
+    - Example: "Manages user account operations and authentication"
+    - Required: yes
+
+  {{SCOPE}}: What this module handles in the system
+    - Type: string
+    - Example: "User registration, authentication, profile management, and account settings"
+    - Required: yes
+
+  {{OVERVIEW}}: Comprehensive summary of module's role (3-5+ lines)
+    - Type: string (multiline)
+    - Example: "Provides comprehensive user management including account creation, authentication, profile updates, and account deletion..."
+    - Required: yes
+
+  {{DEPENDENCIES}}: Key external dependencies or internal modules
+    - Type: string
+    - Example: "SQLAlchemy for database, bcrypt for password hashing, email service for notifications"
+    - Required: yes (for code files)
+
+  {{EXPORTS}}: Main classes, functions, or constants this module provides
+    - Type: string
+    - Example: "UserService class, User model, UserNotFoundError exception"
+    - Required: yes (for code files)
+
+  {{INTERFACES}}: Key APIs, endpoints, or methods this module exposes
+    - Type: string
+    - Example: "authenticate(username, password) -> Token, validate_token(token) -> User"
+    - Required: no
+    - Default: Can be omitted if no public interface
+
+  {{IMPLEMENTATION}}: Notable algorithms, patterns, or architectural decisions
+    - Type: string
+    - Example: "Bcrypt password hashing with cost factor 12, JWT tokens for session management"
+    - Required: no
+    - Default: Can be omitted if no notable implementation details
+
+Usage:
+  1. Copy template:
+     cp .ai/templates/file-header-python.template src/{{MODULE_NAME}}.py
+
+  2. Replace all placeholders with actual values:
+     - {{MODULE_NAME}}: Replace with module name (use in filename)
+     - {{PURPOSE}}: Replace with brief description (1-2 lines)
+     - {{SCOPE}}: Replace with module responsibilities
+     - {{OVERVIEW}}: Replace with comprehensive explanation (3-5+ lines)
+     - {{DEPENDENCIES}}: Replace with actual dependencies
+     - {{EXPORTS}}: Replace with actual exports (classes, functions)
+     - {{INTERFACES}}: Replace or remove if not applicable
+     - {{IMPLEMENTATION}}: Replace or remove if not applicable
+
+  3. Remove this template header docstring (lines 1-XX before the actual module docstring)
+
+  4. Add your module code after the header docstring
+
+  5. Validate Python syntax:
+     python -m py_compile src/{{MODULE_NAME}}.py
+
+Related: FILE_HEADER_STANDARDS.md, Python plugin documentation
+"""
+
+"""
+Purpose: {{PURPOSE}}
+
+Scope: {{SCOPE}}
+
+Overview: {{OVERVIEW}}
+
+Dependencies: {{DEPENDENCIES}}
+
+Exports: {{EXPORTS}}
+
+Interfaces: {{INTERFACES}}
+
+Implementation: {{IMPLEMENTATION}}
+"""
+
+# Module imports go here
+# from typing import Optional
+# import other_modules
+
+# Your module code starts here

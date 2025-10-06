@@ -68,3 +68,336 @@ logs/
 secrets/
 *.pem
 *.key
+
+# Security - Secrets and Credentials (added by security standards plugin)
+# Purpose: Template for security-focused .gitignore patterns to prevent sensitive files from entering version control
+# Scope: All Git repositories requiring protection against accidental credential commits
+# Overview: Provides comprehensive .gitignore patterns specifically designed to prevent security-sensitive
+#     files from being committed to version control. Includes patterns for environment files, credential files,
+#     private keys, cloud provider credentials, database files, certificates, and other common sources of
+#     secret leakage. Organized by category for easy maintenance and customization. Should be merged with
+#     existing .gitignore files or used as a foundation for new repositories.
+# Dependencies: Git version control system
+# Exports: Security-focused ignore patterns for environment files, credentials, keys, and sensitive data
+# Placeholders:
+#     - {{PROJECT_NAME}}: Name of the project (e.g., my-app, backend-api)
+#     - {{FRAMEWORK}}: Framework-specific patterns (django, rails, nextjs, express)
+# Usage: Copy to .gitignore in repository root, replace {{PLACEHOLDERS}}, merge with existing patterns, commit
+# Related: .env.example.template, how-to-prevent-secrets-in-git.md, secrets-management.md
+# Implementation: Organized by security concern category with comments explaining each pattern group
+
+# ========================================
+# {{PROJECT_NAME}} Security .gitignore
+# ========================================
+# This file contains security-focused patterns to prevent
+# sensitive data from being committed to version control.
+#
+# Framework: {{FRAMEWORK}}
+# Last Updated: [Update when modifying]
+# ========================================
+
+# ========================================
+# Environment Files - Secrets and Config
+# ========================================
+
+# Local environment files (NEVER commit these)
+.env
+.env.local
+.env.*.local
+.env.production
+.env.production.local
+.env.development
+.env.development.local
+.env.staging
+.env.staging.local
+.env.test
+.env.test.local
+*.env
+
+# Environment variable exports
+.envrc
+.envrc.local
+
+# Direnv
+.direnv/
+
+# NOTE: .env.example SHOULD be committed as a template
+# !.env.example
+
+# ========================================
+# Credential Files
+# ========================================
+
+# Generic credential files
+credentials
+credentials.json
+credentials.yml
+credentials.yaml
+*-credentials.json
+*-credentials.yml
+client_secret*.json
+service-account*.json
+*.credentials
+
+# OAuth and API credentials
+oauth-credentials.json
+client_secrets.json
+token.json
+refresh_token.json
+
+# ========================================
+# Private Keys and Certificates
+# ========================================
+
+# Private keys (various formats)
+*.pem
+*.key
+*.p12
+*.pfx
+*.keystore
+*.jks
+
+# SSL/TLS certificates (private)
+*.crt
+*.cer
+*.der
+
+# SSH keys
+id_rsa
+id_dsa
+id_ecdsa
+id_ed25519
+*.ppk
+
+# PGP/GPG keys
+*.gpg
+*.pgp
+secring.*
+
+# ========================================
+# Cloud Provider Credentials
+# ========================================
+
+# AWS
+.aws/credentials
+.aws/config
+*-aws-credentials.json
+aws-credentials.json
+
+# Google Cloud
+gcp-key.json
+gcp-service-account.json
+.gcloud/
+.config/gcloud/
+
+# Azure
+.azure/credentials
+azureProfile.json
+*.publishsettings
+
+# Digital Ocean
+.do/
+
+# Terraform state (may contain secrets)
+*.tfstate
+*.tfstate.*
+*.tfvars
+.terraform/
+terraform.tfvars
+
+# ========================================
+# Database Files and Backups
+# ========================================
+
+# SQLite databases
+*.sqlite
+*.sqlite3
+*.db
+*.db-journal
+
+# Database dumps (may contain sensitive data)
+*.sql
+*.dump
+*.backup
+database.yml
+database.json
+
+# Redis dumps
+dump.rdb
+
+# ========================================
+# Configuration Files with Secrets
+# ========================================
+
+# Application secrets
+config/secrets.yml
+config/secrets.yaml
+config/database.yml
+config/production.yml
+config/credentials.yml.enc
+secrets.yaml
+secrets.json
+application-secrets.properties
+appsettings.Production.json
+appsettings.Secrets.json
+
+# Docker secrets
+docker-compose.override.yml
+.docker/secrets/
+
+# Kubernetes secrets
+*-secret.yaml
+*-secret.yml
+secrets/
+
+# ========================================
+# Framework-Specific Secrets
+# ========================================
+
+# Django
+local_settings.py
+*/settings/local.py
+
+# Rails
+config/master.key
+config/credentials.yml.enc
+
+# Laravel
+.env.*.php
+
+# Spring Boot
+application-local.properties
+application-secret.properties
+
+# ========================================
+# Package Manager Files (May Contain Tokens)
+# ========================================
+
+# npm
+.npmrc
+.yarnrc
+.yarnrc.yml
+
+# pip/Python
+pip.conf
+
+# Maven
+settings.xml
+settings-security.xml
+
+# Gradle
+gradle.properties
+
+# ========================================
+# IDE and Editor Files (May Contain Secrets)
+# ========================================
+
+# VS Code (workspace-specific settings may contain secrets)
+.vscode/settings.json
+.vscode/launch.json
+
+# IntelliJ IDEA
+.idea/workspace.xml
+.idea/tasks.xml
+.idea/dataSources.xml
+.idea/dataSources.ids
+.idea/dataSources.local.xml
+.idea/httpRequests/
+
+# ========================================
+# Log Files (May Leak Secrets)
+# ========================================
+
+# Application logs
+*.log
+*.log.*
+logs/
+log/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+
+# Web server logs
+access.log
+error.log
+
+# ========================================
+# Backup and Temporary Files
+# ========================================
+
+# Backup files
+*.bak
+*.backup
+*.old
+*.orig
+*.swp
+*~
+
+# Temporary files
+*.tmp
+*.temp
+.DS_Store
+Thumbs.db
+
+# ========================================
+# CI/CD Secrets
+# ========================================
+
+# GitHub
+.github/secrets/
+
+# GitLab
+.gitlab/secrets/
+
+# CircleCI
+.circleci/secrets/
+
+# ========================================
+# Development Tools
+# ========================================
+
+# Docker development overrides
+docker-compose.dev.yml
+docker-compose.local.yml
+
+# Ansible vault
+*.vault
+vault-password.txt
+
+# ========================================
+# Testing and Development Data
+# ========================================
+
+# Test database files
+test.db
+test.sqlite
+
+# Mock data with potential secrets
+mock-secrets.json
+test-credentials.json
+
+# ========================================
+# Project-Specific Patterns
+# ========================================
+# Add project-specific security patterns below:
+
+# Example: API keys file
+# api-keys.json
+
+# Example: Custom secrets location
+# src/config/secrets/
+
+# ========================================
+# Important Notes
+# ========================================
+# 1. ALWAYS use .env.example for documenting required variables
+# 2. NEVER commit actual credentials or API keys
+# 3. Review this file quarterly and add new patterns as needed
+# 4. If you must commit a file matching these patterns, use:
+#    git add -f filename (but verify it contains no secrets first!)
+# 5. Use pre-commit hooks to prevent accidental commits
+#
+# For more information, see:
+# - docs/security/secrets-management.md
+# - docs/howtos/how-to-prevent-secrets-in-git.md

@@ -1,0 +1,177 @@
+<!--
+Purpose: Template for creating comprehensive, professional README documentation
+Scope: README.md files for projects, libraries, APIs, and major components
+Overview: This template provides a complete README structure following best practices for project
+    documentation. When used, it generates a professional README file that serves as the primary
+    entry point for understanding and using a project. Includes essential sections like project
+    description, tech stack, installation, usage, and development guidelines, plus optional sections
+    for configuration, deployment, and contributing. The template follows industry standards and
+    ensures consistent, high-quality project documentation.
+
+Placeholders:
+  {{PROJECT_NAME}}: Project name (should match repository name)
+    - Type: string
+    - Example: "TaskFlow API" or "React Admin Dashboard"
+    - Required: yes
+
+  {{PROJECT_DESCRIPTION}}: Brief, compelling project description (1-3 sentences)
+    - Type: string
+    - Example: "A high-performance task management API built with FastAPI, providing real-time task tracking and team collaboration"
+    - Required: yes
+
+  {{PROJECT_STATUS}}: Current project status badge
+    - Type: string (emoji or text)
+    - Example: "✅ Stable" or "🚧 In Development" or "⚠️ Experimental"
+    - Required: no
+    - Default: Can be omitted if not applicable
+
+  {{TECH_STACK}}: Technologies used (organized by category)
+    - Type: string (multiline, categorized list)
+    - Example: "**Backend**: Python 3.11+, FastAPI 0.104+\n**Database**: PostgreSQL 15+, Redis 7+"
+    - Required: yes
+
+  {{PREREQUISITES}}: Required tools and versions before installation
+    - Type: string (list with versions)
+    - Example: "- Docker 20.10+\n- Python 3.11+\n- Poetry 1.5+"
+    - Required: yes
+
+  {{INSTALLATION_STEPS}}: Step-by-step installation instructions
+    - Type: string (numbered steps with commands)
+    - Example: "1. Clone: git clone...\n2. Install: poetry install\n3. Run: make dev"
+    - Required: yes
+
+  {{USAGE_EXAMPLES}}: Basic usage examples and commands
+    - Type: string (code examples with explanations)
+    - Example: "curl -X POST http://localhost:8000/api/tasks..."
+    - Required: yes
+
+  {{PROJECT_STRUCTURE}}: Directory structure with explanations
+    - Type: string (tree structure with comments)
+    - Example: "project/\n├── app/     # Application code\n├── tests/   # Test files"
+    - Required: yes
+
+  {{DEVELOPMENT_GUIDELINES}}: Development commands and standards
+    - Type: string (commands and guidelines)
+    - Example: "make test    # Run tests\nmake lint    # Run linting"
+    - Required: yes
+
+  {{CONFIGURATION}}: Configuration details (optional)
+    - Type: string
+    - Example: "Create .env file with DATABASE_URL=..."
+    - Required: no
+    - Default: Can be omitted if no configuration needed
+
+  {{DEPLOYMENT}}: Deployment instructions (optional)
+    - Type: string
+    - Example: "Deploy using: ./scripts/deploy.sh production"
+    - Required: no
+    - Default: Can be omitted if deployment not documented yet
+
+  {{API_DOCS}}: API documentation links (optional, for API projects)
+    - Type: string
+    - Example: "Swagger UI: http://localhost:8000/docs"
+    - Required: no
+    - Default: Can be omitted for non-API projects
+
+  {{CONTRIBUTING}}: Contributing guidelines (optional)
+    - Type: string
+    - Example: "See CONTRIBUTING.md for guidelines"
+    - Required: no
+    - Default: Can be omitted if not accepting contributions yet
+
+  {{LICENSE}}: License information
+    - Type: string
+    - Example: "MIT License - see LICENSE file"
+    - Required: no
+    - Default: Can be omitted if license not decided
+
+Usage:
+  1. Copy template to project root:
+     cp .ai/templates/README.template README.md
+
+  2. Replace all placeholders with actual values:
+     - {{PROJECT_NAME}}: Replace with your project name
+     - {{PROJECT_DESCRIPTION}}: Replace with compelling description
+     - {{PROJECT_STATUS}}: Replace with current status or remove
+     - {{TECH_STACK}}: Replace with your technologies (categorized)
+     - {{PREREQUISITES}}: Replace with actual prerequisites and versions
+     - {{INSTALLATION_STEPS}}: Replace with tested installation steps
+     - {{USAGE_EXAMPLES}}: Replace with working examples
+     - {{PROJECT_STRUCTURE}}: Replace with your actual structure
+     - {{DEVELOPMENT_GUIDELINES}}: Replace with your development commands
+     - {{CONFIGURATION}}: Replace or remove entire section if not needed
+     - {{DEPLOYMENT}}: Replace or remove entire section if not needed
+     - {{API_DOCS}}: Replace or remove entire section if not applicable
+     - {{CONTRIBUTING}}: Replace or remove entire section if not needed
+     - {{LICENSE}}: Replace or remove entire section if not decided
+
+  3. Remove this template header comment (lines 1-XX)
+
+  4. Test all commands in README on fresh environment
+
+  5. Verify README:
+     - All placeholders replaced
+     - All commands tested and working
+     - Links are valid
+     - No typos or errors
+     - Consistent formatting
+
+  6. Validate markdown (optional):
+     markdownlint README.md
+
+Related: readme-standards.md, how-to-create-readme.md, FILE_HEADER_STANDARDS.md
+-->
+
+# {{PROJECT_NAME}}
+
+{{PROJECT_DESCRIPTION}}
+
+**Status**: {{PROJECT_STATUS}}
+
+## Tech Stack
+
+{{TECH_STACK}}
+
+## Prerequisites
+
+Before you begin, ensure you have:
+
+{{PREREQUISITES}}
+
+## Installation
+
+{{INSTALLATION_STEPS}}
+
+## Usage
+
+{{USAGE_EXAMPLES}}
+
+## Project Structure
+
+```
+{{PROJECT_STRUCTURE}}
+```
+
+## Development
+
+{{DEVELOPMENT_GUIDELINES}}
+
+## Configuration
+
+{{CONFIGURATION}}
+
+## API Documentation
+
+{{API_DOCS}}
+
+## Deployment
+
+{{DEPLOYMENT}}
+
+## Contributing
+
+{{CONTRIBUTING}}
+
+## License
+
+{{LICENSE}}

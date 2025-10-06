@@ -1,0 +1,103 @@
+<!--
+Purpose: Template for creating standardized markdown file headers
+Scope: All markdown documentation files (.md) in any project
+Overview: This template provides the standard header structure for markdown documentation files.
+    When used, it generates a complete file header with all mandatory and recommended fields following
+    the atemporal documentation principle. The generated header includes project-specific information
+    and helps readers quickly understand the document's purpose, scope, and content without reading
+    the entire file. Use this template as the starting point for all new markdown documentation.
+
+Placeholders:
+  {{DOCUMENT_TITLE}}: Document title (should match filename without extension)
+    - Type: string
+    - Example: "API Documentation Standards" or "User Guide"
+    - Required: yes
+
+  {{PURPOSE}}: Brief description of what this document covers (1-2 lines)
+    - Type: string
+    - Example: "Complete guide for implementing user authentication in the application"
+    - Required: yes
+
+  {{SCOPE}}: What areas/components this document applies to
+    - Type: string
+    - Example: "All authentication flows including registration, login, and OAuth2 integration"
+    - Required: yes
+
+  {{OVERVIEW}}: Comprehensive explanation of document content (3-5+ lines)
+    - Type: string (multiline)
+    - Example: "This guide covers the complete user authentication system including password-based authentication, JWT token management, refresh token handling, and OAuth2 integration..."
+    - Required: yes
+
+  {{DEPENDENCIES}}: Related documents, external resources, or prerequisite knowledge
+    - Type: string
+    - Example: "User service API documentation, JWT library documentation, OAuth2 provider setup guides"
+    - Required: no
+    - Default: Can be omitted if no dependencies
+
+  {{EXPORTS}}: Key information, standards, procedures, or guidelines this document provides
+    - Type: string
+    - Example: "Authentication implementation patterns, security best practices, integration examples"
+    - Required: no
+    - Default: Can be omitted if not applicable
+
+  {{RELATED}}: Links to related documentation, external resources, or cross-references
+    - Type: string
+    - Example: "API documentation for auth endpoints, user service documentation, security standards"
+    - Required: no
+    - Default: Can be omitted if no related docs
+
+  {{IMPLEMENTATION}}: Notable documentation patterns, structures, or organizational approaches
+    - Type: string
+    - Example: "JWT-based authentication with RSA signing, OAuth2 authorization code flow"
+    - Required: no
+    - Default: Can be omitted if not applicable
+
+Usage:
+  1. Copy template to destination:
+     cp .ai/templates/file-header-markdown.template path/to/your-document.md
+
+  2. Replace all placeholders with actual values:
+     - {{DOCUMENT_TITLE}}: Replace with actual document title
+     - {{PURPOSE}}: Replace with brief description (1-2 lines)
+     - {{SCOPE}}: Replace with coverage area
+     - {{OVERVIEW}}: Replace with comprehensive explanation (3-5+ lines)
+     - {{DEPENDENCIES}}: Replace or remove if not needed
+     - {{EXPORTS}}: Replace or remove if not needed
+     - {{RELATED}}: Replace or remove if not needed
+     - {{IMPLEMENTATION}}: Replace or remove if not needed
+
+  3. Remove this template header (lines 1-XX)
+
+  4. Verify document:
+     - Check all placeholders are replaced
+     - Ensure no {{}} remain
+     - Verify mandatory fields present (Purpose, Scope, Overview)
+     - Check for atemporal language (no "currently", "now", "recently")
+
+  5. Validate markdown (optional):
+     markdownlint path/to/your-document.md
+
+Related: FILE_HEADER_STANDARDS.md, how-to-write-file-headers.md
+-->
+
+# {{DOCUMENT_TITLE}}
+
+**Purpose**: {{PURPOSE}}
+
+**Scope**: {{SCOPE}}
+
+**Overview**: {{OVERVIEW}}
+
+**Dependencies**: {{DEPENDENCIES}}
+
+**Exports**: {{EXPORTS}}
+
+**Related**: {{RELATED}}
+
+**Implementation**: {{IMPLEMENTATION}}
+
+---
+
+## Overview
+
+Document content starts here...

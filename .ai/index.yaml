@@ -33,14 +33,71 @@ documentation:
   location: .ai/docs/
   files:
     - PROJECT_CONTEXT.md
+    - SECURITY_STANDARDS.md
+    - secrets-management.md
+    - dependency-scanning.md
+    - code-scanning.md
 
 howto:
-  location: .ai/howto/
-  files: []
+  location: .ai/howtos/
+  files:
+    - how-to-prevent-secrets-in-git.md
+    - how-to-setup-dependency-scanning.md
+    - how-to-configure-code-scanning.md
+
+standards:
+  security:
+    description: "Security standards and best practices"
+    documentation:
+      - path: "docs/SECURITY_STANDARDS.md"
+        description: "Comprehensive security standards"
+      - path: "docs/secrets-management.md"
+        description: "Secrets management best practices"
+      - path: "docs/dependency-scanning.md"
+        description: "Dependency vulnerability scanning"
+      - path: "docs/code-scanning.md"
+        description: "Code security scanning (SAST)"
+    howtos:
+      - path: "howtos/how-to-prevent-secrets-in-git.md"
+        description: "Prevent committing secrets to Git"
+      - path: "howtos/how-to-setup-dependency-scanning.md"
+        description: "Setup dependency vulnerability scanning"
+      - path: "howtos/how-to-configure-code-scanning.md"
+        description: "Configure code security scanning"
+  documentation:
+    file_headers: .ai/docs/file-headers.md
+    readme_standards: .ai/docs/readme-standards.md
+    api_documentation: .ai/docs/api-documentation.md
+  pre-commit-hooks:
+    description: "Pre-commit hooks for automated code quality enforcement"
+    documentation:
+      - path: "docs/PRE_COMMIT_STANDARDS.md"
+        description: "Pre-commit hooks standards and configuration"
+    howtos:
+      - path: "howtos/how-to-install-pre-commit.md"
+        description: "Install and configure pre-commit hooks"
+      - path: "howtos/how-to-add-custom-hook.md"
+        description: "Create custom pre-commit hooks"
+      - path: "howtos/how-to-debug-failing-hooks.md"
+        description: "Debug failing pre-commit hooks"
+    configuration:
+      - path: ".pre-commit-config.yaml"
+        description: "Pre-commit hooks configuration"
 
 templates:
   location: .ai/templates/
-  files: []
+  files:
+    - file-header-markdown.template
+    - file-header-python.template
+    - file-header-typescript.template
+    - file-header-yaml.template
+    - README.template
+  documentation:
+    - .ai/templates/file-header-markdown.template
+    - .ai/templates/file-header-python.template
+    - .ai/templates/file-header-typescript.template
+    - .ai/templates/file-header-yaml.template
+    - .ai/templates/README.template
 
 commands:
   # Will be added as tooling is installed
