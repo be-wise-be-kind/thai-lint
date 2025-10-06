@@ -150,7 +150,7 @@ Types: `feat`, `fix`, `docs`, `style`, `refactor`, `test`, `chore`
 7. Submit PR
 
 ### Adding a New CLI Command
-See `.ai/howto/python-cli/how-to-add-cli-command.md` (will be added after PR5)
+See `.ai/howto/python-cli/how-to-add-cli-command.md`
 
 ### Adding a New Linter
 1. Create linter module in `src/linters/`
@@ -167,14 +167,11 @@ See `.ai/howto/python-cli/how-to-add-cli-command.md` (will be added after PR5)
 ## Resources
 
 ### Documentation
-- CLI Architecture: `.ai/docs/python-cli/` (will be added after PR5)
-- How-to guides: `.ai/howto/python-cli/` (will be added after PR5)
+- CLI Architecture: `.ai/docs/python-cli/`
+- How-to guides: `.ai/howtos/python-cli/`
 
 ### External Dependencies
-- **Click**: CLI framework - https://click.palletsprojects.com/
-- **Ruff**: Linting and formatting - https://docs.astral.sh/ruff/
-- **pytest**: Testing framework - https://docs.pytest.org/
-- **Poetry**: Dependency management - https://python-poetry.org/
+See `pyproject.toml` for the complete and authoritative list of Python dependencies managed by Poetry.
 
 ## Getting Help
 

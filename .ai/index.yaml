@@ -65,7 +65,7 @@ standards:
       - path: "howtos/how-to-configure-code-scanning.md"
         description: "Configure code security scanning"
   documentation:
-    file_headers: .ai/docs/file-headers.md
+    file_headers: .ai/docs/FILE_HEADER_STANDARDS.md
     readme_standards: .ai/docs/readme-standards.md
     api_documentation: .ai/docs/api-documentation.md
   pre-commit-hooks:
