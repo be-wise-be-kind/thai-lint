@@ -38,7 +38,7 @@
 
 ## 📍 Current Status
 
-**Current PR**: PR2 (Languages)
+**Current PR**: PR3 (Infrastructure)
 **Installation Target**: /home/stevejackson/Projects/thai-lint
 **Project Name**: thai-lint
 
@@ -46,9 +46,9 @@
 
 ## 🎯 Next PR to Implement
 
-### ➡️ START HERE: PR2 - Install Python Plugin
+### ➡️ START HERE: PR3 - Install Docker and CI/CD
 
-**What this PR does**: Install languages/python plugin with comprehensive tooling suite (Ruff, MyPy, pytest, Pylint, Flake8, Radon, Xenon, Safety, pip-audit). Creates composite Makefile with lint-* namespaced targets.
+**What this PR does**: Install infrastructure/docker and infrastructure/github-actions plugins. Creates Dockerfile, docker-compose.yml, and GitHub Actions workflows for test, lint, build.
 
 **Pre-flight Checklist**:
 - [ ] Previous PR is marked complete in this document
@@ -70,10 +70,10 @@
 
 ## Overall Progress
 
-**Total Completion**: 14% (1/7 PRs completed)
+**Total Completion**: 29% (2/7 PRs completed)
 
 ```
-[██░░░░░░░░░░░░] 14%
+[████░░░░░░░░░░] 29%
 ```
 
 ---
@@ -98,7 +98,7 @@
 |----|-------|-------|--------|--------------|-------|
 | PR0 | Planning | Create roadmap | ✅ Complete | None | MUST be completed first |
 | PR1 | Foundation | Install foundation/ai-folder plugin | ✅ Complete | PR0 complete | Foundation installed (commit 28d26f0) |
-| PR2 | Languages | Install Python plugin | 🔴 Not Started | PR1 complete | Creates pyproject.toml |
+| PR2 | Languages | Install Python plugin | ✅ Complete | PR1 complete | Python tooling installed (commit 9aeae69) |
 | PR3 | Infrastructure | Install Docker + CI/CD plugins | 🔴 Not Started | PR2 complete | Creates docker-compose.yml |
 | PR4 | Standards | Install security, docs, pre-commit plugins | 🔴 Not Started | PR3 complete | Sets up quality gates |
 | PR5 | Application | Copy CLI code, configure, install deps | 🔴 Not Started | PR4 complete | Installs app code |
