@@ -7,7 +7,7 @@
 #   make lint-full         - Full linting on all files
 #   make lint-full FILES=changed  - Full linting on changed files only (for pre-commit)
 
-.PHONY: help init install activate venv-info lint lint-all lint-security lint-complexity lint-placement lint-nesting lint-full format test test-coverage clean get-changed-files
+.PHONY: help init install activate venv-info lint lint-all lint-security lint-complexity lint-placement lint-nesting lint-full format test test-coverage clean get-changed-files publish-pypi publish-docker publish update-version-badges
 
 help: ## Show available targets
 	@echo "Available targets:"
@@ -41,6 +41,11 @@ help: ## Show available targets
 	@echo ""
 	@echo "Maintenance:"
 	@echo "  make clean             - Clean cache and artifacts"
+	@echo ""
+	@echo "Publishing:"
+	@echo "  make publish-pypi      - Publish to PyPI (after tests and linting)"
+	@echo "  make publish-docker    - Publish to Docker Hub (after tests and linting)"
+	@echo "  make publish           - Publish to both PyPI and Docker Hub"
 
 # Determine which files to lint based on FILES parameter
 # Default: src/ tests/ (all files)
@@ -231,3 +236,199 @@ clean: ## Clean cache and artifacts
 	@find . -type f -name "*.pyc" -delete 2>/dev/null || true
 	@rm -rf htmlcov/ .coverage 2>/dev/null || true
 	@echo "✓ Cleaned cache and artifacts"
+
+update-version-badges: ## Update version badges in README.md
+	@echo "Updating version badges in README.md..."
+	@VERSION=$$(grep '^version = ' pyproject.toml | cut -d'"' -f2); \
+	sed -i "s|!\[Version\](https://img.shields.io/badge/version-.*-blue)|![Version](https://img.shields.io/badge/version-$$VERSION-blue)|g" README.md || true
+	@echo "✓ Version badges updated"
+
+publish-pypi: ## Publish to PyPI (runs tests and linting first)
+	@echo "=========================================="
+	@echo "Publishing to PyPI"
+	@echo "=========================================="
+	@echo ""
+	@echo "Step 1: Running tests..."
+	@make test
+	@if [ $$? -ne 0 ]; then \
+		echo "❌ Tests failed! Cannot publish."; \
+		exit 1; \
+	fi
+	@echo "✓ Tests passed"
+	@echo ""
+	@echo "Step 2: Running full linting..."
+	@make lint-full
+	@if [ $$? -ne 0 ]; then \
+		echo "❌ Linting failed! Cannot publish."; \
+		exit 1; \
+	fi
+	@echo "✓ Linting passed"
+	@echo ""
+	@make _publish-pypi-only
+
+_publish-pypi-only: ## Internal: Publish to PyPI without running tests/linting
+	@echo "=========================================="
+	@echo "Publishing to PyPI"
+	@echo "=========================================="
+	@echo ""
+	@echo "Step 1: Updating version badges..."
+	@make update-version-badges
+	@echo ""
+	@echo "Step 2: Cleaning previous builds..."
+	@rm -rf dist/ build/ *.egg-info
+	@echo "✓ Previous builds cleaned"
+	@echo ""
+	@echo "Step 3: Building package..."
+	@poetry build
+	@if [ $$? -ne 0 ]; then \
+		echo "❌ Build failed!"; \
+		exit 1; \
+	fi
+	@echo "✓ Package built successfully"
+	@echo ""
+	@echo "Step 4: Publishing to PyPI..."
+	@if [ -f .env ]; then \
+		export $$(cat .env | grep PYPI_API_TOKEN | xargs) && \
+		poetry config pypi-token.pypi $$PYPI_API_TOKEN && \
+		poetry publish; \
+	else \
+		echo "❌ .env file not found! Cannot read PYPI_API_TOKEN."; \
+		exit 1; \
+	fi
+	@if [ $$? -eq 0 ]; then \
+		VERSION=$$(grep '^version = ' pyproject.toml | cut -d'"' -f2); \
+		echo ""; \
+		echo "✅ Successfully published to PyPI!"; \
+		echo ""; \
+		echo "Package: thailint"; \
+		echo "Version: $$VERSION"; \
+		echo "URL: https://pypi.org/project/thailint/$$VERSION/"; \
+		echo ""; \
+		echo "To install: pip install thailint==$$VERSION"; \
+	else \
+		echo "❌ Publishing to PyPI failed!"; \
+		exit 1; \
+	fi
+
+publish-docker: ## Publish to Docker Hub (runs tests and linting first)
+	@echo "=========================================="
+	@echo "Publishing to Docker Hub"
+	@echo "=========================================="
+	@echo ""
+	@echo "Step 1: Running tests..."
+	@make test
+	@if [ $$? -ne 0 ]; then \
+		echo "❌ Tests failed! Cannot publish."; \
+		exit 1; \
+	fi
+	@echo "✓ Tests passed"
+	@echo ""
+	@echo "Step 2: Running full linting..."
+	@make lint-full
+	@if [ $$? -ne 0 ]; then \
+		echo "❌ Linting failed! Cannot publish."; \
+		exit 1; \
+	fi
+	@echo "✓ Linting passed"
+	@echo ""
+	@make _publish-docker-only
+
+_publish-docker-only: ## Internal: Publish to Docker Hub without running tests/linting
+	@echo "=========================================="
+	@echo "Publishing to Docker Hub"
+	@echo "=========================================="
+	@echo ""
+	@echo "Step 1: Updating version badges..."
+	@make update-version-badges
+	@echo ""
+	@echo "Step 2: Loading Docker Hub credentials..."
+	@if [ ! -f .env ]; then \
+		echo "❌ .env file not found! Cannot read Docker Hub credentials."; \
+		exit 1; \
+	fi
+	@export $$(cat .env | grep DOCKERHUB_USERNAME | xargs) && \
+	export $$(cat .env | grep DOCKERHUB_TOKEN | xargs) && \
+	VERSION=$$(grep '^version = ' pyproject.toml | cut -d'"' -f2) && \
+	echo "✓ Credentials loaded" && \
+	echo "" && \
+	echo "Step 5: Logging into Docker Hub..." && \
+	echo $$DOCKERHUB_TOKEN | docker login -u $$DOCKERHUB_USERNAME --password-stdin && \
+	if [ $$? -ne 0 ]; then \
+		echo "❌ Docker Hub login failed!"; \
+		exit 1; \
+	fi && \
+	echo "✓ Logged into Docker Hub" && \
+	echo "" && \
+	echo "Step 6: Building Docker image..." && \
+	docker build -t $$DOCKERHUB_USERNAME/thailint:$$VERSION -t $$DOCKERHUB_USERNAME/thailint:latest . && \
+	if [ $$? -ne 0 ]; then \
+		echo "❌ Docker build failed!"; \
+		exit 1; \
+	fi && \
+	echo "✓ Docker image built" && \
+	echo "" && \
+	echo "Step 7: Pushing to Docker Hub..." && \
+	docker push $$DOCKERHUB_USERNAME/thailint:$$VERSION && \
+	docker push $$DOCKERHUB_USERNAME/thailint:latest && \
+	if [ $$? -eq 0 ]; then \
+		echo ""; \
+		echo "✅ Successfully published to Docker Hub!"; \
+		echo ""; \
+		echo "Image: $$DOCKERHUB_USERNAME/thailint"; \
+		echo "Tags: $$VERSION, latest"; \
+		echo "URL: https://hub.docker.com/r/$$DOCKERHUB_USERNAME/thailint"; \
+		echo ""; \
+		echo "To pull: docker pull $$DOCKERHUB_USERNAME/thailint:$$VERSION"; \
+		echo "To pull: docker pull $$DOCKERHUB_USERNAME/thailint:latest"; \
+	else \
+		echo "❌ Publishing to Docker Hub failed!"; \
+		exit 1; \
+	fi
+
+publish: ## Publish to both PyPI and Docker Hub
+	@echo "=========================================="
+	@echo "Publishing to PyPI and Docker Hub"
+	@echo "=========================================="
+	@echo ""
+	@echo "Step 1: Running tests..."
+	@make test
+	@if [ $$? -ne 0 ]; then \
+		echo "❌ Tests failed! Cannot publish."; \
+		exit 1; \
+	fi
+	@echo "✓ Tests passed"
+	@echo ""
+	@echo "Step 2: Running full linting..."
+	@make lint-full
+	@if [ $$? -ne 0 ]; then \
+		echo "❌ Linting failed! Cannot publish."; \
+		exit 1; \
+	fi
+	@echo "✓ Linting passed"
+	@echo ""
+	@make _publish-pypi-only
+	@if [ $$? -ne 0 ]; then \
+		echo "❌ PyPI publishing failed! Stopping."; \
+		exit 1; \
+	fi
+	@echo ""
+	@make _publish-docker-only
+	@if [ $$? -ne 0 ]; then \
+		echo "❌ Docker Hub publishing failed!"; \
+		exit 1; \
+	fi
+	@echo ""
+	@echo "=========================================="
+	@echo "✅ Publishing Complete!"
+	@echo "=========================================="
+	@VERSION=$$(grep '^version = ' pyproject.toml | cut -d'"' -f2); \
+	DOCKERHUB_USERNAME=$$(grep DOCKERHUB_USERNAME .env | cut -d'=' -f2); \
+	echo ""; \
+	echo "Published version: $$VERSION"; \
+	echo ""; \
+	echo "PyPI: https://pypi.org/project/thailint/$$VERSION/"; \
+	echo "Docker Hub: https://hub.docker.com/r/$$DOCKERHUB_USERNAME/thailint"; \
+	echo ""; \
+	echo "Installation:"; \
+	echo "  pip install thailint==$$VERSION"; \
+	echo "  docker pull $$DOCKERHUB_USERNAME/thailint:$$VERSION"

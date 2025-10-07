@@ -31,11 +31,11 @@ COPY pyproject.toml poetry.lock ./
 # Configure Poetry to not create virtual env (we're in a container)
 RUN poetry config virtualenvs.create false
 
-# Install dependencies only (no dev dependencies)
-RUN poetry install --no-dev --no-interaction --no-ansi
-
-# Copy source code
+# Copy source code for installation
 COPY src/ ./src/
+
+# Install dependencies AND the package itself (no dev dependencies)
+RUN poetry install --no-dev --no-interaction --no-ansi
 
 # ============================================================================
 # Runtime Stage: Minimal production image
@@ -45,19 +45,16 @@ FROM python:3.11-slim
 # Set labels for metadata
 LABEL maintainer="Steve Jackson"
 LABEL description="Thai-Lint - AI code linter for multi-language projects"
-LABEL version="0.1.0"
+LABEL version="0.1.1"
 
 # Create non-root user for security
 RUN useradd -m -u 1000 -s /bin/bash thailint
-
-# Set working directory (for volume mounts)
-WORKDIR /workspace
 
 # Install Poetry in runtime (needed for dependency resolution)
 RUN pip install --no-cache-dir poetry==1.7.1
 
 # Copy pyproject.toml and poetry.lock
-COPY --chown=thailint:thailint pyproject.toml poetry.lock /app/
+COPY --chown=thailint:thailint pyproject.toml poetry.lock README.md /app/
 
 # Copy installed packages from builder
 COPY --from=builder /usr/local/lib/python3.11/site-packages /usr/local/lib/python3.11/site-packages
@@ -65,14 +62,20 @@ COPY --from=builder /usr/local/lib/python3.11/site-packages /usr/local/lib/pytho
 # Copy source code
 COPY --chown=thailint:thailint src/ /app/src/
 
-# Add app directory to PYTHONPATH
-ENV PYTHONPATH="/app:${PYTHONPATH}"
+# Install the CLI scripts (creates thailint and thai-lint commands)
+RUN cd /app && pip install --no-deps -e .
+
+# Make app directory readable by all users (for dynamic UID mapping)
+RUN chmod -R a+rX /app
+
+# Set working directory for user data (separate from app code)
+WORKDIR /data
 
 # Switch to non-root user
 USER thailint
 
-# Set entrypoint to thai-lint CLI
-ENTRYPOINT ["python", "-m", "src.cli"]
+# Set entrypoint to thai-lint CLI (using installed command to avoid module import warnings)
+ENTRYPOINT ["thailint"]
 
 # Default command: show help
 CMD ["--help"]

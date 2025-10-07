@@ -58,11 +58,11 @@ pip install thai-lint
 ### With Docker
 
 ```bash
-# Build image
-docker-compose -f docker-compose.cli.yml build
+# Pull from Docker Hub
+docker pull washad/thailint:latest
 
 # Run CLI
-docker-compose -f docker-compose.cli.yml run cli --help
+docker run --rm washad/thailint:latest --help
 ```
 
 ## Quick Start
@@ -71,16 +71,16 @@ docker-compose -f docker-compose.cli.yml run cli --help
 
 ```bash
 # Check file placement
-thai-lint file-placement .
+thailint file-placement .
 
 # Check nesting depth
-thai-lint nesting src/
+thailint nesting src/
 
 # With config file
-thai-lint nesting --config .thailint.yaml src/
+thailint nesting --config .thailint.yaml src/
 
 # JSON output for CI/CD
-thai-lint nesting --format json src/
+thailint nesting --format json src/
 ```
 
 ### Library Mode
@@ -104,11 +104,12 @@ if violations:
 
 ```bash
 # Run with volume mount
-docker run --rm -v $(pwd):/workspace \
-  thailint/thailint file-placement /workspace
+docker run --rm -v $(pwd):/data \
+  washad/thailint:latest file-placement /data
 
-# With docker-compose
-docker-compose run cli file-placement .
+# Check nesting depth
+docker run --rm -v $(pwd):/data \
+  washad/thailint:latest nesting /data
 ```
 
 ## Configuration
@@ -118,6 +119,8 @@ Create `.thailint.yaml` in your project root:
 ```yaml
 # File placement linter configuration
 file-placement:
+  enabled: true
+
   # Global patterns apply to entire project
   global_patterns:
     deny:
@@ -142,6 +145,20 @@ file-placement:
     - "__pycache__/"
     - "*.pyc"
     - ".venv/"
+
+# Nesting depth linter configuration
+nesting:
+  enabled: true
+  max_nesting_depth: 4  # Maximum allowed nesting depth
+
+  # Language-specific settings (optional)
+  languages:
+    python:
+      max_depth: 4
+    typescript:
+      max_depth: 4
+    javascript:
+      max_depth: 4
 ```
 
 **JSON format also supported** (`.thailint.json`):
@@ -149,6 +166,7 @@ file-placement:
 ```json
 {
   "file-placement": {
+    "enabled": true,
     "directories": {
       "src": {
         "allow": [".*\\.py$"],
@@ -156,6 +174,14 @@ file-placement:
       }
     },
     "ignore": ["__pycache__/", "*.pyc"]
+  },
+  "nesting": {
+    "enabled": true,
+    "max_nesting_depth": 4,
+    "languages": {
+      "python": { "max_depth": 4 },
+      "typescript": { "max_depth": 4 }
+    }
   }
 }
 ```
@@ -172,13 +198,13 @@ The nesting depth linter detects deeply nested code (if/for/while/try statements
 
 ```bash
 # Check nesting depth in current directory
-thai-lint nesting .
+thailint nesting .
 
 # Use strict limit (max depth 3)
-thai-lint nesting --max-depth 3 src/
+thailint nesting --max-depth 3 src/
 
 # Get JSON output
-thai-lint nesting --format json src/
+thailint nesting --format json src/
 ```
 
 ### Configuration
@@ -256,25 +282,73 @@ The thai-lint codebase serves as a validation of the nesting linter:
 
 See [Nesting Linter Guide](docs/nesting-linter.md) for comprehensive documentation and refactoring patterns.
 
-## Common Use Cases
+## Pre-commit Hooks
 
-### Pre-commit Hook
+Automate code quality checks before every commit and push with pre-commit hooks.
+
+### Quick Setup
+
+```bash
+# 1. Install pre-commit framework
+pip install pre-commit
+
+# 2. Install git hooks
+pre-commit install
+pre-commit install --hook-type pre-push
+
+# 3. Test it works
+pre-commit run --all-files
+```
+
+### What You Get
+
+**On every commit:**
+- 🚫 Prevents commits to main/master branch
+- 🎨 Auto-fixes formatting issues
+- ✅ Runs thailint on changed files (fast)
+
+**On every push:**
+- 🔍 Full linting on entire codebase
+- 🧪 Runs complete test suite
+
+### Example Configuration
 
 ```yaml
 # .pre-commit-config.yaml
 repos:
   - repo: local
     hooks:
-      - id: thailint
-        name: Check file placement
-        entry: thai-lint file-placement
-        language: python
+      # Prevent commits to protected branches
+      - id: no-commit-to-main
+        name: Prevent commits to main branch
+        entry: bash -c 'branch=$(git rev-parse --abbrev-ref HEAD); if [ "$branch" = "main" ]; then echo "❌ Use a feature branch!"; exit 1; fi'
+        language: system
+        pass_filenames: false
+        always_run: true
+
+      # Auto-format code
+      - id: format
+        name: Auto-fix formatting
+        entry: make format
+        language: system
+        pass_filenames: false
+
+      # Run thailint on changed files
+      - id: lint-changed
+        name: Lint changed files
+        entry: make lint-full FILES=changed
+        language: system
         pass_filenames: false
 ```
 
-### CI/CD (GitHub Actions)
+See **[Pre-commit Hooks Guide](docs/pre-commit-hooks.md)** for complete documentation, troubleshooting, and advanced configuration.
+
+## Common Use Cases
+
+### CI/CD Integration
 
 ```yaml
+# GitHub Actions example
 name: Lint
 
 on: [push, pull_request]
@@ -284,10 +358,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - name: Run thailint
-        run: |
-          pip install thailint
-          thai-lint file-placement .
+      - name: Install thailint
+        run: pip install thailint
+      - name: Run file placement linter
+        run: thailint file-placement .
+      - name: Run nesting linter
+        run: thailint nesting src/ --config .thailint.yaml
 ```
 
 ### Editor Integration
@@ -355,28 +431,30 @@ mypy src/
 
 ```bash
 # Build Python package
-python -m build
+poetry build
 
-# Build Docker image
-docker-compose -f docker-compose.cli.yml build
+# Build Docker image locally (optional)
+docker build -t washad/thailint:latest .
 ```
 
 ## Docker Usage
 
 ```bash
-# Build image
-docker-compose -f docker-compose.cli.yml build
+# Pull published image
+docker pull washad/thailint:latest
 
 # Run CLI help
-docker-compose -f docker-compose.cli.yml run cli --help
+docker run --rm washad/thailint:latest --help
 
-# Run hello command
-docker-compose -f docker-compose.cli.yml run cli hello --name Docker
+# Run file-placement linter
+docker run --rm -v $(pwd):/data washad/thailint:latest file-placement /data
 
-# With config volume
-docker-compose -f docker-compose.cli.yml run \
-    -v $(pwd)/config:/config:ro \
-    cli --config /config/config.yaml hello
+# Run nesting linter
+docker run --rm -v $(pwd):/data washad/thailint:latest nesting /data
+
+# With custom config
+docker run --rm -v $(pwd):/data \
+    washad/thailint:latest nesting --config /data/.thailint.yaml /data
 ```
 
 ## Documentation
@@ -389,6 +467,10 @@ docker-compose -f docker-compose.cli.yml run \
 - 💻 **[CLI Reference](docs/cli-reference.md)** - All CLI commands and options
 - 🚀 **[Deployment Modes](docs/deployment-modes.md)** - CLI, Library, and Docker usage
 - 📁 **[File Placement Linter](docs/file-placement-linter.md)** - Detailed linter guide
+- 🔄 **[Nesting Depth Linter](docs/nesting-linter.md)** - Nesting depth analysis guide
+- 🪝 **[Pre-commit Hooks](docs/pre-commit-hooks.md)** - Automated quality checks
+- 📦 **[Publishing Guide](docs/releasing.md)** - Release and publishing workflow
+- ✅ **[Publishing Checklist](docs/publishing-checklist.md)** - Post-publication validation
 
 ### Examples
 
@@ -480,7 +562,7 @@ thailint uses standard exit codes for CI/CD integration:
 - **2** - Error occurred (invalid config, file not found, etc.)
 
 ```bash
-thai-lint file-placement .
+thailint file-placement .
 if [ $? -eq 0 ]; then
     echo "✅ Linting passed"
 else

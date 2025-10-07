@@ -25,9 +25,9 @@ services:
     image: thailint/thailint:latest
     container_name: thailint-cli
 
-    # Mount current directory as workspace
+    # Mount current directory as data volume
     volumes:
-      - .:/workspace
+      - .:/data
 
     # Run as current user to avoid permission issues
     user: "${UID:-1000}:${GID:-1000}"
@@ -40,7 +40,7 @@ services:
       - PYTHONUNBUFFERED=1
 
     # Working directory
-    working_dir: /workspace
+    working_dir: /data
 
   # Development service with source code mounted for live updates
   dev:
@@ -52,7 +52,7 @@ services:
 
     # Mount current directory and preserve source
     volumes:
-      - .:/workspace
+      - .:/data
       - ./src:/app/src
 
     # Run as current user
@@ -64,10 +64,10 @@ services:
     # Environment
     environment:
       - PYTHONUNBUFFERED=1
-      - PYTHONPATH=/app:/workspace
+      - PYTHONPATH=/app
 
     # Working directory
-    working_dir: /workspace
+    working_dir: /data
 
     # Interactive mode
     stdin_open: true

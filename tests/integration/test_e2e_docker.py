@@ -81,8 +81,8 @@ class TestDockerBuild:
         if result.returncode != 0:
             pytest.skip("Docker image not built")
 
-        # Should have python -m src.cli as entrypoint
-        assert "python" in result.stdout.lower()
+        # Should have thailint as entrypoint (clean install without module warnings)
+        assert "thailint" in result.stdout.lower()
 
 
 class TestDockerRun:
