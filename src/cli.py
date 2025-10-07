@@ -348,9 +348,13 @@ def lint():
 )
 @click.option("--recursive/--no-recursive", default=True, help="Scan directories recursively")
 @click.pass_context
-def lint_file_placement(
+def lint_file_placement(  # pylint: disable=too-many-arguments,too-many-positional-arguments,too-many-locals,too-many-statements
     ctx, path: str, config_file: str | None, rules: str | None, format: str, recursive: bool
 ):
+    # Justification for Pylint disables:
+    # - too-many-arguments/positional: CLI requires 1 ctx + 1 arg + 4 options = 6 params
+    # - too-many-locals/statements: Complex CLI logic for config, linting, and output formatting
+    # All parameters and logic are necessary for flexible CLI usage.
     """
     Lint files for proper file placement.
 
@@ -377,95 +381,115 @@ def lint_file_placement(
         # Inline JSON rules
         thai-lint lint file-placement --rules '{"allow": [".*\\.py$"]}' .
     """
-    import json
-    from pathlib import Path
-
-    from src.orchestrator.core import Orchestrator
-
     verbose = ctx.obj.get("verbose", False)
     path_obj = Path(path)
 
     try:
-        # Determine project root (parent of path or path itself if directory)
-        project_root = path_obj if path_obj.is_dir() else path_obj.parent
-
-        # Initialize orchestrator
-        orchestrator = Orchestrator(project_root=project_root)
-
-        # Handle inline rules or config file
-        if rules:
-            # Parse inline JSON rules
-            try:
-                rules_config = json.loads(rules)
-                # Update orchestrator config with inline rules
-                orchestrator.config.update(rules_config)
-                if verbose:
-                    logger.debug(f"Applied inline rules: {rules_config}")
-            except json.JSONDecodeError as e:
-                click.echo(f"Error: Invalid JSON in --rules: {e}", err=True)
-                sys.exit(2)
-        elif config_file:
-            # Load external config file
-            config_path = Path(config_file)
-            if not config_path.exists():
-                click.echo(f"Error: Config file not found: {config_file}", err=True)
-                sys.exit(2)
-            orchestrator.config = orchestrator.config_loader.load(config_path)
-            if verbose:
-                logger.debug(f"Loaded config from: {config_file}")
-
-        # Execute linting
-        if path_obj.is_file():
-            violations = orchestrator.lint_file(path_obj)
-        else:
-            violations = orchestrator.lint_directory(path_obj, recursive=recursive)
+        orchestrator = _setup_orchestrator(path_obj, config_file, rules, verbose)
+        violations = _execute_linting(orchestrator, path_obj, recursive)
 
         if verbose:
             logger.info(f"Found {len(violations)} violation(s)")
 
-        # Format and output results
-        if format == "json":
-            # JSON output
-            output = {
-                "violations": [
-                    {
-                        "rule_id": v.rule_id,
-                        "file_path": str(v.file_path),
-                        "line": v.line,
-                        "column": v.column,
-                        "message": v.message,
-                        "severity": v.severity.name,
-                    }
-                    for v in violations
-                ],
-                "total": len(violations),
-            }
-            click.echo(json.dumps(output, indent=2))
-        else:
-            # Text output (default)
-            if violations:
-                click.echo(f"Found {len(violations)} violation(s):\n")
-                for v in violations:
-                    location = f"{v.file_path}:{v.line}" if v.line else str(v.file_path)
-                    if v.column:
-                        location += f":{v.column}"
-                    click.echo(f"  {location}")
-                    click.echo(f"    [{v.severity.name}] {v.rule_id}: {v.message}")
-                    click.echo()
-            else:
-                click.echo("✓ No violations found")
-
-        # Exit with appropriate code
-        if violations:
-            sys.exit(1)  # Violations found
-        else:
-            sys.exit(0)  # Clean
+        _output_violations(violations, format)
+        sys.exit(1 if violations else 0)
 
     except Exception as e:
         click.echo(f"Error during linting: {e}", err=True)
         if verbose:
             logger.exception("Linting failed with exception")
         sys.exit(2)
+
+
+def _setup_orchestrator(path_obj, config_file, rules, verbose):
+    """Set up and configure the orchestrator."""
+    from src.orchestrator.core import Orchestrator
+
+    project_root = path_obj if path_obj.is_dir() else path_obj.parent
+    orchestrator = Orchestrator(project_root=project_root)
+
+    if rules:
+        _apply_inline_rules(orchestrator, rules, verbose)
+    elif config_file:
+        _load_config_file(orchestrator, config_file, verbose)
+
+    return orchestrator
+
+
+def _apply_inline_rules(orchestrator, rules, verbose):
+    """Parse and apply inline JSON rules."""
+    import json
+
+    try:
+        rules_config = json.loads(rules)
+        orchestrator.config.update(rules_config)
+        if verbose:
+            logger.debug(f"Applied inline rules: {rules_config}")
+    except json.JSONDecodeError as e:
+        click.echo(f"Error: Invalid JSON in --rules: {e}", err=True)
+        sys.exit(2)
+
+
+def _load_config_file(orchestrator, config_file, verbose):
+    """Load configuration from external file."""
+    config_path = Path(config_file)
+    if not config_path.exists():
+        click.echo(f"Error: Config file not found: {config_file}", err=True)
+        sys.exit(2)
+    orchestrator.config = orchestrator.config_loader.load(config_path)
+    if verbose:
+        logger.debug(f"Loaded config from: {config_file}")
+
+
+def _execute_linting(orchestrator, path_obj, recursive):
+    """Execute linting on file or directory."""
+    if path_obj.is_file():
+        return orchestrator.lint_file(path_obj)
+    return orchestrator.lint_directory(path_obj, recursive=recursive)
+
+
+def _output_violations(violations, format):
+    """Format and output violations."""
+    if format == "json":
+        _output_json(violations)
+    else:
+        _output_text(violations)
+
+
+def _output_json(violations):
+    """Output violations in JSON format."""
+    import json
+
+    output = {
+        "violations": [
+            {
+                "rule_id": v.rule_id,
+                "file_path": str(v.file_path),
+                "line": v.line,
+                "column": v.column,
+                "message": v.message,
+                "severity": v.severity.name,
+            }
+            for v in violations
+        ],
+        "total": len(violations),
+    }
+    click.echo(json.dumps(output, indent=2))
+
+
+def _output_text(violations):
+    """Output violations in text format."""
+    if violations:
+        click.echo(f"Found {len(violations)} violation(s):\n")
+        for v in violations:
+            location = f"{v.file_path}:{v.line}" if v.line else str(v.file_path)
+            if v.column:
+                location += f":{v.column}"
+            click.echo(f"  {location}")
+            click.echo(f"    [{v.severity.name}] {v.rule_id}: {v.message}")
+            click.echo()
+    else:
+        click.echo("✓ No violations found")
 
 
 if __name__ == "__main__":

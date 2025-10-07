@@ -68,7 +68,7 @@ class TestCLIBasics:
         """Test CLI shows help text."""
         result = runner.invoke(cli, ["--help"])
         assert result.exit_code == 0
-        assert "{{PROJECT_NAME}}" in result.output
+        assert "thai-lint" in result.output
         assert "Commands:" in result.output
 
     def test_cli_version(self, runner):

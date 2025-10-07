@@ -101,7 +101,7 @@ lint-all: ## Comprehensive linting (Ruff + Pylint + Flake8 + MyPy)
 		echo "✓ MyPy passed"; \
 	fi
 
-lint-security: ## Security scanning (Bandit + Safety + pip-audit)
+lint-security: ## Security scanning (Bandit + pip-audit)
 	@echo ""
 	@echo "=== Running Bandit (security linter) ==="
 	@if [ -n "$(SRC_TARGETS)" ]; then \
@@ -110,12 +110,15 @@ lint-security: ## Security scanning (Bandit + Safety + pip-audit)
 	fi
 ifeq ($(FILES),)
 	@echo ""
-	@echo "=== Running Safety (dependency vulnerabilities) ==="
-	@poetry run safety scan --output json || true
-	@echo ""
 	@echo "=== Running pip-audit (dependency audit) ==="
 	@poetry run pip-audit || true
 endif
+
+lint-dependencies: ## Check dependencies for vulnerabilities (Safety - requires API)
+	@echo ""
+	@echo "=== Running Safety (dependency vulnerabilities) ==="
+	@echo "Note: This requires network access to Safety API and may be slow"
+	@poetry run safety scan --output json || true
 
 lint-complexity: ## Complexity analysis (Radon + Xenon)
 	@echo ""

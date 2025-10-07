@@ -28,8 +28,8 @@ This is the **PRIMARY HANDOFF DOCUMENT** for AI agents working on the Enterprise
 4. **Update this document** after completing each PR
 
 ## 📍 Current Status
-**Current PR**: PR7 Complete - Ready to start PR8
-**Infrastructure State**: Core framework + Orchestrator + File placement linter + Integration + CLI complete
+**Current PR**: PR9 Complete - Ready to start PR10
+**Infrastructure State**: Core framework + Orchestrator + File placement linter + Integration + CLI + Library API + Docker complete
 **Feature Target**: Production-ready enterprise linter with 3 deployment modes (CLI, Library, Docker), plugin framework, multi-level ignores, and file placement linter
 
 ## 📁 Required Documents Location
@@ -42,15 +42,14 @@ This is the **PRIMARY HANDOFF DOCUMENT** for AI agents working on the Enterprise
 
 ## 🎯 Next PR to Implement
 
-### ➡️ START HERE: PR8 - Library API (TDD)
+### ➡️ START HERE: PR10 - Integration Test Suite (TDD)
 
 **Quick Summary**:
-Create clean programmatic API for library usage with high-level Linter class and direct linter imports.
+Comprehensive end-to-end integration tests and performance benchmarks.
 
 **Pre-flight Checklist**:
-- [x] PR1-7 complete (framework + CLI ready)
+- [x] PR1-9 complete (framework + CLI + Library API + Docker ready)
 - [ ] Git working tree clean
-- [ ] CLI commands functional
 
 **Prerequisites Complete**:
 ✅ PR1: Core framework with base interfaces and registry
@@ -60,21 +59,23 @@ Create clean programmatic API for library usage with high-level Linter class and
 ✅ PR5: File placement linter implementation (42/50 tests passing)
 ✅ PR6: File placement integration (orchestrator + library API)
 ✅ PR7: CLI interface (`thai lint file-placement` command)
+✅ PR8: Library API (high-level Linter class + examples)
+✅ PR9: Docker support (multi-stage build, volume mounting, 10/10 tests passing)
 
 **What to do**:
-1. See PR_BREAKDOWN.md → PR8 for detailed steps
-2. Write tests for high-level Linter API
-3. Implement clean public API
-4. Write usage examples
+1. See PR_BREAKDOWN.md → PR10 for detailed steps
+2. Write end-to-end integration tests
+3. Add performance benchmarks
+4. Verify all deployment modes work together
 5. Update this document when complete
 
 ---
 
 ## Overall Progress
-**Total Completion**: 58% (7/12 PRs completed)
+**Total Completion**: 75% (9/12 PRs completed)
 
 ```
-[██████████████████████████░░░░░░░░░░] 58% Complete
+[███████████████████████████████████░░] 75% Complete
 ```
 
 ---
@@ -90,8 +91,8 @@ Create clean programmatic API for library usage with high-level Linter class and
 | PR5 | File Placement Linter Implementation | 🟢 Complete | 100% | High | P1 | 42/50 tests pass, 81% coverage |
 | PR6 | File Placement Integration (TDD) | 🟢 Complete | 100% | Low | P1 | 9/9 integration tests pass |
 | PR7 | CLI Interface (TDD) | 🟢 Complete | 100% | Medium | P2 | 4/4 CLI tests pass, `thai lint file-placement` command |
-| PR8 | Library API (TDD) | 🔴 Not Started | 0% | Low | P2 | Importable API |
-| PR9 | Docker Support (TDD) | 🔴 Not Started | 0% | Medium | P2 | Multi-stage builds |
+| PR8 | Library API (TDD) | 🟢 Complete | 100% | Low | P2 | 21/21 tests pass, Linter class + examples |
+| PR9 | Docker Support (TDD) | 🟢 Complete | 100% | Medium | P2 | 10/10 tests pass, 270MB image |
 | PR10 | Integration Test Suite (TDD) | 🔴 Not Started | 0% | Medium | P3 | Performance benchmarks |
 | PR11 | Documentation & Examples (TDD) | 🔴 Not Started | 0% | Low | P3 | User guides |
 | PR12 | PyPI & Distribution (TDD) | 🔴 Not Started | 0% | Low | P3 | Publishing setup |
@@ -339,7 +340,119 @@ Create clean programmatic API for library usage with high-level Linter class and
 
 ---
 
-## PR8-PR12
+## PR8: Library API (TDD) ✅ COMPLETE
+
+**Objective**: Clean programmatic API for library usage
+
+**Steps**:
+1. ✅ Read PR_BREAKDOWN.md → PR8 section
+2. ✅ Write comprehensive test suite (21 tests)
+3. ✅ Implement high-level Linter class
+4. ✅ Update src/__init__.py exports
+5. ✅ Create usage examples
+6. ✅ All tests pass
+7. ✅ Update this document
+
+**Completion Criteria**:
+- ✅ All 21 API tests pass (100%)
+- ✅ High-level Linter class with config_file and project_root params
+- ✅ lint(path, rules=[...]) method implemented
+- ✅ Direct linter imports work (backwards compatibility)
+- ✅ Examples created (basic, advanced, CI integration)
+- ✅ Test coverage: 97% (src/api.py)
+
+**Files Created**:
+- `src/api.py` - High-level Linter class
+- `tests/unit/api/__init__.py`
+- `tests/unit/api/test_library_api.py` (21 tests)
+- `examples/basic_usage.py`
+- `examples/advanced_usage.py`
+- `examples/ci_integration.py`
+- `examples/README.md`
+
+**Files Modified**:
+- `src/__init__.py` - Added Linter export
+
+**Test Results**:
+- 21/21 API tests pass
+- 173/181 total tests pass (8 pre-existing failures: 1 CLI template, 4 Docker PR9, 3 file placement bugs)
+- Overall test coverage: 87%
+- API module coverage: 97%
+
+**Implementation Highlights**:
+- High-level Linter API: `Linter(config_file='.thailint.yaml')`
+- Flexible path support: strings and Path objects
+- Rule filtering: `lint(path, rules=['file-placement'])`
+- Autodiscovery of config files in project root
+- Backwards compatible with existing imports
+- Comprehensive examples for library users
+
+---
+
+## PR9: Docker Support (TDD) ✅ COMPLETE
+
+**Objective**: Multi-stage Docker build with volume mounting for containerized linting.
+
+**Steps**:
+1. ✅ Read PR_BREAKDOWN.md → PR9 section
+2. ✅ Write Docker integration tests (10 tests)
+3. ✅ Create multi-stage Dockerfile with optimized layers
+4. ✅ Implement volume mounting at /workspace
+5. ✅ Create docker-compose.yml for development
+6. ✅ Add .dockerignore for build optimization
+7. ✅ All tests pass
+8. ✅ Update this document
+
+**Completion Criteria**:
+- ✅ All 10 Docker tests pass
+- ✅ Image builds successfully
+- ✅ Volume mounting works correctly
+- ✅ CLI commands execute in container
+- ✅ File-placement linter runs in container
+- ✅ Image size optimized (270MB with Python 3.11-slim)
+
+**Files Created**:
+- `Dockerfile` - Multi-stage build (builder + runtime)
+- `docker-compose.yml` - Development orchestration
+- `.dockerignore` - Build context optimization
+- `tests/unit/docker/__init__.py`
+- `tests/unit/docker/test_docker_integration.py` (10 tests, 4 test classes)
+
+**Test Results** (10/10 passing):
+- ✅ 3/3 image build tests (Dockerfile exists, build succeeds, size reasonable)
+- ✅ 2/2 volume mount tests (workspace mount, file permissions)
+- ✅ 2/2 CLI execution tests (help command, version command)
+- ✅ 3/3 file-placement linter tests (container execution, inline rules, clean output)
+
+**Implementation Highlights**:
+- Multi-stage build: Builder stage installs Poetry deps, runtime stage copies only production code
+- Security: Runs as non-root user `thailint` (UID 1000)
+- Optimized layer caching: Separate dependency and code copy steps
+- Working directory: `/workspace` for volume mounts
+- Entrypoint: `python -m src.cli` for seamless CLI usage
+- Image size: 270MB (Python 3.11-slim base)
+- Volume mount pattern: `docker run -v $(pwd):/workspace thailint/thailint lint file-placement /workspace`
+
+**Docker Usage**:
+```bash
+# Build image
+docker build -t thailint/thailint .
+
+# Run linter with volume mount
+docker run --rm -v $(pwd):/workspace thailint/thailint lint file-placement /workspace
+
+# Development mode
+docker compose run cli --help
+```
+
+**Key Learnings**:
+- tmpfs mount restrictions: Tests use `~/.tmp` instead of `/tmp` for Docker volume mounts
+- Permission handling: Set directory permissions to 0o755 and files to 0o644 for container access
+- Test infrastructure: Tests handle cases where host UID != container UID (1000)
+
+---
+
+## PR10-PR12
 
 See PR_BREAKDOWN.md for detailed steps for remaining PRs.
 

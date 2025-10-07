@@ -51,7 +51,7 @@ file_placement:
   directories:
     src/:
       allow:
-        - "^src/.*\\.py$"
+        - '^src/.*\\.py$'
 """)
         from src.linters.file_placement import FilePlacementLinter
 
