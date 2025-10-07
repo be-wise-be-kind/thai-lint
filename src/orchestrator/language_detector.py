@@ -37,6 +37,18 @@ EXTENSION_MAP = {
 }
 
 
+def _detect_from_shebang(file_path: Path) -> str | None:
+    """Detect language from shebang line."""
+    try:
+        first_line = file_path.read_text(encoding="utf-8").split("\n")[0]
+        if first_line.startswith("#!"):
+            if "python" in first_line:
+                return "python"
+    except (UnicodeDecodeError, OSError):
+        pass
+    return None
+
+
 def detect_language(file_path: Path) -> str:
     """Detect programming language from file.
 
@@ -46,20 +58,13 @@ def detect_language(file_path: Path) -> str:
     Returns:
         Language identifier (python, javascript, typescript, java, go, unknown).
     """
-    # Check extension first (fast path)
     ext = file_path.suffix.lower()
     if ext in EXTENSION_MAP:
         return EXTENSION_MAP[ext]
 
-    # Check shebang for scripts without extension
     if file_path.exists() and file_path.stat().st_size > 0:
-        try:
-            first_line = file_path.read_text(encoding="utf-8").split("\n")[0]
-            if first_line.startswith("#!"):
-                if "python" in first_line:
-                    return "python"
-                # Add more shebang detections as needed
-        except (UnicodeDecodeError, OSError):
-            pass
+        lang = _detect_from_shebang(file_path)
+        if lang:
+            return lang
 
     return "unknown"

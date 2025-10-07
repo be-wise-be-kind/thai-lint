@@ -84,6 +84,53 @@ class FilePlacementLinter:
         # Validate regex patterns in config
         self._validate_regex_patterns()
 
+    def _validate_pattern(self, pattern: str) -> None:
+        """Validate a single regex pattern.
+
+        Args:
+            pattern: Regex pattern to validate
+
+        Raises:
+            ValueError: If pattern is invalid
+        """
+        try:
+            re.compile(pattern)
+        except re.error as e:
+            raise ValueError(f"Invalid regex pattern '{pattern}': {e}") from e
+
+    def _validate_allow_patterns(self, rules: dict[str, Any]) -> None:
+        """Validate allow patterns in a rules dict."""
+        if "allow" in rules:
+            for pattern in rules["allow"]:
+                self._validate_pattern(pattern)
+
+    def _validate_deny_patterns(self, rules: dict[str, Any]) -> None:
+        """Validate deny patterns in a rules dict."""
+        if "deny" in rules:
+            for deny_item in rules["deny"]:
+                pattern = deny_item.get("pattern", "")
+                self._validate_pattern(pattern)
+
+    def _validate_directory_patterns(self, fp_config: dict[str, Any]) -> None:
+        """Validate all directory-specific patterns."""
+        if "directories" in fp_config:
+            for _dir_path, rules in fp_config["directories"].items():
+                self._validate_allow_patterns(rules)
+                self._validate_deny_patterns(rules)
+
+    def _validate_global_patterns(self, fp_config: dict[str, Any]) -> None:
+        """Validate global patterns section."""
+        if "global_patterns" in fp_config:
+            self._validate_allow_patterns(fp_config["global_patterns"])
+            self._validate_deny_patterns(fp_config["global_patterns"])
+
+    def _validate_global_deny_patterns(self, fp_config: dict[str, Any]) -> None:
+        """Validate global_deny patterns."""
+        if "global_deny" in fp_config:
+            for deny_item in fp_config["global_deny"]:
+                pattern = deny_item.get("pattern", "")
+                self._validate_pattern(pattern)
+
     def _validate_regex_patterns(self) -> None:
         """Validate all regex patterns in config.
 
@@ -92,49 +139,25 @@ class FilePlacementLinter:
         """
         fp_config = self.config.get("file_placement", {})
 
-        # Validate directory allow patterns
-        if "directories" in fp_config:
-            for _dir_path, rules in fp_config["directories"].items():
-                if "allow" in rules:
-                    for pattern in rules["allow"]:
-                        try:
-                            re.compile(pattern)
-                        except re.error as e:
-                            raise ValueError(f"Invalid regex pattern '{pattern}': {e}") from e
+        self._validate_directory_patterns(fp_config)
+        self._validate_global_patterns(fp_config)
+        self._validate_global_deny_patterns(fp_config)
 
-                if "deny" in rules:
-                    for deny_item in rules["deny"]:
-                        pattern = deny_item.get("pattern", "")
-                        try:
-                            re.compile(pattern)
-                        except re.error as e:
-                            raise ValueError(f"Invalid regex pattern '{pattern}': {e}") from e
+    def _resolve_config_path(self, config_file: str) -> Path:
+        """Resolve config file path relative to project root."""
+        config_path = Path(config_file)
+        if not config_path.is_absolute():
+            config_path = self.project_root / config_path
+        return config_path
 
-        # Validate global patterns
-        if "global_patterns" in fp_config:
-            if "allow" in fp_config["global_patterns"]:
-                for pattern in fp_config["global_patterns"]["allow"]:
-                    try:
-                        re.compile(pattern)
-                    except re.error as e:
-                        raise ValueError(f"Invalid regex pattern '{pattern}': {e}") from e
-
-            if "deny" in fp_config["global_patterns"]:
-                for deny_item in fp_config["global_patterns"]["deny"]:
-                    pattern = deny_item.get("pattern", "")
-                    try:
-                        re.compile(pattern)
-                    except re.error as e:
-                        raise ValueError(f"Invalid regex pattern '{pattern}': {e}") from e
-
-        # Validate global_deny patterns
-        if "global_deny" in fp_config:
-            for deny_item in fp_config["global_deny"]:
-                pattern = deny_item.get("pattern", "")
-                try:
-                    re.compile(pattern)
-                except re.error as e:
-                    raise ValueError(f"Invalid regex pattern '{pattern}': {e}") from e
+    def _parse_config_file(self, config_path: Path) -> dict[str, Any]:
+        """Parse config file based on extension."""
+        with config_path.open(encoding="utf-8") as f:
+            if config_path.suffix in [".yaml", ".yml"]:
+                return yaml.safe_load(f) or {}
+            if config_path.suffix == ".json":
+                return json.load(f)
+            raise ValueError(f"Unsupported config format: {config_path.suffix}")
 
     def _load_config_file(self, config_file: str) -> dict[str, Any]:
         """Load configuration from file.
@@ -148,20 +171,45 @@ class FilePlacementLinter:
         Raises:
             Exception: If file cannot be loaded or parsed
         """
-        config_path = Path(config_file)
-        if not config_path.is_absolute():
-            config_path = self.project_root / config_path
-
+        config_path = self._resolve_config_path(config_file)
         if not config_path.exists():
-            # Missing file - return empty config (will use defaults)
             return {}
+        return self._parse_config_file(config_path)
 
-        with config_path.open(encoding="utf-8") as f:
-            if config_path.suffix in [".yaml", ".yml"]:
-                return yaml.safe_load(f) or {}
-            if config_path.suffix == ".json":
-                return json.load(f)
-            raise ValueError(f"Unsupported config format: {config_path.suffix}")
+    def _get_relative_path(self, file_path: Path) -> Path:
+        """Get path relative to project root, or return as-is."""
+        try:
+            if file_path.is_absolute():
+                return file_path.relative_to(self.project_root)
+            return file_path
+        except ValueError:
+            # If path is outside project root, return it as-is
+            # This allows detection of absolute paths in global_deny patterns
+            return file_path
+
+    def _check_all_rules(
+        self, path_str: str, rel_path: Path, fp_config: dict[str, Any]
+    ) -> list[Violation]:
+        """Check all file placement rules."""
+        violations: list[Violation] = []
+
+        if "directories" in fp_config:
+            dir_violations = self._check_directory_rules(
+                path_str, rel_path, fp_config["directories"]
+            )
+            violations.extend(dir_violations)
+
+        if "global_deny" in fp_config:
+            deny_violations = self._check_global_deny(path_str, rel_path, fp_config["global_deny"])
+            violations.extend(deny_violations)
+
+        if "global_patterns" in fp_config:
+            global_violations = self._check_global_patterns(
+                path_str, rel_path, fp_config["global_patterns"]
+            )
+            violations.extend(global_violations)
+
+        return violations
 
     def lint_path(self, file_path: Path) -> list[Violation]:
         """Lint a single file path.
@@ -172,44 +220,61 @@ class FilePlacementLinter:
         Returns:
             List of violations found
         """
-        violations: list[Violation] = []
-
-        # Get relative path
-        try:
-            if file_path.is_absolute():
-                rel_path = file_path.relative_to(self.project_root)
-            else:
-                rel_path = file_path
-        except ValueError:
-            # File outside project root - skip
-            return violations
-
-        # Convert to string for pattern matching
+        rel_path = self._get_relative_path(file_path)
         path_str = str(rel_path).replace("\\", "/")
-
-        # Get file placement config
         fp_config = self.config.get("file_placement", {})
+        return self._check_all_rules(path_str, rel_path, fp_config)
 
-        # Check directory-specific rules
-        if "directories" in fp_config:
-            dir_violations = self._check_directory_rules(
-                path_str, rel_path, fp_config["directories"]
-            )
-            violations.extend(dir_violations)
+    def _create_deny_violation(self, rel_path: Path, matched_path: str, reason: str) -> Violation:
+        """Create violation for denied file."""
+        message = f"File '{rel_path}' not allowed in {matched_path}: {reason}"
+        suggestion = self._get_suggestion(rel_path.name, matched_path)
+        return Violation(
+            rule_id="file-placement",
+            file_path=str(rel_path),
+            line=1,
+            column=0,
+            message=message,
+            severity=Severity.ERROR,
+            suggestion=suggestion,
+        )
 
-        # Check global deny patterns (always check)
-        if "global_deny" in fp_config:
-            deny_violations = self._check_global_deny(path_str, rel_path, fp_config["global_deny"])
-            violations.extend(deny_violations)
+    def _create_allow_violation(self, rel_path: Path, matched_path: str) -> Violation:
+        """Create violation for file not matching allow patterns."""
+        message = f"File '{rel_path}' does not match allowed patterns for {matched_path}"
+        suggestion = f"Move to {matched_path} or ensure file type is allowed"
+        return Violation(
+            rule_id="file-placement",
+            file_path=str(rel_path),
+            line=1,
+            column=0,
+            message=message,
+            severity=Severity.ERROR,
+            suggestion=suggestion,
+        )
 
-        # Check global patterns
-        if "global_patterns" in fp_config:
-            global_violations = self._check_global_patterns(
-                path_str, rel_path, fp_config["global_patterns"]
-            )
-            violations.extend(global_violations)
+    def _check_deny_patterns(
+        self, path_str: str, rel_path: Path, dir_rule: dict[str, Any], matched_path: str
+    ) -> list[Violation]:
+        """Check deny patterns and return violations if denied."""
+        if "deny" not in dir_rule:
+            return []
 
-        return violations
+        is_denied, reason = self.pattern_matcher.match_deny_patterns(path_str, dir_rule["deny"])
+        if is_denied:
+            return [self._create_deny_violation(rel_path, matched_path, reason or "Pattern denied")]
+        return []
+
+    def _check_allow_patterns(
+        self, path_str: str, rel_path: Path, dir_rule: dict[str, Any], matched_path: str
+    ) -> list[Violation]:
+        """Check allow patterns and return violations if not allowed."""
+        if "allow" not in dir_rule:
+            return []
+
+        if not self.pattern_matcher.match_allow_patterns(path_str, dir_rule["allow"]):
+            return [self._create_allow_violation(rel_path, matched_path)]
+        return []
 
     def _check_directory_rules(
         self, path_str: str, rel_path: Path, directories: dict[str, Any]
@@ -224,50 +289,30 @@ class FilePlacementLinter:
         Returns:
             List of violations
         """
-        violations: list[Violation] = []
-
-        # Find matching directory rule (most specific)
         dir_rule, matched_path = self._find_matching_directory_rule(path_str, directories)
-        if not dir_rule:
-            return violations
+        if not dir_rule or not matched_path:
+            return []
 
-        # Check deny patterns first (they take precedence)
-        if "deny" in dir_rule:
-            is_denied, reason = self.pattern_matcher.match_deny_patterns(path_str, dir_rule["deny"])
-            if is_denied:
-                message = f"File '{rel_path}' not allowed in {matched_path}: {reason}"
-                suggestion = self._get_suggestion(rel_path.name, matched_path)
-                violations.append(
-                    Violation(
-                        rule_id="file-placement",
-                        file_path=str(rel_path),
-                        line=1,
-                        column=0,
-                        message=message,
-                        severity=Severity.ERROR,
-                        suggestion=suggestion,
-                    )
-                )
-                return violations  # Deny found, stop checking
+        deny_violations = self._check_deny_patterns(path_str, rel_path, dir_rule, matched_path)
+        if deny_violations:
+            return deny_violations
 
-        # Check allow patterns
-        if "allow" in dir_rule:
-            if not self.pattern_matcher.match_allow_patterns(path_str, dir_rule["allow"]):
-                message = f"File '{rel_path}' does not match allowed patterns for {matched_path}"
-                suggestion = f"Move to {matched_path} or ensure file type is allowed"
-                violations.append(
-                    Violation(
-                        rule_id="file-placement",
-                        file_path=str(rel_path),
-                        line=1,
-                        column=0,
-                        message=message,
-                        severity=Severity.ERROR,
-                        suggestion=suggestion,
-                    )
-                )
+        return self._check_allow_patterns(path_str, rel_path, dir_rule, matched_path)
 
-        return violations
+    def _check_root_match(self, dir_path: str, path_str: str) -> tuple[bool, int]:
+        """Check if path matches root directory rule."""
+        if dir_path == "/" and "/" not in path_str:
+            return True, 0
+        return False, -1
+
+    def _check_path_match(self, dir_path: str, path_str: str) -> tuple[bool, int]:
+        """Check if path matches directory rule."""
+        if dir_path == "/":
+            return self._check_root_match(dir_path, path_str)
+        if path_str.startswith(dir_path):
+            depth = len(dir_path.split("/"))
+            return True, depth
+        return False, -1
 
     def _find_matching_directory_rule(
         self, path_str: str, directories: dict[str, Any]
@@ -286,24 +331,11 @@ class FilePlacementLinter:
         best_depth = -1
 
         for dir_path, rules in directories.items():
-            matches = False
-
-            # Special handling for root directory
-            if dir_path == "/":
-                # Match files at root level (no slash in path)
-                if "/" not in path_str:
-                    matches = True
-                    depth = 0
-            elif path_str.startswith(dir_path):
-                matches = True
-                depth = len(dir_path.split("/"))
-
-            if matches:
-                depth = len(dir_path.split("/"))
-                if depth > best_depth:
-                    best_match = rules
-                    best_path = dir_path
-                    best_depth = depth
+            matches, depth = self._check_path_match(dir_path, path_str)
+            if matches and depth > best_depth:
+                best_match = rules
+                best_path = dir_path
+                best_depth = depth
 
         return best_match, best_path
 
@@ -336,6 +368,51 @@ class FilePlacementLinter:
             )
         return violations
 
+    def _check_global_deny_patterns(
+        self, path_str: str, rel_path: Path, global_patterns: dict[str, Any]
+    ) -> list[Violation]:
+        """Check global deny patterns."""
+        if "deny" not in global_patterns:
+            return []
+
+        is_denied, reason = self.pattern_matcher.match_deny_patterns(
+            path_str, global_patterns["deny"]
+        )
+        if is_denied:
+            return [
+                Violation(
+                    rule_id="file-placement",
+                    file_path=str(rel_path),
+                    line=1,
+                    column=0,
+                    message=reason or f"File '{rel_path}' matches denied pattern",
+                    severity=Severity.ERROR,
+                    suggestion=self._get_suggestion(rel_path.name, None),
+                )
+            ]
+        return []
+
+    def _check_global_allow_patterns(
+        self, path_str: str, rel_path: Path, global_patterns: dict[str, Any]
+    ) -> list[Violation]:
+        """Check global allow patterns."""
+        if "allow" not in global_patterns:
+            return []
+
+        if not self.pattern_matcher.match_allow_patterns(path_str, global_patterns["allow"]):
+            return [
+                Violation(
+                    rule_id="file-placement",
+                    file_path=str(rel_path),
+                    line=1,
+                    column=0,
+                    message=f"File '{rel_path}' does not match any allowed patterns",
+                    severity=Severity.ERROR,
+                    suggestion="Ensure file matches project structure patterns",
+                )
+            ]
+        return []
+
     def _check_global_patterns(
         self, path_str: str, rel_path: Path, global_patterns: dict[str, Any]
     ) -> list[Violation]:
@@ -349,43 +426,35 @@ class FilePlacementLinter:
         Returns:
             List of violations
         """
-        violations = []
+        deny_violations = self._check_global_deny_patterns(path_str, rel_path, global_patterns)
+        if deny_violations:
+            return deny_violations
 
-        # Check deny first
-        if "deny" in global_patterns:
-            is_denied, reason = self.pattern_matcher.match_deny_patterns(
-                path_str, global_patterns["deny"]
-            )
-            if is_denied:
-                violations.append(
-                    Violation(
-                        rule_id="file-placement",
-                        file_path=str(rel_path),
-                        line=1,
-                        column=0,
-                        message=reason or f"File '{rel_path}' matches denied pattern",
-                        severity=Severity.ERROR,
-                        suggestion=self._get_suggestion(rel_path.name, None),
-                    )
-                )
-                return violations
+        return self._check_global_allow_patterns(path_str, rel_path, global_patterns)
 
-        # Check allow
-        if "allow" in global_patterns:
-            if not self.pattern_matcher.match_allow_patterns(path_str, global_patterns["allow"]):
-                violations.append(
-                    Violation(
-                        rule_id="file-placement",
-                        file_path=str(rel_path),
-                        line=1,
-                        column=0,
-                        message=f"File '{rel_path}' does not match any allowed patterns",
-                        severity=Severity.ERROR,
-                        suggestion="Ensure file matches project structure patterns",
-                    )
-                )
+    def _suggest_for_test_file(self, filename: str) -> str | None:
+        """Get suggestion for test files."""
+        if "test" in filename.lower():
+            return "Move to tests/ directory"
+        return None
 
-        return violations
+    def _suggest_for_typescript_file(self, filename: str) -> str | None:
+        """Get suggestion for TypeScript/JSX files."""
+        if filename.endswith((".ts", ".tsx", ".jsx")):
+            if "component" in filename.lower():
+                return "Move to src/components/"
+            return "Move to src/"
+        return None
+
+    def _suggest_for_other_files(self, filename: str) -> str:
+        """Get suggestion for other file types."""
+        if filename.endswith(".py"):
+            return "Move to src/"
+        if filename.startswith(("debug", "temp")):
+            return "Move to debug/ or remove if not needed"
+        if filename.endswith(".log"):
+            return "Move to logs/ or add to .gitignore"
+        return "Review file organization and move to appropriate directory"
 
     def _get_suggestion(self, filename: str, current_location: str | None) -> str:
         """Get suggestion for file placement.
@@ -397,24 +466,15 @@ class FilePlacementLinter:
         Returns:
             Suggestion string
         """
-        if "test" in filename.lower():
-            return "Move to tests/ directory"
+        suggestion = self._suggest_for_test_file(filename)
+        if suggestion:
+            return suggestion
 
-        if filename.endswith((".ts", ".tsx", ".jsx")):
-            if "component" in filename.lower():
-                return "Move to src/components/"
-            return "Move to src/"
+        suggestion = self._suggest_for_typescript_file(filename)
+        if suggestion:
+            return suggestion
 
-        if filename.endswith(".py"):
-            return "Move to src/"
-
-        if filename.startswith(("debug", "temp")):
-            return "Move to debug/ or remove if not needed"
-
-        if filename.endswith(".log"):
-            return "Move to logs/ or add to .gitignore"
-
-        return "Review file organization and move to appropriate directory"
+        return self._suggest_for_other_files(filename)
 
     def check_file_allowed(self, file_path: Path) -> bool:
         """Check if file is allowed (no violations).
@@ -481,6 +541,40 @@ class FilePlacementRule(BaseLintRule):
         """Return rule description."""
         return "Validate file organization against project structure rules"
 
+    def _get_layout_path(self, project_root: Path) -> Path:
+        """Get layout config file path."""
+        layout_file = self.config.get("layout_file")
+        if layout_file:
+            return project_root / layout_file
+
+        yaml_path = project_root / ".ai" / "layout.yaml"
+        json_path = project_root / ".ai" / "layout.json"
+        if yaml_path.exists():
+            return yaml_path
+        if json_path.exists():
+            return json_path
+        return yaml_path
+
+    def _load_layout_config(self, layout_path: Path) -> dict[str, Any]:
+        """Load layout configuration from file."""
+        try:
+            with layout_path.open(encoding="utf-8") as f:
+                if str(layout_path).endswith((".yaml", ".yml")):
+                    return yaml.safe_load(f) or {}
+                return json.load(f)
+        except Exception:
+            return {}
+
+    def _get_or_create_linter(self, project_root: Path) -> FilePlacementLinter:
+        """Get cached linter or create new one."""
+        if project_root not in self._linter_cache:
+            layout_path = self._get_layout_path(project_root)
+            layout_config = self._load_layout_config(layout_path)
+            self._linter_cache[project_root] = FilePlacementLinter(
+                config_obj=layout_config, project_root=project_root
+            )
+        return self._linter_cache[project_root]
+
     def check(self, context: BaseLintContext) -> list[Violation]:
         """Check file placement.
 
@@ -493,42 +587,8 @@ class FilePlacementRule(BaseLintRule):
         if not context.file_path:
             return []
 
-        # Find project root (look for .ai directory)
         project_root = self._find_project_root(context.file_path)
-
-        # Get or create linter for this project root
-        if project_root not in self._linter_cache:
-            # Try both YAML and JSON config files
-            layout_file = self.config.get("layout_file")
-            if layout_file:
-                layout_path = project_root / layout_file
-            else:
-                # Try .yaml first, then .json
-                yaml_path = project_root / ".ai" / "layout.yaml"
-                json_path = project_root / ".ai" / "layout.json"
-                if yaml_path.exists():
-                    layout_path = yaml_path
-                elif json_path.exists():
-                    layout_path = json_path
-                else:
-                    layout_path = yaml_path  # Default, will use empty config
-
-            # Load layout config
-            try:
-                with layout_path.open(encoding="utf-8") as f:
-                    if str(layout_path).endswith((".yaml", ".yml")):
-                        layout_config = yaml.safe_load(f)
-                    else:
-                        layout_config = json.load(f)
-            except Exception:
-                layout_config = {}
-
-            # Create and cache linter with project root
-            self._linter_cache[project_root] = FilePlacementLinter(
-                config_obj=layout_config, project_root=project_root
-            )
-
-        linter = self._linter_cache[project_root]
+        linter = self._get_or_create_linter(project_root)
         return linter.lint_path(context.file_path)
 
     def _find_project_root(self, file_path: Path) -> Path:

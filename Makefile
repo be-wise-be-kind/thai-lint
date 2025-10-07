@@ -60,8 +60,8 @@ lint-complexity: ## Complexity analysis (Radon + Xenon)
 	@poetry run radon cc src/ -a -s
 	@poetry run radon mi src/ -s
 	@echo ""
-	@echo "=== Analyzing complexity (Xenon) - warnings only ==="
-	@poetry run xenon --max-absolute B --max-modules B --max-average A src/ || true
+	@echo "=== Analyzing complexity (Xenon) - demanding A grade ==="
+	@poetry run xenon --max-absolute A --max-modules A --max-average A src/
 
 lint-full: lint-all lint-security lint-complexity ## ALL quality checks
 	@echo "✅ All linting checks complete!"

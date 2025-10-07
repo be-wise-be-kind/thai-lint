@@ -220,6 +220,35 @@ def config_get(ctx, key: str):
     click.echo(cfg[key])
 
 
+def _convert_value_type(value: str):
+    """Convert string value to appropriate type."""
+    if value.lower() in ["true", "false"]:
+        return value.lower() == "true"
+    if value.isdigit():
+        return int(value)
+    if value.replace(".", "", 1).isdigit() and value.count(".") == 1:
+        return float(value)
+    return value
+
+
+def _validate_and_report_errors(cfg: dict):
+    """Validate configuration and report errors."""
+    is_valid, errors = validate_config(cfg)
+    if not is_valid:
+        click.echo("Invalid configuration:", err=True)
+        for error in errors:
+            click.echo(f"  - {error}", err=True)
+        sys.exit(1)
+
+
+def _save_and_report_success(cfg: dict, key: str, value, config_path, verbose: bool):
+    """Save configuration and report success."""
+    save_config(cfg, config_path)
+    click.echo(f"✓ Set {key} = {value}")
+    if verbose:
+        logger.info(f"Configuration updated: {key}={value}")
+
+
 @config.command("set")
 @click.argument("key")
 @click.argument("value")
@@ -247,38 +276,19 @@ def config_set(ctx, key: str, value: str):
         {{PROJECT_NAME}} config set max_retries 5
     """
     cfg = ctx.obj["config"]
+    converted_value = _convert_value_type(value)
+    cfg[key] = converted_value
 
-    # Type conversion for common types
-    if value.lower() in ["true", "false"]:
-        value = value.lower() == "true"
-    elif value.isdigit():
-        value = int(value)
-    elif value.replace(".", "", 1).isdigit() and value.count(".") == 1:
-        value = float(value)
-
-    # Update config
-    cfg[key] = value
-
-    # Validate updated config
     try:
-        is_valid, errors = validate_config(cfg)
-        if not is_valid:
-            click.echo("Invalid configuration:", err=True)
-            for error in errors:
-                click.echo(f"  - {error}", err=True)
-            sys.exit(1)
+        _validate_and_report_errors(cfg)
     except Exception as e:
         click.echo(f"Validation error: {e}", err=True)
         sys.exit(1)
 
-    # Save config
     try:
         config_path = ctx.obj.get("config_path")
-        save_config(cfg, config_path)
-        click.echo(f"✓ Set {key} = {value}")
-
-        if ctx.obj.get("verbose"):
-            logger.info(f"Configuration updated: {key}={value}")
+        verbose = ctx.obj.get("verbose", False)
+        _save_and_report_success(cfg, key, converted_value, config_path, verbose)
     except ConfigError as e:
         click.echo(f"Error saving configuration: {e}", err=True)
         sys.exit(1)

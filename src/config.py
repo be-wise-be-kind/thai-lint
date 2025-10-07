@@ -54,6 +54,58 @@ CONFIG_LOCATIONS: list[Path] = [
 ]
 
 
+def _load_and_merge_config(config_path: Path) -> dict[str, Any]:
+    """Load config file and merge with defaults."""
+    config = DEFAULT_CONFIG.copy()
+    user_config = _load_config_file(config_path)
+    return merge_configs(config, user_config)
+
+
+def _validate_and_return_config(config: dict[str, Any], config_path: Path) -> dict[str, Any]:
+    """Validate config and return if valid, otherwise raise error."""
+    is_valid, errors = validate_config(config)
+    if not is_valid:
+        error_msg = "Configuration validation failed:\n" + "\n".join(f"  - {e}" for e in errors)
+        raise ConfigError(error_msg)
+    logger.info("Loaded config from: %s", config_path)
+    return config
+
+
+def _try_load_from_location(location: Path) -> dict[str, Any] | None:
+    """Try to load and validate config from a location."""
+    try:
+        config = _load_and_merge_config(location)
+        is_valid, errors = validate_config(config)
+        if not is_valid:
+            logger.warning("Invalid config at %s: %s", location, errors)
+            return None
+        logger.info("Loaded config from: %s", location)
+        return config
+    except ConfigError as e:
+        logger.warning("Failed to load config from %s: %s", location, e)
+        return None
+
+
+def _load_from_explicit_path(config_path: Path) -> dict[str, Any]:
+    """Load config from explicit path."""
+    if not config_path.exists():
+        logger.warning("Config file not found: %s, using defaults", config_path)
+        return DEFAULT_CONFIG.copy()
+    merged_config = _load_and_merge_config(config_path)
+    return _validate_and_return_config(merged_config, config_path)
+
+
+def _load_from_default_locations() -> dict[str, Any]:
+    """Load config from default locations."""
+    for location in CONFIG_LOCATIONS:
+        if location.exists():
+            loaded_config = _try_load_from_location(location)
+            if loaded_config:
+                return loaded_config
+    logger.info("No config file found, using defaults")
+    return DEFAULT_CONFIG.copy()
+
+
 def load_config(config_path: Path | None = None) -> dict[str, Any]:
     """
     Load configuration with fallback to defaults.
@@ -76,49 +128,26 @@ def load_config(config_path: Path | None = None) -> dict[str, Any]:
         >>> config = load_config()
         >>> config = load_config(Path('custom-config.yaml'))
     """
-    # Start with defaults
-    config = DEFAULT_CONFIG.copy()
-
-    # If explicit path provided, use it
     if config_path:
-        if not config_path.exists():
-            logger.warning("Config file not found: %s, using defaults", config_path)
-            return config
+        return _load_from_explicit_path(config_path)
+    return _load_from_default_locations()
 
-        user_config = _load_config_file(config_path)
-        config = merge_configs(config, user_config)
-        logger.info("Loaded config from: %s", config_path)
 
-        # Validate merged config
-        is_valid, errors = validate_config(config)
-        if not is_valid:
-            error_msg = "Configuration validation failed:\n" + "\n".join(f"  - {e}" for e in errors)
-            raise ConfigError(error_msg)
+def _parse_yaml_file(f, path: Path) -> dict[str, Any]:
+    """Parse YAML file and return data."""
+    try:
+        data = yaml.safe_load(f)
+        return data if data is not None else {}
+    except yaml.YAMLError as e:
+        raise ConfigError(f"Invalid YAML in {path}: {e}") from e
 
-        return config
 
-    # Search default locations
-    for location in CONFIG_LOCATIONS:
-        if location.exists():
-            try:
-                user_config = _load_config_file(location)
-                config = merge_configs(config, user_config)
-                logger.info("Loaded config from: %s", location)
-
-                # Validate merged config
-                is_valid, errors = validate_config(config)
-                if not is_valid:
-                    logger.warning("Invalid config at %s: %s", location, errors)
-                    continue
-
-                return config
-            except ConfigError as e:
-                # Try next location if this one fails
-                logger.warning("Failed to load config from %s: %s", location, e)
-                continue
-
-    logger.info("No config file found, using defaults")
-    return config
+def _parse_json_file(f, path: Path) -> dict[str, Any]:
+    """Parse JSON file and return data."""
+    try:
+        return json.load(f)
+    except json.JSONDecodeError as e:
+        raise ConfigError(f"Invalid JSON in {path}: {e}") from e
 
 
 def _load_config_file(path: Path) -> dict[str, Any]:
@@ -137,17 +166,33 @@ def _load_config_file(path: Path) -> dict[str, Any]:
     try:
         with path.open() as f:
             if path.suffix in [".yaml", ".yml"]:
-                data = yaml.safe_load(f)
-                return data if data is not None else {}
+                return _parse_yaml_file(f, path)
             if path.suffix == ".json":
-                return json.load(f)
+                return _parse_json_file(f, path)
             raise ConfigError(f"Unsupported config format: {path.suffix}")
-    except yaml.YAMLError as e:
-        raise ConfigError(f"Invalid YAML in {path}: {e}") from e
-    except json.JSONDecodeError as e:
-        raise ConfigError(f"Invalid JSON in {path}: {e}") from e
     except Exception as e:
+        if isinstance(e, ConfigError):
+            raise
         raise ConfigError(f"Failed to load config from {path}: {e}") from e
+
+
+def _validate_before_save(config: dict[str, Any]) -> None:
+    """Validate config before saving."""
+    is_valid, errors = validate_config(config)
+    if not is_valid:
+        error_msg = "Cannot save invalid configuration:\n" + "\n".join(f"  - {e}" for e in errors)
+        raise ConfigError(error_msg)
+
+
+def _write_config_file(config: dict[str, Any], path: Path) -> None:
+    """Write config to file based on extension."""
+    with path.open("w") as f:
+        if path.suffix in [".yaml", ".yml"]:
+            yaml.dump(config, f, default_flow_style=False, sort_keys=False)
+        elif path.suffix == ".json":
+            json.dump(config, f, indent=2, sort_keys=False)
+        else:
+            raise ConfigError(f"Unsupported config format: {path.suffix}")
 
 
 def save_config(config: dict[str, Any], config_path: Path | None = None):
@@ -169,29 +214,73 @@ def save_config(config: dict[str, Any], config_path: Path | None = None):
         >>> save_config({'log_level': 'DEBUG'}, Path('my-config.yaml'))
     """
     path = config_path or CONFIG_LOCATIONS[0]
-
-    # Create parent directory if needed
     path.parent.mkdir(parents=True, exist_ok=True)
+    _validate_before_save(config)
 
-    # Validate before saving
-    is_valid, errors = validate_config(config)
-    if not is_valid:
-        error_msg = "Cannot save invalid configuration:\n" + "\n".join(f"  - {e}" for e in errors)
-        raise ConfigError(error_msg)
-
-    # Save based on extension
     try:
-        with path.open("w") as f:
-            if path.suffix in [".yaml", ".yml"]:
-                yaml.dump(config, f, default_flow_style=False, sort_keys=False)
-            elif path.suffix == ".json":
-                json.dump(config, f, indent=2, sort_keys=False)
-            else:
-                raise ConfigError(f"Unsupported config format: {path.suffix}")
-
+        _write_config_file(config, path)
         logger.info("Saved config to: %s", path)
     except Exception as e:
+        if isinstance(e, ConfigError):
+            raise
         raise ConfigError(f"Failed to save config to {path}: {e}") from e
+
+
+def _validate_required_keys(config: dict[str, Any], errors: list[str]) -> None:
+    """Validate that all required keys are present in config."""
+    required_keys = ["app_name", "log_level"]
+    for key in required_keys:
+        if key not in config:
+            errors.append(f"Missing required key: {key}")
+
+
+def _validate_log_level(config: dict[str, Any], errors: list[str]) -> None:
+    """Validate log level is a valid value."""
+    valid_log_levels = ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
+    if "log_level" in config:
+        if config["log_level"] not in valid_log_levels:
+            errors.append(
+                f"Invalid log_level: {config['log_level']}. "
+                f"Must be one of: {', '.join(valid_log_levels)}"
+            )
+
+
+def _validate_output_format(config: dict[str, Any], errors: list[str]) -> None:
+    """Validate output format is a valid value."""
+    valid_formats = ["text", "json", "yaml"]
+    if "output_format" in config:
+        if config["output_format"] not in valid_formats:
+            errors.append(
+                f"Invalid output_format: {config['output_format']}. "
+                f"Must be one of: {', '.join(valid_formats)}"
+            )
+
+
+def _validate_max_retries(config: dict[str, Any], errors: list[str]) -> None:
+    """Validate max_retries configuration value."""
+    if "max_retries" in config:
+        if not isinstance(config["max_retries"], int) or config["max_retries"] < 0:
+            errors.append("max_retries must be a non-negative integer")
+
+
+def _validate_timeout(config: dict[str, Any], errors: list[str]) -> None:
+    """Validate timeout configuration value."""
+    if "timeout" in config:
+        if not isinstance(config["timeout"], (int, float)) or config["timeout"] <= 0:
+            errors.append("timeout must be a positive number")
+
+
+def _validate_numeric_values(config: dict[str, Any], errors: list[str]) -> None:
+    """Validate numeric configuration values."""
+    _validate_max_retries(config, errors)
+    _validate_timeout(config, errors)
+
+
+def _validate_string_values(config: dict[str, Any], errors: list[str]) -> None:
+    """Validate string configuration values."""
+    if "app_name" in config:
+        if not isinstance(config["app_name"], str) or not config["app_name"].strip():
+            errors.append("app_name must be a non-empty string")
 
 
 def validate_config(config: dict[str, Any]) -> tuple[bool, list[str]]:
@@ -214,45 +303,13 @@ def validate_config(config: dict[str, Any]) -> tuple[bool, list[str]]:
         ...     for error in errors:
         ...         print(f"Error: {error}")
     """
-    errors = []
+    errors: list[str] = []
 
-    # Check required keys
-    required_keys = ["app_name", "log_level"]
-    for key in required_keys:
-        if key not in config:
-            errors.append(f"Missing required key: {key}")
-
-    # Validate log level
-    valid_log_levels = ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
-    if "log_level" in config:
-        if config["log_level"] not in valid_log_levels:
-            errors.append(
-                f"Invalid log_level: {config['log_level']}. "
-                f"Must be one of: {', '.join(valid_log_levels)}"
-            )
-
-    # Validate output format
-    valid_formats = ["text", "json", "yaml"]
-    if "output_format" in config:
-        if config["output_format"] not in valid_formats:
-            errors.append(
-                f"Invalid output_format: {config['output_format']}. "
-                f"Must be one of: {', '.join(valid_formats)}"
-            )
-
-    # Validate numeric values
-    if "max_retries" in config:
-        if not isinstance(config["max_retries"], int) or config["max_retries"] < 0:
-            errors.append("max_retries must be a non-negative integer")
-
-    if "timeout" in config:
-        if not isinstance(config["timeout"], (int, float)) or config["timeout"] <= 0:
-            errors.append("timeout must be a positive number")
-
-    # Validate string values
-    if "app_name" in config:
-        if not isinstance(config["app_name"], str) or not config["app_name"].strip():
-            errors.append("app_name must be a non-empty string")
+    _validate_required_keys(config, errors)
+    _validate_log_level(config, errors)
+    _validate_output_format(config, errors)
+    _validate_numeric_values(config, errors)
+    _validate_string_values(config, errors)
 
     return len(errors) == 0, errors
 

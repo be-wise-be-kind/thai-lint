@@ -120,6 +120,40 @@ class IgnoreDirectiveParser:
         # Standard fnmatch for file patterns
         return fnmatch.fnmatch(path, pattern) or fnmatch.fnmatch(str(Path(path)), pattern)
 
+    def _has_ignore_directive_marker(self, line: str) -> bool:
+        """Check if line contains an ignore directive marker."""
+        return "# thailint: ignore-file" in line or "# design-lint: ignore-file" in line
+
+    def _check_specific_rule_ignore(self, line: str, rule_id: str) -> bool:
+        """Check if line ignores a specific rule."""
+        match = re.search(r"ignore-file\[([^\]]+)\]", line)
+        if match:
+            ignored_rules = [r.strip() for r in match.group(1).split(",")]
+            return any(self._rule_matches(rule_id, r) for r in ignored_rules)
+        return False
+
+    def _check_general_ignore(self, line: str) -> bool:
+        """Check if line has general ignore directive (no specific rules)."""
+        return "ignore-file[" not in line
+
+    def _read_file_first_lines(self, file_path: Path) -> list[str]:
+        """Read first 10 lines of file, return empty list on error."""
+        if not file_path.exists():
+            return []
+        try:
+            content = file_path.read_text(encoding="utf-8")
+            return content.splitlines()[:10]
+        except (UnicodeDecodeError, OSError):
+            return []
+
+    def _check_line_for_ignore(self, line: str, rule_id: str | None) -> bool:
+        """Check if line has matching ignore directive."""
+        if not self._has_ignore_directive_marker(line):
+            return False
+        if rule_id:
+            return self._check_specific_rule_ignore(line, rule_id)
+        return self._check_general_ignore(line)
+
     def has_file_ignore(self, file_path: Path, rule_id: str | None = None) -> bool:
         """Check for file-level ignore directive.
 
@@ -132,34 +166,20 @@ class IgnoreDirectiveParser:
         Returns:
             True if file has ignore directive (general or for specific rule).
         """
-        if not file_path.exists():
-            return False
+        first_lines = self._read_file_first_lines(file_path)
+        return any(self._check_line_for_ignore(line, rule_id) for line in first_lines)
 
-        try:
-            content = file_path.read_text(encoding="utf-8")
-        except (UnicodeDecodeError, OSError):
-            return False
+    def _has_line_ignore_marker(self, code: str) -> bool:
+        """Check if code line has ignore marker."""
+        return "# thailint: ignore" in code or "# design-lint: ignore" in code
 
-        first_lines = content.splitlines()[:10]  # Only scan first 10 lines
-
-        for line in first_lines:
-            if "# thailint: ignore-file" in line or "# design-lint: ignore-file" in line:
-                if rule_id:
-                    # Check for specific rule ignore
-                    match = re.search(r"ignore-file\[([^\]]+)\]", line)
-                    if match:
-                        ignored_rules = [r.strip() for r in match.group(1).split(",")]
-                        if any(self._rule_matches(rule_id, r) for r in ignored_rules):
-                            return True
-                    else:
-                        # No specific rules, so doesn't apply
-                        continue
-                else:
-                    # General ignore-file (no brackets)
-                    if "ignore-file[" not in line:
-                        return True
-
-        return False
+    def _check_specific_rule_in_line(self, code: str, rule_id: str) -> bool:
+        """Check if line's ignore directive matches specific rule."""
+        match = re.search(r"ignore\[([^\]]+)\]", code)
+        if match:
+            ignored_rules = [r.strip() for r in match.group(1).split(",")]
+            return any(self._rule_matches(rule_id, r) for r in ignored_rules)
+        return "ignore[" not in code
 
     def has_line_ignore(self, code: str, line_num: int, rule_id: str | None = None) -> bool:
         """Check for line-level ignore directive.
@@ -172,20 +192,11 @@ class IgnoreDirectiveParser:
         Returns:
             True if line has ignore directive.
         """
-        # Check for ignore directive in the line
-        if "# thailint: ignore" not in code and "# design-lint: ignore" not in code:
+        if not self._has_line_ignore_marker(code):
             return False
 
-        # Check for specific rule ignore
         if rule_id:
-            # Pattern: # thailint: ignore[rule-id] or ignore[rule1,rule2]
-            match = re.search(r"ignore\[([^\]]+)\]", code)
-            if match:
-                ignored_rules = [r.strip() for r in match.group(1).split(",")]
-                return any(self._rule_matches(rule_id, r) for r in ignored_rules)
-            # No brackets means general ignore
-            return "ignore[" not in code
-        # No specific rule requested, any ignore works
+            return self._check_specific_rule_in_line(code, rule_id)
         return True
 
     def _rule_matches(self, rule_id: str, pattern: str) -> bool:
@@ -204,6 +215,48 @@ class IgnoreDirectiveParser:
             return rule_id.startswith(prefix)
         # Exact match
         return rule_id == pattern
+
+    def _has_ignore_next_line_marker(self, prev_line: str) -> bool:
+        """Check if line has ignore-next-line marker."""
+        return (
+            "# thailint: ignore-next-line" in prev_line
+            or "# design-lint: ignore-next-line" in prev_line
+        )
+
+    def _matches_ignore_next_line_rules(self, prev_line: str, rule_id: str) -> bool:
+        """Check if ignore-next-line directive matches the rule."""
+        match = re.search(r"ignore-next-line\[([^\]]+)\]", prev_line)
+        if match:
+            ignored_rules = [r.strip() for r in match.group(1).split(",")]
+            return any(self._rule_matches(rule_id, r) for r in ignored_rules)
+        return True
+
+    def _is_valid_prev_line_index(self, lines: list[str], violation: "Violation") -> bool:
+        """Check if previous line index is valid."""
+        if violation.line <= 1 or violation.line > len(lines) + 1:
+            return False
+        prev_line_idx = violation.line - 2
+        return 0 <= prev_line_idx < len(lines)
+
+    def _check_prev_line_ignore(self, lines: list[str], violation: "Violation") -> bool:
+        """Check if previous line has ignore-next-line directive."""
+        if not self._is_valid_prev_line_index(lines, violation):
+            return False
+
+        prev_line_idx = violation.line - 2
+        prev_line = lines[prev_line_idx]
+        if not self._has_ignore_next_line_marker(prev_line):
+            return False
+
+        return self._matches_ignore_next_line_rules(prev_line, violation.rule_id)
+
+    def _check_current_line_ignore(self, lines: list[str], violation: "Violation") -> bool:
+        """Check if current line has inline ignore directive."""
+        if violation.line <= 0 or violation.line > len(lines):
+            return False
+
+        current_line = lines[violation.line - 1]  # Convert to 0-indexed
+        return self.has_line_ignore(current_line, violation.line, violation.rule_id)
 
     def should_ignore_violation(self, violation: "Violation", file_content: str) -> bool:
         """Check if a violation should be ignored based on all levels.
@@ -231,31 +284,15 @@ class IgnoreDirectiveParser:
         if self.has_file_ignore(file_path, violation.rule_id):
             return True
 
-        # Level 4: Method level (ignore-next-line on previous line)
         lines = file_content.splitlines()
-        if violation.line > 1 and violation.line <= len(lines) + 1:
-            prev_line_idx = violation.line - 2  # Convert to 0-indexed
-            if 0 <= prev_line_idx < len(lines):
-                prev_line = lines[prev_line_idx]
-                if (
-                    "# thailint: ignore-next-line" in prev_line
-                    or "# design-lint: ignore-next-line" in prev_line
-                ):
-                    # Check if specific rule matches
-                    match = re.search(r"ignore-next-line\[([^\]]+)\]", prev_line)
-                    if match:
-                        ignored_rules = [r.strip() for r in match.group(1).split(",")]
-                        if any(self._rule_matches(violation.rule_id, r) for r in ignored_rules):
-                            return True
-                    else:
-                        # General ignore-next-line
-                        return True
+
+        # Level 4: Method level (ignore-next-line on previous line)
+        if self._check_prev_line_ignore(lines, violation):
+            return True
 
         # Level 5: Line level (inline ignore)
-        if violation.line > 0 and violation.line <= len(lines):
-            current_line = lines[violation.line - 1]  # Convert to 0-indexed
-            if self.has_line_ignore(current_line, violation.line, violation.rule_id):
-                return True
+        if self._check_current_line_ignore(lines, violation):
+            return True
 
         return False
 
