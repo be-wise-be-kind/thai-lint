@@ -83,7 +83,9 @@ See `.ai/howtos/how-to-roadmap.md` for detailed workflow instructions.
 Python code follows PEP 8 style guide (enforced by Ruff linter).
 - Use type hints (checked by MyPy)
 - Docstrings required for all public functions (Google-style)
-- Maximum cyclomatic complexity: B (enforced by Xenon)
+- **Maximum cyclomatic complexity: A** (enforced by Xenon with `--max-absolute A`)
+  - This means EVERY function/method/block must be A-grade, not just averages
+  - B-grade is NOT acceptable even if "it's just a helper function"
 
 ### File Organization
 See `.ai/layout.yaml` for the canonical directory structure.
@@ -206,38 +208,82 @@ Types: `feat`, `fix`, `docs`, `style`, `refactor`, `test`, `chore`
 
 ### Quality Gates - CRITICAL
 
+**YOU ARE ALWAYS RESPONSIBLE FOR CODE QUALITY - NO EXCEPTIONS**
+
+**Core Principle**: When you commit code (whether you wrote it, modified it, or just touched the same file), you are responsible for ensuring it meets ALL quality standards. There is no "not my problem" - if you're committing it, it's your responsibility.
+
 **NEVER claim linting is clean unless ALL of these are true:**
 
-1. ✅ `make lint` exits with **code 0** (not just "no Ruff errors")
-2. ✅ `make lint-full` exits with **code 0** (not just "9.95/10 score")
-3. ✅ **ZERO Pylint violations** - do NOT dismiss them as "acceptable" or "design choices"
+1. ✅ `make lint-full` exits with **code 0** - not 1, not 2, exactly 0
+2. ✅ Pylint score is **exactly 10.00/10** - not 9.98, not "close enough", exactly 10.00
+3. ✅ **ALL Xenon complexity checks pass** - EVERY block must be A-grade (not B, not "acceptable complexity")
 4. ✅ **ZERO test failures** - failing tests mean the feature is broken
+5. ✅ **No pre-commit hook failures** - if hooks fail, you must fix before committing
 
-**Common Mistakes to Avoid:**
-- ❌ Running `make lint` (fast) and claiming full linting is clean
-- ❌ Seeing Pylint violations and dismissing them without fixing
-- ❌ Claiming "linting is clean" when `make lint-full` has non-zero exit code
-- ❌ Ignoring the exit code and only looking at output text
-- ❌ Saying "acceptable for CLI complexity" when Pylint fails - the limits exist for a reason
+**Dangerous False Assumptions to AVOID:**
+
+1. ❌ **"This was pre-existing code"**
+   - If you're modifying a file, you own the quality of that file
+   - If you add code to a file with issues, you must fix those issues
+   - Don't rationalize "someone else wrote this" - you're committing it now
+
+2. ❌ **"B-grade complexity is still good"**
+   - The Makefile says `--max-absolute A` which means EVERY block must be A
+   - B is NOT acceptable even if "it's just one function" or "it's a helper"
+   - Don't make excuses - refactor until it's A-grade
+
+3. ❌ **"9.98/10 is close enough"**
+   - The requirement is 10.00/10, not "approximately 10"
+   - 9.98 means there ARE violations that must be fixed
+   - Don't rationalize "it's just 0.02 away" - fix it to 10.00
+
+4. ❌ **"It's just a linter warning, not an error"**
+   - ALL linter output must be addressed
+   - Warnings are not "optional suggestions" - they must be fixed or explicitly suppressed with justification
+   - Don't dismiss warnings as unimportant
+
+5. ❌ **"The exit code is non-zero but the output looks okay"**
+   - Exit code 0 is the ONLY acceptable result
+   - Visual inspection of output is NOT a substitute for checking exit codes
+   - Use `make lint-full && echo "SUCCESS" || echo "FAILED"` to verify
 
 **Correct Validation Process:**
 ```bash
-# Step 1: Run full linting
+# Step 1: Run full linting (must exit with code 0)
 make lint-full
-# Check exit code: echo $? should be 0
+if [ $? -ne 0 ]; then
+    echo "FAILED - must fix all issues"
+    exit 1
+fi
 
-# Step 2: Run tests
+# Step 2: Verify Pylint score is exactly 10.00/10
+# Look for: "Your code has been rated at 10.00/10"
+# NOT: 9.98/10, 9.95/10, or any other number
+
+# Step 3: Verify Xenon shows NO errors
+# Look for: No "ERROR:xenon:" lines in output
+# NOT: "only B-grade" or "acceptable complexity"
+
+# Step 4: Run tests (must exit with code 0)
 make test
-# Check exit code: echo $? should be 0
+if [ $? -ne 0 ]; then
+    echo "FAILED - must fix all tests"
+    exit 1
+fi
 
-# Step 3: Only if BOTH exit with 0, then linting is clean
+# Step 5: Only if ALL checks pass with code 0, then quality is acceptable
 ```
 
-**If Pylint fails:** You MUST either:
-1. Refactor the code to meet the limits (preferred), OR
-2. Add explicit `# pylint: disable=rule-name` with detailed justification comment
+**When Standards Seem Difficult:**
+- ✅ DO refactor code to meet standards (extract functions, simplify logic)
+- ✅ DO add `# pylint: disable=rule` with detailed justification if truly necessary
+- ✅ DO ask the user if standards should be adjusted (but don't assume they should)
+- ❌ DON'T lower standards on your own
+- ❌ DON'T skip checks or claim "close enough"
+- ❌ DON'T rationalize why violations are "acceptable"
 
-**Never** claim quality checks pass when they don't. The user depends on accurate status.
+**The Bottom Line:**
+If `make lint-full` exits with non-zero code, if Pylint shows < 10.00/10, if Xenon shows ANY errors, or if tests fail - **your code is not ready to commit**. Period. No excuses, no rationalizations, no "but this was pre-existing" - fix it before committing.
 
 ## Security Considerations
 

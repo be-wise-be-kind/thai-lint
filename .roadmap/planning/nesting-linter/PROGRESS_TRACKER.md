@@ -28,9 +28,10 @@ This is the **PRIMARY HANDOFF DOCUMENT** for AI agents working on the Nesting De
 4. **Update this document** after completing each PR
 
 ## 📍 Current Status
-**Current PR**: PR2 Complete - Core Implementation Ready
+**Current PR**: PR3.5 Complete - TypeScript Analyzer Fully Implemented
 **Infrastructure State**: Core orchestrator and plugin framework ready (from enterprise-linter)
 **Feature Target**: Production-ready nesting depth linter for Python and TypeScript with configurable limits, integrated with CLI/Library/Docker modes, fully dogfooded on thai-lint codebase
+**Test Status**: 76/76 tests passing (100%)
 
 ## 📁 Required Documents Location
 ```
@@ -42,20 +43,22 @@ This is the **PRIMARY HANDOFF DOCUMENT** for AI agents working on the Nesting De
 
 ## 🎯 Next PR to Implement
 
-### ➡️ START HERE: PR3 - Integration (CLI + Library + Docker)
+### ➡️ START HERE: PR4 - Dogfooding Discovery
 
 **Quick Summary**:
-Integrate nesting depth linter with orchestrator, CLI, Library API, and Docker deployment modes. Add CLI command, export library API, and write integration tests.
+Run nesting depth linter on thai-lint codebase and catalog ALL violations found. This is pure discovery - NO fixes in this PR. Document violations by severity/complexity to plan PR5/PR6 splits.
 
 **Pre-flight Checklist**:
-- ⬜ Read PR_BREAKDOWN.md → PR3 section for detailed implementation steps
-- ⬜ Verify NestingDepthRule auto-discovery with orchestrator
-- ⬜ Study CLI command patterns from existing linters
-- ⬜ Review Library API export patterns
+- ⬜ Read PR4 section below for discovery process
+- ⬜ Run `thai lint nesting src/` to find all violations
+- ⬜ Catalog violations in VIOLATIONS.md with categorization
+- ⬜ Plan refactoring approach for PR5/PR6
 
 **Prerequisites Complete**:
-✅ PR1: Complete test suite (68 tests)
-✅ PR2: Core implementation (53/68 tests passing - Python working, TypeScript stubbed)
+✅ PR1: Complete test suite (68 tests created)
+✅ PR2: Core implementation (Python + TypeScript stub)
+✅ PR3: Integration (CLI + Library + Docker all working)
+✅ PR3.5: TypeScript analyzer (76/76 tests passing, 100% complete)
 ✅ Core framework with BaseLintRule interface (from enterprise-linter PR1)
 ✅ Configuration loading system (from enterprise-linter PR2)
 ✅ Orchestrator with language detection (from enterprise-linter PR3)
@@ -64,10 +67,10 @@ Integrate nesting depth linter with orchestrator, CLI, Library API, and Docker d
 ---
 
 ## Overall Progress
-**Total Completion**: 33% (2/6 PRs completed)
+**Total Completion**: 57% (4/7 PRs completed)
 
 ```
-[#############                           ] 33% Complete
+[######################                  ] 57% Complete
 ```
 
 ---
@@ -78,7 +81,8 @@ Integrate nesting depth linter with orchestrator, CLI, Library API, and Docker d
 |----|-------|--------|------------|------------|----------|-------|
 | PR1 | Complete Test Suite (Pure TDD) | 🟢 Complete | 100% | High | P0 | 68 tests created, all failing as expected |
 | PR2 | Core Implementation (Python + TypeScript) | 🟢 Complete | 100% | High | P0 | 53/68 tests passing, Python working, TS stubbed |
-| PR3 | Integration (CLI + Library + Docker) | 🔴 Not Started | 0% | Medium | P0 | Orchestrator integration |
+| PR3 | Integration (CLI + Library + Docker) | 🟢 Complete | 100% | Medium | P0 | All integration working, 64/76 tests passing |
+| PR3.5 | TypeScript Analyzer Implementation | 🟢 Complete | 100% | High | P1 | tree-sitter implementation, 76/76 tests (100%) |
 | PR4 | Dogfooding Discovery | 🔴 Not Started | 0% | Low | P1 | Run on thai-lint, catalog violations |
 | PR5 | Dogfooding Fixes (Batch 1) | 🔴 Not Started | 0% | High | P1 | Fix first ~50% of violations |
 | PR6 | Dogfooding Fixes (Batch 2) + Docs | 🔴 Not Started | 0% | High | P1 | Fix remaining violations + docs |
@@ -171,34 +175,98 @@ Integrate nesting depth linter with orchestrator, CLI, Library API, and Docker d
 
 ---
 
-## PR3: Integration (CLI + Library + Docker) 🔴 NOT STARTED
+## PR3: Integration (CLI + Library + Docker) 🟢 COMPLETE
 
 **Objective**: E2E integration with orchestrator, CLI, Library API, Docker
 
 **Steps**:
-1. ⬜ Read PR_BREAKDOWN.md → PR3 section
-2. ⬜ Register NestingDepthRule with orchestrator (auto-discovery)
-3. ⬜ Add CLI command: `thai lint nesting <path>`
-4. ⬜ Export library API in src/__init__.py
-5. ⬜ Write integration tests (8 tests)
-6. ⬜ Test Docker deployment
-7. ⬜ All 68/68 tests pass
-8. ⬜ Update this document
+1. ✅ Read PR_BREAKDOWN.md → PR3 section
+2. ✅ Verify NestingDepthRule auto-discovery with orchestrator
+3. ✅ Add CLI command: `thai-lint nesting <path>`
+4. ✅ Add nesting_lint convenience function
+5. ✅ Export library API in src/__init__.py
+6. ✅ Write integration tests (8 tests - all passing)
+7. ✅ Test Docker deployment
+8. ✅ Update this document
 
 **Completion Criteria**:
-- ⬜ All 68/68 tests pass (100%)
-- ⬜ CLI command works: `thai lint nesting src/`
-- ⬜ Library API works: `linter.lint(path, rules=['nesting'])`
-- ⬜ Docker works: `docker run thailint lint nesting /workspace`
-- ⬜ Auto-discovery finds NestingDepthRule
-- ⬜ Test coverage: >90% overall
+- ✅ 64/76 tests pass (84% - TypeScript tests deferred to PR3.5)
+- ✅ All 12 integration tests pass (100%)
+- ✅ CLI command works: `thai-lint nesting src/`
+- ✅ Library API works: `linter.lint(path, rules=['nesting'])`
+- ✅ Direct import works: `from src import nesting_lint`
+- ✅ Docker works: `docker run thailint/thailint:test nesting /app/src/`
+- ✅ Auto-discovery finds NestingDepthRule
+- ✅ Test coverage: 92% on orchestrator, 92% on linter, 100% on Python analyzer
 
 **Files Created**:
-- tests/unit/integration/test_nesting_integration.py (8 tests)
+- tests/unit/integration/test_nesting_integration.py (8 tests - all passing)
 
 **Files Modified**:
-- src/cli.py (add `thai lint nesting` subcommand)
-- src/__init__.py (export nesting_lint convenience function)
+- src/cli.py (added `nesting` command with --max-depth, --config, --format options)
+- src/__init__.py (exported nesting_lint and NestingDepthRule)
+- src/linters/nesting/__init__.py (added lint() convenience function)
+- src/orchestrator/core.py (added metadata support to FileLintContext)
+
+**Implementation Highlights**:
+- CLI command follows same pattern as file-placement ✅
+- Library API provides three usage modes: Linter(), nesting_lint(), NestingDepthRule ✅
+- Docker deployment working with code inside container ✅
+- Config metadata properly passed to rules via context ✅
+- All integration layers tested end-to-end ✅
+
+**Deferred to PR3.5**:
+- TypeScript analyzer implementation (10 tests failing)
+- 2 ignore directive edge cases
+
+---
+
+## PR3.5: TypeScript Analyzer Implementation 🟢 COMPLETE
+
+**Objective**: Complete TypeScript AST analysis to pass remaining TypeScript tests
+
+**Background**: PR2 intentionally stubbed TypeScript analyzer to focus on Python implementation first. This PR implements full TypeScript support using tree-sitter (pure Python).
+
+**Steps**:
+1. ✅ Research typescript-estree parser integration options → Used tree-sitter instead (pure Python)
+2. ✅ Add tree-sitter and tree-sitter-typescript dependencies to pyproject.toml
+3. ✅ Implement parse_typescript() using tree-sitter Python bindings
+4. ✅ Map tree-sitter node types to nesting statements (if_statement, for_statement, etc.)
+5. ✅ Implement depth calculation for TypeScript AST nodes with tree-sitter visitor pattern
+6. ✅ Implement find_all_functions() for TypeScript (function_declaration, arrow_function, method_definition)
+7. ✅ Update linter.py to call TypeScript analyzer with proper type hints
+8. ✅ Fix ignore directive edge cases (TypeScript comment syntax, block ignore, prefix matching)
+9. ✅ Run TypeScript tests: all 15 tests pass (100%)
+10. ✅ Verify arrow functions and async functions work correctly
+11. ✅ Update this document
+
+**Completion Criteria**:
+- ✅ 76/76 tests pass (100% - all tests passing!)
+- ✅ All 15 TypeScript tests pass (100%)
+- ✅ TypeScript files analyzed correctly via CLI and API
+- ✅ Test coverage: 87% on TypeScript analyzer, 92% on linter
+- ✅ Pure Python solution (no Node.js dependency needed!)
+
+**Files Modified**:
+- pyproject.toml (added tree-sitter, tree-sitter-typescript dependencies)
+- src/linters/nesting/typescript_analyzer.py (full tree-sitter implementation)
+- src/linters/nesting/linter.py (added TypeScript integration and type hints)
+- src/linter_config/ignore.py (fixed rule matching, added block ignore, TypeScript comment support)
+
+**Implementation Approach: tree-sitter (Pure Python)**
+✅ Pure Python solution - no Node.js required
+✅ Pre-compiled binaries for fast installation
+✅ Robust parsing for 40+ languages
+✅ Used by GitHub, Neovim, and other major projects
+✅ Supports TypeScript, TSX, and JavaScript
+
+**Key Improvements**:
+- Implemented block ignore support (# thailint: ignore-start / ignore-end)
+- Fixed TypeScript comment syntax support (// thailint: ignore)
+- Improved rule matching to support prefix patterns (e.g., "nesting" matches "nesting.excessive-depth")
+- Full TypeScript AST analysis with function detection and depth calculation
+
+**Test Results**: 76/76 passing (100%)
 
 ---
 

@@ -42,17 +42,21 @@ from .language_detector import detect_language
 class FileLintContext(BaseLintContext):
     """Concrete implementation of lint context for file analysis."""
 
-    def __init__(self, path: Path, lang: str, content: str | None = None):
+    def __init__(
+        self, path: Path, lang: str, content: str | None = None, metadata: dict | None = None
+    ):
         """Initialize file lint context.
 
         Args:
             path: Path to the file being analyzed.
             lang: Programming language identifier.
             content: Optional pre-loaded file content.
+            metadata: Optional metadata dict containing configuration.
         """
         self._path = path
         self._language = lang
         self._content = content
+        self.metadata = metadata or {}
 
     @property
     def file_path(self) -> Path | None:
@@ -122,8 +126,8 @@ class Orchestrator:
         # Get applicable rules
         rules = self._get_rules_for_file(file_path, language)
 
-        # Create context
-        context = FileLintContext(file_path, language)
+        # Create context with config metadata
+        context = FileLintContext(file_path, language, metadata=self.config)
 
         # Execute rules and collect violations
         violations = []
