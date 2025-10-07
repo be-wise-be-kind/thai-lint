@@ -66,11 +66,14 @@ class FileLintContext(BaseLintContext):
     @property
     def file_content(self) -> str | None:
         """Get file content being analyzed."""
-        if self._content is None and self._path and self._path.exists():
-            try:
-                self._content = self._path.read_text(encoding="utf-8")
-            except (UnicodeDecodeError, OSError):
-                self._content = None
+        if self._content is not None:
+            return self._content
+        if not self._path or not self._path.exists():
+            return None
+        try:
+            self._content = self._path.read_text(encoding="utf-8")
+        except (UnicodeDecodeError, OSError):
+            self._content = None
         return self._content
 
     @property
@@ -116,30 +119,40 @@ class Orchestrator:
         Returns:
             List of violations found in the file.
         """
-        # Check if file should be ignored
         if self.ignore_parser.is_ignored(file_path):
             return []
 
-        # Detect language
         language = detect_language(file_path)
-
-        # Get applicable rules
         rules = self._get_rules_for_file(file_path, language)
-
-        # Create context with config metadata
         context = FileLintContext(file_path, language, metadata=self.config)
 
-        # Execute rules and collect violations
+        return self._execute_rules(rules, context)
+
+    def _execute_rules(
+        self, rules: list[BaseLintRule], context: BaseLintContext
+    ) -> list[Violation]:
+        """Execute rules and collect violations.
+
+        Args:
+            rules: List of rules to execute.
+            context: Lint context to pass to rules.
+
+        Returns:
+            List of violations found.
+        """
         violations = []
         for rule in rules:
-            try:
-                rule_violations = rule.check(context)
-                violations.extend(rule_violations)
-            except Exception:  # nosec B112
-                # Skip rules that fail (defensive programming)
-                continue
-
+            rule_violations = self._safe_check_rule(rule, context)
+            violations.extend(rule_violations)
         return violations
+
+    def _safe_check_rule(self, rule: BaseLintRule, context: BaseLintContext) -> list[Violation]:
+        """Safely check a rule, returning empty list on error."""
+        try:
+            return rule.check(context)
+        except Exception:  # nosec B112
+            # Skip rules that fail (defensive programming)
+            return []
 
     def lint_directory(self, dir_path: Path, recursive: bool = True) -> list[Violation]:
         """Lint all files in a directory.

@@ -181,20 +181,34 @@ def config_show(ctx, format: str):
     """
     cfg = ctx.obj["config"]
 
-    if format == "json":
-        import json
+    formatters = {
+        "json": _format_config_json,
+        "yaml": _format_config_yaml,
+        "text": _format_config_text,
+    }
+    formatters[format](cfg)
 
-        click.echo(json.dumps(cfg, indent=2))
-    elif format == "yaml":
-        import yaml
 
-        click.echo(yaml.dump(cfg, default_flow_style=False, sort_keys=False))
-    else:
-        # Text format
-        click.echo("Current Configuration:")
-        click.echo("-" * 40)
-        for key, value in cfg.items():
-            click.echo(f"{key:20} : {value}")
+def _format_config_json(cfg: dict) -> None:
+    """Format configuration as JSON."""
+    import json
+
+    click.echo(json.dumps(cfg, indent=2))
+
+
+def _format_config_yaml(cfg: dict) -> None:
+    """Format configuration as YAML."""
+    import yaml
+
+    click.echo(yaml.dump(cfg, default_flow_style=False, sort_keys=False))
+
+
+def _format_config_text(cfg: dict) -> None:
+    """Format configuration as text."""
+    click.echo("Current Configuration:")
+    click.echo("-" * 40)
+    for key, value in cfg.items():
+        click.echo(f"{key:20} : {value}")
 
 
 @config.command("get")
@@ -379,20 +393,31 @@ def file_placement(  # pylint: disable=too-many-arguments,too-many-positional-ar
     path_obj = Path(path)
 
     try:
-        orchestrator = _setup_orchestrator(path_obj, config_file, rules, verbose)
-        violations = _execute_linting(orchestrator, path_obj, recursive)
-
-        if verbose:
-            logger.info(f"Found {len(violations)} violation(s)")
-
-        _output_violations(violations, format)
-        sys.exit(1 if violations else 0)
-
+        _execute_file_placement_lint(path_obj, config_file, rules, format, recursive, verbose)
     except Exception as e:
-        click.echo(f"Error during linting: {e}", err=True)
-        if verbose:
-            logger.exception("Linting failed with exception")
-        sys.exit(2)
+        _handle_linting_error(e, verbose)
+
+
+def _execute_file_placement_lint(  # pylint: disable=too-many-arguments,too-many-positional-arguments
+    path_obj, config_file, rules, format, recursive, verbose
+):
+    """Execute file placement linting."""
+    orchestrator = _setup_orchestrator(path_obj, config_file, rules, verbose)
+    violations = _execute_linting(orchestrator, path_obj, recursive)
+
+    if verbose:
+        logger.info(f"Found {len(violations)} violation(s)")
+
+    _output_violations(violations, format)
+    sys.exit(1 if violations else 0)
+
+
+def _handle_linting_error(error: Exception, verbose: bool) -> None:
+    """Handle linting errors."""
+    click.echo(f"Error during linting: {error}", err=True)
+    if verbose:
+        logger.exception("Linting failed with exception")
+    sys.exit(2)
 
 
 def _setup_orchestrator(path_obj, config_file, rules, verbose):
@@ -431,22 +456,36 @@ def _parse_json_rules(rules: str) -> dict:
 
 def _write_layout_config(orchestrator, rules_config: dict, verbose: bool) -> None:
     """Write layout config to .ai/layout.yaml if possible."""
-    import yaml
+    ai_dir = orchestrator.project_root / ".ai"
+    layout_file = ai_dir / "layout.yaml"
 
     try:
-        ai_dir = orchestrator.project_root / ".ai"
-        ai_dir.mkdir(exist_ok=True)
-        layout_file = ai_dir / "layout.yaml"
-
-        layout_config = {"file-placement": rules_config}
-        with layout_file.open("w", encoding="utf-8") as f:
-            yaml.dump(layout_config, f)
-
-        if verbose:
-            logger.debug(f"Written layout config to: {layout_file}")
+        _write_layout_yaml_file(ai_dir, layout_file, rules_config)
+        _log_layout_written(layout_file, verbose)
     except OSError as e:
-        if verbose:
-            logger.debug(f"Could not write layout config: {e}")
+        _log_layout_error(e, verbose)
+
+
+def _write_layout_yaml_file(ai_dir, layout_file, rules_config):
+    """Write layout YAML file."""
+    import yaml
+
+    ai_dir.mkdir(exist_ok=True)
+    layout_config = {"file-placement": rules_config}
+    with layout_file.open("w", encoding="utf-8") as f:
+        yaml.dump(layout_config, f)
+
+
+def _log_layout_written(layout_file, verbose):
+    """Log layout file written."""
+    if verbose:
+        logger.debug(f"Written layout config to: {layout_file}")
+
+
+def _log_layout_error(error, verbose):
+    """Log layout write error."""
+    if verbose:
+        logger.debug(f"Could not write layout config: {error}")
 
 
 def _log_applied_rules(rules_config: dict, verbose: bool) -> None:
@@ -457,8 +496,6 @@ def _log_applied_rules(rules_config: dict, verbose: bool) -> None:
 
 def _load_config_file(orchestrator, config_file, verbose):
     """Load configuration from external file."""
-    import yaml
-
     config_path = Path(config_file)
     if not config_path.exists():
         click.echo(f"Error: Config file not found: {config_file}", err=True)
@@ -467,23 +504,36 @@ def _load_config_file(orchestrator, config_file, verbose):
     # Load config into orchestrator
     orchestrator.config = orchestrator.config_loader.load(config_path)
 
-    # Also copy to .ai/layout.yaml for file-placement linter (if writable)
+    # Also copy to .ai/layout.yaml for file-placement linter
+    _write_loaded_config_to_layout(orchestrator, config_file, verbose)
+
+
+def _write_loaded_config_to_layout(orchestrator, config_file: str, verbose: bool) -> None:
+    """Write loaded config to .ai/layout.yaml if possible."""
+    ai_dir = orchestrator.project_root / ".ai"
+    layout_file = ai_dir / "layout.yaml"
+
     try:
-        ai_dir = orchestrator.project_root / ".ai"
-        ai_dir.mkdir(exist_ok=True)
-        layout_file = ai_dir / "layout.yaml"
-
-        # Write loaded config to layout file
-        with layout_file.open("w", encoding="utf-8") as f:
-            yaml.dump(orchestrator.config, f)
-
-        if verbose:
-            logger.debug(f"Loaded config from: {config_file}")
-            logger.debug(f"Written layout config to: {layout_file}")
+        _write_config_yaml(ai_dir, layout_file, orchestrator.config)
+        _log_config_loaded(config_file, layout_file, verbose)
     except OSError as e:
-        # If we can't write the layout file, log but continue
-        if verbose:
-            logger.debug(f"Could not write layout config: {e}")
+        _log_layout_error(e, verbose)
+
+
+def _write_config_yaml(ai_dir, layout_file, config):
+    """Write config to YAML file."""
+    import yaml
+
+    ai_dir.mkdir(exist_ok=True)
+    with layout_file.open("w", encoding="utf-8") as f:
+        yaml.dump(config, f)
+
+
+def _log_config_loaded(config_file, layout_file, verbose):
+    """Log config loaded and written."""
+    if verbose:
+        logger.debug(f"Loaded config from: {config_file}")
+        logger.debug(f"Written layout config to: {layout_file}")
 
 
 def _execute_linting(orchestrator, path_obj, recursive):
@@ -524,17 +574,23 @@ def _output_json(violations):
 
 def _output_text(violations):
     """Output violations in text format."""
-    if violations:
-        click.echo(f"Found {len(violations)} violation(s):\n")
-        for v in violations:
-            location = f"{v.file_path}:{v.line}" if v.line else str(v.file_path)
-            if v.column:
-                location += f":{v.column}"
-            click.echo(f"  {location}")
-            click.echo(f"    [{v.severity.name}] {v.rule_id}: {v.message}")
-            click.echo()
-    else:
+    if not violations:
         click.echo("✓ No violations found")
+        return
+
+    click.echo(f"Found {len(violations)} violation(s):\n")
+    for v in violations:
+        _print_violation(v)
+
+
+def _print_violation(v) -> None:
+    """Print a single violation in text format."""
+    location = f"{v.file_path}:{v.line}" if v.line else str(v.file_path)
+    if v.column:
+        location += f":{v.column}"
+    click.echo(f"  {location}")
+    click.echo(f"    [{v.severity.name}] {v.rule_id}: {v.message}")
+    click.echo()
 
 
 def _setup_nesting_orchestrator(path_obj: Path, config_file: str | None, verbose: bool):
@@ -618,21 +674,24 @@ def nesting(  # pylint: disable=too-many-arguments,too-many-positional-arguments
     path_obj = Path(path)
 
     try:
-        orchestrator = _setup_nesting_orchestrator(path_obj, config_file, verbose)
-        _apply_nesting_config_override(orchestrator, max_depth, verbose)
-        nesting_violations = _run_nesting_lint(orchestrator, path_obj, recursive)
-
-        if verbose:
-            logger.info(f"Found {len(nesting_violations)} nesting violation(s)")
-
-        _output_violations(nesting_violations, format)
-        sys.exit(1 if nesting_violations else 0)
-
+        _execute_nesting_lint(path_obj, config_file, format, max_depth, recursive, verbose)
     except Exception as e:
-        click.echo(f"Error during linting: {e}", err=True)
-        if verbose:
-            logger.exception("Linting failed with exception")
-        sys.exit(2)
+        _handle_linting_error(e, verbose)
+
+
+def _execute_nesting_lint(  # pylint: disable=too-many-arguments,too-many-positional-arguments
+    path_obj, config_file, format, max_depth, recursive, verbose
+):
+    """Execute nesting lint."""
+    orchestrator = _setup_nesting_orchestrator(path_obj, config_file, verbose)
+    _apply_nesting_config_override(orchestrator, max_depth, verbose)
+    nesting_violations = _run_nesting_lint(orchestrator, path_obj, recursive)
+
+    if verbose:
+        logger.info(f"Found {len(nesting_violations)} nesting violation(s)")
+
+    _output_violations(nesting_violations, format)
+    sys.exit(1 if nesting_violations else 0)
 
 
 if __name__ == "__main__":

@@ -28,11 +28,11 @@ This is the **PRIMARY HANDOFF DOCUMENT** for AI agents working on the Nesting De
 4. **Update this document** after completing each PR
 
 ## 📍 Current Status
-**Current PR**: PR4 Complete - Dogfooding Discovery Complete
+**Current PR**: PR5 Complete - All Violations Fixed!
 **Infrastructure State**: Core orchestrator and plugin framework ready (from enterprise-linter)
 **Feature Target**: Production-ready nesting depth linter for Python and TypeScript with configurable limits, integrated with CLI/Library/Docker modes, fully dogfooded on thai-lint codebase
-**Test Status**: 76/76 tests passing (100%)
-**Violations Found**: 18 functions at depth 4 (cataloged in VIOLATIONS.md)
+**Test Status**: 317/317 tests passing (100%)
+**Violations Found**: 0 violations - all 23 functions refactored from depth 4 to depth ≤3
 
 ## 📁 Required Documents Location
 ```
@@ -44,17 +44,17 @@ This is the **PRIMARY HANDOFF DOCUMENT** for AI agents working on the Nesting De
 
 ## 🎯 Next PR to Implement
 
-### ➡️ START HERE: PR5 - Dogfooding Fixes (Batch 1)
+### ➡️ START HERE: PR6 - Documentation
 
 **Quick Summary**:
-Fix first batch of 9 nesting violations (Easy category from VIOLATIONS.md). Focus on simple refactorings: if-elif-else chains, guard clauses, and helper function extraction.
+PR5 completed ALL violation fixes (18 src/ + 5 examples/tests = 23 total). Now complete documentation for production release.
 
 **Pre-flight Checklist**:
-- ⬜ Read PR5 section below for refactoring strategy
-- ⬜ Review VIOLATIONS.md → Easy Refactors section (9 functions)
-- ⬜ Refactor each function using documented patterns
-- ⬜ Run `make test` after each refactor
-- ⬜ Verify `make lint-nesting` shows ~9 violations (down from 18)
+- ⬜ Read PR6 section below for documentation requirements
+- ⬜ Update README.md with nesting linter section
+- ⬜ Create comprehensive docs/nesting-linter.md guide
+- ⬜ Document refactoring patterns used in PR5
+- ⬜ Update CHANGELOG.md with v0.2.0 entry
 
 **Prerequisites Complete**:
 ✅ PR1: Complete test suite (68 tests created)
@@ -70,10 +70,10 @@ Fix first batch of 9 nesting violations (Easy category from VIOLATIONS.md). Focu
 ---
 
 ## Overall Progress
-**Total Completion**: 71% (5/7 PRs completed)
+**Total Completion**: 86% (6/7 PRs completed)
 
 ```
-[#############################           ] 71% Complete
+[####################################    ] 86% Complete
 ```
 
 ---
@@ -87,8 +87,8 @@ Fix first batch of 9 nesting violations (Easy category from VIOLATIONS.md). Focu
 | PR3 | Integration (CLI + Library + Docker) | 🟢 Complete | 100% | Medium | P0 | All integration working, 64/76 tests passing |
 | PR3.5 | TypeScript Analyzer Implementation | 🟢 Complete | 100% | High | P1 | tree-sitter implementation, 76/76 tests (100%) |
 | PR4 | Dogfooding Discovery | 🟢 Complete | 100% | Low | P1 | 18 violations found, max_depth=3, make lint-nesting created |
-| PR5 | Dogfooding Fixes (Batch 1) | 🔴 Not Started | 0% | High | P1 | Fix first 9 violations (easy refactors) |
-| PR6 | Dogfooding Fixes (Batch 2) + Docs | 🔴 Not Started | 0% | High | P1 | Fix remaining 9 violations + docs |
+| PR5 | Dogfooding Fixes (All Violations) | 🟢 Complete | 100% | High | P1 | Fixed all 23 violations (18 src + 5 tests/examples) |
+| PR6 | Documentation | 🔴 Not Started | 0% | Medium | P1 | Complete docs, README, CHANGELOG |
 
 ### Status Legend
 - 🔴 Not Started
@@ -312,63 +312,73 @@ Fix first batch of 9 nesting violations (Easy category from VIOLATIONS.md). Focu
 
 ---
 
-## PR5: Dogfooding Fixes (Batch 1) 🔴 NOT STARTED
+## PR5: Dogfooding Fixes (All Violations) 🟢 COMPLETE
 
-**Objective**: Fix first batch of nesting violations via refactoring
+**Objective**: Fix ALL nesting violations via refactoring (combined PR5+PR6 fixes)
 
 **Steps**:
-1. ⬜ Read PR_BREAKDOWN.md → PR5 section
-2. ⬜ Review VIOLATIONS.md → Easy + Medium categories
-3. ⬜ Fix ~50% of violations via:
+1. ✅ Read PR_BREAKDOWN.md → PR5 section
+2. ✅ Review VIOLATIONS.md → All categories (18 src violations)
+3. ✅ Fix all 18 src/ violations via:
    - Early returns / guard clauses
    - Extracting nested logic to helper functions
-   - Combining conditions where appropriate
-   - Using functional approaches (map/filter/reduce)
-4. ⬜ Run tests after each refactor: `make test`
-5. ⬜ Verify no functionality broken
-6. ⬜ Run nesting linter: violations reduced by ~50%
-7. ⬜ Update this document
+   - Dispatch patterns for if-elif-else chains
+   - Flattening nested error handling
+4. ✅ Fix additional 5 tests/examples violations found
+5. ✅ Run tests after refactoring: `make test` (317/317 passing)
+6. ✅ Verify no functionality broken
+7. ✅ Run nesting linter: Zero violations achieved!
+8. ✅ Update this document
 
 **Completion Criteria**:
-- ⬜ ~50% of violations fixed
-- ⬜ All tests still pass (make test exits with code 0)
-- ⬜ make lint-full still passes
-- ⬜ No functionality broken (integration tests pass)
-- ⬜ Updated VIOLATIONS.md with remaining issues
+- ✅ ALL violations fixed (23 total: 18 src + 5 tests/examples)
+- ✅ All tests pass (make test exits with code 0 - 317 tests)
+- ✅ make lint-full passes (Pylint 10.00/10, all A-grade complexity)
+- ✅ No functionality broken (all integration tests pass)
+- ✅ make lint-nesting shows ZERO violations
 
-**Refactoring Patterns**:
-- Early returns to reduce nesting
-- Extract method for deeply nested blocks
-- Guard clauses at function start
-- Invert conditions to flatten structure
-- Functional approaches where appropriate
+**Refactoring Patterns Applied**:
+- **Extract helper functions** (13 functions): Moved complex nested logic to dedicated helpers
+- **Guard clauses** (7 functions): Used early returns to flatten control flow
+- **Dispatch patterns** (5 functions): Replaced if-elif-else chains with dictionary dispatch
+- **Flatten error handling** (6 functions): Extracted try-except blocks to helper methods
+
+**Files Modified**:
+- src/cli.py (6 functions refactored)
+- src/config.py (5 functions refactored)
+- src/orchestrator/core.py (2 functions refactored)
+- src/orchestrator/language_detector.py (1 function refactored)
+- src/core/registry.py (2 functions refactored)
+- src/linters/nesting/linter.py (1 function refactored)
+- src/linters/file_placement/linter.py (2 functions refactored)
+- examples/ci_integration.py (1 function refactored)
+- tests/integration/ (4 test functions refactored)
+
+**Test Results**: 317/317 passing (100%)
+**Lint Results**: Zero violations, Pylint 10.00/10, all complexity A-grade
 
 ---
 
-## PR6: Dogfooding Fixes (Batch 2) + Documentation 🔴 NOT STARTED
+## PR6: Documentation 🔴 NOT STARTED
 
-**Objective**: Fix remaining violations and complete documentation
+**Objective**: Complete comprehensive documentation for production release
 
 **Steps**:
 1. ⬜ Read PR_BREAKDOWN.md → PR6 section
-2. ⬜ Review VIOLATIONS.md → Remaining issues
-3. ⬜ Fix remaining violations (or add inline ignores with justification)
-4. ⬜ Run: `thai lint nesting src/` → Zero violations (or all acknowledged)
-5. ⬜ Update README.md with nesting linter examples
-6. ⬜ Create docs/nesting-linter.md (comprehensive guide)
-7. ⬜ Add configuration examples (.thailint.yaml)
-8. ⬜ Document refactoring patterns used
-9. ⬜ Update CHANGELOG.md
-10. ⬜ Update this document
+2. ⬜ Update README.md with nesting linter examples
+3. ⬜ Create docs/nesting-linter.md (comprehensive guide)
+4. ⬜ Add configuration examples (.thailint.yaml)
+5. ⬜ Document refactoring patterns used in PR5
+6. ⬜ Update CHANGELOG.md
+7. ⬜ Update this document
 
 **Completion Criteria**:
-- ⬜ Zero nesting violations (or all explicitly ignored with justification)
-- ⬜ All tests pass (make test exits with code 0)
-- ⬜ make lint-full exits with code 0
 - ⬜ README.md updated with nesting linter section
 - ⬜ Comprehensive documentation in docs/nesting-linter.md
 - ⬜ Configuration examples provided
-- ⬜ CHANGELOG.md updated with new feature
+- ⬜ Refactoring patterns documented
+- ⬜ CHANGELOG.md updated with v0.2.0 entry
+- ⬜ All existing tests still pass
 
 **Files Created**:
 - docs/nesting-linter.md (comprehensive guide)

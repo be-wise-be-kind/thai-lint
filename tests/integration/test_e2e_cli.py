@@ -220,28 +220,41 @@ class TestCLIOutputFormats:
             assert result.exit_code == 1
             assert "test.py" in result.output
 
+    def _setup_json_test_files(self):
+        """Set up test files for JSON output test."""
+        Path("test.py").write_text("print('test')")
+
+        # Create .ai directory and layout config
+        Path(".ai").mkdir()
+        Path(".ai/layout.yaml").write_text(
+            "file-placement:\n  global_deny:\n    - pattern: '.*\\.py$'\n      reason: 'No Python files'\n"
+        )
+
+    def _verify_json_parseable(self, result):
+        """Verify output is parseable JSON.
+
+        Args:
+            result: CLI runner result object
+        """
+        try:
+            data = json.loads(result.output)
+            assert isinstance(data, (list, dict))
+        except json.JSONDecodeError:
+            pytest.fail("Output is not valid JSON")
+
     def test_json_output_format(self) -> None:
         """Test JSON output format."""
         runner = CliRunner()
 
         with runner.isolated_filesystem():
-            Path("test.py").write_text("print('test')")
-
-            # Create .ai directory and layout config
-            Path(".ai").mkdir()
-            Path(".ai/layout.yaml").write_text(
-                "file-placement:\n  global_deny:\n    - pattern: '.*\\.py$'\n      reason: 'No Python files'\n"
-            )
+            # Set up test files
+            self._setup_json_test_files()
 
             result = runner.invoke(cli, ["file-placement", "--format", "json", "test.py"])
 
             # JSON format should be parseable
             assert result.exit_code == 1
-            try:
-                data = json.loads(result.output)
-                assert isinstance(data, (list, dict))
-            except json.JSONDecodeError:
-                pytest.fail("Output is not valid JSON")
+            self._verify_json_parseable(result)
 
 
 class TestCLIRecursive:

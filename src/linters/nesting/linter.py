@@ -123,19 +123,31 @@ class NestingDepthRule(BaseLintRule):
         context: BaseLintContext,
     ) -> list[Violation]:
         """Check list of functions for nesting violations."""
-        analyzer = PythonNestingAnalyzer()
         violations = []
-
         for func in functions:
-            max_depth, _line = analyzer.calculate_max_depth(func)
-            if max_depth > config.max_nesting_depth:
-                violation = self._create_nesting_violation(func, max_depth, config, context)
-                if not self._ignore_parser.should_ignore_violation(
-                    violation, context.file_content or ""
-                ):
-                    violations.append(violation)
-
+            violation = self._check_single_function(func, config, context)
+            if violation:
+                violations.append(violation)
         return violations
+
+    def _check_single_function(
+        self,
+        func: ast.FunctionDef | ast.AsyncFunctionDef,
+        config: NestingConfig,
+        context: BaseLintContext,
+    ) -> Violation | None:
+        """Check a single function for nesting violations."""
+        analyzer = PythonNestingAnalyzer()
+        max_depth, _line = analyzer.calculate_max_depth(func)
+
+        if max_depth <= config.max_nesting_depth:
+            return None
+
+        violation = self._create_nesting_violation(func, max_depth, config, context)
+        if self._ignore_parser.should_ignore_violation(violation, context.file_content or ""):
+            return None
+
+        return violation
 
     def _create_syntax_error_violation(
         self, error: SyntaxError, context: BaseLintContext
