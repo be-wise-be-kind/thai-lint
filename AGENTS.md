@@ -57,8 +57,15 @@ If the user says any of the following:
 **Your Actions**:
 1. **Check** `.roadmap/in-progress/` for active roadmaps
 2. **Read** the roadmap's `PROGRESS_TRACKER.md` FIRST
-3. **Follow** the "Next PR to Implement" section
-4. **Update** PROGRESS_TRACKER.md after completing each PR
+3. **READ** `.ai/docs/FILE_HEADER_STANDARDS.md` for header templates
+4. **Follow** the "Next PR to Implement" section
+5. **Update** PROGRESS_TRACKER.md after completing each PR
+
+**BEFORE Writing Any Files**:
+- ✅ Check `.ai/docs/FILE_HEADER_STANDARDS.md` for correct header template
+- ✅ Use template matching file type (Python: lines 131-151, YAML: lines 177-193, etc.)
+- ✅ Include ALL mandatory fields: Purpose, Scope, Overview, Dependencies, Exports, Interfaces, Implementation
+- ✅ Use atemporal language (no "currently", "now", "new", "old", dates, or temporal references)
 
 ### Roadmap Lifecycle
 
@@ -87,9 +94,31 @@ See `.ai/layout.yaml` for the canonical directory structure.
 - Documentation: `docs/`
 
 ### Documentation Standards
-- All Python files require docstring headers per FILE_HEADER_STANDARDS.md
-- Include: Purpose, Scope, Overview, Dependencies, Exports
-- Use atemporal language (no "currently", "now", etc.)
+
+**MANDATORY: File Headers Before Writing Any Code**
+
+All code files MUST have comprehensive headers following `.ai/docs/FILE_HEADER_STANDARDS.md`:
+
+**Required Process**:
+1. ✅ **READ** `.ai/docs/FILE_HEADER_STANDARDS.md` BEFORE writing any files
+2. ✅ **SELECT** correct template for file type:
+   - Python (.py): Lines 131-151
+   - TypeScript/JavaScript (.ts, .tsx, .js, .jsx): Lines 154-174
+   - YAML/Config (.yml, .yaml): Lines 177-193
+   - Markdown (.md): Lines 75-102
+3. ✅ **INCLUDE** all mandatory fields:
+   - Purpose: Brief description (1-2 lines)
+   - Scope: What areas/components this file covers
+   - Overview: Comprehensive summary (3-5 sentences minimum)
+   - Dependencies: Key dependencies or related files
+   - Exports: Main classes, functions, or constants provided
+   - Interfaces: Key APIs or methods exposed
+   - Implementation: Notable patterns or architectural decisions
+4. ✅ **USE** atemporal language (no "currently", "now", "new", "old", dates)
+
+**Validation**: Header linter runs in CI/CD and will block PRs with missing/incorrect headers.
+
+See `.ai/docs/FILE_HEADER_STANDARDS.md` for complete templates and examples.
 
 ## Build and Test Commands
 
@@ -171,6 +200,7 @@ Types: `feat`, `fix`, `docs`, `style`, `refactor`, `test`, `chore`
 ### Before Committing
 - [ ] All tests pass
 - [ ] Code is linted (`make lint-full`)
+- [ ] **All files have proper headers per `.ai/docs/FILE_HEADER_STANDARDS.md`**
 - [ ] Documentation updated
 - [ ] No secrets committed (pre-commit hooks check this)
 
