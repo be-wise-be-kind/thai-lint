@@ -26,7 +26,7 @@ WORKDIR /build
 RUN pip install --no-cache-dir poetry==1.7.1
 
 # Copy dependency files first (better layer caching)
-COPY pyproject.toml poetry.lock ./
+COPY pyproject.toml poetry.lock README.md ./
 
 # Configure Poetry to not create virtual env (we're in a container)
 RUN poetry config virtualenvs.create false
@@ -35,7 +35,7 @@ RUN poetry config virtualenvs.create false
 COPY src/ ./src/
 
 # Install dependencies AND the package itself (no dev dependencies)
-RUN poetry install --no-dev --no-interaction --no-ansi
+RUN poetry install --only main --no-interaction --no-ansi
 
 # ============================================================================
 # Runtime Stage: Minimal production image
@@ -45,7 +45,7 @@ FROM python:3.11-slim
 # Set labels for metadata
 LABEL maintainer="Steve Jackson"
 LABEL description="Thai-Lint - AI code linter for multi-language projects"
-LABEL version="0.1.1"
+# Version is dynamically read from pyproject.toml during build
 
 # Create non-root user for security
 RUN useradd -m -u 1000 -s /bin/bash thailint

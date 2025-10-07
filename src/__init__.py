@@ -8,8 +8,9 @@ Overview: Initializes the CLI application package, defines version number using 
     setup tools, CLI help text, and documentation. Exports main CLI entry point, high-level Linter
     class for library usage, configuration utilities, and direct linter imports for advanced usage.
     Includes nesting depth linter exports for convenient access to nesting analysis functionality.
+    Version is dynamically loaded from package metadata (pyproject.toml) using importlib.metadata.
 
-Dependencies: None (minimal imports for package initialization)
+Dependencies: importlib.metadata for dynamic version loading from installed package metadata
 
 Exports: __version__, Linter (high-level API), cli (CLI entry point), load_config, save_config,
     ConfigError, Orchestrator (advanced usage), file_placement_lint, nesting_lint, NestingDepthRule
@@ -17,7 +18,13 @@ Exports: __version__, Linter (high-level API), cli (CLI entry point), load_confi
 Interfaces: Package version string, Linter class API, CLI command group, configuration functions
 """
 
-__version__ = "0.1.0"
+try:
+    from importlib.metadata import version
+
+    __version__ = version("thailint")
+except Exception:
+    # Fallback for development when package is not installed
+    __version__ = "dev"
 
 # High-level Library API (primary interface)
 from src.api import Linter
