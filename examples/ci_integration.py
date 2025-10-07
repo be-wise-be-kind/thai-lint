@@ -25,6 +25,46 @@ from pathlib import Path
 from src import Linter
 
 
+def _create_violations_data(violations):
+    """Convert violations to JSON-serializable format.
+
+    Args:
+        violations: List of violation objects
+
+    Returns:
+        List of dictionaries containing violation data
+    """
+    return [
+        {
+            "file": str(v.file_path),
+            "rule": v.rule_id,
+            "message": v.message,
+            "severity": v.severity.name,
+            "line": v.line_number if hasattr(v, "line_number") else None,
+        }
+        for v in violations
+    ]
+
+
+def _report_violations(violations):
+    """Report violations to console and JSON file.
+
+    Args:
+        violations: List of violation objects
+    """
+    print(f"❌ Found {len(violations)} violations")
+
+    # Write JSON report
+    violations_data = _create_violations_data(violations)
+    report_file = Path("lint-report.json")
+    report_file.write_text(json.dumps(violations_data, indent=2))
+    print(f"Report written to {report_file}")
+
+    # Print human-readable output
+    for v in violations:
+        print(f"  {v.file_path}:{v.rule_id} - {v.message}")
+
+
 def lint_for_ci(target_path: str, config_file: str | None = None) -> int:
     """Lint code for CI/CD pipeline with proper exit codes.
 
@@ -37,39 +77,14 @@ def lint_for_ci(target_path: str, config_file: str | None = None) -> int:
     """
     try:
         # Initialize linter
-        if config_file:
-            linter = Linter(config_file=config_file)
-        else:
-            linter = Linter()
+        linter = Linter(config_file=config_file) if config_file else Linter()
 
         # Run linting
         violations = linter.lint(target_path)
 
         # Report results
         if violations:
-            print(f"❌ Found {len(violations)} violations")
-
-            # JSON output for CI tools
-            violations_data = [
-                {
-                    "file": str(v.file_path),
-                    "rule": v.rule_id,
-                    "message": v.message,
-                    "severity": v.severity.name,
-                    "line": v.line_number if hasattr(v, "line_number") else None,
-                }
-                for v in violations
-            ]
-
-            # Write JSON report
-            report_file = Path("lint-report.json")
-            report_file.write_text(json.dumps(violations_data, indent=2))
-            print(f"Report written to {report_file}")
-
-            # Print human-readable output
-            for v in violations:
-                print(f"  {v.file_path}:{v.rule_id} - {v.message}")
-
+            _report_violations(violations)
             return 1  # Exit code 1 for violations
 
         print("✅ No violations found")

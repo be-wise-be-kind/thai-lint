@@ -98,10 +98,11 @@ def _load_from_explicit_path(config_path: Path) -> dict[str, Any]:
 def _load_from_default_locations() -> dict[str, Any]:
     """Load config from default locations."""
     for location in CONFIG_LOCATIONS:
-        if location.exists():
-            loaded_config = _try_load_from_location(location)
-            if loaded_config:
-                return loaded_config
+        if not location.exists():
+            continue
+        loaded_config = _try_load_from_location(location)
+        if loaded_config:
+            return loaded_config
     logger.info("No config file found, using defaults")
     return DEFAULT_CONFIG.copy()
 
@@ -164,16 +165,21 @@ def _load_config_file(path: Path) -> dict[str, Any]:
         ConfigError: If file cannot be parsed.
     """
     try:
-        with path.open() as f:
-            if path.suffix in [".yaml", ".yml"]:
-                return _parse_yaml_file(f, path)
-            if path.suffix == ".json":
-                return _parse_json_file(f, path)
-            raise ConfigError(f"Unsupported config format: {path.suffix}")
+        return _parse_config_by_extension(path)
+    except ConfigError:
+        raise
     except Exception as e:
-        if isinstance(e, ConfigError):
-            raise
         raise ConfigError(f"Failed to load config from {path}: {e}") from e
+
+
+def _parse_config_by_extension(path: Path) -> dict[str, Any]:
+    """Parse config file based on its extension."""
+    with path.open() as f:
+        if path.suffix in [".yaml", ".yml"]:
+            return _parse_yaml_file(f, path)
+        if path.suffix == ".json":
+            return _parse_json_file(f, path)
+        raise ConfigError(f"Unsupported config format: {path.suffix}")
 
 
 def _validate_before_save(config: dict[str, Any]) -> None:
@@ -186,13 +192,24 @@ def _validate_before_save(config: dict[str, Any]) -> None:
 
 def _write_config_file(config: dict[str, Any], path: Path) -> None:
     """Write config to file based on extension."""
+    if path.suffix in [".yaml", ".yml"]:
+        _write_yaml_config(config, path)
+    elif path.suffix == ".json":
+        _write_json_config(config, path)
+    else:
+        raise ConfigError(f"Unsupported config format: {path.suffix}")
+
+
+def _write_yaml_config(config: dict[str, Any], path: Path) -> None:
+    """Write config as YAML."""
     with path.open("w") as f:
-        if path.suffix in [".yaml", ".yml"]:
-            yaml.dump(config, f, default_flow_style=False, sort_keys=False)
-        elif path.suffix == ".json":
-            json.dump(config, f, indent=2, sort_keys=False)
-        else:
-            raise ConfigError(f"Unsupported config format: {path.suffix}")
+        yaml.dump(config, f, default_flow_style=False, sort_keys=False)
+
+
+def _write_json_config(config: dict[str, Any], path: Path) -> None:
+    """Write config as JSON."""
+    with path.open("w") as f:
+        json.dump(config, f, indent=2, sort_keys=False)
 
 
 def save_config(config: dict[str, Any], config_path: Path | None = None):
@@ -216,13 +233,17 @@ def save_config(config: dict[str, Any], config_path: Path | None = None):
     path = config_path or CONFIG_LOCATIONS[0]
     path.parent.mkdir(parents=True, exist_ok=True)
     _validate_before_save(config)
+    _write_and_log_config(config, path)
 
+
+def _write_and_log_config(config: dict[str, Any], path: Path) -> None:
+    """Write config file and log success."""
     try:
         _write_config_file(config, path)
         logger.info("Saved config to: %s", path)
+    except ConfigError:
+        raise
     except Exception as e:
-        if isinstance(e, ConfigError):
-            raise
         raise ConfigError(f"Failed to save config to {path}: {e}") from e
 
 

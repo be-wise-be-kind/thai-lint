@@ -122,6 +122,21 @@ class TestBulkFilePerformance:
             # 100 files should complete in under 1s
             assert elapsed < 1.0, f"100 files took {elapsed:.2f}s (target: <1s)"
 
+    def _create_batch_files(self, tmp_path, batch_size=100, num_batches=10):
+        """Create test files in batches.
+
+        Args:
+            tmp_path: Temporary directory path
+            batch_size: Number of files per batch
+            num_batches: Number of batches to create
+        """
+        for batch in range(num_batches):
+            batch_dir = tmp_path / f"batch_{batch}"
+            batch_dir.mkdir()
+            for i in range(batch_size):
+                test_file = batch_dir / f"test_{i}.py"
+                test_file.write_text(f"print('test {batch}_{i}')")
+
     def test_1000_files_under_5s(self) -> None:
         """Test linting 1000 files completes in under 5s (performance target)."""
         from src import Linter
@@ -134,13 +149,7 @@ class TestBulkFilePerformance:
             config_file.write_text("rules:\n  file-placement:\n    allow:\n      - '.*\\.py$'\n")
 
             # Create 1000 test files in batches
-            batch_size = 100
-            for batch in range(10):
-                batch_dir = tmp_path / f"batch_{batch}"
-                batch_dir.mkdir()
-                for i in range(batch_size):
-                    test_file = batch_dir / f"test_{i}.py"
-                    test_file.write_text(f"print('test {batch}_{i}')")
+            self._create_batch_files(tmp_path)
 
             # Initialize linter
             linter = Linter(config_file=str(config_file), project_root=str(tmp_path))

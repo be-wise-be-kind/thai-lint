@@ -93,30 +93,30 @@ class RuleRegistry:
         Returns:
             Number of rules discovered and registered.
         """
-        discovered_count = 0
-
         try:
-            # Import the package
             package = importlib.import_module(package_path)
         except ImportError:
-            # Package doesn't exist or can't be imported
             return 0
 
-        # Check if it's a package or single module
         if not hasattr(package, "__path__"):
-            # Single module - try to discover from it directly
             return self._discover_from_module(package_path)
 
-        # Walk through all modules in the package
+        return self._discover_from_package_modules(package_path, package)
+
+    def _discover_from_package_modules(self, package_path: str, package: Any) -> int:
+        """Discover rules from all modules in a package."""
+        discovered_count = 0
         for _, module_name, _ in pkgutil.iter_modules(package.__path__):
             full_module_name = f"{package_path}.{module_name}"
-            try:
-                discovered_count += self._discover_from_module(full_module_name)
-            except (ImportError, AttributeError):
-                # Skip modules that can't be imported
-                continue
-
+            discovered_count += self._try_discover_from_module(full_module_name)
         return discovered_count
+
+    def _try_discover_from_module(self, module_name: str) -> int:
+        """Try to discover rules from a module, return 0 on error."""
+        try:
+            return self._discover_from_module(module_name)
+        except (ImportError, AttributeError):
+            return 0
 
     def _discover_from_module(self, module_path: str) -> int:
         """Discover rules from a specific module.
@@ -127,28 +127,31 @@ class RuleRegistry:
         Returns:
             Number of rules discovered from this module.
         """
-        discovered_count = 0
-
         try:
             module = importlib.import_module(module_path)
         except (ImportError, AttributeError):
             return 0
 
-        # Look for rule classes in the module
+        return self._register_rules_from_module(module)
+
+    def _register_rules_from_module(self, module: Any) -> int:
+        """Register all rule classes from a module."""
+        discovered_count = 0
         for _name, obj in inspect.getmembers(module):
             if not self._is_rule_class(obj):
                 continue
-
-            try:
-                # Instantiate the rule
-                rule_instance = obj()
-                self.register(rule_instance)
+            if self._try_register_rule_class(obj):
                 discovered_count += 1
-            except (TypeError, AttributeError, ValueError):
-                # Skip classes that can't be instantiated
-                continue
-
         return discovered_count
+
+    def _try_register_rule_class(self, rule_class: Any) -> bool:
+        """Try to instantiate and register a rule class."""
+        try:
+            rule_instance = rule_class()
+            self.register(rule_instance)
+            return True
+        except (TypeError, AttributeError, ValueError):
+            return False
 
     def _is_rule_class(self, obj: Any) -> bool:
         """Check if an object is a valid rule class.

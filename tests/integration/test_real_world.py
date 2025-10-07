@@ -339,6 +339,60 @@ class TestEdgeCases:
             violations = linter.lint(str(empty_dir))
             assert isinstance(violations, list)
 
+    def _setup_symlink_test(self, tmp_path):
+        """Set up test directory with symlink.
+
+        Args:
+            tmp_path: Temporary directory path
+
+        Returns:
+            Path to subdirectory with symlink
+        """
+        # Create config
+        config_file = tmp_path / ".thailint.yaml"
+        config_file.write_text("rules:\n  file-placement:\n    allow:\n      - '.*\\.py$'\n")
+
+        # Create directory and symlink to itself
+        subdir = tmp_path / "subdir"
+        subdir.mkdir()
+        (subdir / "test.py").write_text("print('test')")
+
+        # Create symlink (may not work on all systems)
+        try:
+            link = subdir / "link"
+            link.symlink_to(subdir)
+        except (OSError, NotImplementedError):
+            pytest.skip("Symlinks not supported on this system")
+
+        return subdir
+
+    def _run_linting_with_timeout(self, linter, tmp_path):
+        """Run linting with timeout protection.
+
+        Args:
+            linter: Linter instance
+            tmp_path: Path to lint
+
+        Returns:
+            List of violations
+        """
+        import signal
+
+        def timeout_handler(signum, frame):
+            raise TimeoutError("Linter stuck in infinite loop")
+
+        # Set timeout
+        signal.signal(signal.SIGALRM, timeout_handler)
+        signal.alarm(5)  # 5 second timeout
+
+        try:
+            violations = linter.lint(str(tmp_path))
+            signal.alarm(0)  # Cancel timeout
+            return violations
+        except TimeoutError:
+            signal.alarm(0)
+            pytest.fail("Linter stuck in infinite loop on symlink")
+
     def test_symlinks_handled_safely(self) -> None:
         """Test symlinks are handled without infinite loops."""
         import tempfile
@@ -348,39 +402,14 @@ class TestEdgeCases:
         with tempfile.TemporaryDirectory() as tmpdir:
             tmp_path = Path(tmpdir)
 
-            # Create config
-            config_file = tmp_path / ".thailint.yaml"
-            config_file.write_text("rules:\n  file-placement:\n    allow:\n      - '.*\\.py$'\n")
-
-            # Create directory and symlink to itself
-            subdir = tmp_path / "subdir"
-            subdir.mkdir()
-            (subdir / "test.py").write_text("print('test')")
-
-            # Create symlink (may not work on all systems)
-            try:
-                link = subdir / "link"
-                link.symlink_to(subdir)
-            except (OSError, NotImplementedError):
-                pytest.skip("Symlinks not supported on this system")
+            # Set up test environment with symlink
+            self._setup_symlink_test(tmp_path)
 
             # Initialize linter
-            linter = Linter(config_file=str(config_file), project_root=str(tmp_path))
+            linter = Linter(
+                config_file=str(tmp_path / ".thailint.yaml"), project_root=str(tmp_path)
+            )
 
             # Should handle symlinks without infinite loop (timeout protection)
-            import signal
-
-            def timeout_handler(signum, frame):
-                raise TimeoutError("Linter stuck in infinite loop")
-
-            # Set timeout
-            signal.signal(signal.SIGALRM, timeout_handler)
-            signal.alarm(5)  # 5 second timeout
-
-            try:
-                violations = linter.lint(str(tmp_path))
-                signal.alarm(0)  # Cancel timeout
-                assert isinstance(violations, list)
-            except TimeoutError:
-                signal.alarm(0)
-                pytest.fail("Linter stuck in infinite loop on symlink")
+            violations = self._run_linting_with_timeout(linter, tmp_path)
+            assert isinstance(violations, list)

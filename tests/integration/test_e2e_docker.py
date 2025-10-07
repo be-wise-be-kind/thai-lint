@@ -312,6 +312,36 @@ class TestDockerLinting:
             if tmpdir.exists():
                 shutil.rmtree(tmpdir)
 
+    def _setup_docker_json_test_files(self, tmpdir):
+        """Set up test files for JSON output test.
+
+        Args:
+            tmpdir: Temporary directory path
+        """
+        # Create test file and config
+        test_file = tmpdir / "test.py"
+        test_file.write_text("print('test')")
+        test_file.chmod(0o644)
+
+        config_file = tmpdir / ".thailint.yaml"
+        config_file.write_text("rules:\n  file-placement:\n    deny:\n      - '.*\\.py$'\n")
+        config_file.chmod(0o644)
+        tmpdir.chmod(0o755)
+
+    def _verify_json_output(self, result):
+        """Verify JSON output is valid.
+
+        Args:
+            result: subprocess result object
+        """
+        if "not built" in result.stderr or "not found" in result.stderr:
+            pytest.skip("Docker image not built")
+
+        # Should produce valid JSON if violations found
+        if result.returncode == 1:
+            with contextlib.suppress(json.JSONDecodeError):
+                json.loads(result.stdout)
+
     def test_docker_json_output(self) -> None:
         """Test JSON output format in Docker."""
         # Skip if Docker not available
@@ -330,15 +360,8 @@ class TestDockerLinting:
         tmpdir.mkdir(parents=True, exist_ok=True)
 
         try:
-            # Create test file and config
-            test_file = tmpdir / "test.py"
-            test_file.write_text("print('test')")
-            test_file.chmod(0o644)
-
-            config_file = tmpdir / ".thailint.yaml"
-            config_file.write_text("rules:\n  file-placement:\n    deny:\n      - '.*\\.py$'\n")
-            config_file.chmod(0o644)
-            tmpdir.chmod(0o755)
+            # Create test files
+            self._setup_docker_json_test_files(tmpdir)
 
             # Run with JSON format
             result = subprocess.run(
@@ -360,13 +383,8 @@ class TestDockerLinting:
                 timeout=30,
             )
 
-            if "not built" in result.stderr or "not found" in result.stderr:
-                pytest.skip("Docker image not built")
-
-            # Should produce valid JSON if violations found
-            if result.returncode == 1:
-                with contextlib.suppress(json.JSONDecodeError):
-                    json.loads(result.stdout)
+            # Verify output
+            self._verify_json_output(result)
 
         finally:
             # Cleanup

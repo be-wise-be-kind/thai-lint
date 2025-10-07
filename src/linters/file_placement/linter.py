@@ -498,20 +498,25 @@ class FilePlacementLinter:
         Returns:
             List of all violations found
         """
-        violations = []
-        pattern = "**/*" if recursive else "*"
-
         from src.linter_config.ignore import IgnoreDirectiveParser
 
         ignore_parser = IgnoreDirectiveParser(self.project_root)
+        pattern = "**/*" if recursive else "*"
 
+        violations = []
         for file_path in dir_path.glob(pattern):
-            if file_path.is_file():
-                # Check ignore patterns
-                if not ignore_parser.is_ignored(file_path):
-                    violations.extend(self.lint_path(file_path))
+            if not file_path.is_file():
+                continue
+            file_violations = self._lint_file_if_not_ignored(file_path, ignore_parser)
+            violations.extend(file_violations)
 
         return violations
+
+    def _lint_file_if_not_ignored(self, file_path: Path, ignore_parser: Any) -> list[Violation]:
+        """Lint file if not ignored."""
+        if ignore_parser.is_ignored(file_path):
+            return []
+        return self.lint_path(file_path)
 
 
 class FilePlacementRule(BaseLintRule):
@@ -558,12 +563,16 @@ class FilePlacementRule(BaseLintRule):
     def _load_layout_config(self, layout_path: Path) -> dict[str, Any]:
         """Load layout configuration from file."""
         try:
-            with layout_path.open(encoding="utf-8") as f:
-                if str(layout_path).endswith((".yaml", ".yml")):
-                    return yaml.safe_load(f) or {}
-                return json.load(f)
+            return self._parse_layout_file(layout_path)
         except Exception:
             return {}
+
+    def _parse_layout_file(self, layout_path: Path) -> dict[str, Any]:
+        """Parse layout file based on extension."""
+        with layout_path.open(encoding="utf-8") as f:
+            if str(layout_path).endswith((".yaml", ".yml")):
+                return yaml.safe_load(f) or {}
+            return json.load(f)
 
     def _get_or_create_linter(self, project_root: Path) -> FilePlacementLinter:
         """Get cached linter or create new one."""
