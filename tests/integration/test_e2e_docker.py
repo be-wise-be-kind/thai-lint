@@ -20,6 +20,7 @@ Implementation: E2E tests with subprocess docker execution, volume mounting veri
     output capture and parsing, exit code validation
 """
 
+import contextlib
 import json
 import subprocess
 import tempfile
@@ -364,11 +365,8 @@ class TestDockerLinting:
 
             # Should produce valid JSON if violations found
             if result.returncode == 1:
-                try:
+                with contextlib.suppress(json.JSONDecodeError):
                     json.loads(result.stdout)
-                except json.JSONDecodeError:
-                    # JSON parsing might fail, that's okay for this test
-                    pass
 
         finally:
             # Cleanup

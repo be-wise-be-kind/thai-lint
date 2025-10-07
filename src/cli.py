@@ -436,7 +436,7 @@ def _apply_inline_rules(orchestrator, rules, verbose):
             if verbose:
                 logger.debug(f"Applied inline rules: {rules_config}")
                 logger.debug(f"Written layout config to: {layout_file}")
-        except (OSError, PermissionError) as e:
+        except OSError as e:
             # If we can't write the layout file, log but continue
             # The orchestrator config is still updated
             if verbose:
@@ -471,7 +471,7 @@ def _load_config_file(orchestrator, config_file, verbose):
         if verbose:
             logger.debug(f"Loaded config from: {config_file}")
             logger.debug(f"Written layout config to: {layout_file}")
-    except (OSError, PermissionError) as e:
+    except OSError as e:
         # If we can't write the layout file, log but continue
         if verbose:
             logger.debug(f"Could not write layout config: {e}")
