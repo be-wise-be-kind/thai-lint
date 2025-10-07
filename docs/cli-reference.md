@@ -124,6 +124,14 @@ Lint files for proper file placement according to configuration rules.
 thai-lint file-placement [OPTIONS] [PATH]
 ```
 
+#### lint nesting
+
+Check for excessive nesting depth in code.
+
+```bash
+thai-lint nesting [OPTIONS] [PATH]
+```
+
 **Arguments:**
 
 | Argument | Required | Default | Description |
@@ -237,6 +245,155 @@ Exit code: 0
   }
 ]
 ```
+
+---
+
+### nesting
+
+Check for excessive nesting depth in Python and TypeScript code.
+
+```bash
+thai-lint nesting [OPTIONS] [PATH]
+```
+
+**Arguments:**
+
+| Argument | Required | Default | Description |
+|----------|----------|---------|-------------|
+| `PATH` | No | `.` (current directory) | File or directory to check |
+
+**Options:**
+
+| Option | Short | Type | Default | Description |
+|--------|-------|------|---------|-------------|
+| `--config` | `-c` | PATH | Auto-discover | Path to config file |
+| `--max-depth` | `-d` | INTEGER | `4` | Maximum allowed nesting depth |
+| `--format` | `-f` | CHOICE | `text` | Output format: `text` or `json` |
+
+**Examples:**
+
+**Basic usage:**
+```bash
+# Check current directory
+thai-lint nesting
+
+# Check specific directory
+thai-lint nesting src/
+
+# Check specific file
+thai-lint nesting src/main.py
+```
+
+**With custom max depth:**
+```bash
+# Strict limit (depth 3)
+thai-lint nesting --max-depth 3 src/
+
+# Very strict (depth 2)
+thai-lint nesting --max-depth 2 src/
+
+# Lenient (depth 5)
+thai-lint nesting --max-depth 5 src/
+```
+
+**With configuration file:**
+```bash
+# Use specific config
+thai-lint nesting --config .thailint.yaml src/
+
+# Short form
+thai-lint nesting -c rules.yaml -d 3 src/
+```
+
+**Output formats:**
+```bash
+# Text format (default, human-readable)
+thai-lint nesting src/
+
+# JSON format (for parsing/CI/CD)
+thai-lint nesting --format json src/
+```
+
+**Output Examples:**
+
+**Text format (violations found):**
+```
+❌ Found 2 violations:
+
+src/processor.py:15
+  Rule: nesting.excessive-depth
+  Function: process_data
+  Message: Function has nesting depth 5 (max: 3)
+  Suggestion: Consider refactoring with guard clauses or extract method
+  Severity: ERROR
+
+src/handler.py:42
+  Rule: nesting.excessive-depth
+  Function: handle_request
+  Message: Function has nesting depth 4 (max: 3)
+  Suggestion: Use early returns to reduce nesting
+  Severity: ERROR
+
+Exit code: 1
+```
+
+**Text format (no violations):**
+```
+✅ No violations found
+
+Exit code: 0
+```
+
+**JSON format:**
+```json
+{
+  "violations": [
+    {
+      "file_path": "src/processor.py",
+      "line_number": 15,
+      "rule_id": "nesting.excessive-depth",
+      "message": "Function 'process_data' has nesting depth 5 (max: 3)",
+      "severity": "ERROR"
+    },
+    {
+      "file_path": "src/handler.py",
+      "line_number": 42,
+      "rule_id": "nesting.excessive-depth",
+      "message": "Function 'handle_request' has nesting depth 4 (max: 3)",
+      "severity": "ERROR"
+    }
+  ],
+  "total": 2
+}
+```
+
+**Language Support:**
+- ✅ Python (`.py`) - Full support
+- ✅ TypeScript (`.ts`, `.tsx`) - Full support
+- ✅ JavaScript (`.js`, `.jsx`) - Supported via TypeScript parser
+
+**Common Patterns:**
+
+```bash
+# Strict project-wide check
+thai-lint nesting --max-depth 3 .
+
+# Check only source code
+thai-lint nesting src/
+
+# CI/CD integration
+thai-lint nesting --format json src/ > nesting-report.json
+
+# With verbose output
+thai-lint --verbose nesting src/
+```
+
+**See Also:**
+- `docs/nesting-linter.md` - Comprehensive nesting linter guide
+- Refactoring patterns and best practices
+- Configuration examples
+
+---
 
 ### config
 

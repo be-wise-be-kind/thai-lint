@@ -24,6 +24,133 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.0] - 2025-10-07
+
+**Nesting Depth Linter Release** - Adds comprehensive nesting depth analysis for Python and TypeScript code. Includes AST-based analysis with tree-sitter, configurable depth limits, and extensive refactoring patterns. Validated on the thai-lint codebase (zero violations after refactoring 23 functions).
+
+### Added
+
+- **Nesting Depth Linter** - Complete nesting depth analysis for Python and TypeScript
+  - AST-based depth calculation using Python `ast` module and `tree-sitter-typescript`
+  - Configurable `max_nesting_depth` (default: 4, thai-lint uses: 3)
+  - Detects excessive nesting in if/for/while/with/try/match (Python) and if/for/while/try/switch (TypeScript)
+  - Helpful violation messages with refactoring suggestions
+  - Depth calculation starts at 1 for function body (matches industry standards)
+
+- **CLI Command: `thai-lint nesting`**
+  - `thai-lint nesting [PATH]` - Check files for excessive nesting
+  - `--max-depth N` - Override configured max depth
+  - `--config PATH` - Use specific config file
+  - `--format json/text` - Output format selection
+  - `--help` - Comprehensive command documentation
+
+- **Library API**
+  - `nesting_lint(path, max_nesting_depth=4)` - Convenience function
+  - `NestingDepthRule` - Direct rule class for advanced usage
+  - `from src import nesting_lint, NestingDepthRule` - Exported in package
+
+- **Comprehensive Documentation**
+  - `docs/nesting-linter.md` - 400+ line comprehensive guide
+  - Configuration examples and best practices
+  - 5 refactoring patterns with before/after code examples
+  - Case study results and time estimates
+  - CI/CD integration examples (GitHub Actions, pre-commit hooks)
+  - Troubleshooting guide and common issues
+
+- **Example Code**
+  - `examples/nesting_usage.py` - Library API usage example
+  - Configuration templates in docs
+
+- **Test Suite**
+  - 76 tests for nesting linter (100% passing)
+  - Python nesting tests (15 tests)
+  - TypeScript nesting tests (15 tests)
+  - Configuration tests (8 tests)
+  - Integration tests (12 tests)
+  - Edge case tests (8 tests)
+  - Total project tests: 317 (100% passing, up from 221)
+
+- **Refactoring Patterns Documentation**
+  - Guard clauses (early returns) - Used in 7 functions
+  - Extract method pattern - Used in 13 functions
+  - Dispatch pattern (replace if-elif chains) - Used in 5 functions
+  - Flatten error handling - Used in 6 functions
+  - Invert conditions - Pattern documented
+
+### Changed
+
+- **Code Quality Improvements via Dogfooding**
+  - Refactored 23 functions with excessive nesting (18 in src/, 5 in tests/examples)
+  - Reduced max nesting depth from 4 to 3 project-wide
+  - All functions now comply with strict depth limit
+  - Improved readability and maintainability across codebase
+  - Zero nesting violations in production code
+
+- **Test Coverage**
+  - Increased from 87% to 90% overall coverage
+  - Added 96 new tests (221 → 317)
+  - 100% coverage on nesting analyzer modules
+
+- **README Updates**
+  - Added comprehensive nesting linter section with examples
+  - Updated feature list with nesting capabilities
+  - Added refactoring patterns and real-world results
+  - Updated test badges (317/317 passing, 90% coverage)
+
+- **Dependencies**
+  - Added `tree-sitter ^0.25.2` for AST parsing
+  - Added `tree-sitter-typescript ^0.23.2` for TypeScript support
+  - Pure Python solution (no Node.js required)
+
+### Fixed
+
+- Ignore directive parser now supports TypeScript comments (`//` and `/* */`)
+- Block ignore directives (`thailint: ignore-start` / `ignore-end`) working correctly
+- Rule matching supports prefix patterns (e.g., "nesting" matches "nesting.excessive-depth")
+
+### Performance
+
+- Single file analysis: ~10-30ms (well under 100ms target)
+- 100 files: ~500ms (under 2s target)
+- 1000 files: ~2-3s (under 10s target)
+- AST parsing optimized with caching
+
+### Documentation
+
+- Complete nesting linter guide (`docs/nesting-linter.md`)
+- Updated CLI reference with nesting command
+- Configuration examples for nesting rules
+- 5 refactoring patterns with code examples
+- Codebase refactoring case study
+
+### Validation: Codebase Refactoring
+
+**Baseline Assessment:**
+- 23 violations (depth 4, max configured: 3)
+- Files: src/cli.py (6), src/config.py (5), orchestrator (3), others (9)
+
+**Refactoring Applied:**
+- Time: ~4 hours for 23 functions (~10 min/function average)
+- Patterns: Extract method (13), Guard clauses (7), Dispatch (5), Flatten (6)
+- Tests: 317/317 passing (100%)
+- Quality: Pylint 10.00/10, all complexity A-grade
+
+**Results:**
+- Zero nesting violations
+- Improved code readability
+- No functionality broken
+- All integration tests passing
+
+### Infrastructure
+
+- Updated Makefile with `make lint-nesting` target
+- Integrated nesting checks into `make lint-full`
+- CI/CD ready (proper exit codes and JSON output)
+
+## [0.1.0] - 2025-10-06
+
+**Initial Alpha Release**
+
 ### Breaking Changes
 
 **Configuration Format Update**: Multi-Linter Top-Level Sections

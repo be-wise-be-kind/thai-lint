@@ -19,12 +19,12 @@ build-backend = "poetry.core.masonry.api"
 name = "thailint"
 version = "0.1.0"
 description = "The AI Linter - Enterprise-grade linting and governance for AI-generated code across multiple languages"
-authors = ["Steve Jackson <steve@example.com>"]
+authors = ["Steve Jackson"]
 license = "MIT"
 readme = "README.md"
-homepage = "https://github.com/steve-e-jackson/thai-lint"
-repository = "https://github.com/steve-e-jackson/thai-lint"
-documentation = "https://github.com/steve-e-jackson/thai-lint#readme"
+homepage = "https://github.com/be-wise-be-kind/thai-lint"
+repository = "https://github.com/be-wise-be-kind/thai-lint"
+documentation = "https://github.com/be-wise-be-kind/thai-lint#readme"
 keywords = [
     "linter",
     "ai",
