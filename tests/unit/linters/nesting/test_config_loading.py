@@ -65,7 +65,7 @@ def test_func():
         context.file_content = code
         context.language = "python"
         # Set metadata with custom config (limit 2)
-        context.metadata = {"linters": {"nesting": {"max_nesting_depth": 2}}}
+        context.metadata = {"nesting": {"max_nesting_depth": 2}}
 
         violations = rule.check(context)
         # Depth 3 should violate limit 2
@@ -101,12 +101,12 @@ def test_func():
         context.language = "python"
 
         # With limit 4 (default): should pass
-        context.metadata = {"linters": {"nesting": {"max_nesting_depth": 4}}}
+        context.metadata = {"nesting": {"max_nesting_depth": 4}}
         violations_limit_4 = rule.check(context)
         assert len(violations_limit_4) == 0, "Depth 3 should pass with limit 4"
 
         # With limit 2: should fail
-        context.metadata = {"linters": {"nesting": {"max_nesting_depth": 2}}}
+        context.metadata = {"nesting": {"max_nesting_depth": 2}}
         violations_limit_2 = rule.check(context)
         assert len(violations_limit_2) > 0, "Depth 3 should violate limit 2"
 
@@ -128,7 +128,7 @@ def test_func():
         context.file_path = Path("test.py")
         context.file_content = code
         context.language = "python"
-        context.metadata = {"linters": {"nesting": {"enabled": False}}}
+        context.metadata = {"nesting": {"enabled": False}}
 
         violations = rule.check(context)
         # Should skip checks when disabled

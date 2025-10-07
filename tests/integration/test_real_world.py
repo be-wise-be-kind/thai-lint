@@ -240,7 +240,7 @@ class TestIgnorePatterns:
 
         # Verify no violations in __pycache__
         for v in violations:
-            assert "__pycache__" not in v.file, "__pycache__ should be ignored"
+            assert "__pycache__" not in v.file_path, "__pycache__ should be ignored"
 
     def test_ignores_common_patterns(self) -> None:
         """Test common ignore patterns (venv, .git, node_modules) work."""
@@ -261,9 +261,9 @@ class TestIgnorePatterns:
 
         # Verify common patterns are ignored
         for v in violations:
-            assert ".git/" not in v.file, ".git/ should be ignored"
-            assert "node_modules/" not in v.file, "node_modules/ should be ignored"
-            assert ".venv/" not in v.file, ".venv/ should be ignored"
+            assert ".git/" not in v.file_path, ".git/ should be ignored"
+            assert "node_modules/" not in v.file_path, "node_modules/ should be ignored"
+            assert ".venv/" not in v.file_path, ".venv/ should be ignored"
 
 
 class TestCLIIntegration:

@@ -15,6 +15,7 @@ thailint is a modern, enterprise-ready multi-language linter designed specifical
 
 ### Core Capabilities
 - 🎯 **File Placement Linting** - Enforce project structure and organization
+- 🔄 **Nesting Depth Linting** - Detect excessive code nesting (Python, TypeScript)
 - 🔌 **Pluggable Architecture** - Easy to extend with custom linters
 - 🌍 **Multi-Language Support** - Python, TypeScript, JavaScript, and more
 - ⚙️ **Flexible Configuration** - YAML/JSON configs with regex pattern matching
