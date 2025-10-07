@@ -7,7 +7,7 @@
 #   make lint-full         - Full linting on all files
 #   make lint-full FILES=changed  - Full linting on changed files only (for pre-commit)
 
-.PHONY: help init install activate venv-info lint lint-all lint-security lint-complexity lint-placement lint-full format test test-coverage clean get-changed-files
+.PHONY: help init install activate venv-info lint lint-all lint-security lint-complexity lint-placement lint-nesting lint-full format test test-coverage clean get-changed-files
 
 help: ## Show available targets
 	@echo "Available targets:"
@@ -29,6 +29,8 @@ help: ## Show available targets
 	@echo "  make lint-complexity FILES=... - Complexity analysis on specific files"
 	@echo "  make lint-placement    - File placement linting (dogfooding our own linter)"
 	@echo "  make lint-placement FILES=...  - File placement linting on specific files"
+	@echo "  make lint-nesting      - Nesting depth linting (dogfooding our own linter)"
+	@echo "  make lint-nesting FILES=...    - Nesting depth linting on specific files"
 	@echo "  make lint-full         - ALL quality checks"
 	@echo "  make lint-full FILES=changed   - ALL quality checks on changed files (pre-commit)"
 	@echo "  make format            - Auto-fix formatting and linting issues"
@@ -141,7 +143,15 @@ lint-placement: ## File placement linting (dogfooding our own linter)
 		echo "✓ File placement checks passed"; \
 	fi
 
-lint-full: lint-all lint-security lint-complexity lint-placement ## ALL quality checks
+lint-nesting: ## Nesting depth linting (dogfooding our own linter)
+	@echo ""
+	@echo "=== Running nesting depth linter (dogfooding) ==="
+	@if [ -n "$(SRC_TARGETS)" ]; then \
+		poetry run thai-lint nesting $(SRC_TARGETS) --config .thailint.yaml; \
+		echo "✓ Nesting depth checks passed"; \
+	fi
+
+lint-full: lint-all lint-security lint-complexity lint-placement lint-nesting ## ALL quality checks
 	@echo "✅ All linting checks complete!"
 
 format: ## Auto-fix formatting and linting issues
