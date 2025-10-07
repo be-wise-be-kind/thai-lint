@@ -43,7 +43,7 @@ COPY src/ ./src/
 FROM python:3.11-slim
 
 # Set labels for metadata
-LABEL maintainer="Steve Jackson <steve@example.com>"
+LABEL maintainer="Steve Jackson"
 LABEL description="Thai-Lint - AI code linter for multi-language projects"
 LABEL version="0.1.0"
 

@@ -2,8 +2,8 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
-[![Tests](https://img.shields.io/badge/tests-221%2F236%20passing-brightgreen.svg)](tests/)
-[![Coverage](https://img.shields.io/badge/coverage-87%25-brightgreen.svg)](htmlcov/)
+[![Tests](https://img.shields.io/badge/tests-317%2F317%20passing-brightgreen.svg)](tests/)
+[![Coverage](https://img.shields.io/badge/coverage-90%25-brightgreen.svg)](htmlcov/)
 
 The AI Linter - Enterprise-ready linting and governance for AI-generated code across multiple languages.
 
@@ -15,10 +15,13 @@ thailint is a modern, enterprise-ready multi-language linter designed specifical
 
 ### Core Capabilities
 - 🎯 **File Placement Linting** - Enforce project structure and organization
-- 🔄 **Nesting Depth Linting** - Detect excessive code nesting (Python, TypeScript)
+- 🔄 **Nesting Depth Linting** - Detect excessive code nesting with AST analysis
+  - Python and TypeScript support with tree-sitter
+  - Configurable max depth (default: 4, recommended: 3)
+  - Helpful refactoring suggestions (guard clauses, extract method)
 - 🔌 **Pluggable Architecture** - Easy to extend with custom linters
 - 🌍 **Multi-Language Support** - Python, TypeScript, JavaScript, and more
-- ⚙️ **Flexible Configuration** - YAML/JSON configs with regex pattern matching
+- ⚙️ **Flexible Configuration** - YAML/JSON configs with pattern matching
 - 🚫 **5-Level Ignore System** - Repo, directory, file, method, and line-level ignores
 
 ### Deployment Modes
@@ -29,7 +32,7 @@ thailint is a modern, enterprise-ready multi-language linter designed specifical
 ### Enterprise Features
 - 📊 **Performance** - <100ms for single files, <5s for 1000 files
 - 🔒 **Type Safety** - Full type hints and MyPy strict mode
-- 🧪 **Test Coverage** - 87% coverage with 221+ tests
+- 🧪 **Test Coverage** - 90% coverage with 317 tests
 - 📈 **CI/CD Ready** - Proper exit codes and JSON output
 - 📝 **Comprehensive Docs** - Complete documentation and examples
 
@@ -39,7 +42,7 @@ thailint is a modern, enterprise-ready multi-language linter designed specifical
 
 ```bash
 # Clone repository
-git clone https://github.com/{{GITHUB_USERNAME}}/thai-lint.git
+git clone https://github.com/be-wise-be-kind/thai-lint.git
 cd thai-lint
 
 # Install dependencies
@@ -67,14 +70,17 @@ docker-compose -f docker-compose.cli.yml run cli --help
 ### CLI Mode
 
 ```bash
-# Lint current directory for file placement issues
+# Check file placement
 thai-lint file-placement .
 
+# Check nesting depth
+thai-lint nesting src/
+
 # With config file
-thai-lint file-placement --config .thailint.yaml .
+thai-lint nesting --config .thailint.yaml src/
 
 # JSON output for CI/CD
-thai-lint file-placement --format json .
+thai-lint nesting --format json src/
 ```
 
 ### Library Mode
@@ -155,6 +161,100 @@ file-placement:
 ```
 
 See [Configuration Guide](docs/configuration.md) for complete reference.
+
+## Nesting Depth Linter
+
+### Overview
+
+The nesting depth linter detects deeply nested code (if/for/while/try statements) that reduces readability and maintainability. It uses AST analysis to accurately calculate nesting depth.
+
+### Quick Start
+
+```bash
+# Check nesting depth in current directory
+thai-lint nesting .
+
+# Use strict limit (max depth 3)
+thai-lint nesting --max-depth 3 src/
+
+# Get JSON output
+thai-lint nesting --format json src/
+```
+
+### Configuration
+
+Add to `.thailint.yaml`:
+
+```yaml
+nesting:
+  enabled: true
+  max_nesting_depth: 3  # Default: 4, recommended: 3
+```
+
+### Example Violation
+
+**Code with excessive nesting:**
+```python
+def process_data(items):
+    for item in items:              # Depth 2
+        if item.is_valid():         # Depth 3
+            try:                    # Depth 4 ← VIOLATION (max=3)
+                if item.process():
+                    return True
+            except Exception:
+                pass
+    return False
+```
+
+**Refactored with guard clauses:**
+```python
+def process_data(items):
+    for item in items:              # Depth 2
+        if not item.is_valid():
+            continue
+        try:                        # Depth 3 ✓
+            if item.process():
+                return True
+        except Exception:
+            pass
+    return False
+```
+
+### Refactoring Patterns
+
+Common patterns to reduce nesting (used to fix 23 violations in thai-lint):
+
+1. **Guard Clauses (Early Returns)**
+   - Replace `if x: do_something()` with `if not x: return`
+   - Exit early, reduce nesting
+
+2. **Extract Method**
+   - Move nested logic to separate functions
+   - Improves readability and testability
+
+3. **Dispatch Pattern**
+   - Replace if-elif-else chains with dictionary dispatch
+   - More extensible and cleaner
+
+4. **Flatten Error Handling**
+   - Combine multiple try-except blocks
+   - Use tuple of exception types
+
+### Language Support
+
+- ✅ **Python**: Full support (if/for/while/with/try/match)
+- ✅ **TypeScript**: Full support (if/for/while/try/switch)
+- ✅ **JavaScript**: Supported via TypeScript parser
+
+### Refactoring Case Study
+
+The thai-lint codebase serves as a validation of the nesting linter:
+- Identified: 23 functions requiring refactoring (depth 4 → depth ≤3)
+- Refactored using documented patterns
+- Time estimate: ~10 minutes per function
+- Result: Zero violations, improved readability
+
+See [Nesting Linter Guide](docs/nesting-linter.md) for comprehensive documentation and refactoring patterns.
 
 ## Common Use Cases
 
@@ -398,7 +498,7 @@ MIT License - see LICENSE file for details.
 
 ## Support
 
-- **Issues**: https://github.com/{{GITHUB_USERNAME}}/thai-lint/issues
+- **Issues**: https://github.com/be-wise-be-kind/thai-lint/issues
 - **Documentation**: `.ai/docs/` and `.ai/howtos/`
 
 ## Acknowledgments
