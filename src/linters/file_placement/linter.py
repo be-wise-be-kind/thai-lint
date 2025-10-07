@@ -137,7 +137,7 @@ class FilePlacementLinter:
         Raises:
             re.error: If any regex pattern is invalid
         """
-        fp_config = self.config.get("file_placement", {})
+        fp_config = self.config.get("file-placement", {})
 
         self._validate_directory_patterns(fp_config)
         self._validate_global_patterns(fp_config)
@@ -222,7 +222,7 @@ class FilePlacementLinter:
         """
         rel_path = self._get_relative_path(file_path)
         path_str = str(rel_path).replace("\\", "/")
-        fp_config = self.config.get("file_placement", {})
+        fp_config = self.config.get("file-placement", {})
         return self._check_all_rules(path_str, rel_path, fp_config)
 
     def _create_deny_violation(self, rel_path: Path, matched_path: str, reason: str) -> Violation:

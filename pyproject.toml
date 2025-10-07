@@ -16,28 +16,56 @@ requires = ["poetry-core>=1.0.0"]
 build-backend = "poetry.core.masonry.api"
 
 [tool.poetry]
-name = "thai-lint"
-version = "1.0.0"
-description = "The AI Linter - Lint and governance for AI-generated code"
+name = "thailint"
+version = "0.1.0"
+description = "The AI Linter - Enterprise-grade linting and governance for AI-generated code across multiple languages"
 authors = ["Steve Jackson <steve@example.com>"]
 license = "MIT"
 readme = "README.md"
-homepage = "https://github.com/{{GITHUB_USERNAME}}/thai-lint"
-repository = "https://github.com/{{GITHUB_USERNAME}}/thai-lint"
-documentation = "https://github.com/{{GITHUB_USERNAME}}/thai-lint#readme"
-keywords = ["cli", "command-line", "tool"]
+homepage = "https://github.com/steve-e-jackson/thai-lint"
+repository = "https://github.com/steve-e-jackson/thai-lint"
+documentation = "https://github.com/steve-e-jackson/thai-lint#readme"
+keywords = [
+    "linter",
+    "ai",
+    "code-quality",
+    "static-analysis",
+    "file-placement",
+    "governance",
+    "multi-language",
+    "cli",
+    "docker",
+    "python",
+]
 classifiers = [
-    "Development Status :: 4 - Beta",
+    "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
     "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3 :: Only",
     "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: Software Development :: Quality Assurance",
+    "Topic :: Software Development :: Testing",
     "Topic :: Utilities",
     "Environment :: Console",
+    "Operating System :: OS Independent",
+    "Typing :: Typed",
 ]
 packages = [{include = "src"}]
+include = [
+    "README.md",
+    "LICENSE",
+    "CHANGELOG.md",
+]
+exclude = [
+    "tests",
+    "tests/*",
+    ".github",
+    ".ai",
+    "docs",
+    "examples",
+]
 
 [tool.poetry.dependencies]
 python = "^3.11"
@@ -71,6 +99,7 @@ safety = "^3.2.11"
 pip-audit = "^2.8.0"
 
 [tool.poetry.scripts]
+thailint = "src.cli:cli"
 thai-lint = "src.cli:cli"
 
 # Ruff configuration

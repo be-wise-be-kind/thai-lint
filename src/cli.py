@@ -11,7 +11,7 @@ Overview: Provides the main CLI application using Click decorators for command d
 
 Dependencies: click for CLI framework, logging for structured output, pathlib for file paths
 
-Exports: cli (main command group), hello command, config command group
+Exports: cli (main command group), hello command, config command group, file_placement command
 
 Interfaces: Click CLI commands, configuration context via Click ctx, logging integration
 
@@ -64,15 +64,15 @@ def cli(ctx, verbose: bool, config: str | None):
 
         \b
         # Lint current directory for file placement issues
-        thai-lint lint file-placement .
+        thai-lint file-placement .
 
         \b
         # Lint with custom config
-        thai-lint lint file-placement --config .thailint.yaml src/
+        thai-lint file-placement --config .thailint.yaml src/
 
         \b
         # Get JSON output
-        thai-lint lint file-placement --format json .
+        thai-lint file-placement --format json .
 
         \b
         # Show help
@@ -333,13 +333,7 @@ def config_reset(ctx, yes: bool):
         sys.exit(1)
 
 
-@cli.group()
-def lint():
-    """Linting commands for code analysis."""
-    pass
-
-
-@lint.command("file-placement")
+@cli.command("file-placement")
 @click.argument("path", type=click.Path(exists=True), default=".")
 @click.option("--config", "-c", "config_file", type=click.Path(), help="Path to config file")
 @click.option("--rules", "-r", help="Inline JSON rules configuration")
@@ -348,7 +342,7 @@ def lint():
 )
 @click.option("--recursive/--no-recursive", default=True, help="Scan directories recursively")
 @click.pass_context
-def lint_file_placement(  # pylint: disable=too-many-arguments,too-many-positional-arguments,too-many-locals,too-many-statements
+def file_placement(  # pylint: disable=too-many-arguments,too-many-positional-arguments,too-many-locals,too-many-statements
     ctx, path: str, config_file: str | None, rules: str | None, format: str, recursive: bool
 ):
     # Justification for Pylint disables:
@@ -367,19 +361,19 @@ def lint_file_placement(  # pylint: disable=too-many-arguments,too-many-position
 
         \b
         # Lint current directory
-        thai-lint lint file-placement
+        thai-lint file-placement
 
         \b
         # Lint specific directory
-        thai-lint lint file-placement src/
+        thai-lint file-placement src/
 
         \b
         # Use custom config
-        thai-lint lint file-placement --config rules.json .
+        thai-lint file-placement --config rules.json .
 
         \b
         # Inline JSON rules
-        thai-lint lint file-placement --rules '{"allow": [".*\\.py$"]}' .
+        thai-lint file-placement --rules '{"allow": [".*\\.py$"]}' .
     """
     verbose = ctx.obj.get("verbose", False)
     path_obj = Path(path)
@@ -420,11 +414,33 @@ def _apply_inline_rules(orchestrator, rules, verbose):
     """Parse and apply inline JSON rules."""
     import json
 
+    import yaml
+
     try:
         rules_config = json.loads(rules)
+
+        # Update orchestrator config
         orchestrator.config.update(rules_config)
-        if verbose:
-            logger.debug(f"Applied inline rules: {rules_config}")
+
+        # Also write to .ai/layout.yaml for file-placement linter (if writable)
+        try:
+            ai_dir = orchestrator.project_root / ".ai"
+            ai_dir.mkdir(exist_ok=True)
+            layout_file = ai_dir / "layout.yaml"
+
+            # Wrap rules in file-placement structure
+            layout_config = {"file-placement": rules_config}
+            with layout_file.open("w", encoding="utf-8") as f:
+                yaml.dump(layout_config, f)
+
+            if verbose:
+                logger.debug(f"Applied inline rules: {rules_config}")
+                logger.debug(f"Written layout config to: {layout_file}")
+        except (OSError, PermissionError) as e:
+            # If we can't write the layout file, log but continue
+            # The orchestrator config is still updated
+            if verbose:
+                logger.debug(f"Could not write layout config: {e}")
     except json.JSONDecodeError as e:
         click.echo(f"Error: Invalid JSON in --rules: {e}", err=True)
         sys.exit(2)
@@ -432,13 +448,33 @@ def _apply_inline_rules(orchestrator, rules, verbose):
 
 def _load_config_file(orchestrator, config_file, verbose):
     """Load configuration from external file."""
+    import yaml
+
     config_path = Path(config_file)
     if not config_path.exists():
         click.echo(f"Error: Config file not found: {config_file}", err=True)
         sys.exit(2)
+
+    # Load config into orchestrator
     orchestrator.config = orchestrator.config_loader.load(config_path)
-    if verbose:
-        logger.debug(f"Loaded config from: {config_file}")
+
+    # Also copy to .ai/layout.yaml for file-placement linter (if writable)
+    try:
+        ai_dir = orchestrator.project_root / ".ai"
+        ai_dir.mkdir(exist_ok=True)
+        layout_file = ai_dir / "layout.yaml"
+
+        # Write loaded config to layout file
+        with layout_file.open("w", encoding="utf-8") as f:
+            yaml.dump(orchestrator.config, f)
+
+        if verbose:
+            logger.debug(f"Loaded config from: {config_file}")
+            logger.debug(f"Written layout config to: {layout_file}")
+    except (OSError, PermissionError) as e:
+        # If we can't write the layout file, log but continue
+        if verbose:
+            logger.debug(f"Could not write layout config: {e}")
 
 
 def _execute_linting(orchestrator, path_obj, recursive):

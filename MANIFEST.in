@@ -1,0 +1,42 @@
+# Purpose: Controls which files are included in the source distribution for PyPI
+# Scope: Package distribution file inclusion and exclusion patterns
+# Overview: Defines explicit file inclusion and exclusion rules for source distribution packaging.
+#     Ensures that documentation, license, and configuration templates are included while
+#     excluding development artifacts, tests, and internal tooling. Used by setuptools/Poetry
+#     during `python setup.py sdist` or `poetry build` to create the source distribution tarball.
+#     Critical for PyPI publishing to ensure minimal, clean distribution packages.
+# Dependencies: Poetry build system, setuptools MANIFEST.in format specification
+# Exports: File inclusion/exclusion rules for source distribution tarball
+# Environment: Build-time packaging (Poetry build, PyPI publishing)
+# Related: pyproject.toml (build configuration), .gitignore (version control exclusions)
+# Implementation: Uses setuptools MANIFEST.in syntax with include/exclude/recursive directives
+
+# Include documentation and license
+include README.md
+include LICENSE
+include CHANGELOG.md
+
+# Include config file templates and examples
+recursive-include src *.yaml *.json *.txt
+
+# Exclude development and test files
+exclude .env .env.example .envrc
+exclude .flake8 .gitignore .dockerignore
+exclude Makefile docker-compose.yml Dockerfile
+exclude pyproject.toml poetry.lock
+recursive-exclude tests *
+recursive-exclude .github *
+recursive-exclude .ai *
+recursive-exclude docs *
+recursive-exclude examples *
+recursive-exclude htmlcov *
+recursive-exclude .pytest_cache *
+recursive-exclude .mypy_cache *
+recursive-exclude .ruff_cache *
+recursive-exclude __pycache__ *
+global-exclude *.pyc
+global-exclude *.pyo
+global-exclude *.pyd
+global-exclude .DS_Store
+global-exclude *.swp
+global-exclude *.swo

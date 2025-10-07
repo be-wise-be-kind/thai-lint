@@ -1,0 +1,56 @@
+# Example thailint configuration (YAML format)
+#
+# This configuration demonstrates the new multi-linter format where each
+# linter has its own top-level section. This allows multiple linters to
+# coexist with their own configurations.
+
+# File placement linter - enforces project structure
+file-placement:
+  # Global patterns apply across entire project
+  global_patterns:
+    deny:
+      - pattern: "^(?!src/|tests/|scripts/).*\\.py$"
+        reason: "Python files must be in src/, tests/, or scripts/"
+      - pattern: ".*\\.tmp$"
+        reason: "Temporary files should not be committed"
+
+  # Directory-specific rules
+  directories:
+    src/:
+      allow:
+        - "^src/.*\\.py$"
+      deny:
+        - pattern: "^src/.*test.*\\.py$"
+          reason: "Tests belong in tests/ directory"
+
+    tests/:
+      allow:
+        - "^tests/test_.*\\.py$"
+        - "^tests/.*_test\\.py$"
+        - "^tests/conftest\\.py$"
+
+    scripts/:
+      allow:
+        - "^scripts/.*\\.py$"
+
+  # Files and directories to ignore during linting
+  ignore:
+    - "__pycache__/"
+    - "*.pyc"
+    - ".venv/"
+    - ".git/"
+    - "node_modules/"
+    - "dist/"
+    - "build/"
+
+# Future linters will be added as separate top-level sections:
+#
+# code-quality:
+#   max-complexity: 10
+#   max-line-length: 100
+#   ...
+#
+# security:
+#   check-secrets: true
+#   check-dependencies: true
+#   ...

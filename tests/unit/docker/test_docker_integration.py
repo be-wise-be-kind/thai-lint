@@ -272,7 +272,6 @@ class TestDockerFilePlacementLinter:
                     "-v",
                     f"{tmpdir}:/workspace",
                     "thailint/thailint:test",
-                    "lint",
                     "file-placement",
                     "/workspace",
                 ],
@@ -322,7 +321,6 @@ class TestDockerFilePlacementLinter:
                     "-v",
                     f"{tmpdir}:/workspace",
                     "thailint/thailint:test",
-                    "lint",
                     "file-placement",
                     "--rules",
                     rules_json,
@@ -361,7 +359,7 @@ class TestDockerFilePlacementLinter:
             tmpdir_path.chmod(0o755)
 
             # Create config that allows .txt in root (no deny patterns)
-            config = {"file_placement": {}}
+            config = {"file-placement": {}}
             config_file = tmpdir_path / ".thailintrc.json"
             config_file.write_text(json.dumps(config))
             config_file.chmod(0o644)
@@ -380,7 +378,6 @@ class TestDockerFilePlacementLinter:
                     "-v",
                     f"{tmpdir}:/workspace",
                     "thailint/thailint:test",
-                    "lint",
                     "file-placement",
                     "--config",
                     "/workspace/.thailintrc.json",
