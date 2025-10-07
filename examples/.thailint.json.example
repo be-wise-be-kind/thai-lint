@@ -49,5 +49,11 @@
       "dist/",
       "build/"
     ]
+  },
+
+  "nesting": {
+    "_comment": "Nesting depth linter - detects excessive code nesting",
+    "enabled": true,
+    "max_nesting_depth": 4
   }
 }
