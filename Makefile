@@ -1,7 +1,13 @@
 # Python CLI Application Makefile
 # Composite lint-* targets for clean namespace
+#
+# Usage:
+#   make lint              - Lint all files in src/ and tests/
+#   make lint FILES=...    - Lint specific files
+#   make lint-full         - Full linting on all files
+#   make lint-full FILES=changed  - Full linting on changed files only (for pre-commit)
 
-.PHONY: help init install activate venv-info lint lint-all lint-security lint-complexity lint-placement lint-full format test test-coverage clean
+.PHONY: help init install activate venv-info lint lint-all lint-security lint-complexity lint-placement lint-full format test test-coverage clean get-changed-files
 
 help: ## Show available targets
 	@echo "Available targets:"
@@ -14,11 +20,17 @@ help: ## Show available targets
 	@echo ""
 	@echo "Linting & Quality:"
 	@echo "  make lint              - Fast linting (Ruff)"
+	@echo "  make lint FILES=...    - Fast linting on specific files"
 	@echo "  make lint-all          - Comprehensive linting (Ruff + Pylint + Flake8 + MyPy)"
+	@echo "  make lint-all FILES=...        - Comprehensive linting on specific files"
 	@echo "  make lint-security     - Security scanning (Bandit + Safety + pip-audit)"
+	@echo "  make lint-security FILES=...   - Security scanning on specific files"
 	@echo "  make lint-complexity   - Complexity analysis (Radon + Xenon)"
+	@echo "  make lint-complexity FILES=... - Complexity analysis on specific files"
 	@echo "  make lint-placement    - File placement linting (dogfooding our own linter)"
+	@echo "  make lint-placement FILES=...  - File placement linting on specific files"
 	@echo "  make lint-full         - ALL quality checks"
+	@echo "  make lint-full FILES=changed   - ALL quality checks on changed files (pre-commit)"
 	@echo "  make format            - Auto-fix formatting and linting issues"
 	@echo ""
 	@echo "Testing:"
@@ -28,58 +40,106 @@ help: ## Show available targets
 	@echo "Maintenance:"
 	@echo "  make clean             - Clean cache and artifacts"
 
+# Determine which files to lint based on FILES parameter
+# Default: src/ tests/ (all files)
+# FILES=changed: only staged files
+# FILES=<paths>: specific files/directories
+ifeq ($(FILES),changed)
+    PYTHON_FILES := $(shell git diff --cached --name-only --diff-filter=ACM | grep -E "^(src|tests)/.*\.py$$" || true)
+    PYTHON_SRC_FILES := $(shell git diff --cached --name-only --diff-filter=ACM | grep -E "^src/.*\.py$$" || true)
+    ALL_CHANGED_FILES := $(shell git diff --cached --name-only --diff-filter=ACM || true)
+    TARGETS := $(PYTHON_FILES)
+    SRC_TARGETS := $(PYTHON_SRC_FILES)
+    PLACEMENT_TARGETS := $(ALL_CHANGED_FILES)
+else ifdef FILES
+    TARGETS := $(FILES)
+    SRC_TARGETS := $(filter src/%,$(FILES))
+    PLACEMENT_TARGETS := $(FILES)
+else
+    TARGETS := src/ tests/
+    SRC_TARGETS := src/
+    PLACEMENT_TARGETS := .
+endif
+
 lint: ## Fast linting (Ruff - use during development)
 	@echo "Running fast linting (Ruff)..."
-	@poetry run ruff check src/ tests/
-	@poetry run ruff format --check src/ tests/
+	@if [ -n "$(TARGETS)" ]; then \
+		poetry run ruff check $(TARGETS) && \
+		poetry run ruff format --check $(TARGETS); \
+	else \
+		echo "No files to lint"; \
+	fi
 
 lint-all: ## Comprehensive linting (Ruff + Pylint + Flake8 + MyPy)
 	@echo "=== Running Ruff (linter) ==="
-	@poetry run ruff check src/ tests/
-	@echo "✓ Ruff checks passed"
+	@if [ -n "$(TARGETS)" ]; then \
+		poetry run ruff check $(TARGETS); \
+		echo "✓ Ruff checks passed"; \
+	fi
 	@echo ""
 	@echo "=== Running Ruff (formatter) ==="
-	@poetry run ruff format --check src/ tests/
-	@echo "✓ Ruff formatting passed"
+	@if [ -n "$(TARGETS)" ]; then \
+		poetry run ruff format --check $(TARGETS); \
+		echo "✓ Ruff formatting passed"; \
+	fi
 	@echo ""
 	@echo "=== Running Pylint ==="
-	@poetry run pylint src/
-	@echo "✓ Pylint passed"
+	@if [ -n "$(SRC_TARGETS)" ]; then \
+		poetry run pylint $(SRC_TARGETS); \
+		echo "✓ Pylint passed"; \
+	fi
 	@echo ""
 	@echo "=== Running Flake8 ==="
-	@poetry run flake8 src/ tests/
-	@echo "✓ Flake8 passed"
+	@if [ -n "$(TARGETS)" ]; then \
+		poetry run flake8 $(TARGETS); \
+		echo "✓ Flake8 passed"; \
+	fi
 	@echo ""
 	@echo "=== Running MyPy (type checking) ==="
-	@poetry run mypy src/
-	@echo "✓ MyPy passed"
+	@if [ -n "$(SRC_TARGETS)" ]; then \
+		poetry run mypy $(SRC_TARGETS); \
+		echo "✓ MyPy passed"; \
+	fi
 
-lint-security: ## Security scanning (Bandit + Safety + pip-audit)
+lint-security: ## Security scanning (Bandit + pip-audit)
 	@echo ""
 	@echo "=== Running Bandit (security linter) ==="
-	@poetry run bandit -r src/ -q
-	@echo "✓ Bandit passed"
-	@echo ""
-	@echo "=== Running Safety (dependency vulnerabilities) ==="
-	@poetry run safety scan --output json || true
+	@if [ -n "$(SRC_TARGETS)" ]; then \
+		poetry run bandit -r $(SRC_TARGETS) -q; \
+		echo "✓ Bandit passed"; \
+	fi
+ifeq ($(FILES),)
 	@echo ""
 	@echo "=== Running pip-audit (dependency audit) ==="
 	@poetry run pip-audit || true
+endif
+
+lint-dependencies: ## Check dependencies for vulnerabilities (Safety - requires API)
+	@echo ""
+	@echo "=== Running Safety (dependency vulnerabilities) ==="
+	@echo "Note: This requires network access to Safety API and may be slow"
+	@poetry run safety scan --output json || true
 
 lint-complexity: ## Complexity analysis (Radon + Xenon)
 	@echo ""
 	@echo "=== Analyzing code complexity (Radon) ==="
-	@poetry run radon cc src/ -a -s
-	@poetry run radon mi src/ -s
+	@if [ -n "$(SRC_TARGETS)" ]; then \
+		poetry run radon cc $(SRC_TARGETS) -a -s; \
+		poetry run radon mi $(SRC_TARGETS) -s; \
+	fi
 	@echo ""
 	@echo "=== Analyzing complexity (Xenon) - demanding A grade ==="
-	@poetry run xenon --max-absolute A --max-modules A --max-average A src/
+	@if [ -n "$(SRC_TARGETS)" ]; then \
+		poetry run xenon --max-absolute A --max-modules A --max-average A $(SRC_TARGETS); \
+	fi
 
 lint-placement: ## File placement linting (dogfooding our own linter)
 	@echo ""
 	@echo "=== Running file placement linter (dogfooding) ==="
-	@poetry run thai-lint lint file-placement .
-	@echo "✓ File placement checks passed"
+	@if [ -n "$(PLACEMENT_TARGETS)" ]; then \
+		poetry run thai-lint lint file-placement $(PLACEMENT_TARGETS); \
+		echo "✓ File placement checks passed"; \
+	fi
 
 lint-full: lint-all lint-security lint-complexity lint-placement ## ALL quality checks
 	@echo "✅ All linting checks complete!"

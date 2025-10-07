@@ -198,11 +198,46 @@ Types: `feat`, `fix`, `docs`, `style`, `refactor`, `test`, `chore`
 - `fix/*` - Bug fixes
 
 ### Before Committing
-- [ ] All tests pass
-- [ ] Code is linted (`make lint-full`)
+- [ ] All tests pass (`make test` exits with code 0)
+- [ ] Code is linted (`make lint-full` exits with code 0)
 - [ ] **All files have proper headers per `.ai/docs/FILE_HEADER_STANDARDS.md`**
 - [ ] Documentation updated
 - [ ] No secrets committed (pre-commit hooks check this)
+
+### Quality Gates - CRITICAL
+
+**NEVER claim linting is clean unless ALL of these are true:**
+
+1. ✅ `make lint` exits with **code 0** (not just "no Ruff errors")
+2. ✅ `make lint-full` exits with **code 0** (not just "9.95/10 score")
+3. ✅ **ZERO Pylint violations** - do NOT dismiss them as "acceptable" or "design choices"
+4. ✅ **ZERO test failures** - failing tests mean the feature is broken
+
+**Common Mistakes to Avoid:**
+- ❌ Running `make lint` (fast) and claiming full linting is clean
+- ❌ Seeing Pylint violations and dismissing them without fixing
+- ❌ Claiming "linting is clean" when `make lint-full` has non-zero exit code
+- ❌ Ignoring the exit code and only looking at output text
+- ❌ Saying "acceptable for CLI complexity" when Pylint fails - the limits exist for a reason
+
+**Correct Validation Process:**
+```bash
+# Step 1: Run full linting
+make lint-full
+# Check exit code: echo $? should be 0
+
+# Step 2: Run tests
+make test
+# Check exit code: echo $? should be 0
+
+# Step 3: Only if BOTH exit with 0, then linting is clean
+```
+
+**If Pylint fails:** You MUST either:
+1. Refactor the code to meet the limits (preferred), OR
+2. Add explicit `# pylint: disable=rule-name` with detailed justification comment
+
+**Never** claim quality checks pass when they don't. The user depends on accurate status.
 
 ## Security Considerations
 

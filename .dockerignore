@@ -1,0 +1,75 @@
+# Purpose: Docker build context exclusion patterns for optimized image builds and security
+# Scope: All Docker build operations for thai-lint project
+# Overview: Defines patterns for files and directories to exclude from Docker build context,
+#     reducing image size, improving build performance, and preventing sensitive data from
+#     being copied into Docker images. Excludes version control files, Python cache, test
+#     files, documentation, CI/CD configs, and development tools that are not needed in
+#     production containers.
+# Dependencies: Docker build process
+# Exports: Build context exclusion patterns for .dockerignore
+# Environment: All Docker build contexts (development and production)
+# Related: Dockerfile, docker-compose.yml
+# Implementation: Standard .dockerignore patterns following Docker best practices
+
+# Version Control
+.git/
+.gitignore
+.gitattributes
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.hypothesis/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Documentation
+docs/
+*.md
+!README.md
+
+# CI/CD
+.github/
+.gitlab-ci.yml
+.travis.yml
+
+# Development files
+tests/
+.roadmap/
+.ai/
+*.log
+.env
+.env.local
+
+# Docker
+Dockerfile
+.dockerignore
+docker-compose.yml
+docker-compose.*.yml
+
+# Coverage reports
+.coverage.*
+coverage.xml
+*.cover

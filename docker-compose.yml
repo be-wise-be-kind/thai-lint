@@ -1,0 +1,79 @@
+# Purpose: Docker Compose configuration for development and testing of thai-lint CLI
+# Scope: Development environment orchestration with CLI service and volume mounting
+# Overview: Defines Docker Compose services for local development and testing of thai-lint.
+#     Provides a CLI service that builds from local Dockerfile, mounts the current workspace
+#     for easy testing, and configures proper user permissions to avoid file ownership issues.
+#     Supports both development workflows (build and run locally) and production simulation
+#     (pull from registry). Includes health checks, restart policies, and environment variable
+#     configuration for comprehensive development support.
+# Dependencies: Docker, Docker Compose, local Dockerfile
+# Exports: Docker Compose services for CLI execution and development testing
+# Interfaces: Volume mounts at /workspace, CLI service for command execution
+# Environment: Local development, CI/CD testing, production simulation
+# Related: Dockerfile, .dockerignore, pyproject.toml
+# Implementation: Single service configuration with volume mounting, user mapping, and
+#     development-friendly settings for rapid iteration
+
+version: '3.8'
+
+services:
+  # Main CLI service for running thai-lint commands
+  cli:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: thailint/thailint:latest
+    container_name: thailint-cli
+
+    # Mount current directory as workspace
+    volumes:
+      - .:/workspace
+
+    # Run as current user to avoid permission issues
+    user: "${UID:-1000}:${GID:-1000}"
+
+    # Default command: show help
+    command: ["--help"]
+
+    # Environment variables
+    environment:
+      - PYTHONUNBUFFERED=1
+
+    # Working directory
+    working_dir: /workspace
+
+  # Development service with source code mounted for live updates
+  dev:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: thailint/thailint:dev
+    container_name: thailint-dev
+
+    # Mount current directory and preserve source
+    volumes:
+      - .:/workspace
+      - ./src:/app/src
+
+    # Run as current user
+    user: "${UID:-1000}:${GID:-1000}"
+
+    # Keep container running for interactive development
+    command: ["--help"]
+
+    # Environment
+    environment:
+      - PYTHONUNBUFFERED=1
+      - PYTHONPATH=/app:/workspace
+
+    # Working directory
+    working_dir: /workspace
+
+    # Interactive mode
+    stdin_open: true
+    tty: true
+
+# Networks (optional, for future multi-container setups)
+networks:
+  default:
+    name: thailint-network
