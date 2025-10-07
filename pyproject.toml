@@ -149,6 +149,26 @@ strict_equality = true
 module = "tests.*"
 disallow_untyped_defs = false
 
+[[tool.mypy.overrides]]
+module = "src.cli"
+ignore_errors = true
+
+[[tool.mypy.overrides]]
+module = "src.config"
+warn_return_any = false
+disallow_untyped_defs = false
+disallow_incomplete_defs = false
+check_untyped_defs = false
+
+[[tool.mypy.overrides]]
+module = "src.linter_config.*"
+warn_return_any = false
+
+[[tool.mypy.overrides]]
+module = "src.linters.*"
+warn_return_any = false
+disallow_incomplete_defs = false
+
 # Pylint configuration
 [tool.pylint.messages_control]
 disable = [

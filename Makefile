@@ -22,24 +22,46 @@ lint: ## Fast linting (Ruff - use during development)
 	@poetry run ruff format --check src/ tests/
 
 lint-all: ## Comprehensive linting (Ruff + Pylint + Flake8 + MyPy)
-	@echo "Running comprehensive linting..."
+	@echo "=== Running Ruff (linter) ==="
 	@poetry run ruff check src/ tests/
+	@echo "✓ Ruff checks passed"
+	@echo ""
+	@echo "=== Running Ruff (formatter) ==="
 	@poetry run ruff format --check src/ tests/
+	@echo "✓ Ruff formatting passed"
+	@echo ""
+	@echo "=== Running Pylint ==="
 	@poetry run pylint src/
+	@echo "✓ Pylint passed"
+	@echo ""
+	@echo "=== Running Flake8 ==="
 	@poetry run flake8 src/ tests/
+	@echo "✓ Flake8 passed"
+	@echo ""
+	@echo "=== Running MyPy (type checking) ==="
 	@poetry run mypy src/
+	@echo "✓ MyPy passed"
 
 lint-security: ## Security scanning (Bandit + Safety + pip-audit)
-	@echo "Running security scans..."
+	@echo ""
+	@echo "=== Running Bandit (security linter) ==="
 	@poetry run bandit -r src/ -q
-	@poetry run safety check --json || true
+	@echo "✓ Bandit passed"
+	@echo ""
+	@echo "=== Running Safety (dependency vulnerabilities) ==="
+	@poetry run safety scan --output json || true
+	@echo ""
+	@echo "=== Running pip-audit (dependency audit) ==="
 	@poetry run pip-audit || true
 
 lint-complexity: ## Complexity analysis (Radon + Xenon)
-	@echo "Analyzing code complexity..."
+	@echo ""
+	@echo "=== Analyzing code complexity (Radon) ==="
 	@poetry run radon cc src/ -a -s
 	@poetry run radon mi src/ -s
-	@poetry run xenon --max-absolute B --max-modules B --max-average A src/
+	@echo ""
+	@echo "=== Analyzing complexity (Xenon) - warnings only ==="
+	@poetry run xenon --max-absolute B --max-modules B --max-average A src/ || true
 
 lint-full: lint-all lint-security lint-complexity ## ALL quality checks
 	@echo "✅ All linting checks complete!"

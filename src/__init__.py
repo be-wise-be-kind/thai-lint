@@ -20,10 +20,17 @@ __version__ = "1.0.0"
 from src.cli import cli
 from src.config import ConfigError, load_config, save_config
 
+# Library API exports for programmatic usage
+from src.linters.file_placement import lint as file_placement_lint
+from src.orchestrator.core import Orchestrator
+
 __all__ = [
     "__version__",
     "cli",
     "load_config",
     "save_config",
     "ConfigError",
+    # Library API
+    "Orchestrator",
+    "file_placement_lint",
 ]

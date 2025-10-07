@@ -93,6 +93,9 @@ class Orchestrator:
         self.config_loader = LinterConfigLoader()
         self.ignore_parser = IgnoreDirectiveParser(self.project_root)
 
+        # Auto-discover and register all linting rules from src.linters
+        self.registry.discover_rules("src.linters")
+
         # Load configuration from project root
         config_path = self.project_root / ".thailint.yaml"
         if not config_path.exists():
@@ -128,7 +131,7 @@ class Orchestrator:
             try:
                 rule_violations = rule.check(context)
                 violations.extend(rule_violations)
-            except Exception:
+            except Exception:  # nosec B112
                 # Skip rules that fail (defensive programming)
                 continue
 

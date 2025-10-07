@@ -172,7 +172,7 @@ class FilePlacementLinter:
         Returns:
             List of violations found
         """
-        violations = []
+        violations: list[Violation] = []
 
         # Get relative path
         try:
@@ -224,7 +224,7 @@ class FilePlacementLinter:
         Returns:
             List of violations
         """
-        violations = []
+        violations: list[Violation] = []
 
         # Find matching directory rule (most specific)
         dir_rule, matched_path = self._find_matching_directory_rule(path_str, directories)
@@ -464,21 +464,7 @@ class FilePlacementRule(BaseLintRule):
             config: Rule configuration
         """
         self.config = config or {}
-        layout_file = self.config.get("layout_file", ".ai/layout.yaml")
-
-        # Load layout config
-        try:
-            layout_path = Path(layout_file)
-            with layout_path.open(encoding="utf-8") as f:
-                if layout_file.endswith((".yaml", ".yml")):
-                    layout_config = yaml.safe_load(f)
-                else:
-                    layout_config = json.load(f)
-        except Exception:
-            layout_config = {}
-
-        # Create linter
-        self.linter = FilePlacementLinter(config_obj=layout_config)
+        self._linter_cache: dict[Path, FilePlacementLinter] = {}
 
     @property
     def rule_id(self) -> str:
@@ -507,4 +493,60 @@ class FilePlacementRule(BaseLintRule):
         if not context.file_path:
             return []
 
-        return self.linter.lint_path(context.file_path)
+        # Find project root (look for .ai directory)
+        project_root = self._find_project_root(context.file_path)
+
+        # Get or create linter for this project root
+        if project_root not in self._linter_cache:
+            # Try both YAML and JSON config files
+            layout_file = self.config.get("layout_file")
+            if layout_file:
+                layout_path = project_root / layout_file
+            else:
+                # Try .yaml first, then .json
+                yaml_path = project_root / ".ai" / "layout.yaml"
+                json_path = project_root / ".ai" / "layout.json"
+                if yaml_path.exists():
+                    layout_path = yaml_path
+                elif json_path.exists():
+                    layout_path = json_path
+                else:
+                    layout_path = yaml_path  # Default, will use empty config
+
+            # Load layout config
+            try:
+                with layout_path.open(encoding="utf-8") as f:
+                    if str(layout_path).endswith((".yaml", ".yml")):
+                        layout_config = yaml.safe_load(f)
+                    else:
+                        layout_config = json.load(f)
+            except Exception:
+                layout_config = {}
+
+            # Create and cache linter with project root
+            self._linter_cache[project_root] = FilePlacementLinter(
+                config_obj=layout_config, project_root=project_root
+            )
+
+        linter = self._linter_cache[project_root]
+        return linter.lint_path(context.file_path)
+
+    def _find_project_root(self, file_path: Path) -> Path:
+        """Find project root by looking for .ai directory.
+
+        Args:
+            file_path: File being linted
+
+        Returns:
+            Project root directory
+        """
+        current = file_path.parent if file_path.is_file() else file_path
+
+        # Walk up directory tree looking for .ai directory
+        while current != current.parent:
+            if (current / ".ai").exists():
+                return current
+            current = current.parent
+
+        # Fallback to current directory if no .ai found
+        return Path.cwd()
