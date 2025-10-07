@@ -42,7 +42,7 @@ class TestCLIInterface:
 
         runner = CliRunner()
         result = runner.invoke(
-            cli, ["lint", "file-placement", "--rules", '{"allow": [".*\\.py$"]}', "."]
+            cli, ["lint", "file-placement", "--rules", '{"allow": [".*\\\\.py$"]}', "."]
         )
         assert result.exit_code in [0, 1]
 

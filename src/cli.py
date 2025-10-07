@@ -55,23 +55,28 @@ def setup_logging(verbose: bool = False):
 @click.pass_context
 def cli(ctx, verbose: bool, config: str | None):
     """
-    {{PROJECT_NAME}} - {{PROJECT_DESCRIPTION}}
+    thai-lint - AI code linter and governance tool
 
-    A professional command-line tool built with Python and Click.
+    Lint and governance for AI-generated code across multiple languages.
+    Identifies common mistakes, anti-patterns, and security issues.
 
     Examples:
 
         \b
+        # Lint current directory for file placement issues
+        thai-lint lint file-placement .
+
+        \b
+        # Lint with custom config
+        thai-lint lint file-placement --config .thailint.yaml src/
+
+        \b
+        # Get JSON output
+        thai-lint lint file-placement --format json .
+
+        \b
         # Show help
-        {{PROJECT_NAME}} --help
-
-        \b
-        # Run with verbose output
-        {{PROJECT_NAME}} --verbose hello --name World
-
-        \b
-        # Use custom config
-        {{PROJECT_NAME}} --config myconfig.yaml config show
+        thai-lint --help
     """
     # Ensure context object exists
     ctx.ensure_object(dict)
@@ -110,15 +115,15 @@ def hello(ctx, name: str, uppercase: bool):
 
         \b
         # Basic greeting
-        {{PROJECT_NAME}} hello
+        thai-lint hello
 
         \b
         # Custom name
-        {{PROJECT_NAME}} hello --name Alice
+        thai-lint hello --name Alice
 
         \b
         # Uppercase output
-        {{PROJECT_NAME}} hello --name Bob --uppercase
+        thai-lint hello --name Bob --uppercase
     """
     config = ctx.obj["config"]
     verbose = ctx.obj.get("verbose", False)
@@ -164,15 +169,15 @@ def config_show(ctx, format: str):
 
         \b
         # Show as text
-        {{PROJECT_NAME}} config show
+        thai-lint config show
 
         \b
         # Show as JSON
-        {{PROJECT_NAME}} config show --format json
+        thai-lint config show --format json
 
         \b
         # Show as YAML
-        {{PROJECT_NAME}} config show --format yaml
+        thai-lint config show --format yaml
     """
     cfg = ctx.obj["config"]
 
@@ -205,11 +210,11 @@ def config_get(ctx, key: str):
 
         \b
         # Get log level
-        {{PROJECT_NAME}} config get log_level
+        thai-lint config get log_level
 
         \b
         # Get greeting template
-        {{PROJECT_NAME}} config get greeting
+        thai-lint config get greeting
     """
     cfg = ctx.obj["config"]
 
@@ -265,15 +270,15 @@ def config_set(ctx, key: str, value: str):
 
         \b
         # Set log level
-        {{PROJECT_NAME}} config set log_level DEBUG
+        thai-lint config set log_level DEBUG
 
         \b
         # Set greeting template
-        {{PROJECT_NAME}} config set greeting "Hi"
+        thai-lint config set greeting "Hi"
 
         \b
         # Set numeric value
-        {{PROJECT_NAME}} config set max_retries 5
+        thai-lint config set max_retries 5
     """
     cfg = ctx.obj["config"]
     converted_value = _convert_value_type(value)
@@ -305,11 +310,11 @@ def config_reset(ctx, yes: bool):
 
         \b
         # Reset with confirmation
-        {{PROJECT_NAME}} config reset
+        thai-lint config reset
 
         \b
         # Reset without confirmation
-        {{PROJECT_NAME}} config reset --yes
+        thai-lint config reset --yes
     """
     if not yes:
         click.confirm("Reset configuration to defaults?", abort=True)
@@ -326,6 +331,141 @@ def config_reset(ctx, yes: bool):
     except ConfigError as e:
         click.echo(f"Error resetting configuration: {e}", err=True)
         sys.exit(1)
+
+
+@cli.group()
+def lint():
+    """Linting commands for code analysis."""
+    pass
+
+
+@lint.command("file-placement")
+@click.argument("path", type=click.Path(exists=True), default=".")
+@click.option("--config", "-c", "config_file", type=click.Path(), help="Path to config file")
+@click.option("--rules", "-r", help="Inline JSON rules configuration")
+@click.option(
+    "--format", "-f", type=click.Choice(["text", "json"]), default="text", help="Output format"
+)
+@click.option("--recursive/--no-recursive", default=True, help="Scan directories recursively")
+@click.pass_context
+def lint_file_placement(
+    ctx, path: str, config_file: str | None, rules: str | None, format: str, recursive: bool
+):
+    """
+    Lint files for proper file placement.
+
+    Checks that files are placed in appropriate directories according to
+    configured rules and patterns.
+
+    PATH: File or directory to lint (defaults to current directory)
+
+    Examples:
+
+        \b
+        # Lint current directory
+        thai-lint lint file-placement
+
+        \b
+        # Lint specific directory
+        thai-lint lint file-placement src/
+
+        \b
+        # Use custom config
+        thai-lint lint file-placement --config rules.json .
+
+        \b
+        # Inline JSON rules
+        thai-lint lint file-placement --rules '{"allow": [".*\\.py$"]}' .
+    """
+    import json
+    from pathlib import Path
+
+    from src.orchestrator.core import Orchestrator
+
+    verbose = ctx.obj.get("verbose", False)
+    path_obj = Path(path)
+
+    try:
+        # Determine project root (parent of path or path itself if directory)
+        project_root = path_obj if path_obj.is_dir() else path_obj.parent
+
+        # Initialize orchestrator
+        orchestrator = Orchestrator(project_root=project_root)
+
+        # Handle inline rules or config file
+        if rules:
+            # Parse inline JSON rules
+            try:
+                rules_config = json.loads(rules)
+                # Update orchestrator config with inline rules
+                orchestrator.config.update(rules_config)
+                if verbose:
+                    logger.debug(f"Applied inline rules: {rules_config}")
+            except json.JSONDecodeError as e:
+                click.echo(f"Error: Invalid JSON in --rules: {e}", err=True)
+                sys.exit(2)
+        elif config_file:
+            # Load external config file
+            config_path = Path(config_file)
+            if not config_path.exists():
+                click.echo(f"Error: Config file not found: {config_file}", err=True)
+                sys.exit(2)
+            orchestrator.config = orchestrator.config_loader.load(config_path)
+            if verbose:
+                logger.debug(f"Loaded config from: {config_file}")
+
+        # Execute linting
+        if path_obj.is_file():
+            violations = orchestrator.lint_file(path_obj)
+        else:
+            violations = orchestrator.lint_directory(path_obj, recursive=recursive)
+
+        if verbose:
+            logger.info(f"Found {len(violations)} violation(s)")
+
+        # Format and output results
+        if format == "json":
+            # JSON output
+            output = {
+                "violations": [
+                    {
+                        "rule_id": v.rule_id,
+                        "file_path": str(v.file_path),
+                        "line": v.line,
+                        "column": v.column,
+                        "message": v.message,
+                        "severity": v.severity.name,
+                    }
+                    for v in violations
+                ],
+                "total": len(violations),
+            }
+            click.echo(json.dumps(output, indent=2))
+        else:
+            # Text output (default)
+            if violations:
+                click.echo(f"Found {len(violations)} violation(s):\n")
+                for v in violations:
+                    location = f"{v.file_path}:{v.line}" if v.line else str(v.file_path)
+                    if v.column:
+                        location += f":{v.column}"
+                    click.echo(f"  {location}")
+                    click.echo(f"    [{v.severity.name}] {v.rule_id}: {v.message}")
+                    click.echo()
+            else:
+                click.echo("✓ No violations found")
+
+        # Exit with appropriate code
+        if violations:
+            sys.exit(1)  # Violations found
+        else:
+            sys.exit(0)  # Clean
+
+    except Exception as e:
+        click.echo(f"Error during linting: {e}", err=True)
+        if verbose:
+            logger.exception("Linting failed with exception")
+        sys.exit(2)
 
 
 if __name__ == "__main__":

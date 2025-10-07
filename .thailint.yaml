@@ -1,0 +1,67 @@
+# Purpose: Thai-lint configuration for project file placement rules
+#
+# Scope: Defines allowed file patterns and directory-specific placement rules
+#
+# Overview: Configuration file for the thai-lint file placement linter. Enforces project
+#     structure conventions for Python source files, tests, configuration files, and
+#     documentation. Uses regex patterns to validate that files are placed in appropriate
+#     directories based on their type and purpose.
+
+# Global patterns that apply to all directories
+global_patterns:
+  # Python source files should be in src/
+  deny:
+    - pattern: '^(?!src/|tests/|scripts/|docs/|\\.ai/|\\.roadmap/).*\\.py$'
+      message: "Python files should be in src/, tests/, scripts/, docs/, .ai/, or .roadmap/ directories"
+
+# Directory-specific rules
+directories:
+  # Source code directory - only Python implementation files
+  src:
+    allow:
+      - '.*\\.py$'
+    deny:
+      - 'test_.*\\.py$'
+      - '.*_test\\.py$'
+
+  # Tests directory - only test files and fixtures
+  tests:
+    allow:
+      - 'test_.*\\.py$'
+      - '.*_test\\.py$'
+      - 'conftest\\.py$'
+      - '__init__\\.py$'
+    deny:
+      - '^(?!test_|.*_test\\.py|conftest\\.py|__init__\\.py).*\\.py$'
+
+  # Documentation directory
+  docs:
+    allow:
+      - '.*\\.(md|rst|txt|py)$'  # Allow .py for doc generation scripts
+    deny:
+      - '^(?!.*\\.(md|rst|txt|py)$).*'
+
+  # AI context directory
+  .ai:
+    allow:
+      - '.*\\.(md|yaml|yml)$'
+
+  # Roadmap directory
+  .roadmap:
+    allow:
+      - '.*\\.md$'
+
+# Ignore patterns (files/directories to skip)
+ignore:
+  - "__pycache__/"
+  - "*.pyc"
+  - ".git/"
+  - ".venv/"
+  - "venv/"
+  - ".pytest_cache/"
+  - ".mypy_cache/"
+  - ".ruff_cache/"
+  - "htmlcov/"
+  - "*.egg-info/"
+  - "dist/"
+  - "build/"

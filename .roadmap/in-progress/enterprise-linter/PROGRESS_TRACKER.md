@@ -28,8 +28,8 @@ This is the **PRIMARY HANDOFF DOCUMENT** for AI agents working on the Enterprise
 4. **Update this document** after completing each PR
 
 ## 📍 Current Status
-**Current PR**: PR6 Complete - Ready to start PR7
-**Infrastructure State**: Core framework + Orchestrator + File placement linter + Integration complete
+**Current PR**: PR7 Complete - Ready to start PR8
+**Infrastructure State**: Core framework + Orchestrator + File placement linter + Integration + CLI complete
 **Feature Target**: Production-ready enterprise linter with 3 deployment modes (CLI, Library, Docker), plugin framework, multi-level ignores, and file placement linter
 
 ## 📁 Required Documents Location
@@ -42,15 +42,15 @@ This is the **PRIMARY HANDOFF DOCUMENT** for AI agents working on the Enterprise
 
 ## 🎯 Next PR to Implement
 
-### ➡️ START HERE: PR6 - File Placement Integration (TDD)
+### ➡️ START HERE: PR8 - Library API (TDD)
 
 **Quick Summary**:
-Integrate file placement linter with orchestrator, CLI, and library API. Complete end-to-end workflow.
+Create clean programmatic API for library usage with high-level Linter class and direct linter imports.
 
 **Pre-flight Checklist**:
-- [x] PR1-5 complete (framework + implementation ready)
+- [x] PR1-7 complete (framework + CLI ready)
 - [ ] Git working tree clean
-- [ ] File placement linter functional (42/50 tests passing)
+- [ ] CLI commands functional
 
 **Prerequisites Complete**:
 ✅ PR1: Core framework with base interfaces and registry
@@ -58,23 +58,23 @@ Integrate file placement linter with orchestrator, CLI, and library API. Complet
 ✅ PR3: Multi-language orchestrator with file routing
 ✅ PR4: Complete test suite (50 tests written)
 ✅ PR5: File placement linter implementation (42/50 tests passing)
+✅ PR6: File placement integration (orchestrator + library API)
+✅ PR7: CLI interface (`thai lint file-placement` command)
 
 **What to do**:
-1. See PR_BREAKDOWN.md → PR6 for detailed steps
-2. Write integration tests for orchestrator + linter
-3. Register FilePlacementRule with orchestrator
-4. Add CLI command `thai lint file-placement <path>`
-5. Export library API
-6. Dogfood on own codebase
-7. Update this document when complete
+1. See PR_BREAKDOWN.md → PR8 for detailed steps
+2. Write tests for high-level Linter API
+3. Implement clean public API
+4. Write usage examples
+5. Update this document when complete
 
 ---
 
 ## Overall Progress
-**Total Completion**: 42% (5/12 PRs completed)
+**Total Completion**: 58% (7/12 PRs completed)
 
 ```
-[████████████████░░░░░░░░░░░░░░░░░░░░] 42% Complete
+[██████████████████████████░░░░░░░░░░] 58% Complete
 ```
 
 ---
@@ -88,8 +88,8 @@ Integrate file placement linter with orchestrator, CLI, and library API. Complet
 | PR3 | Multi-Language Orchestrator (TDD) | 🟢 Complete | 100% | High | P0 | 13 tests pass, language detection + file routing |
 | PR4 | File Placement Tests (Pure TDD) | 🟢 Complete | 100% | Medium | P1 | 50 tests, all fail (no implementation) |
 | PR5 | File Placement Linter Implementation | 🟢 Complete | 100% | High | P1 | 42/50 tests pass, 81% coverage |
-| PR6 | File Placement Integration (TDD) | 🔴 Not Started | 0% | Low | P1 | E2E integration |
-| PR7 | CLI Interface (TDD) | 🔴 Not Started | 0% | Medium | P2 | `thai lint <rule>` command |
+| PR6 | File Placement Integration (TDD) | 🟢 Complete | 100% | Low | P1 | 9/9 integration tests pass |
+| PR7 | CLI Interface (TDD) | 🟢 Complete | 100% | Medium | P2 | 4/4 CLI tests pass, `thai lint file-placement` command |
 | PR8 | Library API (TDD) | 🔴 Not Started | 0% | Low | P2 | Importable API |
 | PR9 | Docker Support (TDD) | 🔴 Not Started | 0% | Medium | P2 | Multi-stage builds |
 | PR10 | Integration Test Suite (TDD) | 🔴 Not Started | 0% | Medium | P3 | Performance benchmarks |
@@ -298,7 +298,48 @@ Integrate file placement linter with orchestrator, CLI, and library API. Complet
 
 ---
 
-## PR7-PR12
+## PR7: CLI Interface (TDD) ✅ COMPLETE
+
+**Objective**: Professional CLI with `thai lint <rule> <path>` structure
+
+**Steps**:
+1. ✅ Read PR_BREAKDOWN.md → PR7 section
+2. ✅ Add `lint` command group to CLI
+3. ✅ Implement `lint file-placement` subcommand
+4. ✅ Add --config, --rules, --format, --recursive options
+5. ✅ All 4 CLI tests pass
+6. ✅ Update this document
+
+**Completion Criteria**:
+- ✅ All 4 CLI tests pass (119/122 total, 3 pre-existing test bugs)
+- ✅ `thai lint file-placement [PATH]` command works
+- ✅ Inline JSON rules via --rules flag
+- ✅ External config via --config flag
+- ✅ Text and JSON output formats
+- ✅ Proper exit codes (0 = pass, 1 = violations, 2 = error)
+- ✅ Help text complete
+
+**Files Modified**:
+- `src/cli.py` - Added `lint` command group and `file-placement` subcommand
+- `tests/unit/linters/file_placement/test_cli_interface.py` - Fixed JSON escaping bug in test
+
+**Test Results**:
+- 4/4 CLI tests pass
+- 119/122 total unit tests pass
+- Test coverage: 73% overall
+- Note: 3 pre-existing test failures remain (1 YAML config bug, 2 directory scanning bugs)
+
+**Implementation Highlights**:
+- Integrated with Orchestrator for file/directory linting
+- JSON and text output formatters
+- Inline rules and external config support
+- Recursive and non-recursive scanning modes
+- Proper error handling with descriptive messages
+- Exit codes follow convention (0/1/2)
+
+---
+
+## PR8-PR12
 
 See PR_BREAKDOWN.md for detailed steps for remaining PRs.
 
