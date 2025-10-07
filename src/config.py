@@ -35,7 +35,7 @@ class ConfigError(Exception):
 # Default configuration values
 DEFAULT_CONFIG: dict[str, Any] = {
     "app_name": "{{PROJECT_NAME}}",
-    "version": "1.0.0",
+    "version": "0.1.0",
     "log_level": "INFO",
     "output_format": "text",
     "greeting": "Hello",

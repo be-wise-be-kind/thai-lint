@@ -44,7 +44,7 @@ class TestFilePlacementIntegration:
 
         # Create config file
         config = {
-            "file_placement": {
+            "file-placement": {
                 "directories": {
                     "src/": {
                         "allow": [r"^src/.*\.py$"],

@@ -137,7 +137,7 @@ lint-placement: ## File placement linting (dogfooding our own linter)
 	@echo ""
 	@echo "=== Running file placement linter (dogfooding) ==="
 	@if [ -n "$(PLACEMENT_TARGETS)" ]; then \
-		poetry run thai-lint lint file-placement $(PLACEMENT_TARGETS); \
+		poetry run thai-lint file-placement $(PLACEMENT_TARGETS); \
 		echo "✓ File placement checks passed"; \
 	fi
 
@@ -176,7 +176,7 @@ init: ## Initial setup (install dependencies and show activation instructions)
 	@echo ""
 	@echo "Quick start (copy and paste):"
 	@echo "  source $$(poetry env info --path)/bin/activate"
-	@echo "  thai-lint lint file-placement ."
+	@echo "  thai-lint file-placement ."
 	@echo ""
 
 install: ## Install/update dependencies
@@ -207,7 +207,7 @@ venv-info: ## Show virtualenv path and activation command
 	@echo ""
 	@echo "Once activated, you can run:"
 	@echo "  thai-lint --help"
-	@echo "  thai-lint lint file-placement ."
+	@echo "  thai-lint file-placement ."
 	@echo ""
 	@echo "To deactivate:"
 	@echo "  deactivate"

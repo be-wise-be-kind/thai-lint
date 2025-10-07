@@ -45,7 +45,7 @@ FROM python:3.11-slim
 # Set labels for metadata
 LABEL maintainer="Steve Jackson <steve@example.com>"
 LABEL description="Thai-Lint - AI code linter for multi-language projects"
-LABEL version="1.0.0"
+LABEL version="0.1.0"
 
 # Create non-root user for security
 RUN useradd -m -u 1000 -s /bin/bash thailint

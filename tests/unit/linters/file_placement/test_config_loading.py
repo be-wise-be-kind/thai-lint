@@ -30,7 +30,7 @@ class TestConfigurationLoading:
         """Load file placement rules from JSON."""
         config_file = tmp_path / "layout.json"
         config_file.write_text("""{
-  "file_placement": {
+  "file-placement": {
     "directories": {
       "src/": {
         "allow": ["^src/.*\\\\.py$"]
@@ -47,7 +47,7 @@ class TestConfigurationLoading:
         """Load file placement rules from YAML."""
         config_file = tmp_path / "layout.yaml"
         config_file.write_text("""
-file_placement:
+file-placement:
   directories:
     src/:
       allow:
@@ -82,7 +82,7 @@ file_placement:
         """Invalid regex patterns caught on load."""
         config_file = tmp_path / "layout.yaml"
         config_file.write_text("""
-file_placement:
+file-placement:
   directories:
     src/:
       allow:
@@ -95,7 +95,7 @@ file_placement:
 
     def test_support_inline_json_object(self):
         """Support passing JSON object directly (not file path)."""
-        config_obj = {"file_placement": {"directories": {"src/": {"allow": [r"^src/.*\.py$"]}}}}
+        config_obj = {"file-placement": {"directories": {"src/": {"allow": [r"^src/.*\.py$"]}}}}
         from src.linters.file_placement import FilePlacementLinter
 
         linter = FilePlacementLinter(config_obj=config_obj)

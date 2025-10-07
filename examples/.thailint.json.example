@@ -1,0 +1,53 @@
+{
+  "_comment": "Example thailint configuration (JSON format)",
+  "_description": "This configuration demonstrates the new multi-linter format where each linter has its own top-level section",
+
+  "file-placement": {
+    "global_patterns": {
+      "deny": [
+        {
+          "pattern": "^(?!src/|tests/|scripts/).*\\.py$",
+          "reason": "Python files must be in src/, tests/, or scripts/"
+        },
+        {
+          "pattern": ".*\\.tmp$",
+          "reason": "Temporary files should not be committed"
+        }
+      ]
+    },
+
+    "directories": {
+      "src/": {
+        "allow": ["^src/.*\\.py$"],
+        "deny": [
+          {
+            "pattern": "^src/.*test.*\\.py$",
+            "reason": "Tests belong in tests/ directory"
+          }
+        ]
+      },
+
+      "tests/": {
+        "allow": [
+          "^tests/test_.*\\.py$",
+          "^tests/.*_test\\.py$",
+          "^tests/conftest\\.py$"
+        ]
+      },
+
+      "scripts/": {
+        "allow": ["^scripts/.*\\.py$"]
+      }
+    },
+
+    "ignore": [
+      "__pycache__/",
+      "*.pyc",
+      ".venv/",
+      ".git/",
+      "node_modules/",
+      "dist/",
+      "build/"
+    ]
+  }
+}

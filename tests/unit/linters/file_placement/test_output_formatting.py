@@ -62,7 +62,7 @@ class TestOutputFormatting:
     def test_error_message_includes_pattern_violated(self):
         """Error message shows which pattern was violated."""
         config = {
-            "file_placement": {
+            "file-placement": {
                 "directories": {
                     "src/": {"deny": [{"pattern": r".*test.*", "reason": "No tests in src/"}]}
                 }
@@ -83,7 +83,7 @@ class TestOutputFormatting:
 
     def test_suggestion_for_correct_placement(self):
         """Violation includes suggestion for where file should go."""
-        config = {"file_placement": {"directories": {"src/": {"allow": [r"^src/.*\.py$"]}}}}
+        config = {"file-placement": {"directories": {"src/": {"allow": [r"^src/.*\.py$"]}}}}
         from src.linters.file_placement import FilePlacementLinter
 
         linter = FilePlacementLinter(config_obj=config)
