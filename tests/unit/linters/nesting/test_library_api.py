@@ -113,7 +113,7 @@ def test_func():
         context_pass.file_path = Path("test.py")
         context_pass.file_content = code
         context_pass.language = "python"
-        context_pass.metadata = {"linters": {"nesting": {"max_nesting_depth": 4}}}
+        context_pass.metadata = {"nesting": {"max_nesting_depth": 4}}
         violations_pass = rule.check(context_pass)
         assert len(violations_pass) == 0, "Depth 3 should pass with limit 4"
 
@@ -122,6 +122,6 @@ def test_func():
         context_fail.file_path = Path("test.py")
         context_fail.file_content = code
         context_fail.language = "python"
-        context_fail.metadata = {"linters": {"nesting": {"max_nesting_depth": 2}}}
+        context_fail.metadata = {"nesting": {"max_nesting_depth": 2}}
         violations_fail = rule.check(context_fail)
         assert len(violations_fail) > 0, "Depth 3 should fail with limit 2"

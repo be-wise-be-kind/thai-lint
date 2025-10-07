@@ -89,11 +89,7 @@ class NestingDepthRule(BaseLintRule):
         if metadata is None or not isinstance(metadata, dict):
             return NestingConfig()
 
-        linters = metadata.get("linters", {})
-        if not isinstance(linters, dict):
-            return NestingConfig()
-
-        config_dict = linters.get("nesting", {})
+        config_dict = metadata.get("nesting", {})
         if not isinstance(config_dict, dict):
             return NestingConfig()
 

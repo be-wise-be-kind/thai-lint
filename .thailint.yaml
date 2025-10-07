@@ -68,12 +68,10 @@ file-placement:
     - "dist/"
     - "build/"
 
-# Linter-specific configurations
-linters:
-  # Nesting depth linter - detects excessive code nesting
-  nesting:
-    enabled: true
-    max_nesting_depth: 4  # Maximum allowed nesting depth (default: 4)
-    # Higher values allow more complex nesting but may reduce readability
-    # Lower values enforce flatter code structure but may require more refactoring
-    # Recommended: 3-5 depending on team preference and code complexity
+# Nesting depth linter configuration
+nesting:
+  enabled: true
+  max_nesting_depth: 4  # Maximum allowed nesting depth (default: 4)
+  # Higher values allow more complex nesting but may reduce readability
+  # Lower values enforce flatter code structure but may require more refactoring
+  # Recommended: 3-5 depending on team preference and code complexity
