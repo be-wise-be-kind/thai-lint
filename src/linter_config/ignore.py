@@ -171,15 +171,37 @@ class IgnoreDirectiveParser:
 
     def _has_line_ignore_marker(self, code: str) -> bool:
         """Check if code line has ignore marker."""
-        return "# thailint: ignore" in code or "# design-lint: ignore" in code
+        return (
+            "# thailint: ignore" in code
+            or "# design-lint: ignore" in code
+            or "// thailint: ignore" in code
+            or "// design-lint: ignore" in code
+        )
 
     def _check_specific_rule_in_line(self, code: str, rule_id: str) -> bool:
         """Check if line's ignore directive matches specific rule."""
-        match = re.search(r"ignore\[([^\]]+)\]", code)
-        if match:
-            ignored_rules = [r.strip() for r in match.group(1).split(",")]
-            return any(self._rule_matches(rule_id, r) for r in ignored_rules)
-        return "ignore[" not in code
+        # Check for bracket syntax: # thailint: ignore[rule1, rule2]
+        bracket_match = re.search(r"ignore\[([^\]]+)\]", code)
+        if bracket_match:
+            return self._check_bracket_rules(bracket_match.group(1), rule_id)
+
+        # Check for space-separated syntax: # thailint: ignore rule1 rule2
+        space_match = re.search(r"ignore\s+([^\s#]+(?:\s+[^\s#]+)*)", code)
+        if space_match:
+            return self._check_space_separated_rules(space_match.group(1), rule_id)
+
+        # No specific rules - check for "ignore-all"
+        return "ignore-all" in code
+
+    def _check_bracket_rules(self, rules_text: str, rule_id: str) -> bool:
+        """Check if bracketed rules match the rule ID."""
+        ignored_rules = [r.strip() for r in rules_text.split(",")]
+        return any(self._rule_matches(rule_id, r) for r in ignored_rules)
+
+    def _check_space_separated_rules(self, rules_text: str, rule_id: str) -> bool:
+        """Check if space-separated rules match the rule ID."""
+        ignored_rules = [r.strip() for r in re.split(r"[,\s]+", rules_text) if r.strip()]
+        return any(self._rule_matches(rule_id, r) for r in ignored_rules)
 
     def has_line_ignore(self, code: str, line_num: int, rule_id: str | None = None) -> bool:
         """Check for line-level ignore directive.
@@ -200,11 +222,11 @@ class IgnoreDirectiveParser:
         return True
 
     def _rule_matches(self, rule_id: str, pattern: str) -> bool:
-        """Check if rule ID matches pattern (supports wildcards).
+        """Check if rule ID matches pattern (supports wildcards and prefixes).
 
         Args:
-            rule_id: Rule ID to check (e.g., "literals.magic-number").
-            pattern: Pattern with optional wildcard (e.g., "literals.*").
+            rule_id: Rule ID to check (e.g., "nesting.excessive-depth").
+            pattern: Pattern with optional wildcard (e.g., "nesting.*" or "nesting").
 
         Returns:
             True if rule matches pattern.
@@ -213,8 +235,16 @@ class IgnoreDirectiveParser:
             # Wildcard match: literals.* matches literals.magic-number
             prefix = pattern[:-1]
             return rule_id.startswith(prefix)
+
         # Exact match
-        return rule_id == pattern
+        if rule_id == pattern:
+            return True
+
+        # Prefix match: "nesting" matches "nesting.excessive-depth"
+        if rule_id.startswith(pattern + "."):
+            return True
+
+        return False
 
     def _has_ignore_next_line_marker(self, prev_line: str) -> bool:
         """Check if line has ignore-next-line marker."""
@@ -259,42 +289,114 @@ class IgnoreDirectiveParser:
         return self.has_line_ignore(current_line, violation.line, violation.rule_id)
 
     def should_ignore_violation(self, violation: "Violation", file_content: str) -> bool:
-        """Check if a violation should be ignored based on all levels.
-
-        Checks:
-        1. Repository level (.thailintignore)
-        2. File level (ignore-file directive)
-        3. Line level (inline ignore)
-        4. Method level (ignore-next-line)
-
-        Args:
-            violation: Violation to check.
-            file_content: Content of the file containing the violation.
-
-        Returns:
-            True if violation should be ignored.
-        """
+        """Check if a violation should be ignored based on all levels."""
         file_path = Path(violation.file_path)
 
-        # Level 1: Repository level ignore
+        # Repository and file level checks
+        if self._is_ignored_at_file_level(file_path, violation.rule_id):
+            return True
+
+        # Line-based checks
+        return self._is_ignored_in_content(file_content, violation)
+
+    def _is_ignored_at_file_level(self, file_path: Path, rule_id: str) -> bool:
+        """Check repository and file level ignores."""
         if self.is_ignored(file_path):
             return True
+        return self.has_file_ignore(file_path, rule_id)
 
-        # Level 2 & 3: File level ignore
-        if self.has_file_ignore(file_path, violation.rule_id):
-            return True
-
+    def _is_ignored_in_content(self, file_content: str, violation: "Violation") -> bool:
+        """Check content-based ignores (block, line, method level)."""
         lines = file_content.splitlines()
 
-        # Level 4: Method level (ignore-next-line on previous line)
+        if self._check_block_ignore(lines, violation):
+            return True
         if self._check_prev_line_ignore(lines, violation):
             return True
-
-        # Level 5: Line level (inline ignore)
         if self._check_current_line_ignore(lines, violation):
             return True
 
         return False
+
+    def _check_block_ignore(self, lines: list[str], violation: "Violation") -> bool:
+        """Check if violation is within an ignore-start/ignore-end block."""
+        if violation.line <= 0 or violation.line > len(lines):
+            return False
+
+        block_state = {"in_block": False, "rules": set()}
+
+        for i, line in enumerate(lines):
+            if self._process_block_line(line, i + 1, violation, block_state):
+                return True
+
+        return False
+
+    def _process_block_line(
+        self, line: str, line_num: int, violation: "Violation", block_state: dict
+    ) -> bool:
+        """Process a single line for block ignore checking."""
+        if "ignore-start" in line:
+            block_state["rules"] = self._parse_ignore_start_rules(line)
+            block_state["in_block"] = True
+            return False
+
+        if self._is_block_end_matching(
+            line, block_state["in_block"], line_num, violation, block_state["rules"]
+        ):
+            return True
+
+        if self._is_violation_line_ignored(
+            line_num, violation, block_state["in_block"], block_state["rules"]
+        ):
+            return True
+
+        if "ignore-end" in line:
+            block_state["in_block"] = False
+            block_state["rules"] = set()
+
+        return False
+
+    def _is_block_end_matching(  # pylint: disable=too-many-arguments,too-many-positional-arguments
+        self,
+        line: str,
+        in_ignore_block: bool,
+        line_num: int,
+        violation: "Violation",
+        current_ignored_rules: set[str],
+    ) -> bool:
+        """Check if ignore-end matches and violation was in the block."""
+        if "ignore-end" not in line:
+            return False
+        if not in_ignore_block or line_num <= violation.line:
+            return False
+        return self._rules_match_violation(current_ignored_rules, violation.rule_id)
+
+    def _is_violation_line_ignored(
+        self,
+        line_num: int,
+        violation: "Violation",
+        in_ignore_block: bool,
+        current_ignored_rules: set[str],
+    ) -> bool:
+        """Check if current line is the violation line in an ignore block."""
+        if line_num != violation.line or not in_ignore_block:
+            return False
+        return self._rules_match_violation(current_ignored_rules, violation.rule_id)
+
+    def _parse_ignore_start_rules(self, line: str) -> set[str]:
+        """Extract rule names from ignore-start directive."""
+        match = re.search(r"ignore-start\s+([^\s#]+(?:\s+[^\s#]+)*)", line)
+        if match:
+            rules_text = match.group(1).strip()
+            rules = [r.strip() for r in re.split(r"[,\s]+", rules_text) if r.strip()]
+            return set(rules)
+        return {"*"}
+
+    def _rules_match_violation(self, ignored_rules: set[str], rule_id: str) -> bool:
+        """Check if any of the ignored rules match the violation rule ID."""
+        if "*" in ignored_rules:
+            return True
+        return any(self._rule_matches(rule_id, pattern) for pattern in ignored_rules)
 
 
 # Alias for backwards compatibility

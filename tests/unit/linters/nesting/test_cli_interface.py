@@ -30,11 +30,11 @@ class TestNestingCLI:
     """Test CLI interface for nesting linter."""
 
     def test_cli_command_exists(self):
-        """thai lint nesting command should be available."""
+        """thai-lint nesting command should be available."""
         from src.cli import cli
 
         runner = CliRunner()
-        result = runner.invoke(cli, ["lint", "nesting", "--help"])
+        result = runner.invoke(cli, ["nesting", "--help"])
 
         # Command should exist and show help
         assert result.exit_code == 0, "Help command should succeed"
@@ -58,7 +58,7 @@ def complex_function(data):
 """)
 
         runner = CliRunner()
-        result = runner.invoke(cli, ["lint", "nesting", str(test_file)])
+        result = runner.invoke(cli, ["nesting", str(test_file)])
 
         # Should report violation and exit with error code
         assert result.exit_code != 0, "Should exit with error when violations found"
@@ -84,7 +84,7 @@ def nested_func():
 """)
 
         runner = CliRunner()
-        result = runner.invoke(cli, ["lint", "nesting", "--format", "json", str(test_file)])
+        result = runner.invoke(cli, ["nesting", "--format", "json", str(test_file)])
 
         # Should output valid JSON
         try:
@@ -100,9 +100,8 @@ def nested_func():
         # Create custom config file
         config_file = tmp_path / "custom.yaml"
         config_file.write_text("""
-linters:
-  nesting:
-    max_nesting_depth: 2
+nesting:
+  max_nesting_depth: 2
 """)
 
         # Create test file with depth 3 (should violate limit 2)
@@ -115,9 +114,7 @@ def test_func():
 """)
 
         runner = CliRunner()
-        result = runner.invoke(
-            cli, ["lint", "nesting", "--config", str(config_file), str(test_file)]
-        )
+        result = runner.invoke(cli, ["nesting", "--config", str(config_file), str(test_file)])
 
         # Should apply custom config and find violation
         assert result.exit_code != 0, "Should find violation with custom limit 2"

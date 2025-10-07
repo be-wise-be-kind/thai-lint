@@ -21,6 +21,7 @@ Implementation: AST-based analysis with configurable limits and helpful error me
 """
 
 import ast
+from typing import Any
 
 from src.core.base import BaseLintContext, BaseLintRule
 from src.core.types import Severity, Violation
@@ -28,6 +29,7 @@ from src.linter_config.ignore import IgnoreDirectiveParser
 
 from .config import NestingConfig
 from .python_analyzer import PythonNestingAnalyzer
+from .typescript_analyzer import TypeScriptNestingAnalyzer
 
 
 class NestingDepthRule(BaseLintRule):
@@ -172,15 +174,72 @@ class NestingDepthRule(BaseLintRule):
         )
 
     def _check_typescript(self, context: BaseLintContext, config: NestingConfig) -> list[Violation]:
-        """Check TypeScript code for nesting violations.
+        """Check TypeScript code for nesting violations."""
+        analyzer = TypeScriptNestingAnalyzer()
+        root_node = analyzer.parse_typescript(context.file_content or "")
 
-        Args:
-            context: Lint context with TypeScript file information
-            config: Nesting configuration
+        if root_node is None:
+            return []
 
-        Returns:
-            List of violations found in TypeScript code (currently stub)
-        """
-        # TypeScript support deferred - return empty violations
-        # Future implementation will parse TypeScript AST and check nesting
-        return []
+        functions = analyzer.find_all_functions(root_node)
+        return self._check_typescript_functions(functions, config, context)
+
+    def _check_typescript_functions(
+        self, functions: list, config: NestingConfig, context: BaseLintContext
+    ) -> list[Violation]:
+        """Check TypeScript functions for nesting violations."""
+        violations = []
+
+        for func_node, func_name in functions:
+            violation = self._check_single_typescript_function(
+                func_node, func_name, config, context
+            )
+            if violation:
+                violations.append(violation)
+
+        return violations
+
+    def _check_single_typescript_function(
+        self, func_node: Any, func_name: str, config: NestingConfig, context: BaseLintContext
+    ) -> Violation | None:
+        """Check a single TypeScript function for nesting violations."""
+        analyzer = TypeScriptNestingAnalyzer()
+        max_depth, _line = analyzer.calculate_max_depth(func_node)
+
+        if max_depth <= config.max_nesting_depth:
+            return None
+
+        violation = self._create_typescript_nesting_violation(
+            func_node, func_name, max_depth, config, context
+        )
+
+        if self._ignore_parser.should_ignore_violation(violation, context.file_content or ""):
+            return None
+
+        return violation
+
+    def _create_typescript_nesting_violation(  # pylint: disable=too-many-arguments,too-many-positional-arguments
+        self,
+        func_node: Any,  # tree-sitter Node
+        func_name: str,
+        max_depth: int,
+        config: NestingConfig,
+        context: BaseLintContext,
+    ) -> Violation:
+        """Create violation for excessive nesting in TypeScript."""
+        line = func_node.start_point[0] + 1  # Convert to 1-indexed
+        column = func_node.start_point[1]
+
+        return Violation(
+            rule_id=self.rule_id,
+            file_path=str(context.file_path or ""),
+            line=line,
+            column=column,
+            message=f"Function '{func_name}' has excessive nesting depth ({max_depth})",
+            severity=Severity.ERROR,
+            suggestion=(
+                f"Maximum nesting depth of {max_depth} exceeds limit of {config.max_nesting_depth}. "
+                "Consider extracting nested logic to separate functions, using early returns, "
+                "or applying guard clauses to reduce nesting."
+            ),
+        )

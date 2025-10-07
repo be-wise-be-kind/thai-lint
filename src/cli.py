@@ -412,38 +412,47 @@ def _setup_orchestrator(path_obj, config_file, rules, verbose):
 
 def _apply_inline_rules(orchestrator, rules, verbose):
     """Parse and apply inline JSON rules."""
+    rules_config = _parse_json_rules(rules)
+    orchestrator.config.update(rules_config)
+    _write_layout_config(orchestrator, rules_config, verbose)
+    _log_applied_rules(rules_config, verbose)
+
+
+def _parse_json_rules(rules: str) -> dict:
+    """Parse JSON rules string, exit on error."""
     import json
 
-    import yaml
-
     try:
-        rules_config = json.loads(rules)
-
-        # Update orchestrator config
-        orchestrator.config.update(rules_config)
-
-        # Also write to .ai/layout.yaml for file-placement linter (if writable)
-        try:
-            ai_dir = orchestrator.project_root / ".ai"
-            ai_dir.mkdir(exist_ok=True)
-            layout_file = ai_dir / "layout.yaml"
-
-            # Wrap rules in file-placement structure
-            layout_config = {"file-placement": rules_config}
-            with layout_file.open("w", encoding="utf-8") as f:
-                yaml.dump(layout_config, f)
-
-            if verbose:
-                logger.debug(f"Applied inline rules: {rules_config}")
-                logger.debug(f"Written layout config to: {layout_file}")
-        except OSError as e:
-            # If we can't write the layout file, log but continue
-            # The orchestrator config is still updated
-            if verbose:
-                logger.debug(f"Could not write layout config: {e}")
+        return json.loads(rules)
     except json.JSONDecodeError as e:
         click.echo(f"Error: Invalid JSON in --rules: {e}", err=True)
         sys.exit(2)
+
+
+def _write_layout_config(orchestrator, rules_config: dict, verbose: bool) -> None:
+    """Write layout config to .ai/layout.yaml if possible."""
+    import yaml
+
+    try:
+        ai_dir = orchestrator.project_root / ".ai"
+        ai_dir.mkdir(exist_ok=True)
+        layout_file = ai_dir / "layout.yaml"
+
+        layout_config = {"file-placement": rules_config}
+        with layout_file.open("w", encoding="utf-8") as f:
+            yaml.dump(layout_config, f)
+
+        if verbose:
+            logger.debug(f"Written layout config to: {layout_file}")
+    except OSError as e:
+        if verbose:
+            logger.debug(f"Could not write layout config: {e}")
+
+
+def _log_applied_rules(rules_config: dict, verbose: bool) -> None:
+    """Log applied rules if verbose."""
+    if verbose:
+        logger.debug(f"Applied inline rules: {rules_config}")
 
 
 def _load_config_file(orchestrator, config_file, verbose):
@@ -526,6 +535,104 @@ def _output_text(violations):
             click.echo()
     else:
         click.echo("✓ No violations found")
+
+
+def _setup_nesting_orchestrator(path_obj: Path, config_file: str | None, verbose: bool):
+    """Set up orchestrator for nesting command."""
+    project_root = path_obj if path_obj.is_dir() else path_obj.parent
+    from src.orchestrator.core import Orchestrator
+
+    orchestrator = Orchestrator(project_root=project_root)
+
+    if config_file:
+        _load_config_file(orchestrator, config_file, verbose)
+
+    return orchestrator
+
+
+def _apply_nesting_config_override(orchestrator, max_depth: int | None, verbose: bool):
+    """Apply max_depth override to orchestrator config."""
+    if max_depth is None:
+        return
+
+    if "nesting" not in orchestrator.config:
+        orchestrator.config["nesting"] = {}
+    orchestrator.config["nesting"]["max_nesting_depth"] = max_depth
+
+    if verbose:
+        logger.debug(f"Overriding max_nesting_depth to {max_depth}")
+
+
+def _run_nesting_lint(orchestrator, path_obj: Path, recursive: bool):
+    """Execute nesting lint on file or directory."""
+    if path_obj.is_file():
+        violations = orchestrator.lint_file(path_obj)
+    else:
+        violations = orchestrator.lint_directory(path_obj, recursive=recursive)
+
+    return [v for v in violations if "nesting" in v.rule_id]
+
+
+@cli.command("nesting")
+@click.argument("path", type=click.Path(exists=True), default=".")
+@click.option("--config", "-c", "config_file", type=click.Path(), help="Path to config file")
+@click.option(
+    "--format", "-f", type=click.Choice(["text", "json"]), default="text", help="Output format"
+)
+@click.option("--max-depth", type=int, help="Override max nesting depth (default: 4)")
+@click.option("--recursive/--no-recursive", default=True, help="Scan directories recursively")
+@click.pass_context
+def nesting(  # pylint: disable=too-many-arguments,too-many-positional-arguments
+    ctx, path: str, config_file: str | None, format: str, max_depth: int | None, recursive: bool
+):
+    """Check for excessive nesting depth in code.
+
+    Analyzes Python and TypeScript files for deeply nested code structures
+    (if/for/while/try statements) and reports violations.
+
+    PATH: File or directory to lint (defaults to current directory)
+
+    Examples:
+
+        \b
+        # Check current directory
+        thai-lint nesting
+
+        \b
+        # Check specific directory
+        thai-lint nesting src/
+
+        \b
+        # Use custom max depth
+        thai-lint nesting --max-depth 3 src/
+
+        \b
+        # Get JSON output
+        thai-lint nesting --format json .
+
+        \b
+        # Use custom config file
+        thai-lint nesting --config .thailint.yaml src/
+    """
+    verbose = ctx.obj.get("verbose", False)
+    path_obj = Path(path)
+
+    try:
+        orchestrator = _setup_nesting_orchestrator(path_obj, config_file, verbose)
+        _apply_nesting_config_override(orchestrator, max_depth, verbose)
+        nesting_violations = _run_nesting_lint(orchestrator, path_obj, recursive)
+
+        if verbose:
+            logger.info(f"Found {len(nesting_violations)} nesting violation(s)")
+
+        _output_violations(nesting_violations, format)
+        sys.exit(1 if nesting_violations else 0)
+
+    except Exception as e:
+        click.echo(f"Error during linting: {e}", err=True)
+        if verbose:
+            logger.exception("Linting failed with exception")
+        sys.exit(2)
 
 
 if __name__ == "__main__":
