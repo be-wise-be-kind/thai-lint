@@ -1,0 +1,15 @@
+# Thai-lint ignore patterns
+# Files and directories matching these patterns will be skipped during linting
+
+__pycache__/
+*.pyc
+.git/
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+htmlcov/
+*.egg-info/
+dist/
+build/
