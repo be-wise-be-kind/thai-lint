@@ -28,10 +28,11 @@ This is the **PRIMARY HANDOFF DOCUMENT** for AI agents working on the Nesting De
 4. **Update this document** after completing each PR
 
 ## 📍 Current Status
-**Current PR**: PR3.5 Complete - TypeScript Analyzer Fully Implemented
+**Current PR**: PR4 Complete - Dogfooding Discovery Complete
 **Infrastructure State**: Core orchestrator and plugin framework ready (from enterprise-linter)
 **Feature Target**: Production-ready nesting depth linter for Python and TypeScript with configurable limits, integrated with CLI/Library/Docker modes, fully dogfooded on thai-lint codebase
 **Test Status**: 76/76 tests passing (100%)
+**Violations Found**: 18 functions at depth 4 (cataloged in VIOLATIONS.md)
 
 ## 📁 Required Documents Location
 ```
@@ -43,22 +44,24 @@ This is the **PRIMARY HANDOFF DOCUMENT** for AI agents working on the Nesting De
 
 ## 🎯 Next PR to Implement
 
-### ➡️ START HERE: PR4 - Dogfooding Discovery
+### ➡️ START HERE: PR5 - Dogfooding Fixes (Batch 1)
 
 **Quick Summary**:
-Run nesting depth linter on thai-lint codebase and catalog ALL violations found. This is pure discovery - NO fixes in this PR. Document violations by severity/complexity to plan PR5/PR6 splits.
+Fix first batch of 9 nesting violations (Easy category from VIOLATIONS.md). Focus on simple refactorings: if-elif-else chains, guard clauses, and helper function extraction.
 
 **Pre-flight Checklist**:
-- ⬜ Read PR4 section below for discovery process
-- ⬜ Run `thai lint nesting src/` to find all violations
-- ⬜ Catalog violations in VIOLATIONS.md with categorization
-- ⬜ Plan refactoring approach for PR5/PR6
+- ⬜ Read PR5 section below for refactoring strategy
+- ⬜ Review VIOLATIONS.md → Easy Refactors section (9 functions)
+- ⬜ Refactor each function using documented patterns
+- ⬜ Run `make test` after each refactor
+- ⬜ Verify `make lint-nesting` shows ~9 violations (down from 18)
 
 **Prerequisites Complete**:
 ✅ PR1: Complete test suite (68 tests created)
 ✅ PR2: Core implementation (Python + TypeScript stub)
 ✅ PR3: Integration (CLI + Library + Docker all working)
 ✅ PR3.5: TypeScript analyzer (76/76 tests passing, 100% complete)
+✅ PR4: Dogfooding discovery (18 violations cataloged, max_nesting_depth=3 configured)
 ✅ Core framework with BaseLintRule interface (from enterprise-linter PR1)
 ✅ Configuration loading system (from enterprise-linter PR2)
 ✅ Orchestrator with language detection (from enterprise-linter PR3)
@@ -67,10 +70,10 @@ Run nesting depth linter on thai-lint codebase and catalog ALL violations found.
 ---
 
 ## Overall Progress
-**Total Completion**: 57% (4/7 PRs completed)
+**Total Completion**: 71% (5/7 PRs completed)
 
 ```
-[######################                  ] 57% Complete
+[#############################           ] 71% Complete
 ```
 
 ---
@@ -83,9 +86,9 @@ Run nesting depth linter on thai-lint codebase and catalog ALL violations found.
 | PR2 | Core Implementation (Python + TypeScript) | 🟢 Complete | 100% | High | P0 | 53/68 tests passing, Python working, TS stubbed |
 | PR3 | Integration (CLI + Library + Docker) | 🟢 Complete | 100% | Medium | P0 | All integration working, 64/76 tests passing |
 | PR3.5 | TypeScript Analyzer Implementation | 🟢 Complete | 100% | High | P1 | tree-sitter implementation, 76/76 tests (100%) |
-| PR4 | Dogfooding Discovery | 🔴 Not Started | 0% | Low | P1 | Run on thai-lint, catalog violations |
-| PR5 | Dogfooding Fixes (Batch 1) | 🔴 Not Started | 0% | High | P1 | Fix first ~50% of violations |
-| PR6 | Dogfooding Fixes (Batch 2) + Docs | 🔴 Not Started | 0% | High | P1 | Fix remaining violations + docs |
+| PR4 | Dogfooding Discovery | 🟢 Complete | 100% | Low | P1 | 18 violations found, max_depth=3, make lint-nesting created |
+| PR5 | Dogfooding Fixes (Batch 1) | 🔴 Not Started | 0% | High | P1 | Fix first 9 violations (easy refactors) |
+| PR6 | Dogfooding Fixes (Batch 2) + Docs | 🔴 Not Started | 0% | High | P1 | Fix remaining 9 violations + docs |
 
 ### Status Legend
 - 🔴 Not Started
@@ -270,30 +273,42 @@ Run nesting depth linter on thai-lint codebase and catalog ALL violations found.
 
 ---
 
-## PR4: Dogfooding Discovery 🔴 NOT STARTED
+## PR4: Dogfooding Discovery 🟢 COMPLETE
 
 **Objective**: Run nesting linter on thai-lint codebase and catalog violations
 
 **Steps**:
-1. ⬜ Read PR_BREAKDOWN.md → PR4 section
-2. ⬜ Run: `thai lint nesting src/`
-3. ⬜ Catalog ALL violations in .roadmap/planning/nesting-linter/VIOLATIONS.md
-4. ⬜ Categorize by severity/complexity (easy refactor vs. complex extraction)
-5. ⬜ Create plan for PR5/PR6 splits (roughly 50/50)
-6. ⬜ Update this document
+1. ✅ Read PR_BREAKDOWN.md → PR4 section
+2. ✅ Updated .thailint.yaml to set max_nesting_depth=3
+3. ✅ Created make lint-nesting target and updated help
+4. ✅ Run: `make lint-nesting` to find all violations
+5. ✅ Cataloged ALL violations in .roadmap/planning/nesting-linter/VIOLATIONS.md
+6. ✅ Categorized by severity/complexity (9 easy, 9 moderate)
+7. ✅ Created plan for PR5/PR6 splits (50/50 - 9 functions each)
+8. ✅ Updated this document
 
 **Completion Criteria**:
-- ⬜ Complete violation report with line numbers and function names
-- ⬜ Violations categorized (easy, medium, hard refactors)
-- ⬜ Refactoring plan documented
-- ⬜ Estimated ~20-50 violations found
+- ✅ Complete violation report with line numbers and function names (18 violations)
+- ✅ Violations categorized (9 easy refactors, 9 moderate refactors)
+- ✅ Refactoring plan documented with patterns and time estimates
+- ✅ Found 18 violations (all at depth 4)
 
-**Files to Create**:
-- .roadmap/planning/nesting-linter/VIOLATIONS.md (comprehensive violation catalog)
+**Files Created**:
+- .roadmap/planning/nesting-linter/VIOLATIONS.md (comprehensive 300+ line catalog)
+
+**Files Modified**:
+- .thailint.yaml (updated max_nesting_depth from 4 to 3)
+- Makefile (added lint-nesting target, updated help and lint-full)
+
+**Key Findings**:
+- All violations are depth 4 (no extreme cases at depth 5+)
+- Common patterns: if-elif-else chains (5), nested error handling (6), guard clause opportunities (7)
+- Split strategy: PR5 = easy wins (2.5 hours), PR6 = complex logic + docs (3.5 hours)
 
 **Notes**:
-- Do NOT fix violations in this PR - only discovery and planning
-- Goal: Understand scope before starting refactoring work
+- NO fixes in this PR - pure discovery and planning
+- make lint-nesting now integrated into make lint-full
+- Ready for PR5 implementation
 
 ---
 
