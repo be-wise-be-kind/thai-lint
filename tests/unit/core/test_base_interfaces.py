@@ -22,8 +22,10 @@ Interfaces: Tests abstract class instantiation errors, required method implement
 Implementation: 15 tests covering abstract class enforcement, concrete implementation validation,
     type serialization, and enum behavior using pytest test classes and assertions
 """
-import pytest
+
 from pathlib import Path
+
+import pytest
 
 
 class TestBaseLintRule:
@@ -79,7 +81,7 @@ class TestBaseLintRule:
 
     def test_concrete_rule_can_be_instantiated(self):
         """Properly implemented rule can be instantiated."""
-        from src.core.base import BaseLintRule, BaseLintContext
+        from src.core.base import BaseLintContext, BaseLintRule
 
         class ValidRule(BaseLintRule):
             @property
@@ -105,7 +107,7 @@ class TestBaseLintRule:
 
     def test_rule_check_returns_violations_list(self):
         """Rule check method returns list of violations."""
-        from src.core.base import BaseLintRule, BaseLintContext
+        from src.core.base import BaseLintContext, BaseLintRule
         from src.core.types import Violation
 
         class TestRule(BaseLintRule):
@@ -222,7 +224,7 @@ class TestViolation:
 
     def test_violation_has_required_fields(self):
         """Violation has rule_id, file_path, line, message."""
-        from src.core.types import Violation, Severity
+        from src.core.types import Severity, Violation
 
         violation = Violation(
             rule_id="test.rule",
@@ -242,7 +244,7 @@ class TestViolation:
 
     def test_violation_can_be_serialized(self):
         """Violation can be converted to dict/JSON."""
-        from src.core.types import Violation, Severity
+        from src.core.types import Severity, Violation
 
         violation = Violation(
             rule_id="test.rule",
@@ -267,7 +269,7 @@ class TestViolation:
 
     def test_violation_suggestion_optional(self):
         """Violation suggestion field is optional."""
-        from src.core.types import Violation, Severity
+        from src.core.types import Severity, Violation
 
         violation = Violation(
             rule_id="test.rule",

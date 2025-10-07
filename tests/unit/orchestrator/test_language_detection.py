@@ -19,8 +19,6 @@ Interfaces: Tests detect_language(file_path: Path) -> str function with various 
 Implementation: 7 tests covering extension-based detection for multiple languages,
     shebang parsing for extensionless scripts, unknown file handling
 """
-import pytest
-from pathlib import Path
 
 
 class TestLanguageDetection:

@@ -14,7 +14,7 @@
 
 **Exports**: Practical file header creation process, examples, and verification checklist
 
-**Related**: file-headers.md, DOCUMENTATION_STANDARDS.md, file header templates
+**Related**: FILE_HEADER_STANDARDS.md, file header templates
 
 **Implementation**: Step-by-step process with examples and checklists for each file type
 

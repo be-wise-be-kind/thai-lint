@@ -26,6 +26,7 @@ Implementation: Package scanning with pkgutil.iter_modules(), class introspectio
     subclass detection for BaseLintRule, abstract class filtering, graceful error handling for
     failed imports, duplicate rule_id validation
 """
+
 import importlib
 import inspect
 import pkgutil
@@ -134,7 +135,7 @@ class RuleRegistry:
             return 0
 
         # Look for rule classes in the module
-        for name, obj in inspect.getmembers(module):
+        for _name, obj in inspect.getmembers(module):
             if not self._is_rule_class(obj):
                 continue
 

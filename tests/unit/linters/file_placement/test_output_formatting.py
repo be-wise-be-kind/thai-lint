@@ -19,9 +19,9 @@ Interfaces: Tests Violation structure and to_dict() serialization method
 Implementation: 5 tests covering violation structure, relative paths, pattern inclusion in messages,
     placement suggestions, and JSON serialization
 """
-import pytest
-from pathlib import Path
+
 import json
+from pathlib import Path
 
 
 class TestOutputFormatting:
@@ -30,6 +30,7 @@ class TestOutputFormatting:
     def test_consistent_violation_format(self):
         """Violations have consistent structure."""
         from src.linters.file_placement import FilePlacementLinter
+
         linter = FilePlacementLinter()
 
         # Create violation scenario
@@ -37,10 +38,10 @@ class TestOutputFormatting:
 
         if violations:
             v = violations[0]
-            assert hasattr(v, 'rule_id')
-            assert hasattr(v, 'file_path')
-            assert hasattr(v, 'message')
-            assert hasattr(v, 'severity')
+            assert hasattr(v, "rule_id")
+            assert hasattr(v, "file_path")
+            assert hasattr(v, "message")
+            assert hasattr(v, "severity")
 
     def test_file_path_relative_to_project_root(self, tmp_path):
         """File paths shown relative to project root."""
@@ -49,6 +50,7 @@ class TestOutputFormatting:
         test_file.write_text("#\n")
 
         from src.linters.file_placement import FilePlacementLinter
+
         linter = FilePlacementLinter(project_root=tmp_path)
         violations = linter.lint_path(test_file)
 
@@ -60,33 +62,30 @@ class TestOutputFormatting:
     def test_error_message_includes_pattern_violated(self):
         """Error message shows which pattern was violated."""
         config = {
-            'file_placement': {
-                'directories': {
-                    'src/': {
-                        'deny': [{'pattern': r'.*test.*', 'reason': 'No tests in src/'}]
-                    }
+            "file_placement": {
+                "directories": {
+                    "src/": {"deny": [{"pattern": r".*test.*", "reason": "No tests in src/"}]}
                 }
             }
         }
         from src.linters.file_placement import FilePlacementLinter
+
         linter = FilePlacementLinter(config_obj=config)
 
         violations = linter.lint_path(Path("src/test_file.py"))
 
         if violations:
             # Message should include the pattern or reason
-            assert "test" in violations[0].message.lower() or "No tests in src/" in violations[0].message
+            assert (
+                "test" in violations[0].message.lower()
+                or "No tests in src/" in violations[0].message
+            )
 
     def test_suggestion_for_correct_placement(self):
         """Violation includes suggestion for where file should go."""
-        config = {
-            'file_placement': {
-                'directories': {
-                    'src/': {'allow': [r'^src/.*\.py$']}
-                }
-            }
-        }
+        config = {"file_placement": {"directories": {"src/": {"allow": [r"^src/.*\.py$"]}}}}
         from src.linters.file_placement import FilePlacementLinter
+
         linter = FilePlacementLinter(config_obj=config)
         violations = linter.lint_path(Path("wrong/location/file.py"))
 
@@ -97,6 +96,7 @@ class TestOutputFormatting:
     def test_machine_readable_json_output(self):
         """Violations can be output as JSON."""
         from src.linters.file_placement import FilePlacementLinter
+
         linter = FilePlacementLinter()
         violations = linter.lint_path(Path("file.py"))
 

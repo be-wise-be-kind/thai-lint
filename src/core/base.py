@@ -23,6 +23,7 @@ Interfaces: BaseLintRule.check(context) -> list[Violation], BaseLintContext prop
 Implementation: ABC-based interface definitions with @abstractmethod decorators, property-based
     API for rule metadata, context-based execution pattern for rule checking
 """
+
 from abc import ABC, abstractmethod
 from pathlib import Path
 

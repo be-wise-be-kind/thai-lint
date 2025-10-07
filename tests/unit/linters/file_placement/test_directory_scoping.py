@@ -19,8 +19,10 @@ Interfaces: Tests lint_directory(path, recursive=bool) and lint_path(path) metho
 Implementation: 7 tests covering flat scanning, recursive scanning, file-specific linting,
     mixed inputs, standard excludes, .thailintignore, and special file handling
 """
-import pytest
+
 from pathlib import Path
+
+import pytest
 
 
 class TestDirectoryScoping:
@@ -33,6 +35,7 @@ class TestDirectoryScoping:
         (tmp_path / "subdir" / "file2.py").write_text("#\n")
 
         from src.linters.file_placement import FilePlacementLinter
+
         linter = FilePlacementLinter()
         violations = linter.lint_directory(tmp_path, recursive=False)
 
@@ -48,6 +51,7 @@ class TestDirectoryScoping:
         (tmp_path / "subdir" / "file2.py").write_text("#\n")
 
         from src.linters.file_placement import FilePlacementLinter
+
         linter = FilePlacementLinter()
         violations = linter.lint_directory(tmp_path, recursive=True)
 
@@ -58,6 +62,7 @@ class TestDirectoryScoping:
     def test_specific_file_path_linting(self):
         """Lint a specific file path."""
         from src.linters.file_placement import FilePlacementLinter
+
         linter = FilePlacementLinter()
         violations = linter.lint_path(Path("src/main.py"))
         assert isinstance(violations, list)
@@ -71,6 +76,7 @@ class TestDirectoryScoping:
         (dir1 / "file2.py").write_text("#\n")
 
         from src.linters.file_placement import FilePlacementLinter
+
         linter = FilePlacementLinter()
 
         # Should handle both file and directory
@@ -86,11 +92,12 @@ class TestDirectoryScoping:
         (tmp_path / ".git" / "config").write_text("git config")
 
         from src.linters.file_placement import FilePlacementLinter
+
         linter = FilePlacementLinter()
         violations = linter.lint_directory(tmp_path, recursive=True)
 
         # Should not lint .git/
-        assert all('.git' not in v.file_path for v in violations)
+        assert all(".git" not in v.file_path for v in violations)
 
     def test_respect_thailintignore_file(self, tmp_path):
         """Respect .thailintignore file."""
@@ -99,11 +106,12 @@ class TestDirectoryScoping:
         (tmp_path / "test.py").write_text("#\n")
 
         from src.linters.file_placement import FilePlacementLinter
+
         linter = FilePlacementLinter(project_root=tmp_path)
         violations = linter.lint_directory(tmp_path)
 
         # Should skip .pyc file
-        assert all('test.pyc' not in v.file_path for v in violations)
+        assert all("test.pyc" not in v.file_path for v in violations)
 
     def test_handle_symlinks_and_special_files(self, tmp_path):
         """Handle symlinks gracefully."""
@@ -115,6 +123,7 @@ class TestDirectoryScoping:
             link_file.symlink_to(real_file)
 
             from src.linters.file_placement import FilePlacementLinter
+
             linter = FilePlacementLinter()
             violations = linter.lint_directory(tmp_path)
 

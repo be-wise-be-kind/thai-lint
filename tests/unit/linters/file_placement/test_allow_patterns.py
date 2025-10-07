@@ -19,7 +19,7 @@ Interfaces: Tests FilePlacementLinter.lint_path(Path) and check_file_allowed(Pat
 Implementation: 8 tests covering simple patterns, multiple patterns, rejection logic, case sensitivity,
     nested directories, wildcards, directory-specific rules, and root directory handling
 """
-import pytest
+
 from pathlib import Path
 
 
@@ -28,14 +28,9 @@ class TestAllowPatternMatching:
 
     def test_match_simple_allow_pattern(self, tmp_path):
         """File matches simple allow regex."""
-        config = {
-            'file_placement': {
-                'directories': {
-                    'src/': {'allow': [r'^src/.*\.py$']}
-                }
-            }
-        }
+        config = {"file_placement": {"directories": {"src/": {"allow": [r"^src/.*\.py$"]}}}}
         from src.linters.file_placement import FilePlacementLinter
+
         linter = FilePlacementLinter(config_obj=config)
 
         # This file should be allowed
@@ -45,15 +40,12 @@ class TestAllowPatternMatching:
     def test_match_multiple_allow_patterns(self):
         """File can match any of multiple allow patterns."""
         config = {
-            'file_placement': {
-                'directories': {
-                    'src/': {
-                        'allow': [r'^src/.*\.py$', r'^src/.*\.pyi$']
-                    }
-                }
+            "file_placement": {
+                "directories": {"src/": {"allow": [r"^src/.*\.py$", r"^src/.*\.pyi$"]}}
             }
         }
         from src.linters.file_placement import FilePlacementLinter
+
         linter = FilePlacementLinter(config_obj=config)
 
         assert linter.check_file_allowed(Path("src/main.py"))
@@ -61,14 +53,9 @@ class TestAllowPatternMatching:
 
     def test_reject_files_not_matching_allow(self):
         """File not matching any allow pattern is rejected."""
-        config = {
-            'file_placement': {
-                'directories': {
-                    'src/': {'allow': [r'^src/.*\.py$']}
-                }
-            }
-        }
+        config = {"file_placement": {"directories": {"src/": {"allow": [r"^src/.*\.py$"]}}}}
         from src.linters.file_placement import FilePlacementLinter
+
         linter = FilePlacementLinter(config_obj=config)
 
         violations = linter.lint_path(Path("src/README.md"))
@@ -77,14 +64,9 @@ class TestAllowPatternMatching:
 
     def test_case_insensitive_matching(self):
         """Pattern matching is case-insensitive."""
-        config = {
-            'file_placement': {
-                'directories': {
-                    'src/': {'allow': [r'^src/.*\.py$']}
-                }
-            }
-        }
+        config = {"file_placement": {"directories": {"src/": {"allow": [r"^src/.*\.py$"]}}}}
         from src.linters.file_placement import FilePlacementLinter
+
         linter = FilePlacementLinter(config_obj=config)
 
         # .PY should match .py pattern (case-insensitive)
@@ -93,13 +75,14 @@ class TestAllowPatternMatching:
     def test_nested_directory_patterns(self):
         """Support **/ for nested directories."""
         config = {
-            'file_placement': {
-                'global_patterns': {
-                    'allow': [r'.*\.py$']  # Any .py anywhere
+            "file_placement": {
+                "global_patterns": {
+                    "allow": [r".*\.py$"]  # Any .py anywhere
                 }
             }
         }
         from src.linters.file_placement import FilePlacementLinter
+
         linter = FilePlacementLinter(config_obj=config)
 
         assert linter.check_file_allowed(Path("src/utils/helpers.py"))
@@ -107,14 +90,9 @@ class TestAllowPatternMatching:
 
     def test_file_extension_wildcards(self):
         """Support wildcard extensions."""
-        config = {
-            'file_placement': {
-                'directories': {
-                    'src/': {'allow': [r'^src/.*\.(py|pyi)$']}
-                }
-            }
-        }
+        config = {"file_placement": {"directories": {"src/": {"allow": [r"^src/.*\.(py|pyi)$"]}}}}
         from src.linters.file_placement import FilePlacementLinter
+
         linter = FilePlacementLinter(config_obj=config)
 
         assert linter.check_file_allowed(Path("src/main.py"))
@@ -123,14 +101,15 @@ class TestAllowPatternMatching:
     def test_directory_specific_allow_patterns(self):
         """Different directories have different allow patterns."""
         config = {
-            'file_placement': {
-                'directories': {
-                    'src/': {'allow': [r'^src/.*\.py$']},
-                    'tests/': {'allow': [r'^tests/test_.*\.py$']}
+            "file_placement": {
+                "directories": {
+                    "src/": {"allow": [r"^src/.*\.py$"]},
+                    "tests/": {"allow": [r"^tests/test_.*\.py$"]},
                 }
             }
         }
         from src.linters.file_placement import FilePlacementLinter
+
         linter = FilePlacementLinter(config_obj=config)
 
         assert linter.check_file_allowed(Path("src/main.py"))
@@ -142,14 +121,15 @@ class TestAllowPatternMatching:
     def test_root_vs_subdirectory_allow(self):
         """Root directory has different rules than subdirectories."""
         config = {
-            'file_placement': {
-                'directories': {
-                    '/': {'allow': [r'^[^/]+\.(md|txt)$']},  # Only docs at root
-                    'src/': {'allow': [r'^src/.*\.py$']}
+            "file_placement": {
+                "directories": {
+                    "/": {"allow": [r"^[^/]+\.(md|txt)$"]},  # Only docs at root
+                    "src/": {"allow": [r"^src/.*\.py$"]},
                 }
             }
         }
         from src.linters.file_placement import FilePlacementLinter
+
         linter = FilePlacementLinter(config_obj=config)
 
         assert linter.check_file_allowed(Path("README.md"))

@@ -914,6 +914,7 @@ tests/linters/file_placement/
 import pytest
 from pathlib import Path
 
+
 class TestConfigurationLoading:
     """Test loading allow/deny patterns from config."""
 
@@ -993,6 +994,7 @@ file_placement:
 
 # tests/linters/file_placement/test_allow_patterns.py
 """Test allow pattern matching."""
+
 
 class TestAllowPatternMatching:
     """Test files matching allow patterns."""
@@ -1092,6 +1094,7 @@ class TestAllowPatternMatching:
 # tests/linters/file_placement/test_deny_patterns.py
 """Test deny pattern matching."""
 
+
 class TestDenyPatternMatching:
     """Test files matching deny patterns."""
 
@@ -1171,6 +1174,7 @@ class TestDenyPatternMatching:
 # tests/linters/file_placement/test_directory_scoping.py
 """Test directory scanning and scoping."""
 
+
 class TestDirectoryScoping:
     """Test flat vs recursive scanning."""
 
@@ -1240,6 +1244,7 @@ class TestDirectoryScoping:
 
 # tests/linters/file_placement/test_ignore_directives.py
 """Test 5-level ignore system."""
+
 
 class TestIgnoreDirectives:
     """Test all 5 levels of ignore directives."""
@@ -1311,6 +1316,7 @@ class TestIgnoreDirectives:
 # tests/linters/file_placement/test_output_formatting.py
 """Test violation output formatting."""
 
+
 class TestOutputFormatting:
     """Test consistent violation message format."""
 
@@ -1365,6 +1371,7 @@ class TestOutputFormatting:
 # tests/linters/file_placement/test_cli_interface.py
 """Test CLI interface for file placement linter."""
 
+
 class TestCLIInterface:
     """Test command-line interface."""
 
@@ -1417,6 +1424,7 @@ class TestCLIInterface:
 # tests/linters/file_placement/test_library_api.py
 """Test library/programmatic API."""
 
+
 class TestLibraryAPI:
     """Test using linter as importable library."""
 
@@ -1430,7 +1438,7 @@ class TestLibraryAPI:
         from thailinter.linters import file_placement_linter as fpl
 
         config = {'allow': [r'.*\.py$']}
-        violations = fpl.lint(Path('.'), config)
+        violations = fpl.lint(Path(''), config)
 
         assert isinstance(violations, list)
 
@@ -1438,7 +1446,7 @@ class TestLibraryAPI:
         """Violations returned as structured data."""
         from thailinter.linters import file_placement_linter as fpl
 
-        violations = fpl.lint(Path('.'))
+        violations = fpl.lint(Path(''))
 
         if violations:
             v = violations[0]

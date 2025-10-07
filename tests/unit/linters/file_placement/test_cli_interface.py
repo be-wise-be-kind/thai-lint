@@ -18,8 +18,6 @@ Interfaces: Tests click CLI command invocation with various flags and arguments
 Implementation: 4 tests covering basic command structure, inline JSON config, external config files,
     and exit code validation
 """
-import pytest
-from pathlib import Path
 
 
 class TestCLIInterface:
@@ -28,24 +26,24 @@ class TestCLIInterface:
     def test_cli_command_structure(self):
         """thai lint file-placement <path> command works."""
         from click.testing import CliRunner
+
         from src.cli import cli
 
         runner = CliRunner()
-        result = runner.invoke(cli, ['lint', 'file-placement', '.'])
+        result = runner.invoke(cli, ["lint", "file-placement", "."])
 
         assert result.exit_code in [0, 1]  # 0 = pass, 1 = violations
 
     def test_accept_json_object_via_flag(self):
         """Accept JSON object via --rules flag."""
         from click.testing import CliRunner
+
         from src.cli import cli
 
         runner = CliRunner()
-        result = runner.invoke(cli, [
-            'lint', 'file-placement',
-            '--rules', '{"allow": [".*\\.py$"]}',
-            '.'
-        ])
+        result = runner.invoke(
+            cli, ["lint", "file-placement", "--rules", '{"allow": [".*\\.py$"]}', "."]
+        )
         assert result.exit_code in [0, 1]
 
     def test_accept_json_file_via_config_flag(self, tmp_path):
@@ -54,19 +52,17 @@ class TestCLIInterface:
         config_file.write_text('{"allow": [".*\\\\.py$"]}')
 
         from click.testing import CliRunner
+
         from src.cli import cli
 
         runner = CliRunner()
-        result = runner.invoke(cli, [
-            'lint', 'file-placement',
-            '--config', str(config_file),
-            '.'
-        ])
+        result = runner.invoke(cli, ["lint", "file-placement", "--config", str(config_file), "."])
         assert result.exit_code in [0, 1]
 
     def test_exit_codes(self, tmp_path):
         """Exit code 0 = pass, 1 = violations found."""
         from click.testing import CliRunner
+
         from src.cli import cli
 
         runner = CliRunner()
@@ -78,11 +74,9 @@ class TestCLIInterface:
         config = tmp_path / "config.json"
         config.write_text('{"global_patterns": {"allow": [".*"]}}')
 
-        result_pass = runner.invoke(cli, [
-            'lint', 'file-placement',
-            '--config', str(config),
-            str(tmp_path)
-        ])
+        result_pass = runner.invoke(
+            cli, ["lint", "file-placement", "--config", str(config), str(tmp_path)]
+        )
 
         # Should succeed or fail with violations
         assert result_pass.exit_code in [0, 1]

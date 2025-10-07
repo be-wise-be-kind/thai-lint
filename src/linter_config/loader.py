@@ -24,6 +24,7 @@ Interfaces: load(config_path: Path) -> dict[str, Any] for loading config files,
 Implementation: Extension-based format detection (.yaml/.yml vs .json), yaml.safe_load()
     for security, empty dict handling for null YAML, ValueError for unsupported formats
 """
+
 import json
 from pathlib import Path
 from typing import Any
@@ -57,13 +58,12 @@ class LinterConfigLoader:
 
         suffix = config_path.suffix.lower()
 
-        with open(config_path, encoding="utf-8") as f:
+        with config_path.open(encoding="utf-8") as f:
             if suffix in [".yaml", ".yml"]:
                 return yaml.safe_load(f) or {}
-            elif suffix == ".json":
+            if suffix == ".json":
                 return json.load(f)
-            else:
-                raise ValueError(f"Unsupported config format: {suffix}")
+            raise ValueError(f"Unsupported config format: {suffix}")
 
     def get_defaults(self) -> dict[str, Any]:
         """Get default configuration.

@@ -27,6 +27,7 @@ Implementation: Directory glob pattern matching for traversal (** for recursive,
     ignore pattern checking before file processing, dynamic context creation per file,
     rule filtering by applicability, violation collection and aggregation across files
 """
+
 from pathlib import Path
 
 from src.core.base import BaseLintContext, BaseLintRule

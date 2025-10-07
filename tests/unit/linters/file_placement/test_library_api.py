@@ -17,7 +17,7 @@ Interfaces: Tests importable module and lint(path, config) function signature
 
 Implementation: 3 tests covering module import, function call interface, and violation structure
 """
-import pytest
+
 from pathlib import Path
 
 
@@ -27,14 +27,15 @@ class TestLibraryAPI:
     def test_import_linter(self):
         """Can import file_placement_linter."""
         from src.linters import file_placement
+
         assert file_placement is not None
 
     def test_function_call_interface(self):
         """Call linter.lint(path, config)."""
         from src.linters import file_placement
 
-        config = {'allow': [r'.*\.py$']}
-        violations = file_placement.lint(Path('.'), config)
+        config = {"allow": [r".*\.py$"]}
+        violations = file_placement.lint(Path(), config)
 
         assert isinstance(violations, list)
 
@@ -42,10 +43,10 @@ class TestLibraryAPI:
         """Violations returned as structured data."""
         from src.linters import file_placement
 
-        violations = file_placement.lint(Path('.'))
+        violations = file_placement.lint(Path())
 
         if violations:
             v = violations[0]
-            assert hasattr(v, 'rule_id')
-            assert hasattr(v, 'file_path')
-            assert hasattr(v, 'to_dict')
+            assert hasattr(v, "rule_id")
+            assert hasattr(v, "file_path")
+            assert hasattr(v, "to_dict")

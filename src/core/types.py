@@ -20,6 +20,7 @@ Interfaces: Violation.to_dict() -> dict for JSON serialization, Severity.ERROR c
 Implementation: Binary severity model (errors only), dataclass-based violation structure
     with comprehensive field set (rule_id, file_path, line, column, message, severity, suggestion)
 """
+
 from dataclasses import dataclass
 from enum import Enum
 

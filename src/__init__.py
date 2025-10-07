@@ -18,12 +18,12 @@ Interfaces: Package version string, CLI command group, configuration functions
 __version__ = "1.0.0"
 
 from src.cli import cli
-from src.config import load_config, save_config, ConfigError
+from src.config import ConfigError, load_config, save_config
 
 __all__ = [
-    '__version__',
-    'cli',
-    'load_config',
-    'save_config',
-    'ConfigError',
+    "__version__",
+    "cli",
+    "load_config",
+    "save_config",
+    "ConfigError",
 ]

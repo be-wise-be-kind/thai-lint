@@ -24,8 +24,8 @@ Implementation: 9 tests using pytest fixtures for temporary packages, dynamic mo
     for discovery testing, mock rule classes for registration validation, sys.path manipulation
     for package imports
 """
+
 import pytest
-from pathlib import Path
 
 
 class TestRuleRegistry:
@@ -33,8 +33,8 @@ class TestRuleRegistry:
 
     def test_can_register_rule(self):
         """Registry can register a rule."""
+        from src.core.base import BaseLintContext, BaseLintRule
         from src.core.registry import RuleRegistry
-        from src.core.base import BaseLintRule, BaseLintContext
 
         class MockRule(BaseLintRule):
             @property
@@ -61,8 +61,8 @@ class TestRuleRegistry:
 
     def test_can_retrieve_registered_rule(self):
         """Registry can retrieve rule by ID."""
+        from src.core.base import BaseLintContext, BaseLintRule
         from src.core.registry import RuleRegistry
-        from src.core.base import BaseLintRule, BaseLintContext
 
         class MockRule(BaseLintRule):
             @property
@@ -90,8 +90,8 @@ class TestRuleRegistry:
 
     def test_duplicate_rule_id_raises_error(self):
         """Registering duplicate rule ID raises error."""
+        from src.core.base import BaseLintContext, BaseLintRule
         from src.core.registry import RuleRegistry
-        from src.core.base import BaseLintRule, BaseLintContext
 
         class MockRule1(BaseLintRule):
             @property
@@ -134,8 +134,8 @@ class TestRuleRegistry:
 
     def test_can_list_all_rules(self):
         """Registry can list all registered rules."""
+        from src.core.base import BaseLintContext, BaseLintRule
         from src.core.registry import RuleRegistry
-        from src.core.base import BaseLintRule, BaseLintContext
 
         class MockRule1(BaseLintRule):
             @property
@@ -206,7 +206,7 @@ class TestRuleDiscovery:
 
         # Create a module with a rule
         rule_module = test_package / "test_rule.py"
-        rule_module.write_text('''
+        rule_module.write_text("""
 from src.core.base import BaseLintRule, BaseLintContext
 
 class DiscoverableRule(BaseLintRule):
@@ -224,10 +224,11 @@ class DiscoverableRule(BaseLintRule):
 
     def check(self, context: BaseLintContext) -> list:
         return []
-''')
+""")
 
         # Add to sys.path so we can import it
         import sys
+
         sys.path.insert(0, str(tmp_path))
 
         try:
@@ -242,7 +243,6 @@ class DiscoverableRule(BaseLintRule):
     def test_skips_abstract_base_classes(self):
         """Discovery skips ABC classes."""
         from src.core.registry import RuleRegistry
-        from src.core.base import BaseLintRule
 
         registry = RuleRegistry()
 
@@ -290,6 +290,7 @@ class ActualRule(BaseLintRule):
 ''')
 
         import sys
+
         sys.path.insert(0, str(tmp_path))
 
         try:
@@ -315,6 +316,7 @@ class ActualRule(BaseLintRule):
         broken_module.write_text("import nonexistent_module")
 
         import sys
+
         sys.path.insert(0, str(tmp_path))
 
         try:

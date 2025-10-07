@@ -26,8 +26,6 @@ Implementation: 17 tests using pytest tmp_path for .thailintignore creation, fil
     with 10-line boundary validation, wildcard pattern matching verification, integration testing
     across multiple ignore levels
 """
-import pytest
-from pathlib import Path
 
 
 class TestRepoLevelIgnore:
@@ -129,7 +127,7 @@ def some_function():
     def test_ignore_directive_beyond_line_10_not_detected(self, tmp_path):
         """Ignore directive beyond line 10 is not detected (performance)."""
         test_file = tmp_path / "test.py"
-        lines = ["# Line {}\n".format(i) for i in range(1, 12)]
+        lines = [f"# Line {i}\n" for i in range(1, 12)]
         lines.append("# thailint: ignore-file\n")  # Line 12
         test_file.write_text("".join(lines))
 
@@ -142,7 +140,7 @@ def some_function():
     def test_ignore_on_line_10_is_detected(self, tmp_path):
         """Ignore directive on exactly line 10 IS detected."""
         test_file = tmp_path / "test.py"
-        lines = ["# Line {}\n".format(i) for i in range(1, 10)]
+        lines = [f"# Line {i}\n" for i in range(1, 10)]
         lines.append("# thailint: ignore-file\n")  # Line 10
         test_file.write_text("".join(lines))
 
@@ -226,8 +224,8 @@ class TestIntegration:
 
     def test_should_ignore_violation_checks_all_levels(self, tmp_path):
         """should_ignore_violation() checks repo, file, and line levels."""
+        from src.core.types import Severity, Violation
         from src.linter_config.ignore import IgnoreDirectiveParser
-        from src.core.types import Violation, Severity
 
         # Set up repo-level ignore
         ignore_file = tmp_path / ".thailintignore"
@@ -248,7 +246,7 @@ class TestIntegration:
             line=1,
             column=0,
             message="Test",
-            severity=Severity.ERROR
+            severity=Severity.ERROR,
         )
         file_content1 = ""
         assert parser.should_ignore_violation(violation1, file_content1)
@@ -260,7 +258,7 @@ class TestIntegration:
             line=2,
             column=4,
             message="Test",
-            severity=Severity.ERROR
+            severity=Severity.ERROR,
         )
         file_content2 = test_file.read_text()
         assert parser.should_ignore_violation(violation2, file_content2)
@@ -272,7 +270,7 @@ class TestIntegration:
             line=1,
             column=0,
             message="Test",
-            severity=Severity.ERROR
+            severity=Severity.ERROR,
         )
         file_content3 = "normal code"
         assert not parser.should_ignore_violation(violation3, file_content3)
@@ -286,8 +284,8 @@ def badFunctionName():
 """
         test_file.write_text(file_content)
 
+        from src.core.types import Severity, Violation
         from src.linter_config.ignore import IgnoreDirectiveParser
-        from src.core.types import Violation, Severity
 
         parser = IgnoreDirectiveParser(tmp_path)
 
@@ -298,7 +296,7 @@ def badFunctionName():
             line=2,
             column=0,
             message="Bad function name",
-            severity=Severity.ERROR
+            severity=Severity.ERROR,
         )
 
         assert parser.should_ignore_violation(violation, file_content)

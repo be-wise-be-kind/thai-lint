@@ -3,26 +3,28 @@ Purpose: Test suite for main orchestrator engine
 
 Scope: Validation of file linting, directory traversal, and ignore pattern integration
 
-Overview: Validates the main orchestration engine that coordinates rule execution across files
-    and directories, ensuring proper integration with the ignore system, rule registry, and
-    configuration loader. Tests verify single file linting returns violations correctly,
-    directory linting traverses recursively and non-recursively, ignore patterns from
-    .thailintignore are respected, and the orchestrator integrates properly with all framework
-    components (registry, config, ignore parser). Ensures the orchestrator provides the main
-    entry point for linting operations while delegating to appropriate subsystems.
+Overview: Validates the main orchestration engine that coordinates rule
+    execution across files and directories, ensuring proper integration with
+    the ignore system, rule registry, and configuration loader. Tests verify
+    single file linting returns violations correctly, directory linting
+    traverses recursively and non-recursively, ignore patterns from
+    .thailintignore are respected, and the orchestrator integrates properly
+    with all framework components (registry, config, ignore parser). Ensures
+    the orchestrator provides the main entry point for linting operations
+    while delegating to appropriate subsystems.
 
-Dependencies: pytest for testing framework, pathlib for file operations, tmp_path fixture
+Dependencies: pytest for testing framework, pathlib for file operations,
+    tmp_path fixture
 
 Exports: TestOrchestrator test class
 
-Interfaces: Tests Orchestrator.lint_file(), lint_directory() methods, validates ignore
-    pattern integration and rule execution coordination
+Interfaces: Tests Orchestrator.lint_file(), lint_directory() methods,
+    validates ignore pattern integration and rule execution coordination
 
-Implementation: 6 tests using pytest tmp_path for isolated file/directory creation,
-    ignore file creation for integration testing, recursive and non-recursive directory testing
+Implementation: 6 tests using pytest tmp_path for isolated file/directory
+    creation, ignore file creation for integration testing, recursive and
+    non-recursive directory testing
 """
-import pytest
-from pathlib import Path
 
 
 class TestOrchestrator:

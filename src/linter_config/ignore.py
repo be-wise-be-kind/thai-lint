@@ -29,6 +29,7 @@ Implementation: Gitignore-style pattern matching with fnmatch, first-10-lines sc
     performance, regex-based directive parsing with rule ID extraction, wildcard rule matching
     with prefix comparison, graceful error handling for malformed directives
 """
+
 import fnmatch
 import re
 from pathlib import Path
@@ -182,12 +183,10 @@ class IgnoreDirectiveParser:
             if match:
                 ignored_rules = [r.strip() for r in match.group(1).split(",")]
                 return any(self._rule_matches(rule_id, r) for r in ignored_rules)
-            else:
-                # No brackets means general ignore
-                return "ignore[" not in code
-        else:
-            # No specific rule requested, any ignore works
-            return True
+            # No brackets means general ignore
+            return "ignore[" not in code
+        # No specific rule requested, any ignore works
+        return True
 
     def _rule_matches(self, rule_id: str, pattern: str) -> bool:
         """Check if rule ID matches pattern (supports wildcards).
@@ -203,9 +202,8 @@ class IgnoreDirectiveParser:
             # Wildcard match: literals.* matches literals.magic-number
             prefix = pattern[:-1]
             return rule_id.startswith(prefix)
-        else:
-            # Exact match
-            return rule_id == pattern
+        # Exact match
+        return rule_id == pattern
 
     def should_ignore_violation(self, violation: "Violation", file_content: str) -> bool:
         """Check if a violation should be ignored based on all levels.
@@ -237,9 +235,12 @@ class IgnoreDirectiveParser:
         lines = file_content.splitlines()
         if violation.line > 1 and violation.line <= len(lines) + 1:
             prev_line_idx = violation.line - 2  # Convert to 0-indexed
-            if prev_line_idx >= 0 and prev_line_idx < len(lines):
+            if 0 <= prev_line_idx < len(lines):
                 prev_line = lines[prev_line_idx]
-                if "# thailint: ignore-next-line" in prev_line or "# design-lint: ignore-next-line" in prev_line:
+                if (
+                    "# thailint: ignore-next-line" in prev_line
+                    or "# design-lint: ignore-next-line" in prev_line
+                ):
                     # Check if specific rule matches
                     match = re.search(r"ignore-next-line\[([^\]]+)\]", prev_line)
                     if match:
@@ -257,3 +258,7 @@ class IgnoreDirectiveParser:
                 return True
 
         return False
+
+
+# Alias for backwards compatibility
+IgnoreParser = IgnoreDirectiveParser

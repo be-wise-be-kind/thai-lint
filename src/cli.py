@@ -18,14 +18,14 @@ Interfaces: Click CLI commands, configuration context via Click ctx, logging int
 Implementation: Click decorators for commands, context passing for shared state, comprehensive help text
 """
 
-import click
 import logging
 import sys
 from pathlib import Path
-from typing import Optional
 
-from src.config import load_config, save_config, validate_config, ConfigError
+import click
+
 from src import __version__
+from src.config import ConfigError, load_config, save_config, validate_config
 
 # Configure module logger
 logger = logging.getLogger(__name__)
@@ -42,18 +42,18 @@ def setup_logging(verbose: bool = False):
 
     logging.basicConfig(
         level=level,
-        format='%(asctime)s | %(levelname)-8s | %(message)s',
-        datefmt='%Y-%m-%d %H:%M:%S',
-        stream=sys.stdout
+        format="%(asctime)s | %(levelname)-8s | %(message)s",
+        datefmt="%Y-%m-%d %H:%M:%S",
+        stream=sys.stdout,
     )
 
 
 @click.group()
 @click.version_option(version=__version__)
-@click.option('--verbose', '-v', is_flag=True, help='Enable verbose output')
-@click.option('--config', '-c', type=click.Path(), help='Path to config file')
+@click.option("--verbose", "-v", is_flag=True, help="Enable verbose output")
+@click.option("--config", "-c", type=click.Path(), help="Path to config file")
 @click.pass_context
-def cli(ctx, verbose: bool, config: Optional[str]):
+def cli(ctx, verbose: bool, config: str | None):
     """
     {{PROJECT_NAME}} - {{PROJECT_DESCRIPTION}}
 
@@ -82,23 +82,23 @@ def cli(ctx, verbose: bool, config: Optional[str]):
     # Load configuration
     try:
         if config:
-            ctx.obj['config'] = load_config(Path(config))
-            ctx.obj['config_path'] = Path(config)
+            ctx.obj["config"] = load_config(Path(config))
+            ctx.obj["config_path"] = Path(config)
         else:
-            ctx.obj['config'] = load_config()
-            ctx.obj['config_path'] = None
+            ctx.obj["config"] = load_config()
+            ctx.obj["config_path"] = None
 
         logger.debug("Configuration loaded successfully")
     except ConfigError as e:
         click.echo(f"Error loading configuration: {e}", err=True)
         sys.exit(2)
 
-    ctx.obj['verbose'] = verbose
+    ctx.obj["verbose"] = verbose
 
 
 @cli.command()
-@click.option('--name', '-n', default='World', help='Name to greet')
-@click.option('--uppercase', '-u', is_flag=True, help='Convert greeting to uppercase')
+@click.option("--name", "-n", default="World", help="Name to greet")
+@click.option("--uppercase", "-u", is_flag=True, help="Convert greeting to uppercase")
 @click.pass_context
 def hello(ctx, name: str, uppercase: bool):
     """
@@ -120,11 +120,11 @@ def hello(ctx, name: str, uppercase: bool):
         # Uppercase output
         {{PROJECT_NAME}} hello --name Bob --uppercase
     """
-    config = ctx.obj['config']
-    verbose = ctx.obj.get('verbose', False)
+    config = ctx.obj["config"]
+    verbose = ctx.obj.get("verbose", False)
 
     # Get greeting from config or use default
-    greeting_template = config.get('greeting', 'Hello')
+    greeting_template = config.get("greeting", "Hello")
 
     # Build greeting message
     message = f"{greeting_template}, {name}!"
@@ -145,9 +145,14 @@ def config():
     pass
 
 
-@config.command('show')
-@click.option('--format', '-f', type=click.Choice(['text', 'json', 'yaml']),
-              default='text', help='Output format')
+@config.command("show")
+@click.option(
+    "--format",
+    "-f",
+    type=click.Choice(["text", "json", "yaml"]),
+    default="text",
+    help="Output format",
+)
 @click.pass_context
 def config_show(ctx, format: str):
     """
@@ -169,13 +174,15 @@ def config_show(ctx, format: str):
         # Show as YAML
         {{PROJECT_NAME}} config show --format yaml
     """
-    cfg = ctx.obj['config']
+    cfg = ctx.obj["config"]
 
-    if format == 'json':
+    if format == "json":
         import json
+
         click.echo(json.dumps(cfg, indent=2))
-    elif format == 'yaml':
+    elif format == "yaml":
         import yaml
+
         click.echo(yaml.dump(cfg, default_flow_style=False, sort_keys=False))
     else:
         # Text format
@@ -185,8 +192,8 @@ def config_show(ctx, format: str):
             click.echo(f"{key:20} : {value}")
 
 
-@config.command('get')
-@click.argument('key')
+@config.command("get")
+@click.argument("key")
 @click.pass_context
 def config_get(ctx, key: str):
     """
@@ -204,7 +211,7 @@ def config_get(ctx, key: str):
         # Get greeting template
         {{PROJECT_NAME}} config get greeting
     """
-    cfg = ctx.obj['config']
+    cfg = ctx.obj["config"]
 
     if key not in cfg:
         click.echo(f"Configuration key not found: {key}", err=True)
@@ -213,9 +220,9 @@ def config_get(ctx, key: str):
     click.echo(cfg[key])
 
 
-@config.command('set')
-@click.argument('key')
-@click.argument('value')
+@config.command("set")
+@click.argument("key")
+@click.argument("value")
 @click.pass_context
 def config_set(ctx, key: str, value: str):
     """
@@ -239,14 +246,14 @@ def config_set(ctx, key: str, value: str):
         # Set numeric value
         {{PROJECT_NAME}} config set max_retries 5
     """
-    cfg = ctx.obj['config']
+    cfg = ctx.obj["config"]
 
     # Type conversion for common types
-    if value.lower() in ['true', 'false']:
-        value = value.lower() == 'true'
+    if value.lower() in ["true", "false"]:
+        value = value.lower() == "true"
     elif value.isdigit():
         value = int(value)
-    elif value.replace('.', '', 1).isdigit() and value.count('.') == 1:
+    elif value.replace(".", "", 1).isdigit() and value.count(".") == 1:
         value = float(value)
 
     # Update config
@@ -266,19 +273,19 @@ def config_set(ctx, key: str, value: str):
 
     # Save config
     try:
-        config_path = ctx.obj.get('config_path')
+        config_path = ctx.obj.get("config_path")
         save_config(cfg, config_path)
         click.echo(f"✓ Set {key} = {value}")
 
-        if ctx.obj.get('verbose'):
+        if ctx.obj.get("verbose"):
             logger.info(f"Configuration updated: {key}={value}")
     except ConfigError as e:
         click.echo(f"Error saving configuration: {e}", err=True)
         sys.exit(1)
 
 
-@config.command('reset')
-@click.option('--yes', '-y', is_flag=True, help='Skip confirmation prompt')
+@config.command("reset")
+@click.option("--yes", "-y", is_flag=True, help="Skip confirmation prompt")
 @click.pass_context
 def config_reset(ctx, yes: bool):
     """
@@ -295,21 +302,21 @@ def config_reset(ctx, yes: bool):
         {{PROJECT_NAME}} config reset --yes
     """
     if not yes:
-        click.confirm('Reset configuration to defaults?', abort=True)
+        click.confirm("Reset configuration to defaults?", abort=True)
 
     from src.config import DEFAULT_CONFIG
 
     try:
-        config_path = ctx.obj.get('config_path')
+        config_path = ctx.obj.get("config_path")
         save_config(DEFAULT_CONFIG.copy(), config_path)
         click.echo("✓ Configuration reset to defaults")
 
-        if ctx.obj.get('verbose'):
+        if ctx.obj.get("verbose"):
             logger.info("Configuration reset to defaults")
     except ConfigError as e:
         click.echo(f"Error resetting configuration: {e}", err=True)
         sys.exit(1)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     cli()

@@ -23,9 +23,11 @@ Interfaces: Tests LinterConfigLoader.load() with various file formats, validates
 Implementation: 9 tests using pytest tmp_path fixture for isolated file creation, format
     equivalence testing between YAML and JSON, error validation with pytest.raises
 """
-import pytest
+
 import json
-from pathlib import Path
+
+import pytest
+import yaml
 
 
 class TestYAMLConfigLoading:
@@ -57,7 +59,7 @@ rules:
         from src.linter_config.loader import LinterConfigLoader
 
         loader = LinterConfigLoader()
-        with pytest.raises(Exception):  # YAML parse error
+        with pytest.raises((ValueError, yaml.YAMLError)):  # YAML parse error
             loader.load(config_file)
 
     def test_load_nonexistent_file_returns_defaults(self, tmp_path):
@@ -93,8 +95,14 @@ rules:
         loader = LinterConfigLoader()
         config = loader.load(config_file)
 
-        assert config["rules"]["file-placement"]["config"]["directories"]["src/"]["allow"][0] == "^src/.*\\.py$"
-        assert config["rules"]["file-placement"]["config"]["directories"]["src/"]["deny"][0]["pattern"] == ".*test.*"
+        assert (
+            config["rules"]["file-placement"]["config"]["directories"]["src/"]["allow"][0]
+            == "^src/.*\\.py$"
+        )
+        assert (
+            config["rules"]["file-placement"]["config"]["directories"]["src/"]["deny"][0]["pattern"]
+            == ".*test.*"
+        )
 
 
 class TestJSONConfigLoading:
@@ -105,12 +113,7 @@ class TestJSONConfigLoading:
         config_file = tmp_path / ".thailint.json"
         config_data = {
             "rules": {
-                "file-placement": {
-                    "enabled": True,
-                    "config": {
-                        "layout_file": ".ai/layout.json"
-                    }
-                }
+                "file-placement": {"enabled": True, "config": {"layout_file": ".ai/layout.json"}}
             }
         }
         config_file.write_text(json.dumps(config_data, indent=2))
@@ -136,14 +139,7 @@ rules:
 
         # Create JSON version
         json_file = tmp_path / "config.json"
-        json_data = {
-            "rules": {
-                "test-rule": {
-                    "enabled": False,
-                    "priority": 10
-                }
-            }
-        }
+        json_data = {"rules": {"test-rule": {"enabled": False, "priority": 10}}}
         json_file.write_text(json.dumps(json_data))
 
         from src.linter_config.loader import LinterConfigLoader
@@ -162,7 +158,7 @@ rules:
         from src.linter_config.loader import LinterConfigLoader
 
         loader = LinterConfigLoader()
-        with pytest.raises(Exception):  # JSON parse error
+        with pytest.raises((ValueError, json.JSONDecodeError)):  # JSON parse error
             loader.load(config_file)
 
 

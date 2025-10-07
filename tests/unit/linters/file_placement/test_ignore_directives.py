@@ -20,8 +20,6 @@ Interfaces: Tests ignore handling in lint_path() and lint_directory() methods
 Implementation: 9 tests covering all 5 ignore levels, wildcard support, level interactions,
     and syntax validation
 """
-import pytest
-from pathlib import Path
 
 
 class TestIgnoreDirectives:
@@ -34,10 +32,11 @@ class TestIgnoreDirectives:
         (tmp_path / "build" / "output.txt").write_text("data")
 
         from src.linters.file_placement import FilePlacementLinter
+
         linter = FilePlacementLinter(project_root=tmp_path)
         violations = linter.lint_directory(tmp_path)
 
-        assert all('build/' not in v.file_path for v in violations)
+        assert all("build/" not in v.file_path for v in violations)
 
     def test_directory_level_ignore(self, tmp_path):
         """Directory-level: ignore directive in parent."""
@@ -48,11 +47,12 @@ class TestIgnoreDirectives:
         (config_dir / "any_file.xyz").write_text("content")
 
         from src.linters.file_placement import FilePlacementLinter
+
         linter = FilePlacementLinter(project_root=tmp_path)
         violations = linter.lint_directory(tmp_path)
 
         # Directory should be ignored
-        assert all('ignored_dir' not in v.file_path for v in violations)
+        assert all("ignored_dir" not in v.file_path for v in violations)
 
     def test_file_level_ignore_directive(self, tmp_path):
         """File-level: # thailint: ignore-file."""
@@ -64,6 +64,7 @@ class TestIgnoreDirectives:
 """)
 
         from src.linters.file_placement import FilePlacementLinter
+
         linter = FilePlacementLinter()
         violations = linter.lint_path(test_file)
 
@@ -75,6 +76,7 @@ class TestIgnoreDirectives:
         test_file.write_text("# thailint: ignore-file[file-placement]\n")
 
         from src.linters.file_placement import FilePlacementLinter
+
         linter = FilePlacementLinter()
         violations = linter.lint_path(test_file)
 
@@ -91,6 +93,7 @@ def problematic_function():
 """)
 
         from src.linters.file_placement import FilePlacementLinter
+
         linter = FilePlacementLinter()
 
         # For file placement, method-level may not apply
@@ -106,6 +109,7 @@ def problematic_function():
         test_file.write_text("bad_statement()  # thailint: ignore\n")
 
         from src.linters.file_placement import FilePlacementLinter
+
         linter = FilePlacementLinter()
         violations = linter.lint_path(test_file)
 
@@ -120,11 +124,12 @@ def problematic_function():
         (tmp_path / "test_something.py").write_text("#\n")
 
         from src.linters.file_placement import FilePlacementLinter
+
         linter = FilePlacementLinter(project_root=tmp_path)
         violations = linter.lint_directory(tmp_path)
 
-        assert all('file.pyc' not in v.file_path for v in violations)
-        assert all('test_something.py' not in v.file_path for v in violations)
+        assert all("file.pyc" not in v.file_path for v in violations)
+        assert all("test_something.py" not in v.file_path for v in violations)
 
     def test_multiple_ignore_levels_interaction(self, tmp_path):
         """Test interaction when multiple ignore levels apply."""
@@ -137,6 +142,7 @@ def problematic_function():
         test_file.write_text("# thailint: ignore-file\n")
 
         from src.linters.file_placement import FilePlacementLinter
+
         linter = FilePlacementLinter(project_root=tmp_path)
         violations = linter.lint_path(test_file)
 
@@ -149,6 +155,7 @@ def problematic_function():
         test_file.write_text("# thailint: invalid-directive-here\n")
 
         from src.linters.file_placement import FilePlacementLinter
+
         linter = FilePlacementLinter()
         violations = linter.lint_path(test_file)
 

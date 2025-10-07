@@ -22,6 +22,7 @@ Interfaces: detect_language(file_path: Path) -> str returns language identifier 
 Implementation: Dictionary-based extension lookup for O(1) detection, first-line shebang
     parsing with substring matching, lazy file reading only when extension unknown
 """
+
 from pathlib import Path
 
 # Extension to language mapping

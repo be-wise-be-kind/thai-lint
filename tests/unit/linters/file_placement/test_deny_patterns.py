@@ -19,7 +19,7 @@ Interfaces: Tests FilePlacementLinter.lint_path(Path) with deny pattern configur
 Implementation: 8 tests covering simple deny, precedence over allow, multiple patterns, custom messages,
     temp file detection, debug file detection, absolute paths, and cross-platform paths
 """
-import pytest
+
 from pathlib import Path
 
 
@@ -29,17 +29,14 @@ class TestDenyPatternMatching:
     def test_match_simple_deny_pattern(self):
         """File matches simple deny regex."""
         config = {
-            'file_placement': {
-                'directories': {
-                    'src/': {
-                        'deny': [
-                            {'pattern': r'.*test.*\.py$', 'reason': 'Tests in src/'}
-                        ]
-                    }
+            "file_placement": {
+                "directories": {
+                    "src/": {"deny": [{"pattern": r".*test.*\.py$", "reason": "Tests in src/"}]}
                 }
             }
         }
         from src.linters.file_placement import FilePlacementLinter
+
         linter = FilePlacementLinter(config_obj=config)
 
         violations = linter.lint_path(Path("src/test_utils.py"))
@@ -49,16 +46,14 @@ class TestDenyPatternMatching:
     def test_deny_takes_precedence_over_allow(self):
         """Deny patterns override allow patterns."""
         config = {
-            'file_placement': {
-                'directories': {
-                    'src/': {
-                        'allow': [r'^src/.*\.py$'],
-                        'deny': [{'pattern': r'.*debug.*'}]
-                    }
+            "file_placement": {
+                "directories": {
+                    "src/": {"allow": [r"^src/.*\.py$"], "deny": [{"pattern": r".*debug.*"}]}
                 }
             }
         }
         from src.linters.file_placement import FilePlacementLinter
+
         linter = FilePlacementLinter(config_obj=config)
 
         violations = linter.lint_path(Path("src/debug_utils.py"))
@@ -67,19 +62,20 @@ class TestDenyPatternMatching:
     def test_multiple_deny_patterns(self):
         """File can match any of multiple deny patterns."""
         config = {
-            'file_placement': {
-                'directories': {
-                    'src/': {
-                        'deny': [
-                            {'pattern': r'.*test.*'},
-                            {'pattern': r'.*debug.*'},
-                            {'pattern': r'.*tmp.*'}
+            "file_placement": {
+                "directories": {
+                    "src/": {
+                        "deny": [
+                            {"pattern": r".*test.*"},
+                            {"pattern": r".*debug.*"},
+                            {"pattern": r".*tmp.*"},
                         ]
                     }
                 }
             }
         }
         from src.linters.file_placement import FilePlacementLinter
+
         linter = FilePlacementLinter(config_obj=config)
 
         assert len(linter.lint_path(Path("src/test.py"))) > 0
@@ -89,13 +85,12 @@ class TestDenyPatternMatching:
     def test_deny_with_custom_error_messages(self):
         """Deny pattern includes custom error message."""
         config = {
-            'file_placement': {
-                'global_deny': [
-                    {'pattern': r'.*\.tmp$', 'reason': 'No temp files in repo'}
-                ]
+            "file_placement": {
+                "global_deny": [{"pattern": r".*\.tmp$", "reason": "No temp files in repo"}]
             }
         }
         from src.linters.file_placement import FilePlacementLinter
+
         linter = FilePlacementLinter(config_obj=config)
 
         violations = linter.lint_path(Path("data.tmp"))
@@ -105,13 +100,12 @@ class TestDenyPatternMatching:
     def test_temporary_file_patterns(self):
         """Detect temporary files (.tmp, .log, .bak)."""
         config = {
-            'file_placement': {
-                'global_deny': [
-                    {'pattern': r'.*\.(tmp|log|bak)$', 'reason': 'No temporary files'}
-                ]
+            "file_placement": {
+                "global_deny": [{"pattern": r".*\.(tmp|log|bak)$", "reason": "No temporary files"}]
             }
         }
         from src.linters.file_placement import FilePlacementLinter
+
         linter = FilePlacementLinter(config_obj=config)
 
         assert len(linter.lint_path(Path("file.tmp"))) > 0
@@ -121,17 +115,18 @@ class TestDenyPatternMatching:
     def test_debug_file_patterns_in_production(self):
         """Detect debug files in production directories."""
         config = {
-            'file_placement': {
-                'directories': {
-                    'production/': {
-                        'deny': [
-                            {'pattern': r'.*debug.*', 'reason': 'No debug files in production'}
+            "file_placement": {
+                "directories": {
+                    "production/": {
+                        "deny": [
+                            {"pattern": r".*debug.*", "reason": "No debug files in production"}
                         ]
                     }
                 }
             }
         }
         from src.linters.file_placement import FilePlacementLinter
+
         linter = FilePlacementLinter(config_obj=config)
 
         violations = linter.lint_path(Path("production/debug_helpers.py"))
@@ -143,13 +138,10 @@ class TestDenyPatternMatching:
         # This would require code parsing, not just path checking
         # Testing the pattern matching capability for now
         config = {
-            'file_placement': {
-                'global_deny': [
-                    {'pattern': r'^/.*', 'reason': 'No absolute paths'}
-                ]
-            }
+            "file_placement": {"global_deny": [{"pattern": r"^/.*", "reason": "No absolute paths"}]}
         }
         from src.linters.file_placement import FilePlacementLinter
+
         linter = FilePlacementLinter(config_obj=config)
 
         # Pattern would match absolute-style paths
@@ -158,16 +150,9 @@ class TestDenyPatternMatching:
 
     def test_platform_specific_path_separators(self):
         """Handle both / and \\ path separators."""
-        config = {
-            'file_placement': {
-                'directories': {
-                    'src/': {
-                        'deny': [{'pattern': r'.*test.*'}]
-                    }
-                }
-            }
-        }
+        config = {"file_placement": {"directories": {"src/": {"deny": [{"pattern": r".*test.*"}]}}}}
         from src.linters.file_placement import FilePlacementLinter
+
         linter = FilePlacementLinter(config_obj=config)
 
         # Should handle both separators
