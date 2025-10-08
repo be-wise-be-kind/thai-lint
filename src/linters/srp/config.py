@@ -44,18 +44,28 @@ class SRPConfig:
             raise ValueError(f"max_loc must be positive, got {self.max_loc}")
 
     @classmethod
-    def from_dict(cls, config: dict[str, Any]) -> "SRPConfig":
-        """Load configuration from dictionary.
+    def from_dict(cls, config: dict[str, Any], language: str | None = None) -> "SRPConfig":
+        """Load configuration from dictionary with language-specific overrides.
 
         Args:
             config: Dictionary containing configuration values
+            language: Programming language (python, typescript, javascript) for language-specific thresholds
 
         Returns:
             SRPConfig instance with values from dictionary
         """
+        # Get language-specific config if available
+        if language and language in config:
+            lang_config = config[language]
+            max_methods = lang_config.get("max_methods", config.get("max_methods", 7))
+            max_loc = lang_config.get("max_loc", config.get("max_loc", 200))
+        else:
+            max_methods = config.get("max_methods", 7)
+            max_loc = config.get("max_loc", 200)
+
         return cls(
-            max_methods=config.get("max_methods", 7),
-            max_loc=config.get("max_loc", 200),
+            max_methods=max_methods,
+            max_loc=max_loc,
             enabled=config.get("enabled", True),
             check_keywords=config.get("check_keywords", True),
             keywords=config.get(
