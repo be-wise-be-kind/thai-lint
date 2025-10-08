@@ -49,7 +49,7 @@ dry:
     assert not cache_file.exists()
 
     linter = Linter(config_file=config, project_root=tmp_path)
-    _violations = linter.lint(tmp_path, rules=["dry.duplicate-code"])
+    linter.lint(tmp_path, rules=["dry.duplicate-code"])
 
     assert cache_file.exists()
     assert cache_file.stat().st_size > 0

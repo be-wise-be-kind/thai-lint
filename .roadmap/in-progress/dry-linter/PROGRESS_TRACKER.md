@@ -203,16 +203,20 @@ Implement DRY analyzer with SQLite caching AND in-memory fallback (Decision 6) t
 
 **NOTE**: NO duplicate_detector.py - cache.py IS the hash table with query methods
 
-**Key Algorithm (Single-Pass Streaming)**:
+**Key Algorithm (Collection + Finalize)**:
 1. DRYRule is stateful - cache initialized once, persists across ALL check() calls
-2. For each file:
+2. Collection phase (check() per file):
    - Check if fresh in cache (mtime comparison)
    - If stale/new: analyze file, insert blocks into DB
-   - Query DB for duplicates: `SELECT * FROM code_blocks WHERE hash_value = ?`
-   - Build violations for THIS file only
-3. SQLite cache IS the project-wide hash table (not just per-file cache)
-4. Token-based rolling hash (Rabin-Karp)
-5. Mtime-based cache invalidation
+   - Return [] (no violations yet)
+3. Finalize phase (finalize() after all files):
+   - Query DB for all hashes with COUNT >= 2
+   - For each duplicate hash, create violations for ALL blocks (per-file reporting)
+   - Return all violations
+4. SQLite cache IS the project-wide storage (not just per-file cache)
+5. Token-based rolling hash (Rabin-Karp)
+6. Mtime-based cache invalidation
+7. Framework change: Added finalize() hook to BaseLintRule and Orchestrator
 
 **SQLite Schema**:
 ```sql

@@ -120,3 +120,15 @@ class BaseLintRule(ABC):
             List of violations found. Empty list if no violations.
         """
         raise NotImplementedError("Subclasses must implement check")
+
+    def finalize(self) -> list[Violation]:
+        """Finalize analysis after all files processed.
+
+        Optional hook called after all files have been processed via check().
+        Useful for rules that need to perform cross-file analysis or aggregate
+        results (e.g., DRY linter querying for duplicates across all files).
+
+        Returns:
+            List of violations found during finalization. Empty list by default.
+        """
+        return []
