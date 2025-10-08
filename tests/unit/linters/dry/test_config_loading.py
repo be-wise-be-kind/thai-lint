@@ -16,6 +16,9 @@ Interfaces: Uses Linter class with config file parameter
 
 Implementation: TDD approach - tests written before implementation. All tests should
     initially fail with ModuleNotFoundError. Uses tmp_path for isolated config fixtures.
+    Tests use cache_enabled: false for isolation, which triggers in-memory fallback mode
+    (Decision 6): DRYRule maintains dict[int, list[CodeBlock]] instead of SQLite, providing
+    same stateful behavior without persistence between test runs.
 """
 
 import json
