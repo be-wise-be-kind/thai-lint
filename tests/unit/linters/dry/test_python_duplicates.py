@@ -16,6 +16,9 @@ Interfaces: Uses Linter class with config file and rules=['dry.duplicate-code']
 
 Implementation: TDD approach - tests written before implementation. All tests should
     initially fail with ModuleNotFoundError. Uses tmp_path for isolated file fixtures.
+    Tests use cache_enabled: false for isolation, which triggers in-memory fallback mode
+    (Decision 6): DRYRule maintains dict[int, list[CodeBlock]] instead of SQLite, providing
+    same stateful behavior without persistence between test runs.
 """
 
 from src import Linter
