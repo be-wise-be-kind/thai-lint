@@ -60,7 +60,7 @@ class Linter:
 
         config_path = self._resolve_config_path(config_file)
         self.config = self.config_loader.load(config_path)
-        self.orchestrator = Orchestrator(project_root=self.project_root)
+        self.orchestrator = Orchestrator(project_root=self.project_root, config=self.config)
 
     def _resolve_config_path(self, config_file: str | Path | None) -> Path:
         """Resolve configuration file path."""

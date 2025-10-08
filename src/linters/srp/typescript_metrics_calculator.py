@@ -84,8 +84,7 @@ class TypeScriptMetricsCalculator:
             return False
 
         # Check if it's a constructor
-        for child in node.children:
-            if child.type == "property_identifier" and child.text.decode() == "constructor":
-                return False
-
-        return True
+        return all(
+            not (child.type == "property_identifier" and child.text.decode() == "constructor")
+            for child in node.children
+        )

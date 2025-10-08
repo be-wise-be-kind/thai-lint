@@ -99,4 +99,6 @@ file-placement:
         from src.linters.file_placement import FilePlacementLinter
 
         linter = FilePlacementLinter(config_obj=config_obj)
-        assert linter.config == config_obj
+        # FilePlacementLinter now unwraps "file-placement" wrapper automatically
+        expected_config = {"directories": {"src/": {"allow": [r"^src/.*\.py$"]}}}
+        assert linter.config == expected_config

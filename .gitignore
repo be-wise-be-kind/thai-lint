@@ -40,6 +40,9 @@ htmlcov/
 .tox/
 .nox/
 
+# Build artifacts
+.artifacts/
+
 # Type checking
 .mypy_cache/
 .dmypy.json

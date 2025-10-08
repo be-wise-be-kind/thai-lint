@@ -37,7 +37,7 @@ from .typescript_metrics_calculator import TypeScriptMetricsCalculator
 class TypeScriptSRPAnalyzer:
     """Analyzes TypeScript classes for SRP violations."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize analyzer with metrics calculator."""
         self.metrics_calculator = TypeScriptMetricsCalculator()
 

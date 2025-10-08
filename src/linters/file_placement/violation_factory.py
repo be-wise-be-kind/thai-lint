@@ -170,4 +170,6 @@ class ViolationFactory:
             Suggestion string with actionable guidance
         """
         file_type = self._classify_file_type(filename)
+        if file_type is None:
+            return self._DEFAULT_SUGGESTION
         return self._SUGGESTIONS.get(file_type, self._DEFAULT_SUGGESTION)

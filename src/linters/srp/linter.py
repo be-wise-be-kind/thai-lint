@@ -65,15 +65,10 @@ class SRPRule(BaseLintRule):
             return []
 
         config = self._load_config(context)
-        if not config.enabled:
-            return []
-        if self._is_file_ignored(context, config):
+        if not config.enabled or self._is_file_ignored(context, config):
             return []
 
-        return self._analyze_by_language(context, config)
-
-    def _analyze_by_language(self, context: BaseLintContext, config: SRPConfig) -> list[Violation]:
-        """Analyze based on language type."""
+        # Analyze based on language type
         if context.language == "python":
             return self._check_python(context, config)
         if context.language in ("typescript", "javascript"):
@@ -132,9 +127,60 @@ class SRPRule(BaseLintRule):
         """
         results = self._class_analyzer.analyze_python(context, config)
         if results and isinstance(results[0], Violation):  # Syntax errors
-            return results  # type: ignore
+            return results  # type: ignore[return-value]
 
-        return self._build_violations_from_metrics(results, context, config)  # type: ignore
+        return self._build_violations_from_metrics(results, config, context)
+
+    def _build_violations_from_metrics(
+        self,
+        metrics_list: list,
+        config: SRPConfig,
+        context: BaseLintContext,
+    ) -> list[Violation]:
+        """Build violations from class metrics.
+
+        Args:
+            metrics_list: List of class metrics
+            config: SRP configuration
+            context: Lint context
+
+        Returns:
+            List of violations
+        """
+        violations = []
+        for metrics in metrics_list:
+            if not isinstance(metrics, dict):
+                continue
+            violation = self._create_violation_if_needed(metrics, config, context)
+            if violation:
+                violations.append(violation)
+        return violations
+
+    def _create_violation_if_needed(
+        self,
+        metrics: dict,
+        config: SRPConfig,
+        context: BaseLintContext,
+    ) -> Violation | None:
+        """Create violation if metrics exceed thresholds.
+
+        Args:
+            metrics: Class metrics dictionary
+            config: SRP configuration
+            context: Lint context
+
+        Returns:
+            Violation or None if no issues or should be ignored
+        """
+        issues = evaluate_metrics(metrics, config)
+        if not issues:
+            return None
+
+        violation = self._violation_builder.build_violation(metrics, issues, self.rule_id, context)
+        if self._should_ignore(violation, context):
+            return None
+
+        return violation
 
     def _check_typescript(self, context: BaseLintContext, config: SRPConfig) -> list[Violation]:
         """Check TypeScript code for SRP violations.
@@ -147,33 +193,7 @@ class SRPRule(BaseLintRule):
             List of violations found
         """
         metrics_list = self._class_analyzer.analyze_typescript(context, config)
-        return self._build_violations_from_metrics(metrics_list, context, config)
-
-    def _build_violations_from_metrics(
-        self, metrics_list: list, context: BaseLintContext, config: SRPConfig
-    ) -> list[Violation]:
-        """Build violations from class metrics.
-
-        Args:
-            metrics_list: List of class metrics dicts
-            context: Lint context
-            config: SRP configuration
-
-        Returns:
-            List of violations (filtered by ignore directives)
-        """
-        violations = []
-        for metrics in metrics_list:
-            issues = evaluate_metrics(metrics, config)
-            if not issues:
-                continue
-
-            violation = self._violation_builder.build_violation(
-                metrics, issues, self.rule_id, context
-            )
-            if not self._should_ignore(violation, context):
-                violations.append(violation)
-        return violations
+        return self._build_violations_from_metrics(metrics_list, config, context)
 
     def _should_ignore(self, violation: Violation, context: BaseLintContext) -> bool:
         """Check if violation should be ignored based on inline directives.

@@ -83,9 +83,12 @@ class TestCLILinting:
             # Create test file
             Path("test.py").write_text("print('test')")
 
-            # Create .ai directory and layout config
-            Path(".ai").mkdir()
-            Path(".ai/layout.yaml").write_text(
+            # Create .git marker so project root detection works
+            Path(".git").mkdir()
+
+            # Create .artifacts directory and generated config
+            Path(".artifacts").mkdir()
+            Path(".artifacts/generated-config.yaml").write_text(
                 "file-placement:\n  global_deny:\n    - pattern: '.*\\.py$'\n      reason: 'No Python files'\n"
             )
 
@@ -124,8 +127,8 @@ class TestCLILinting:
             # Create test file
             Path("test.py").write_text("print('test')")
 
-            # Create .ai directory (needed for inline rules to work)
-            Path(".ai").mkdir()
+            # Create .git marker so project root detection works
+            Path(".git").mkdir()
 
             # Run with inline rules (using proper file-placement structure)
             rules = '{"global_deny": [{"pattern": ".*\\\\.py$", "reason": "No Python files"}]}'
@@ -142,12 +145,15 @@ class TestCLILinting:
             # Create test file
             Path("test.py").write_text("print('test')")
 
+            # Create .git marker so project root detection works
+            Path(".git").mkdir()
+
             # Create external config
             Path("custom.yaml").write_text(
                 "file-placement:\n  global_deny:\n    - pattern: '.*\\.py$'\n      reason: 'No Python files'\n"
             )
 
-            # Run with external config (CLI will copy it to .ai/layout.yaml)
+            # Run with external config (CLI will copy it to .artifacts/generated-config.yaml)
             result = runner.invoke(cli, ["file-placement", "--config", "custom.yaml", "test.py"])
 
             # Should find violations
@@ -177,9 +183,12 @@ class TestCLIExitCodes:
         with runner.isolated_filesystem():
             Path("test.py").write_text("print('test')")
 
-            # Create .ai directory and layout config
-            Path(".ai").mkdir()
-            Path(".ai/layout.yaml").write_text(
+            # Create .git marker so project root detection works
+            Path(".git").mkdir()
+
+            # Create .artifacts directory and generated config
+            Path(".artifacts").mkdir()
+            Path(".artifacts/generated-config.yaml").write_text(
                 "file-placement:\n  global_deny:\n    - pattern: '.*\\.py$'\n      reason: 'No Python files'\n"
             )
 
@@ -208,9 +217,12 @@ class TestCLIOutputFormats:
         with runner.isolated_filesystem():
             Path("test.py").write_text("print('test')")
 
-            # Create .ai directory and layout config
-            Path(".ai").mkdir()
-            Path(".ai/layout.yaml").write_text(
+            # Create .git marker so project root detection works
+            Path(".git").mkdir()
+
+            # Create .artifacts directory and generated config
+            Path(".artifacts").mkdir()
+            Path(".artifacts/generated-config.yaml").write_text(
                 "file-placement:\n  global_deny:\n    - pattern: '.*\\.py$'\n      reason: 'No Python files'\n"
             )
 
@@ -224,9 +236,12 @@ class TestCLIOutputFormats:
         """Set up test files for JSON output test."""
         Path("test.py").write_text("print('test')")
 
-        # Create .ai directory and layout config
-        Path(".ai").mkdir()
-        Path(".ai/layout.yaml").write_text(
+        # Create .git marker so project root detection works
+        Path(".git").mkdir()
+
+        # Create .artifacts directory and generated config
+        Path(".artifacts").mkdir()
+        Path(".artifacts/generated-config.yaml").write_text(
             "file-placement:\n  global_deny:\n    - pattern: '.*\\.py$'\n      reason: 'No Python files'\n"
         )
 
@@ -271,9 +286,12 @@ class TestCLIRecursive:
             Path("src/nested").mkdir()
             Path("src/nested/deep.py").write_text("print('deep')")
 
-            # Create .ai directory and layout config
-            Path(".ai").mkdir()
-            Path(".ai/layout.yaml").write_text(
+            # Create .git marker so project root detection works
+            Path(".git").mkdir()
+
+            # Create .artifacts directory and generated config
+            Path(".artifacts").mkdir()
+            Path(".artifacts/generated-config.yaml").write_text(
                 "file-placement:\n  global_deny:\n    - pattern: '.*\\.py$'\n      reason: 'No Python files'\n"
             )
 

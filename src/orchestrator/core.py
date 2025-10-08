@@ -89,11 +89,12 @@ class Orchestrator:
     detection to provide comprehensive linting of files and directories.
     """
 
-    def __init__(self, project_root: Path | None = None):
+    def __init__(self, project_root: Path | None = None, config: dict | None = None):
         """Initialize orchestrator.
 
         Args:
             project_root: Root directory of project. Defaults to current directory.
+            config: Optional pre-loaded configuration dict. If provided, skips config file loading.
         """
         self.project_root = project_root or Path.cwd()
         self.registry = RuleRegistry()
@@ -103,12 +104,16 @@ class Orchestrator:
         # Auto-discover and register all linting rules from src.linters
         self.registry.discover_rules("src.linters")
 
-        # Load configuration from project root
-        config_path = self.project_root / ".thailint.yaml"
-        if not config_path.exists():
-            config_path = self.project_root / ".thailint.json"
+        # Use provided config or load from project root
+        if config is not None:
+            self.config = config
+        else:
+            # Load configuration from project root
+            config_path = self.project_root / ".thailint.yaml"
+            if not config_path.exists():
+                config_path = self.project_root / ".thailint.json"
 
-        self.config = self.config_loader.load(config_path)
+            self.config = self.config_loader.load(config_path)
 
     def lint_file(self, file_path: Path) -> list[Violation]:
         """Lint a single file.

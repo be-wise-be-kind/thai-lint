@@ -20,12 +20,12 @@ Implementation: Pattern matching on tree-sitter node types, child node traversal
 from typing import Any
 
 try:
-    from tree_sitter import Node
+    from tree_sitter import Node  # pylint: disable=unused-import  # type: ignore[unused-ignore]
 
     TREE_SITTER_AVAILABLE = True
 except ImportError:
     TREE_SITTER_AVAILABLE = False
-    Node = Any  # type: ignore
+    Node = Any  # type: ignore[misc,assignment]
 
 
 class TypeScriptFunctionExtractor:

@@ -164,7 +164,7 @@ class NestingDepthRule(BaseLintRule):
                 continue
 
             violation = self._violation_builder.create_typescript_nesting_violation(
-                func_node, func_name, max_depth, config, context
+                (func_node, func_name), max_depth, config, context
             )
             if not self._should_ignore(violation, context):
                 violations.append(violation)
