@@ -186,7 +186,7 @@ test: ## Run tests
 	@poetry run pytest -v
 
 test-coverage: ## Run tests with coverage
-	@poetry run pytest --cov=src --cov-report=term --cov-report=html -v
+	@poetry run pytest --cov=src --cov-report=term --cov-report=html --cov-report=xml -v
 
 init: ## Initial setup (install dependencies and show activation instructions)
 	@echo "🚀 Setting up thai-lint development environment..."

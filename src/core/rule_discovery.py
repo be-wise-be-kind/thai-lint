@@ -101,7 +101,7 @@ class RuleDiscovery:
                 rules.append(rule_instance)
         return rules
 
-    def _try_instantiate_rule(self, rule_class: Any) -> BaseLintRule | None:
+    def _try_instantiate_rule(self, rule_class: type[BaseLintRule]) -> BaseLintRule | None:
         """Try to instantiate a rule class.
 
         Args:

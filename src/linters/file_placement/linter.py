@@ -68,10 +68,7 @@ class FilePlacementLinter:
             # Handle both wrapped and unwrapped config formats
             # Wrapped: {"file-placement": {...}}
             # Unwrapped: {"directories": {...}, "global_deny": [...], ...}
-            if "file-placement" in config_obj:
-                self.config = config_obj["file-placement"]
-            else:
-                self.config = config_obj
+            self.config = config_obj.get("file-placement", config_obj)
         elif config_file:
             self.config = self._components.config_loader.load_config_file(config_file)
         else:

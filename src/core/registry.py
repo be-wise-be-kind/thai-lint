@@ -85,7 +85,7 @@ class RuleRegistry:
         discovered_rules = self._discovery.discover_from_package(package_path)
         return sum(1 for rule in discovered_rules if self._try_register(rule))
 
-    def _try_register(self, rule) -> bool:
+    def _try_register(self, rule: BaseLintRule) -> bool:
         """Try to register a rule, return True if successful."""
         try:
             self.register(rule)
