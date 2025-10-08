@@ -437,7 +437,7 @@ Related: FILE_HEADER_STANDARDS.md, Python plugin docs
 
 **Template Examples:**
 
-See `.ai/templates/TEMPLATE_FILE_TEMPLATE.md` for complete template examples and `.ai/howto/how-to-create-a-template.md` for template creation guide.
+See `.ai/templates/TEMPLATE_FILE_TEMPLATE.md` for complete template examples and `.ai/howtos/how-to-create-a-template.md` for template creation guide.
 
 ## Line Break and Formatting Guidelines
 

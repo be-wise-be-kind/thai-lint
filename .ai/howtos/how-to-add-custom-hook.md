@@ -556,7 +556,7 @@ Add comments to configuration:
 # Custom Hook: Check for TODO comments
 # Purpose: Prevents committing critical TODOs
 # Fails: If "TODO: FIXME" pattern found
-# Docs: See .ai/howto/how-to-add-custom-hook.md
+# Docs: See .ai/howtos/how-to-add-custom-hook.md
 - id: custom-check-todos
   name: Check for critical TODOs
   entry: bash -c '...'
@@ -750,6 +750,6 @@ Benefits:
 ## Next Steps
 
 - **Review standards**: Read `.ai/docs/PRE_COMMIT_STANDARDS.md`
-- **Debug hooks**: See `.ai/howto/how-to-debug-failing-hooks.md`
+- **Debug hooks**: See `.ai/howtos/how-to-debug-failing-hooks.md`
 - **Share hooks**: Commit custom hooks to version control
 - **Team alignment**: Document custom hooks for team

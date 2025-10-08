@@ -867,6 +867,6 @@ After documenting your API:
 ## Additional Resources
 
 - **API documentation reference**: `.ai/docs/api-documentation.md`
-- **File headers**: `.ai/howto/how-to-write-file-headers.md`
+- **File headers**: `.ai/howtos/how-to-write-file-headers.md`
 - **OpenAPI Specification**: https://swagger.io/specification/
 - **Swagger UI**: https://swagger.io/tools/swagger-ui/

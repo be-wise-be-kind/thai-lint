@@ -304,7 +304,7 @@ rules:
 - All Python files require docstring headers
 - Use Google-style docstrings
 - Update `.ai/docs/` when making architectural changes
-- Create how-to guides in `.ai/howto/` for common tasks
+- Create how-to guides in `.ai/howtos/` for common tasks
 
 ---
 
@@ -371,9 +371,9 @@ rules:
 - **`.roadmap/python-cli-install/AI_CONTEXT.md`** - Installation context
 
 ### How-To Guides (Will be added in PR5)
-- `.ai/howto/python-cli/how-to-add-cli-command.md`
-- `.ai/howto/python-cli/how-to-handle-config-files.md`
-- `.ai/howto/python-cli/how-to-package-cli-tool.md`
+- `.ai/howtos/python-cli/how-to-add-cli-command.md`
+- `.ai/howtos/python-cli/how-to-handle-config-files.md`
+- `.ai/howtos/python-cli/how-to-package-cli-tool.md`
 
 ---
 
