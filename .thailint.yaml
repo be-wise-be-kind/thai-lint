@@ -122,3 +122,7 @@ srp:
     - Processor
     - Utility
     - Helper
+
+  # Ignore test files - test classes can have many test methods
+  ignore:
+    - "tests/"

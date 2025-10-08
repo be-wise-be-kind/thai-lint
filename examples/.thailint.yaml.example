@@ -51,6 +51,37 @@ nesting:
   # Lower values enforce flatter code structure
   # Higher values allow more complex nesting but may reduce readability
 
+# SRP linter - detects Single Responsibility Principle violations
+srp:
+  enabled: true
+
+  # Default thresholds
+  max_methods: 7   # Maximum methods per class (default: 7)
+  max_loc: 200     # Maximum lines of code per class (default: 200)
+
+  # Language-specific thresholds (optional)
+  # TypeScript/JavaScript tend to be more verbose with type annotations
+  python:
+    max_methods: 8
+    max_loc: 200
+
+  typescript:
+    max_methods: 10   # More lenient for type verbosity
+    max_loc: 250
+
+  javascript:
+    max_methods: 10
+    max_loc: 225
+
+  # Responsibility keyword detection
+  check_keywords: true
+  keywords:
+    - Manager
+    - Handler
+    - Processor
+    - Utility
+    - Helper
+
 # Future linters will be added as separate top-level sections:
 #
 # code-quality:

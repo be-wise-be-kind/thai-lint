@@ -35,6 +35,7 @@ class SRPConfig:
     keywords: list[str] = field(
         default_factory=lambda: ["Manager", "Handler", "Processor", "Utility", "Helper"]
     )
+    ignore: list[str] = field(default_factory=list)  # Path patterns to ignore
 
     def __post_init__(self) -> None:
         """Validate configuration values."""
@@ -71,4 +72,5 @@ class SRPConfig:
             keywords=config.get(
                 "keywords", ["Manager", "Handler", "Processor", "Utility", "Helper"]
             ),
+            ignore=config.get("ignore", []),
         )

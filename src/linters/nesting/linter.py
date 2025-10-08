@@ -114,12 +114,14 @@ class NestingDepthRule(BaseLintRule):
         violations = []
         for func in functions:
             max_depth, _line = analyzer.calculate_max_depth(func)
-            if max_depth > config.max_nesting_depth:
-                violation = self._violation_builder.create_nesting_violation(
-                    func, max_depth, config, context
-                )
-                if not self._should_ignore(violation, context):
-                    violations.append(violation)
+            if max_depth <= config.max_nesting_depth:
+                continue
+
+            violation = self._violation_builder.create_nesting_violation(
+                func, max_depth, config, context
+            )
+            if not self._should_ignore(violation, context):
+                violations.append(violation)
         return violations
 
     def _check_python(self, context: BaseLintContext, config: NestingConfig) -> list[Violation]:
@@ -158,12 +160,14 @@ class NestingDepthRule(BaseLintRule):
         violations = []
         for func_node, func_name in functions:
             max_depth, _line = analyzer.calculate_max_depth(func_node)
-            if max_depth > config.max_nesting_depth:
-                violation = self._violation_builder.create_typescript_nesting_violation(
-                    func_node, func_name, max_depth, config, context
-                )
-                if not self._should_ignore(violation, context):
-                    violations.append(violation)
+            if max_depth <= config.max_nesting_depth:
+                continue
+
+            violation = self._violation_builder.create_typescript_nesting_violation(
+                func_node, func_name, max_depth, config, context
+            )
+            if not self._should_ignore(violation, context):
+                violations.append(violation)
         return violations
 
     def _check_typescript(self, context: BaseLintContext, config: NestingConfig) -> list[Violation]:

@@ -101,10 +101,12 @@ class TypeScriptFunctionExtractor:
             Tuple of (node, "arrow_function")
         """
         parent = node.parent
-        if parent and parent.type == "variable_declarator":
-            for child in parent.children:
-                if child.type == "identifier":
-                    return node, child.text.decode()
+        if not (parent and parent.type == "variable_declarator"):
+            return node, "arrow_function"
+
+        for child in parent.children:
+            if child.type == "identifier":
+                return node, child.text.decode()
         return node, "arrow_function"
 
     def _extract_method_definition(self, node: Any) -> tuple[Any, str]:
@@ -131,8 +133,10 @@ class TypeScriptFunctionExtractor:
             Tuple of (node, function_name or "anonymous")
         """
         parent = node.parent
-        if parent and parent.type == "variable_declarator":
-            for child in parent.children:
-                if child.type == "identifier":
-                    return node, child.text.decode()
+        if not (parent and parent.type == "variable_declarator"):
+            return node, "function_expression"
+
+        for child in parent.children:
+            if child.type == "identifier":
+                return node, child.text.decode()
         return node, "function_expression"
