@@ -7,7 +7,7 @@
 #   make lint-full         - Full linting on all files
 #   make lint-full FILES=changed  - Full linting on changed files only (for pre-commit)
 
-.PHONY: help init install activate venv-info lint lint-all lint-security lint-complexity lint-placement lint-nesting lint-full format test test-coverage clean get-changed-files publish-pypi publish-docker publish update-version-badges bump-version show-version
+.PHONY: help init install activate venv-info lint lint-all lint-security lint-complexity lint-placement lint-solid lint-nesting lint-full format test test-coverage clean get-changed-files publish-pypi publish-docker publish update-version-badges bump-version show-version
 
 help: ## Show available targets
 	@echo "Available targets:"
@@ -25,12 +25,12 @@ help: ## Show available targets
 	@echo "  make lint-all FILES=...        - Comprehensive linting on specific files"
 	@echo "  make lint-security     - Security scanning (Bandit + Safety + pip-audit)"
 	@echo "  make lint-security FILES=...   - Security scanning on specific files"
-	@echo "  make lint-complexity   - Complexity analysis (Radon + Xenon)"
+	@echo "  make lint-complexity   - Complexity analysis (Radon + Xenon + Nesting)"
 	@echo "  make lint-complexity FILES=... - Complexity analysis on specific files"
 	@echo "  make lint-placement    - File placement linting (dogfooding our own linter)"
 	@echo "  make lint-placement FILES=...  - File placement linting on specific files"
-	@echo "  make lint-nesting      - Nesting depth linting (dogfooding our own linter)"
-	@echo "  make lint-nesting FILES=...    - Nesting depth linting on specific files"
+	@echo "  make lint-solid        - SOLID principle linting (SRP)"
+	@echo "  make lint-solid FILES=...      - SOLID principle linting on specific files"
 	@echo "  make lint-full         - ALL quality checks"
 	@echo "  make lint-full FILES=changed   - ALL quality checks on changed files (pre-commit)"
 	@echo "  make format            - Auto-fix formatting and linting issues"
@@ -131,7 +131,7 @@ lint-dependencies: ## Check dependencies for vulnerabilities (Safety - requires 
 	@echo "Note: This requires network access to Safety API and may be slow"
 	@poetry run safety scan --output json || true
 
-lint-complexity: ## Complexity analysis (Radon + Xenon)
+lint-complexity: ## Complexity analysis (Radon + Xenon + Nesting)
 	@echo ""
 	@echo "=== Analyzing code complexity (Radon) ==="
 	@if [ -n "$(SRC_TARGETS)" ]; then \
@@ -142,6 +142,12 @@ lint-complexity: ## Complexity analysis (Radon + Xenon)
 	@echo "=== Analyzing complexity (Xenon) - demanding A grade ==="
 	@if [ -n "$(SRC_TARGETS)" ]; then \
 		poetry run xenon --max-absolute A --max-modules A --max-average A $(SRC_TARGETS); \
+	fi
+	@echo ""
+	@echo "=== Running nesting depth linter (dogfooding) ==="
+	@if [ -n "$(SRC_TARGETS)" ]; then \
+		poetry run thai-lint nesting $(SRC_TARGETS) --config .thailint.yaml; \
+		echo "✓ Nesting depth checks passed"; \
 	fi
 
 lint-placement: ## File placement linting (dogfooding our own linter)
@@ -160,7 +166,16 @@ lint-nesting: ## Nesting depth linting (dogfooding our own linter)
 		echo "✓ Nesting depth checks passed"; \
 	fi
 
-lint-full: lint-all lint-security lint-complexity lint-placement lint-nesting ## ALL quality checks
+lint-solid: ## SOLID principle linting (SRP)
+	@echo ""
+	@echo "=== Running SRP linter (dogfooding) ==="
+	@if [ -n "$(SRC_TARGETS)" ]; then \
+		poetry run thai-lint srp $(SRC_TARGETS) --config .thailint.yaml; \
+		echo "✓ SRP checks passed"; \
+	fi
+	@echo "✅ SOLID principle checks complete!"
+
+lint-full: lint-all lint-security lint-complexity lint-placement lint-solid ## ALL quality checks
 	@echo "✅ All linting checks complete!"
 
 format: ## Auto-fix formatting and linting issues
