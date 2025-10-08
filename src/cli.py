@@ -694,5 +694,132 @@ def _execute_nesting_lint(  # pylint: disable=too-many-arguments,too-many-positi
     sys.exit(1 if nesting_violations else 0)
 
 
+def _setup_srp_orchestrator(path_obj: Path, config_file: str | None, verbose: bool):
+    """Set up orchestrator for SRP command."""
+    project_root = path_obj if path_obj.is_dir() else path_obj.parent
+    from src.orchestrator.core import Orchestrator
+
+    orchestrator = Orchestrator(project_root=project_root)
+
+    if config_file:
+        _load_config_file(orchestrator, config_file, verbose)
+
+    return orchestrator
+
+
+def _apply_srp_config_override(
+    orchestrator, max_methods: int | None, max_loc: int | None, verbose: bool
+):
+    """Apply max_methods and max_loc overrides to orchestrator config."""
+    if max_methods is None and max_loc is None:
+        return
+
+    if "srp" not in orchestrator.config:
+        orchestrator.config["srp"] = {}
+
+    _apply_srp_max_methods(orchestrator, max_methods, verbose)
+    _apply_srp_max_loc(orchestrator, max_loc, verbose)
+
+
+def _apply_srp_max_methods(orchestrator, max_methods: int | None, verbose: bool):
+    """Apply max_methods override."""
+    if max_methods is not None:
+        orchestrator.config["srp"]["max_methods"] = max_methods
+        if verbose:
+            logger.debug(f"Overriding max_methods to {max_methods}")
+
+
+def _apply_srp_max_loc(orchestrator, max_loc: int | None, verbose: bool):
+    """Apply max_loc override."""
+    if max_loc is not None:
+        orchestrator.config["srp"]["max_loc"] = max_loc
+        if verbose:
+            logger.debug(f"Overriding max_loc to {max_loc}")
+
+
+def _run_srp_lint(orchestrator, path_obj: Path, recursive: bool):
+    """Execute SRP lint on file or directory."""
+    if path_obj.is_file():
+        violations = orchestrator.lint_file(path_obj)
+    else:
+        violations = orchestrator.lint_directory(path_obj, recursive=recursive)
+
+    return [v for v in violations if "srp" in v.rule_id]
+
+
+@cli.command("srp")
+@click.argument("path", type=click.Path(exists=True), default=".")
+@click.option("--config", "-c", "config_file", type=click.Path(), help="Path to config file")
+@click.option(
+    "--format", "-f", type=click.Choice(["text", "json"]), default="text", help="Output format"
+)
+@click.option("--max-methods", type=int, help="Override max methods per class (default: 7)")
+@click.option("--max-loc", type=int, help="Override max lines of code per class (default: 200)")
+@click.option("--recursive/--no-recursive", default=True, help="Scan directories recursively")
+@click.pass_context
+def srp(  # pylint: disable=too-many-arguments,too-many-positional-arguments
+    ctx,
+    path: str,
+    config_file: str | None,
+    format: str,
+    max_methods: int | None,
+    max_loc: int | None,
+    recursive: bool,
+):
+    """Check for Single Responsibility Principle violations.
+
+    Analyzes Python and TypeScript classes for SRP violations using heuristics:
+    - Method count exceeding threshold (default: 7)
+    - Lines of code exceeding threshold (default: 200)
+    - Responsibility keywords in class names (Manager, Handler, Processor, etc.)
+
+    PATH: File or directory to lint (defaults to current directory)
+
+    Examples:
+
+        \b
+        # Check current directory
+        thai-lint srp
+
+        \b
+        # Check specific directory
+        thai-lint srp src/
+
+        \b
+        # Use custom thresholds
+        thai-lint srp --max-methods 10 --max-loc 300 src/
+
+        \b
+        # Get JSON output
+        thai-lint srp --format json .
+
+        \b
+        # Use custom config file
+        thai-lint srp --config .thailint.yaml src/
+    """
+    verbose = ctx.obj.get("verbose", False)
+    path_obj = Path(path)
+
+    try:
+        _execute_srp_lint(path_obj, config_file, format, max_methods, max_loc, recursive, verbose)
+    except Exception as e:
+        _handle_linting_error(e, verbose)
+
+
+def _execute_srp_lint(  # pylint: disable=too-many-arguments,too-many-positional-arguments
+    path_obj, config_file, format, max_methods, max_loc, recursive, verbose
+):
+    """Execute SRP lint."""
+    orchestrator = _setup_srp_orchestrator(path_obj, config_file, verbose)
+    _apply_srp_config_override(orchestrator, max_methods, max_loc, verbose)
+    srp_violations = _run_srp_lint(orchestrator, path_obj, recursive)
+
+    if verbose:
+        logger.info(f"Found {len(srp_violations)} SRP violation(s)")
+
+    _output_violations(srp_violations, format)
+    sys.exit(1 if srp_violations else 0)
+
+
 if __name__ == "__main__":
     cli()

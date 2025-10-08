@@ -84,7 +84,7 @@ class UserService:
     def test_class_with_six_methods_passes(self):
         """Class with 6 methods should pass default threshold."""
         code = """
-class PaymentProcessor:
+class PaymentService:
     def process(self): pass
     def validate(self): pass
     def refund(self): pass

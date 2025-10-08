@@ -122,13 +122,33 @@ class IgnoreDirectiveParser:
 
     def _has_ignore_directive_marker(self, line: str) -> bool:
         """Check if line contains an ignore directive marker."""
-        return "# thailint: ignore-file" in line or "# design-lint: ignore-file" in line
+        line_lower = line.lower()
+        return "# thailint: ignore-file" in line_lower or "# design-lint: ignore-file" in line_lower
 
     def _check_specific_rule_ignore(self, line: str, rule_id: str) -> bool:
         """Check if line ignores a specific rule."""
-        match = re.search(r"ignore-file\[([^\]]+)\]", line)
-        if match:
-            ignored_rules = [r.strip() for r in match.group(1).split(",")]
+        # Check for bracket syntax: # thailint: ignore-file[rule1, rule2]
+        if self._check_bracket_syntax_file_ignore(line, rule_id):
+            return True
+
+        # Check for space-separated syntax: # thailint: ignore-file rule1 rule2
+        return self._check_space_syntax_file_ignore(line, rule_id)
+
+    def _check_bracket_syntax_file_ignore(self, line: str, rule_id: str) -> bool:
+        """Check bracket syntax for file-level ignore."""
+        bracket_match = re.search(r"ignore-file\[([^\]]+)\]", line, re.IGNORECASE)
+        if bracket_match:
+            ignored_rules = [r.strip() for r in bracket_match.group(1).split(",")]
+            return any(self._rule_matches(rule_id, r) for r in ignored_rules)
+        return False
+
+    def _check_space_syntax_file_ignore(self, line: str, rule_id: str) -> bool:
+        """Check space-separated syntax for file-level ignore."""
+        space_match = re.search(r"ignore-file\s+([^\s#]+(?:\s+[^\s#]+)*)", line, re.IGNORECASE)
+        if space_match:
+            ignored_rules = [
+                r.strip() for r in re.split(r"[,\s]+", space_match.group(1)) if r.strip()
+            ]
             return any(self._rule_matches(rule_id, r) for r in ignored_rules)
         return False
 
@@ -171,27 +191,28 @@ class IgnoreDirectiveParser:
 
     def _has_line_ignore_marker(self, code: str) -> bool:
         """Check if code line has ignore marker."""
+        code_lower = code.lower()
         return (
-            "# thailint: ignore" in code
-            or "# design-lint: ignore" in code
-            or "// thailint: ignore" in code
-            or "// design-lint: ignore" in code
+            "# thailint: ignore" in code_lower
+            or "# design-lint: ignore" in code_lower
+            or "// thailint: ignore" in code_lower
+            or "// design-lint: ignore" in code_lower
         )
 
     def _check_specific_rule_in_line(self, code: str, rule_id: str) -> bool:
         """Check if line's ignore directive matches specific rule."""
         # Check for bracket syntax: # thailint: ignore[rule1, rule2]
-        bracket_match = re.search(r"ignore\[([^\]]+)\]", code)
+        bracket_match = re.search(r"ignore\[([^\]]+)\]", code, re.IGNORECASE)
         if bracket_match:
             return self._check_bracket_rules(bracket_match.group(1), rule_id)
 
         # Check for space-separated syntax: # thailint: ignore rule1 rule2
-        space_match = re.search(r"ignore\s+([^\s#]+(?:\s+[^\s#]+)*)", code)
+        space_match = re.search(r"ignore\s+([^\s#]+(?:\s+[^\s#]+)*)", code, re.IGNORECASE)
         if space_match:
             return self._check_space_separated_rules(space_match.group(1), rule_id)
 
         # No specific rules - check for "ignore-all"
-        return "ignore-all" in code
+        return "ignore-all" in code.lower()
 
     def _check_bracket_rules(self, rules_text: str, rule_id: str) -> bool:
         """Check if bracketed rules match the rule ID."""
@@ -231,17 +252,21 @@ class IgnoreDirectiveParser:
         Returns:
             True if rule matches pattern.
         """
-        if pattern.endswith("*"):
+        # Case-insensitive comparison
+        rule_id_lower = rule_id.lower()
+        pattern_lower = pattern.lower()
+
+        if pattern_lower.endswith("*"):
             # Wildcard match: literals.* matches literals.magic-number
-            prefix = pattern[:-1]
-            return rule_id.startswith(prefix)
+            prefix = pattern_lower[:-1]
+            return rule_id_lower.startswith(prefix)
 
         # Exact match
-        if rule_id == pattern:
+        if rule_id_lower == pattern_lower:
             return True
 
         # Prefix match: "nesting" matches "nesting.excessive-depth"
-        if rule_id.startswith(pattern + "."):
+        if rule_id_lower.startswith(pattern_lower + "."):
             return True
 
         return False
@@ -293,17 +318,26 @@ class IgnoreDirectiveParser:
         file_path = Path(violation.file_path)
 
         # Repository and file level checks
-        if self._is_ignored_at_file_level(file_path, violation.rule_id):
+        if self._is_ignored_at_file_level(file_path, violation.rule_id, file_content):
             return True
 
         # Line-based checks
         return self._is_ignored_in_content(file_content, violation)
 
-    def _is_ignored_at_file_level(self, file_path: Path, rule_id: str) -> bool:
+    def _is_ignored_at_file_level(self, file_path: Path, rule_id: str, file_content: str) -> bool:
         """Check repository and file level ignores."""
         if self.is_ignored(file_path):
             return True
+        # Check content first (for tests with in-memory content)
+        if self._has_file_ignore_in_content(file_content, rule_id):
+            return True
+        # Fall back to reading from disk if file exists
         return self.has_file_ignore(file_path, rule_id)
+
+    def _has_file_ignore_in_content(self, file_content: str, rule_id: str | None) -> bool:
+        """Check if file content has ignore-file directive."""
+        lines = file_content.splitlines()[:10]  # Check first 10 lines
+        return any(self._check_line_for_ignore(line, rule_id) for line in lines)
 
     def _is_ignored_in_content(self, file_content: str, violation: "Violation") -> bool:
         """Check content-based ignores (block, line, method level)."""
