@@ -279,6 +279,59 @@ lint-all: lint-full lint-dry  # Everything including slow linters
 
 ---
 
+### Decision 6: cache_enabled: false Behavior
+
+**Challenge**: With the new architecture where cache IS the hash table, what happens when `cache_enabled: false`?
+
+**Options Considered**:
+
+**A) In-Memory Fallback**:
+- When cache disabled, use in-memory dict[int, list[CodeBlock]]
+- Same stateful behavior, but no persistence
+- Works like old duplicate_detector.py approach
+
+**B) Cache is Mandatory**:
+- Remove cache_enabled option entirely
+- Always use SQLite (it's stdlib, no dependencies)
+- Tests always enable cache
+
+**C) No Duplicate Detection Without Cache**:
+- When cache disabled, return empty violations
+- Force users to enable cache for duplicate detection
+
+**Decision: In-Memory Fallback (Option A)**
+
+**Rationale**:
+1. **Testing**: Many tests use cache_enabled: false for isolation
+2. **Flexibility**: Users may want to disable persistence (privacy/security)
+3. **Backwards Compatibility**: Matches typical config expectations
+4. **Development**: Easier debugging without persistent state
+
+**Implementation**:
+```python
+class DRYRule(BaseLintRule):
+    def __init__(self):
+        self._cache: DRYCache | None = None  # SQLite when enabled
+        self._memory_store: dict[int, list[CodeBlock]] = {}  # Fallback
+        self._cache_enabled: bool = True
+
+    def _find_duplicates(self, hash_value: int):
+        if self._cache:
+            return self._cache.find_duplicates_by_hash(hash_value)
+        else:
+            # In-memory fallback
+            return self._memory_store.get(hash_value, [])
+```
+
+**Tradeoffs**:
+- ✅ Tests work with cache_enabled: false
+- ✅ No external dependencies required
+- ✅ Privacy option for sensitive code
+- ⚠️ Slightly more complex (two code paths)
+- ⚠️ In-memory mode uses more RAM (no persistence)
+
+---
+
 ## Algorithm Design
 
 ### Token-Based Rolling Hash (Rabin-Karp)

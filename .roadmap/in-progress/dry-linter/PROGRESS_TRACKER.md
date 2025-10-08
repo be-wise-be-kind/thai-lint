@@ -69,10 +69,10 @@ Implement DRY analyzer with SQLite caching to pass ~80% of PR1 tests (85+ of 106
 ---
 
 ## Overall Progress
-**Total Completion**: 17% (1/6 PRs completed)
+**Total Completion**: 14% (1/7 PRs completed)
 
 ```
-[======                                  ] 17% Complete
+[=====                                   ] 14% Complete
 ```
 
 ---
@@ -82,7 +82,8 @@ Implement DRY analyzer with SQLite caching to pass ~80% of PR1 tests (85+ of 106
 | PR | Title | Status | Completion | Complexity | Priority | Notes |
 |----|-------|--------|------------|------------|----------|-------|
 | PR1 | Complete Test Suite (Pure TDD) | 🟢 Complete | 100% | High | P0 | 106 tests written, all failing |
-| PR2 | Core Implementation + SQLite Cache | 🔴 Not Started | 0% | High | P0 | Single-pass with caching |
+| PR1.1 | Test Review & Architecture Alignment | 🔴 Not Started | 0% | Low | P0 | Align tests with arch decisions |
+| PR2 | Core Implementation + SQLite Cache | 🔴 Not Started | 0% | High | P0 | Single-pass with in-memory fallback |
 | PR3 | Integration (CLI + Library + Docker) | 🔴 Not Started | 0% | Medium | P0 | Complete TypeScript analyzer |
 | PR4 | Dogfooding Discovery | 🔴 Not Started | 0% | Low | P1 | Find violations in thai-lint |
 | PR5 | Dogfooding Fixes (All Violations) | 🔴 Not Started | 0% | High | P1 | Refactor all duplicates |
@@ -137,6 +138,56 @@ Implement DRY analyzer with SQLite caching to pass ~80% of PR1 tests (85+ of 106
 - ✅ Tests include both passing cases (compliant) and violation cases (non-compliant)
 
 **Date Completed**: 2025-10-08
+
+---
+
+## PR1.1: Test Review & Architecture Alignment 🔴 NOT STARTED
+
+**Objective**: Review and update PR1 tests to align with clarified single-pass streaming architecture
+
+**Issue Identified**: PR1 tests were written before architecture clarification. Many tests use `cache_enabled: false` which conflicts with the new design where cache IS the hash table.
+
+**Activities**:
+1. Review all 106 tests from PR1 for architectural assumptions
+2. Identify tests that assume incorrect behavior
+3. Decide on cache_enabled: false implementation (Decision 6: In-Memory Fallback)
+4. Update tests to either:
+   - Use `cache_enabled: true` (preferred for integration tests)
+   - Accept in-memory fallback behavior (for unit tests)
+5. Verify test expectations match stateful design:
+   - Each file reports its own violations
+   - Violations reference other file locations
+   - No assumption about processing order
+
+**Key Decision (from AI_CONTEXT.md Decision 6)**:
+- When `cache_enabled: false`, use in-memory dict[int, list[CodeBlock]] as fallback
+- Same stateful behavior, but no SQLite persistence
+- Allows tests to run with isolation while maintaining architecture
+
+**Files to Review/Update**:
+- tests/unit/linters/dry/test_python_duplicates.py (15 tests)
+- tests/unit/linters/dry/test_typescript_duplicates.py (15 tests)
+- tests/unit/linters/dry/test_cross_file_detection.py (11 tests)
+- tests/unit/linters/dry/test_within_file_detection.py (10 tests)
+- tests/unit/linters/dry/test_cache_operations.py (11 tests) - May need significant updates
+- tests/unit/linters/dry/test_config_loading.py (11 tests)
+- tests/unit/linters/dry/test_violation_messages.py (8 tests)
+- tests/unit/linters/dry/test_ignore_directives.py (9 tests)
+- tests/unit/linters/dry/test_cli_interface.py (4 tests)
+- tests/unit/linters/dry/test_library_api.py (4 tests)
+- tests/unit/linters/dry/test_edge_cases.py (8 tests)
+
+**Completion Criteria**:
+- ✅ All tests reviewed for architectural correctness
+- ✅ Decision 6 (in-memory fallback) implementation plan documented
+- ✅ Tests updated to match stateful design
+- ✅ All 106 tests still fail (no implementation yet) with correct expectations
+- ✅ Test isolation maintained (each test can run independently)
+- ✅ Documentation updated to reflect any test changes
+
+**Estimated Duration**: 2-4 hours
+
+**Date Completed**: TBD
 
 ---
 

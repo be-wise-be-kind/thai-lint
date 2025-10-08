@@ -643,13 +643,166 @@ pytest tests/unit/linters/dry/ -v
 
 ---
 
-## PR2: Core Implementation + SQLite Cache
+## PR1.1: Test Review & Architecture Alignment
+
+**Objective**: Review and align PR1 tests with clarified single-pass streaming architecture
+
+**Duration**: 2-4 hours
+
+**Complexity**: Low (mostly test review and minor updates)
+
+---
+
+### Step 1: Review Test Architectural Assumptions
+
+**Action**: Audit all 106 tests for assumptions that conflict with the new architecture
+
+**Key Questions**:
+1. Do tests assume `cache_enabled: false` works without any hash table?
+2. Do tests expect violations in specific order (violates streaming architecture)?
+3. Do tests assume in-memory hash table collection before reporting?
+4. Are violation message expectations correct (cross-file references)?
+
+**Command**:
+```bash
+# Review all test files
+grep -r "cache_enabled: false" tests/unit/linters/dry/
+grep -r "assert.*violations\[0\]" tests/unit/linters/dry/
+```
+
+---
+
+### Step 2: Implement Decision 6 (In-Memory Fallback)
+
+**Decision**: When `cache_enabled: false`, use in-memory dict as fallback
+
+**No Code Changes Needed in PR1.1** - This is just documentation:
+- PR2 will implement in-memory fallback in linter.py
+- Tests can continue using `cache_enabled: false` for isolation
+- Same stateful behavior, just no persistence
+
+**Documentation Update**: Add note to test files explaining in-memory fallback
+
+---
+
+### Step 3: Review test_cache_operations.py
+
+**File**: `tests/unit/linters/dry/test_cache_operations.py`
+
+**Issue**: These tests assume SQLite cache exists even with `cache_enabled: false`
+
+**Action**: Update tests to either:
+1. Enable cache (`cache_enabled: true`) for cache operation tests
+2. Mark tests as "integration tests" requiring cache
+3. Add separate tests for in-memory fallback behavior
+
+**Example Update**:
+```python
+def test_cache_load_fresh_file(tmp_path):
+    """Test loading fresh file from cache."""
+    config = tmp_path / ".thailint.yaml"
+    config.write_text("""
+dry:
+  enabled: true
+  min_duplicate_lines: 3
+  cache_enabled: true  # Changed from false
+""")
+    # Rest of test...
+```
+
+---
+
+### Step 4: Verify Violation Expectations
+
+**Action**: Ensure all tests expect correct violation behavior
+
+**Correct Expectations**:
+- 2 files with duplicate → 2 violations (one per file)
+- Each violation references OTHER file(s)
+- Violation order is NOT guaranteed (streaming)
+- Each file reports independently
+
+**Example Correct Test**:
+```python
+def test_two_files_with_duplicate(tmp_path):
+    # Create 2 files with same code...
+
+    violations = linter.lint(tmp_path, rules=['dry.duplicate-code'])
+
+    # CORRECT: Expect 2 violations (one per file)
+    assert len(violations) == 2
+
+    # CORRECT: Each violation references the OTHER file
+    assert any("file2.py" in v.message for v in violations)
+    assert any("file1.py" in v.message for v in violations)
+
+    # INCORRECT: Don't assume order
+    # assert violations[0].file_path == "file1.py"  # BAD!
+```
+
+---
+
+### Step 5: Update Test Documentation
+
+**Files to Update**:
+- Each test file header: Add note about in-memory fallback
+- test_cache_operations.py: Explain cache vs in-memory modes
+
+**Example Header Update**:
+```python
+"""
+Purpose: Tests for Python duplicate code detection in DRY linter
+
+...
+
+Implementation: TDD approach - tests written before implementation.
+    Tests using cache_enabled: false will run with in-memory fallback (Decision 6).
+    Tests using cache_enabled: true will use SQLite for persistence.
+    Both modes maintain stateful behavior across files.
+"""
+```
+
+---
+
+### Step 6: Validate Test Isolation
+
+**Action**: Ensure each test can run independently
+
+**Validation**:
+```bash
+# Run each test file independently
+pytest tests/unit/linters/dry/test_python_duplicates.py -v
+pytest tests/unit/linters/dry/test_cross_file_detection.py -v
+# etc.
+
+# Run tests in random order
+pytest tests/unit/linters/dry/ --random-order
+
+# Run single test
+pytest tests/unit/linters/dry/test_python_duplicates.py::test_exact_3_line_duplicate -v
+```
+
+---
+
+### Completion Checklist
+
+- [ ] All 106 tests reviewed for architectural assumptions
+- [ ] Decision 6 (in-memory fallback) documented in test headers
+- [ ] test_cache_operations.py updated to use cache_enabled: true
+- [ ] Violation expectations verified (no order assumptions)
+- [ ] Test isolation validated (can run independently)
+- [ ] All tests still fail with correct ModuleNotFoundError
+- [ ] Documentation updated
+
+---
+
+## PR2: Core Implementation + SQLite Cache + In-Memory Fallback
 
 **Objective**: Implement all DRY linter components to pass ~80% of tests
 
 **Duration**: 8-12 hours
 
-**Complexity**: High (SQLite integration, single-pass algorithm, cache invalidation)
+**Complexity**: High (SQLite integration, single-pass algorithm, cache invalidation, in-memory fallback)
 
 **Files to Create**:
 - `src/linters/dry/__init__.py` - Module exports
@@ -658,10 +811,15 @@ pytest tests/unit/linters/dry/ -v
 - `src/linters/dry/token_hasher.py` - Rolling hash implementation
 - `src/linters/dry/python_analyzer.py` - Python tokenization
 - `src/linters/dry/violation_builder.py` - Violation message formatting
-- `src/linters/dry/linter.py` - DRYRule class (stateful, cache-backed)
+- `src/linters/dry/linter.py` - DRYRule class (stateful, cache-backed WITH in-memory fallback)
 - `src/linters/dry/typescript_analyzer.py` - TypeScript stub (PR3 full impl)
 
 **NOTE**: NO duplicate_detector.py - cache.py has query methods instead
+
+**NEW**: Implement Decision 6 (In-Memory Fallback):
+- When `cache_enabled: false`, use `dict[int, list[CodeBlock]]` instead of SQLite
+- Same stateful behavior, no persistence
+- Allows tests to run with isolation
 
 ---
 
