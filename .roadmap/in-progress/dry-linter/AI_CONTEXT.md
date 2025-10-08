@@ -117,19 +117,27 @@ The DRY (Don't Repeat Yourself) Linter detects duplicate code across an entire p
 5. **Efficiency**: Indexed queries, minimal memory footprint
 6. **CI/CD Friendly**: Fast cached runs make DRY practical in pipelines
 
+**CRITICAL DESIGN POINT**: The SQLite database is **project-wide**, not per-file:
+- Contains code blocks from ALL files in the project
+- Acts as both cache (avoid re-hashing) AND hash table (query duplicates)
+- Persistent across multiple lint runs
+- Single database per project: `.thailint-cache/dry.db`
+
 **Performance Impact**:
 ```
 10K files, typical commit (50 changed files):
 - No cache: ~8 minutes (hash all 10K files)
-- With cache: ~15 seconds (hash 50, load 9950 from cache)
+- With cache: ~15 seconds (hash 50, query 9950 from DB)
 - 32x speedup!
 ```
 
 **Implementation Details**:
 - **Schema**: Two tables (files, code_blocks) with hash indexes
+- **Scope**: Project-wide (not per-file) - all code blocks stored together
 - **Invalidation**: Compare file mtime (modification time)
 - **Storage**: `.thailint-cache/dry.db` (gitignored)
 - **Cleanup**: Automatic removal of stale entries
+- **Querying**: `SELECT * FROM code_blocks WHERE hash_value = ?` finds duplicates
 
 ---
 
@@ -155,16 +163,22 @@ The DRY (Don't Repeat Yourself) Linter detects duplicate code across an entire p
 
 **Algorithm**:
 ```
-For each file:
+For each file (orchestrator calls check() per file):
   1. Check cache: is file unchanged? (compare mtime)
-     YES → load blocks from SQLite
-     NO  → hash file + save to cache
-  2. Add blocks to in-memory hash_table
-  3. Find duplicates for THIS file in hash_table
-  4. Report violations for THIS file only
+     YES → blocks already in DB (skip to step 3)
+     NO  → hash file + insert blocks into DB
+  2. Query DB for duplicates for THIS file's blocks
+     - For each block: SELECT * FROM code_blocks WHERE hash_value = ?
+     - If 2+ results: duplicate found
+  3. Build and return violations for THIS file only
 ```
 
-**Key Insight**: Report duplicates **per-file** (not all at once)
+**Key Insight**: SQLite DB **IS** the hash table
+- No separate in-memory hash table needed
+- Blocks inserted into DB immediately (become queryable)
+- Each file queries DB for its duplicates
+- DB persists across files (project-wide context)
+- Report duplicates **per-file** (not all at once)
 - Each file reports its own violations
 - Violations reference OTHER file locations
 - Deduplication happens naturally (same violation from each file)
@@ -205,17 +219,38 @@ For each file:
 class DRYRule(BaseLintRule):
     def __init__(self):
         # Global state shared across ALL check() calls
-        self._hash_table: dict[int, list[CodeBlock]] = defaultdict(list)
-        self._processed_files: set[Path] = set()
-        self._cache: DRYCache | None = None
+        self._cache: DRYCache | None = None  # SQLite cache IS the hash table
+        self._initialized: bool = False
 
     def check(self, context: BaseLintContext) -> list[Violation]:
-        # Add THIS file to global hash table
-        self._hash_file_smart(context.file_path, context.file_content)
+        # Lazy initialization on first check() call
+        if not self._initialized:
+            self._init_cache(context.project_root)
+            self._initialized = True
 
-        # Find duplicates for THIS file only
-        return self._find_duplicates_for_file(context.file_path)
+        # Single-pass streaming algorithm:
+        # 1. Analyze THIS file (or load from cache if fresh)
+        blocks = self._analyze_or_load(context.file_path)
+
+        # 2. For each block, query cache (DB) for duplicates
+        violations = []
+        for block in blocks:
+            duplicates = self._cache.find_duplicates_by_hash(block.hash_value)
+            if len(duplicates) >= 2:  # Including current block
+                violations.append(self._build_violation(block, duplicates))
+
+        # 3. Insert blocks into cache (DB) for future queries
+        self._cache.add_blocks(blocks)
+
+        return violations
 ```
+
+**Key Design Points**:
+1. **Cache IS Hash Table**: SQLite database serves as both cache AND hash table
+2. **Stateful Rule**: DRYRule instance persists across all check() calls in a lint run
+3. **Lazy Init**: Cache initialized once on first file, reused for all subsequent files
+4. **Query-Per-Block**: Each block queries DB for existing duplicates immediately
+5. **Streaming**: No need to buffer all files - process one at a time
 
 ---
 
@@ -241,6 +276,59 @@ lint-full: lint lint-complexity lint-security  # Fast linters only
 lint-dry: # Separate target for DRY
 lint-all: lint-full lint-dry  # Everything including slow linters
 ```
+
+---
+
+### Decision 6: cache_enabled: false Behavior
+
+**Challenge**: With the new architecture where cache IS the hash table, what happens when `cache_enabled: false`?
+
+**Options Considered**:
+
+**A) In-Memory Fallback**:
+- When cache disabled, use in-memory dict[int, list[CodeBlock]]
+- Same stateful behavior, but no persistence
+- Works like old duplicate_detector.py approach
+
+**B) Cache is Mandatory**:
+- Remove cache_enabled option entirely
+- Always use SQLite (it's stdlib, no dependencies)
+- Tests always enable cache
+
+**C) No Duplicate Detection Without Cache**:
+- When cache disabled, return empty violations
+- Force users to enable cache for duplicate detection
+
+**Decision: In-Memory Fallback (Option A)**
+
+**Rationale**:
+1. **Testing**: Many tests use cache_enabled: false for isolation
+2. **Flexibility**: Users may want to disable persistence (privacy/security)
+3. **Backwards Compatibility**: Matches typical config expectations
+4. **Development**: Easier debugging without persistent state
+
+**Implementation**:
+```python
+class DRYRule(BaseLintRule):
+    def __init__(self):
+        self._cache: DRYCache | None = None  # SQLite when enabled
+        self._memory_store: dict[int, list[CodeBlock]] = {}  # Fallback
+        self._cache_enabled: bool = True
+
+    def _find_duplicates(self, hash_value: int):
+        if self._cache:
+            return self._cache.find_duplicates_by_hash(hash_value)
+        else:
+            # In-memory fallback
+            return self._memory_store.get(hash_value, [])
+```
+
+**Tradeoffs**:
+- ✅ Tests work with cache_enabled: false
+- ✅ No external dependencies required
+- ✅ Privacy option for sensitive code
+- ⚠️ Slightly more complex (two code paths)
+- ⚠️ In-memory mode uses more RAM (no persistence)
 
 ---
 
@@ -355,47 +443,71 @@ CREATE INDEX idx_file_path ON code_blocks(file_path);
 
 ### Cache Operations
 
-**1. Cache Miss (File Not Cached or Stale)**:
+**IMPORTANT**: The SQLite database serves dual purpose:
+1. **Cache**: Avoid re-analyzing unchanged files (mtime-based)
+2. **Hash Table**: Query for duplicates across entire project
+
+**1. File Already in Cache (Unchanged)**:
 ```python
-def _hash_file_smart(file_path: Path, content: str):
+def _analyze_or_load(file_path: Path):
     mtime = file_path.stat().st_mtime
 
-    # Check cache freshness
-    if not cache.is_fresh(file_path, mtime):
-        # Cache miss: hash file
-        blocks = self._hash_file_memory(file_path, content)
-
-        # Save to cache
-        cache.save(file_path, mtime, blocks)
-
-        # Add to in-memory hash table
-        for block in blocks:
-            self._hash_table[block.hash_value].append(block)
-```
-
-**2. Cache Hit (File Unchanged)**:
-```python
-def _hash_file_smart(file_path: Path, content: str):
-    mtime = file_path.stat().st_mtime
-
-    # Check cache
+    # Check if blocks already in DB
     if cache.is_fresh(file_path, mtime):
-        # Cache hit: load from SQLite
-        blocks = cache.load(file_path)
+        # Blocks already in DB, nothing to do
+        # (They're queryable via find_duplicates_by_hash)
+        return []  # No new blocks to add
 
-        # Add directly to hash table (no hashing needed!)
-        for block in blocks:
-            self._hash_table[block.hash_value].append(block)
+    # File changed or new → analyze it
+    blocks = analyzer.analyze(file_path)
+    return blocks
 ```
 
-**3. Cache Invalidation (File Modified)**:
+**2. New or Modified File**:
+```python
+def _analyze_or_load(file_path: Path):
+    mtime = file_path.stat().st_mtime
+
+    # File not in cache or mtime changed
+    if not cache.is_fresh(file_path, mtime):
+        # Analyze file to generate blocks
+        blocks = analyzer.analyze(file_path)
+
+        # Insert blocks into DB immediately
+        # (Makes them queryable for subsequent files)
+        cache.add_blocks(blocks, mtime)
+
+        return blocks
+```
+
+**3. Querying for Duplicates**:
+```python
+def find_duplicates_for_file(file_path: Path):
+    violations = []
+
+    # Get all blocks for this file from DB
+    file_blocks = cache.get_blocks_for_file(file_path)
+
+    # For each block, query DB for duplicates
+    for block in file_blocks:
+        all_blocks = cache.find_duplicates_by_hash(block.hash_value)
+
+        # If 2+ blocks with same hash → duplicate!
+        if len(all_blocks) >= 2:
+            other_blocks = [b for b in all_blocks if b.file_path != file_path]
+            violations.append(build_violation(block, other_blocks))
+
+    return violations
+```
+
+**4. Cache Invalidation (Automatic)**:
 ```python
 # Automatic via mtime comparison
 mtime_cached = 1728380400.123
 mtime_current = 1728380500.456  # File was modified
 
 if mtime_cached != mtime_current:
-    # Cache is stale → rehash
+    # Cache is stale → delete old blocks and rehash
 ```
 
 **4. Cache Cleanup (Remove Stale Entries)**:

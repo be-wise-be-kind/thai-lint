@@ -69,10 +69,10 @@ Implement DRY analyzer with SQLite caching to pass ~80% of PR1 tests (85+ of 106
 ---
 
 ## Overall Progress
-**Total Completion**: 17% (1/6 PRs completed)
+**Total Completion**: 14% (1/7 PRs completed)
 
 ```
-[======                                  ] 17% Complete
+[=====                                   ] 14% Complete
 ```
 
 ---
@@ -82,7 +82,8 @@ Implement DRY analyzer with SQLite caching to pass ~80% of PR1 tests (85+ of 106
 | PR | Title | Status | Completion | Complexity | Priority | Notes |
 |----|-------|--------|------------|------------|----------|-------|
 | PR1 | Complete Test Suite (Pure TDD) | 🟢 Complete | 100% | High | P0 | 106 tests written, all failing |
-| PR2 | Core Implementation + SQLite Cache | 🔴 Not Started | 0% | High | P0 | Single-pass with caching |
+| PR1.1 | Test Review & Architecture Alignment | 🔴 Not Started | 0% | Low | P0 | Align tests with arch decisions |
+| PR2 | Core Implementation + SQLite Cache | 🔴 Not Started | 0% | High | P0 | Single-pass with in-memory fallback |
 | PR3 | Integration (CLI + Library + Docker) | 🔴 Not Started | 0% | Medium | P0 | Complete TypeScript analyzer |
 | PR4 | Dogfooding Discovery | 🔴 Not Started | 0% | Low | P1 | Find violations in thai-lint |
 | PR5 | Dogfooding Fixes (All Violations) | 🔴 Not Started | 0% | High | P1 | Refactor all duplicates |
@@ -140,26 +141,82 @@ Implement DRY analyzer with SQLite caching to pass ~80% of PR1 tests (85+ of 106
 
 ---
 
+## PR1.1: Test Review & Architecture Alignment 🔴 NOT STARTED
+
+**Objective**: Review and update PR1 tests to align with clarified single-pass streaming architecture
+
+**Issue Identified**: PR1 tests were written before architecture clarification. Many tests use `cache_enabled: false` which conflicts with the new design where cache IS the hash table.
+
+**Activities**:
+1. Review all 106 tests from PR1 for architectural assumptions
+2. Identify tests that assume incorrect behavior
+3. Decide on cache_enabled: false implementation (Decision 6: In-Memory Fallback)
+4. Update tests to either:
+   - Use `cache_enabled: true` (preferred for integration tests)
+   - Accept in-memory fallback behavior (for unit tests)
+5. Verify test expectations match stateful design:
+   - Each file reports its own violations
+   - Violations reference other file locations
+   - No assumption about processing order
+
+**Key Decision (from AI_CONTEXT.md Decision 6)**:
+- When `cache_enabled: false`, use in-memory dict[int, list[CodeBlock]] as fallback
+- Same stateful behavior, but no SQLite persistence
+- Allows tests to run with isolation while maintaining architecture
+
+**Files to Review/Update**:
+- tests/unit/linters/dry/test_python_duplicates.py (15 tests)
+- tests/unit/linters/dry/test_typescript_duplicates.py (15 tests)
+- tests/unit/linters/dry/test_cross_file_detection.py (11 tests)
+- tests/unit/linters/dry/test_within_file_detection.py (10 tests)
+- tests/unit/linters/dry/test_cache_operations.py (11 tests) - May need significant updates
+- tests/unit/linters/dry/test_config_loading.py (11 tests)
+- tests/unit/linters/dry/test_violation_messages.py (8 tests)
+- tests/unit/linters/dry/test_ignore_directives.py (9 tests)
+- tests/unit/linters/dry/test_cli_interface.py (4 tests)
+- tests/unit/linters/dry/test_library_api.py (4 tests)
+- tests/unit/linters/dry/test_edge_cases.py (8 tests)
+
+**Completion Criteria**:
+- ✅ All tests reviewed for architectural correctness
+- ✅ Decision 6 (in-memory fallback) implementation plan documented
+- ✅ Tests updated to match stateful design
+- ✅ All 106 tests still fail (no implementation yet) with correct expectations
+- ✅ Test isolation maintained (each test can run independently)
+- ✅ Documentation updated to reflect any test changes
+
+**Estimated Duration**: 2-4 hours
+
+**Date Completed**: TBD
+
+---
+
 ## PR2: Core Implementation + SQLite Cache 🔴 NOT STARTED
 
 **Objective**: Implement DRY analyzer with SQLite caching to pass ~80% of PR1 tests
 
 **Files to Create**:
 - src/linters/dry/__init__.py
-- src/linters/dry/linter.py (Main DRYRule class with cache integration)
 - src/linters/dry/config.py (DRYConfig dataclass with cache settings)
-- src/linters/dry/cache.py (SQLite cache manager - NEW)
+- src/linters/dry/cache.py (SQLite cache manager WITH query methods)
 - src/linters/dry/token_hasher.py (Tokenization + rolling hash)
-- src/linters/dry/duplicate_detector.py (Hash table + duplicate finding)
 - src/linters/dry/python_analyzer.py (Python tokenization)
-- src/linters/dry/typescript_analyzer.py (TypeScript tokenization stub)
 - src/linters/dry/violation_builder.py (Violation messages with locations)
+- src/linters/dry/linter.py (STATEFUL DRYRule class - cache persists across check() calls)
+- src/linters/dry/typescript_analyzer.py (TypeScript tokenization stub)
 
-**Key Algorithm**:
-1. Token-based rolling hash (Rabin-Karp)
-2. Single-pass processing (hash as we go)
-3. Smart caching (mtime-based invalidation)
-4. Per-file reporting (each file reports its own duplicates)
+**NOTE**: NO duplicate_detector.py - cache.py IS the hash table with query methods
+
+**Key Algorithm (Single-Pass Streaming)**:
+1. DRYRule is stateful - cache initialized once, persists across ALL check() calls
+2. For each file:
+   - Check if fresh in cache (mtime comparison)
+   - If stale/new: analyze file, insert blocks into DB
+   - Query DB for duplicates: `SELECT * FROM code_blocks WHERE hash_value = ?`
+   - Build violations for THIS file only
+3. SQLite cache IS the project-wide hash table (not just per-file cache)
+4. Token-based rolling hash (Rabin-Karp)
+5. Mtime-based cache invalidation
 
 **SQLite Schema**:
 ```sql
@@ -182,11 +239,18 @@ CREATE TABLE code_blocks (
 CREATE INDEX idx_hash ON code_blocks(hash_value);
 ```
 
+**Key Cache Methods**:
+- `find_duplicates_by_hash(hash_value)` - Query ALL blocks with this hash (PRIMARY method)
+- `get_blocks_for_file(file_path)` - Get blocks for specific file
+- `add_blocks(file_path, mtime, blocks)` - Insert new blocks into DB
+- `is_fresh(file_path, mtime)` - Check if file needs re-analysis
+
 **Completion Criteria**:
-- ✅ 64-80 tests passing (~80% of 80-100 tests)
+- ✅ 64-80 tests passing (~80% of 106 tests from PR1)
 - ✅ Python duplicate detection working
-- ✅ SQLite cache working (load/save/invalidate)
-- ✅ Cross-file detection working
+- ✅ SQLite cache working with query methods (find_duplicates_by_hash)
+- ✅ Cross-file detection working (DB queries across all files)
+- ✅ Stateful DRYRule maintains cache across check() calls
 - ✅ TypeScript stubbed (returns no violations)
 - ✅ Config loading with cache settings working
 - ✅ Violation messages show all duplicate locations
