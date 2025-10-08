@@ -21,33 +21,29 @@ Implementation: TDD approach - tests written before implementation. All tests sh
 from src import Linter
 
 
-def test_exact_3_line_duplicate_across_two_files(tmp_path):
+def test_exact_3_line_duplicate_across_two_files(
+    tmp_path, create_python_file, create_config, duplicate_code_3_lines
+):
     """Test detecting exact 3-line duplicate in 2 files."""
-    file1 = tmp_path / "file1.py"
-    file1.write_text("""
+    create_python_file(
+        "file1.py",
+        f"""
 def process_items(items):
-    for item in items:
-        if item.is_valid():
-            item.save()
+{duplicate_code_3_lines}
     return True
-""")
+""",
+    )
 
-    file2 = tmp_path / "file2.py"
-    file2.write_text("""
+    create_python_file(
+        "file2.py",
+        f"""
 def handle_data(data):
-    for item in items:
-        if item.is_valid():
-            item.save()
+{duplicate_code_3_lines}
     return False
-""")
+""",
+    )
 
-    config = tmp_path / ".thailint.yaml"
-    config.write_text("""
-dry:
-  enabled: true
-  min_duplicate_lines: 3
-  cache_enabled: false
-""")
+    config = create_config()
 
     linter = Linter(config_file=config, project_root=tmp_path)
     violations = linter.lint(tmp_path, rules=["dry.duplicate-code"])
@@ -64,26 +60,13 @@ dry:
     assert "file1.py" in v2.message or "file2.py" in v2.message
 
 
-def test_exact_5_line_duplicate_across_three_files(tmp_path):
+def test_exact_5_line_duplicate_across_three_files(
+    tmp_path, create_duplicate_files, create_config, duplicate_code_5_lines
+):
     """Test detecting exact 5-line duplicate in 3 files."""
-    duplicate_code = """
-    result = []
-    for item in data:
-        if item.active:
-            processed = transform(item)
-            result.append(processed)
-"""
+    create_duplicate_files(duplicate_code_5_lines, count=3, prefix="module")
 
-    for i in range(1, 4):
-        file = tmp_path / f"module{i}.py"
-        file.write_text(f"""
-def function_{i}(data):
-{duplicate_code}
-    return result
-""")
-
-    config = tmp_path / ".thailint.yaml"
-    config.write_text("dry:\n  enabled: true\n  min_duplicate_lines: 5\n  cache_enabled: false")
+    config = create_config(min_duplicate_lines=5)
 
     linter = Linter(config_file=config, project_root=tmp_path)
     violations = linter.lint(tmp_path, rules=["dry.duplicate-code"])
@@ -94,30 +77,13 @@ def function_{i}(data):
         assert "duplicate" in v.message.lower() or "5" in v.message
 
 
-def test_exact_10_line_duplicate(tmp_path):
+def test_exact_10_line_duplicate(
+    tmp_path, create_duplicate_files, create_config, duplicate_code_10_lines
+):
     """Test detecting exact 10-line duplicate block."""
-    duplicate_block = """
-    try:
-        connection = establish_connection()
-        cursor = connection.cursor()
-        cursor.execute(query)
-        results = cursor.fetchall()
-        processed = [process_row(r) for r in results]
-        cursor.close()
-        connection.close()
-        return processed
-    except Exception as e:
-        log_error(e)
-"""
+    create_duplicate_files(duplicate_code_10_lines, count=2, prefix="database_")
 
-    file1 = tmp_path / "database_a.py"
-    file1.write_text(f"def query_users():\n{duplicate_block}\n")
-
-    file2 = tmp_path / "database_b.py"
-    file2.write_text(f"def query_products():\n{duplicate_block}\n")
-
-    config = tmp_path / ".thailint.yaml"
-    config.write_text("dry:\n  enabled: true\n  min_duplicate_lines: 10\n  cache_enabled: false")
+    config = create_config(min_duplicate_lines=10)
 
     linter = Linter(config_file=config, project_root=tmp_path)
     violations = linter.lint(tmp_path, rules=["dry.duplicate-code"])
@@ -126,18 +92,14 @@ def test_exact_10_line_duplicate(tmp_path):
     assert all(v.rule_id == "dry.duplicate-code" for v in violations)
 
 
-def test_exact_20_line_duplicate(tmp_path):
+def test_exact_20_line_duplicate(tmp_path, create_python_file, create_config):
     """Test detecting exact 20+ line duplicate block."""
     large_duplicate = "\n".join([f"    line_{i} = process_{i}(data)" for i in range(20)])
 
-    file1 = tmp_path / "handler_a.py"
-    file1.write_text(f"def handler_a():\n{large_duplicate}\n    return result\n")
+    create_python_file("handler_a", f"def handler_a():\n{large_duplicate}\n    return result\n")
+    create_python_file("handler_b", f"def handler_b():\n{large_duplicate}\n    return result\n")
 
-    file2 = tmp_path / "handler_b.py"
-    file2.write_text(f"def handler_b():\n{large_duplicate}\n    return result\n")
-
-    config = tmp_path / ".thailint.yaml"
-    config.write_text("dry:\n  enabled: true\n  min_duplicate_lines: 20\n  cache_enabled: false")
+    config = create_config(min_duplicate_lines=20)
 
     linter = Linter(config_file=config, project_root=tmp_path)
     violations = linter.lint(tmp_path, rules=["dry.duplicate-code"])
@@ -145,24 +107,15 @@ def test_exact_20_line_duplicate(tmp_path):
     assert len(violations) == 2
 
 
-def test_below_threshold_no_violation(tmp_path):
+def test_below_threshold_no_violation(tmp_path, create_python_file, create_config):
     """Test that 2-line duplicates are ignored when threshold is 3."""
-    file1 = tmp_path / "file1.py"
-    file1.write_text("""
-def foo():
-    x = 1
-    y = 2
-""")
+    two_line_code = """    x = 1
+    y = 2"""
 
-    file2 = tmp_path / "file2.py"
-    file2.write_text("""
-def bar():
-    x = 1
-    y = 2
-""")
+    create_python_file("file1", f"def foo():\n{two_line_code}\n")
+    create_python_file("file2", f"def bar():\n{two_line_code}\n")
 
-    config = tmp_path / ".thailint.yaml"
-    config.write_text("dry:\n  enabled: true\n  min_duplicate_lines: 3\n  cache_enabled: false")
+    config = create_config()
 
     linter = Linter(config_file=config, project_root=tmp_path)
     violations = linter.lint(tmp_path, rules=["dry.duplicate-code"])
@@ -170,26 +123,29 @@ def bar():
     assert len(violations) == 0
 
 
-def test_near_duplicate_with_whitespace_variation(tmp_path):
+def test_near_duplicate_with_whitespace_variation(tmp_path, create_python_file, create_config):
     """Test near-duplicate detection with whitespace differences."""
-    file1 = tmp_path / "file1.py"
-    file1.write_text("""
+    create_python_file(
+        "file1",
+        """
 def process():
     for item in items:
         if item.valid:
             item.save()
-""")
+""",
+    )
 
-    file2 = tmp_path / "file2.py"
-    file2.write_text("""
+    create_python_file(
+        "file2",
+        """
 def handle():
     for item in items:
             if item.valid:
                     item.save()
-""")
+""",
+    )
 
-    config = tmp_path / ".thailint.yaml"
-    config.write_text("dry:\n  enabled: true\n  min_duplicate_lines: 3\n  cache_enabled: false")
+    config = create_config()
 
     linter = Linter(config_file=config, project_root=tmp_path)
     violations = linter.lint(tmp_path, rules=["dry.duplicate-code"])
@@ -197,28 +153,31 @@ def handle():
     assert len(violations) == 2
 
 
-def test_near_duplicate_with_comment_differences(tmp_path):
+def test_near_duplicate_with_comment_differences(tmp_path, create_python_file, create_config):
     """Test near-duplicate detection with comment variations."""
-    file1 = tmp_path / "file1.py"
-    file1.write_text("""
+    create_python_file(
+        "file1",
+        """
 def process():
     # Process items
     for item in items:
         if item.valid:
             item.save()
-""")
+""",
+    )
 
-    file2 = tmp_path / "file2.py"
-    file2.write_text("""
+    create_python_file(
+        "file2",
+        """
 def handle():
     # Handle items differently
     for item in items:
         if item.valid:
             item.save()
-""")
+""",
+    )
 
-    config = tmp_path / ".thailint.yaml"
-    config.write_text("dry:\n  enabled: true\n  min_duplicate_lines: 3\n  cache_enabled: false")
+    config = create_config()
 
     linter = Linter(config_file=config, project_root=tmp_path)
     violations = linter.lint(tmp_path, rules=["dry.duplicate-code"])
@@ -226,30 +185,18 @@ def handle():
     assert len(violations) == 2
 
 
-def test_duplicate_function_definitions(tmp_path):
+def test_duplicate_function_definitions(tmp_path, create_python_file, create_config):
     """Test detection of duplicate function patterns."""
-    file1 = tmp_path / "utils_a.py"
-    file1.write_text("""
-def validate_email(email):
-    if not email:
+    duplicate_logic = """    if not email:
         return False
     if '@' not in email:
         return False
-    return True
-""")
+    return True"""
 
-    file2 = tmp_path / "utils_b.py"
-    file2.write_text("""
-def check_email(email):
-    if not email:
-        return False
-    if '@' not in email:
-        return False
-    return True
-""")
+    create_python_file("utils_a", f"def validate_email(email):\n{duplicate_logic}\n")
+    create_python_file("utils_b", f"def check_email(email):\n{duplicate_logic}\n")
 
-    config = tmp_path / ".thailint.yaml"
-    config.write_text("dry:\n  enabled: true\n  min_duplicate_lines: 3\n  cache_enabled: false")
+    config = create_config()
 
     linter = Linter(config_file=config, project_root=tmp_path)
     violations = linter.lint(tmp_path, rules=["dry.duplicate-code"])
@@ -257,30 +204,21 @@ def check_email(email):
     assert len(violations) >= 2
 
 
-def test_duplicate_loop_structures(tmp_path):
+def test_duplicate_loop_structures(tmp_path, create_python_file, create_config):
     """Test detection of duplicate loop patterns."""
-    file1 = tmp_path / "processor_a.py"
-    file1.write_text("""
-def process_batch(items):
-    for item in items:
+    loop_code = """    for item in items:
         item.validate()
         item.transform()
-        item.save()
-    return len(items)
-""")
+        item.save()"""
 
-    file2 = tmp_path / "processor_b.py"
-    file2.write_text("""
-def handle_batch(records):
-    for item in items:
-        item.validate()
-        item.transform()
-        item.save()
-    return len(records)
-""")
+    create_python_file(
+        "processor_a", f"def process_batch(items):\n{loop_code}\n    return len(items)\n"
+    )
+    create_python_file(
+        "processor_b", f"def handle_batch(records):\n{loop_code}\n    return len(records)\n"
+    )
 
-    config = tmp_path / ".thailint.yaml"
-    config.write_text("dry:\n  enabled: true\n  min_duplicate_lines: 3\n  cache_enabled: false")
+    config = create_config()
 
     linter = Linter(config_file=config, project_root=tmp_path)
     violations = linter.lint(tmp_path, rules=["dry.duplicate-code"])
@@ -288,27 +226,21 @@ def handle_batch(records):
     assert len(violations) == 2
 
 
-def test_duplicate_if_elif_chains(tmp_path):
+def test_duplicate_if_elif_chains(tmp_path, create_python_file, create_config):
     """Test detection of duplicate conditional chains."""
-    conditional_chain = """
-    if status == 'pending':
+    conditional_chain = """    if status == 'pending':
         return 0
     elif status == 'active':
         return 1
     elif status == 'completed':
         return 2
     else:
-        return -1
-"""
+        return -1"""
 
-    file1 = tmp_path / "status_a.py"
-    file1.write_text(f"def get_code_a(status):\n{conditional_chain}\n")
+    create_python_file("status_a", f"def get_code_a(status):\n{conditional_chain}\n")
+    create_python_file("status_b", f"def get_code_b(status):\n{conditional_chain}\n")
 
-    file2 = tmp_path / "status_b.py"
-    file2.write_text(f"def get_code_b(status):\n{conditional_chain}\n")
-
-    config = tmp_path / ".thailint.yaml"
-    config.write_text("dry:\n  enabled: true\n  min_duplicate_lines: 5\n  cache_enabled: false")
+    config = create_config(min_duplicate_lines=5)
 
     linter = Linter(config_file=config, project_root=tmp_path)
     violations = linter.lint(tmp_path, rules=["dry.duplicate-code"])
@@ -316,10 +248,9 @@ def test_duplicate_if_elif_chains(tmp_path):
     assert len(violations) == 2
 
 
-def test_duplicate_try_except_blocks(tmp_path):
+def test_duplicate_try_except_blocks(tmp_path, create_python_file, create_config):
     """Test detection of duplicate error handling."""
-    error_handler = """
-    try:
+    error_handler = """    try:
         result = risky_operation()
         return result
     except ValueError as e:
@@ -327,17 +258,12 @@ def test_duplicate_try_except_blocks(tmp_path):
         return None
     except Exception as e:
         log_critical(e)
-        raise
-"""
+        raise"""
 
-    file1 = tmp_path / "service_a.py"
-    file1.write_text(f"def execute_a():\n{error_handler}\n")
+    create_python_file("service_a", f"def execute_a():\n{error_handler}\n")
+    create_python_file("service_b", f"def execute_b():\n{error_handler}\n")
 
-    file2 = tmp_path / "service_b.py"
-    file2.write_text(f"def execute_b():\n{error_handler}\n")
-
-    config = tmp_path / ".thailint.yaml"
-    config.write_text("dry:\n  enabled: true\n  min_duplicate_lines: 6\n  cache_enabled: false")
+    config = create_config(min_duplicate_lines=6)
 
     linter = Linter(config_file=config, project_root=tmp_path)
     violations = linter.lint(tmp_path, rules=["dry.duplicate-code"])
@@ -345,32 +271,33 @@ def test_duplicate_try_except_blocks(tmp_path):
     assert len(violations) == 2
 
 
-def test_duplicate_class_methods(tmp_path):
+def test_duplicate_class_methods(tmp_path, create_python_file, create_config):
     """Test detection of duplicate methods in different classes."""
-    file1 = tmp_path / "class_a.py"
-    file1.write_text("""
+    validation_code = """        if not user.email:
+            raise ValueError("Email required")
+        if not user.name:
+            raise ValueError("Name required")
+        return True"""
+
+    create_python_file(
+        "class_a",
+        f"""
 class UserManager:
     def validate(self, user):
-        if not user.email:
-            raise ValueError("Email required")
-        if not user.name:
-            raise ValueError("Name required")
-        return True
-""")
+{validation_code}
+""",
+    )
 
-    file2 = tmp_path / "class_b.py"
-    file2.write_text("""
+    create_python_file(
+        "class_b",
+        f"""
 class ProductManager:
     def validate(self, product):
-        if not user.email:
-            raise ValueError("Email required")
-        if not user.name:
-            raise ValueError("Name required")
-        return True
-""")
+{validation_code}
+""",
+    )
 
-    config = tmp_path / ".thailint.yaml"
-    config.write_text("dry:\n  enabled: true\n  min_duplicate_lines: 3\n  cache_enabled: false")
+    config = create_config()
 
     linter = Linter(config_file=config, project_root=tmp_path)
     violations = linter.lint(tmp_path, rules=["dry.duplicate-code"])
@@ -378,34 +305,22 @@ class ProductManager:
     assert len(violations) >= 2
 
 
-def test_multiple_duplicates_in_project(tmp_path):
+def test_multiple_duplicates_in_project(tmp_path, create_python_file, create_config):
     """Test detection of multiple different duplicates."""
-    duplicate_a = """
-    x = fetch_data()
+    duplicate_a = """    x = fetch_data()
     y = process(x)
-    z = validate(y)
-"""
+    z = validate(y)"""
 
-    duplicate_b = """
-    result = query_db()
+    duplicate_b = """    result = query_db()
     filtered = filter_results(result)
-    return sorted(filtered)
-"""
+    return sorted(filtered)"""
 
-    file1 = tmp_path / "mod1.py"
-    file1.write_text(f"def func1():\n{duplicate_a}\n    return z\n")
+    create_python_file("mod1", f"def func1():\n{duplicate_a}\n    return z\n")
+    create_python_file("mod2", f"def func2():\n{duplicate_a}\n    return z\n")
+    create_python_file("mod3", f"def func3():\n{duplicate_b}\n")
+    create_python_file("mod4", f"def func4():\n{duplicate_b}\n")
 
-    file2 = tmp_path / "mod2.py"
-    file2.write_text(f"def func2():\n{duplicate_a}\n    return z\n")
-
-    file3 = tmp_path / "mod3.py"
-    file3.write_text(f"def func3():\n{duplicate_b}\n")
-
-    file4 = tmp_path / "mod4.py"
-    file4.write_text(f"def func4():\n{duplicate_b}\n")
-
-    config = tmp_path / ".thailint.yaml"
-    config.write_text("dry:\n  enabled: true\n  min_duplicate_lines: 3\n  cache_enabled: false")
+    config = create_config()
 
     linter = Linter(config_file=config, project_root=tmp_path)
     violations = linter.lint(tmp_path, rules=["dry.duplicate-code"])
@@ -413,31 +328,11 @@ def test_multiple_duplicates_in_project(tmp_path):
     assert len(violations) == 4
 
 
-def test_no_duplicates_all_unique(tmp_path):
+def test_no_duplicates_all_unique(tmp_path, create_unique_files, create_config):
     """Test that unique code produces no violations."""
-    file1 = tmp_path / "unique1.py"
-    file1.write_text("""
-def process_users():
-    users = fetch_users()
-    return transform_users(users)
-""")
+    create_unique_files(count=3)
 
-    file2 = tmp_path / "unique2.py"
-    file2.write_text("""
-def process_products():
-    products = fetch_products()
-    return transform_products(products)
-""")
-
-    file3 = tmp_path / "unique3.py"
-    file3.write_text("""
-def process_orders():
-    orders = fetch_orders()
-    return transform_orders(orders)
-""")
-
-    config = tmp_path / ".thailint.yaml"
-    config.write_text("dry:\n  enabled: true\n  min_duplicate_lines: 3\n  cache_enabled: false")
+    config = create_config()
 
     linter = Linter(config_file=config, project_root=tmp_path)
     violations = linter.lint(tmp_path, rules=["dry.duplicate-code"])

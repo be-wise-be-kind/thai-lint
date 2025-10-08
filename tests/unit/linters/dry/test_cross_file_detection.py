@@ -23,24 +23,17 @@ from pathlib import Path
 from src import Linter
 
 
-def test_duplicate_in_two_files(tmp_path):
+def test_duplicate_in_two_files(tmp_path, create_duplicate_files, create_config):
     """Test detecting duplicate in exactly 2 files."""
-    duplicate_code = """
-    result = []
+    duplicate_code = """    result = []
     for item in data:
         if item.valid:
             result.append(item)
-    return result
-"""
+    return result"""
 
-    file1 = tmp_path / "module1.py"
-    file1.write_text(f"def process1(data):\n{duplicate_code}\n")
+    create_duplicate_files(duplicate_code, count=2, prefix="module")
 
-    file2 = tmp_path / "module2.py"
-    file2.write_text(f"def process2(data):\n{duplicate_code}\n")
-
-    config = tmp_path / ".thailint.yaml"
-    config.write_text("dry:\n  enabled: true\n  min_duplicate_lines: 3\n  cache_enabled: false")
+    config = create_config()
 
     linter = Linter(config_file=config, project_root=tmp_path)
     violations = linter.lint(tmp_path, rules=["dry.duplicate-code"])
@@ -49,20 +42,16 @@ def test_duplicate_in_two_files(tmp_path):
     assert violations[0].file_path != violations[1].file_path
 
 
-def test_duplicate_in_three_files(tmp_path):
+def test_duplicate_in_three_files(tmp_path, create_python_file, create_config):
     """Test detecting duplicate in 3 different files."""
-    duplicate_code = """
-    for item in items:
+    duplicate_code = """    for item in items:
         if item.valid:
-            item.save()
-"""
+            item.save()"""
 
     for i in range(1, 4):
-        file = tmp_path / f"file{i}.py"
-        file.write_text(f"def func{i}():\n{duplicate_code}\n    print('done')\n")
+        create_python_file(f"file{i}", f"def func{i}():\n{duplicate_code}\n    print('done')\n")
 
-    config = tmp_path / ".thailint.yaml"
-    config.write_text("dry:\n  enabled: true\n  min_duplicate_lines: 3\n  cache_enabled: false")
+    config = create_config()
 
     linter = Linter(config_file=config, project_root=tmp_path)
     violations = linter.lint(tmp_path, rules=["dry.duplicate-code"])
