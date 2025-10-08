@@ -651,6 +651,18 @@ pytest tests/unit/linters/dry/ -v
 
 **Complexity**: High (SQLite integration, single-pass algorithm, cache invalidation)
 
+**Files to Create**:
+- `src/linters/dry/__init__.py` - Module exports
+- `src/linters/dry/config.py` - DRYConfig dataclass
+- `src/linters/dry/cache.py` - SQLite cache manager (WITH query methods)
+- `src/linters/dry/token_hasher.py` - Rolling hash implementation
+- `src/linters/dry/python_analyzer.py` - Python tokenization
+- `src/linters/dry/violation_builder.py` - Violation message formatting
+- `src/linters/dry/linter.py` - DRYRule class (stateful, cache-backed)
+- `src/linters/dry/typescript_analyzer.py` - TypeScript stub (PR3 full impl)
+
+**NOTE**: NO duplicate_detector.py - cache.py has query methods instead
+
 ---
 
 ### Step 1: Create Module Structure
@@ -893,10 +905,69 @@ class DRYCache:
         self.db.execute("VACUUM")
         self.db.commit()
 
+    def find_duplicates_by_hash(self, hash_value: int) -> list[CodeBlock]:
+        """Find all code blocks with the given hash value.
+
+        This is the PRIMARY method for duplicate detection - queries the DB
+        for ALL blocks (across ALL files) with the same hash.
+
+        Args:
+            hash_value: Hash value to search for
+
+        Returns:
+            List of ALL CodeBlock instances with this hash (from all files)
+        """
+        cursor = self.db.execute(
+            """SELECT file_path, hash_value, start_line, end_line, snippet
+               FROM code_blocks
+               WHERE hash_value = ?""",
+            (hash_value,)
+        )
+
+        blocks = []
+        for file_path_str, hash_val, start, end, snippet in cursor:
+            block = CodeBlock(
+                file_path=Path(file_path_str),
+                start_line=start,
+                end_line=end,
+                snippet=snippet,
+                hash_value=hash_val
+            )
+            blocks.append(block)
+
+        return blocks
+
+    def get_blocks_for_file(self, file_path: Path) -> list[CodeBlock]:
+        """Get all code blocks for a specific file.
+
+        Args:
+            file_path: Path to file
+
+        Returns:
+            List of CodeBlock instances for this file
+        """
+        return self.load(file_path)  # Same as load() method
+
+    def add_blocks(self, file_path: Path, mtime: float, blocks: list[CodeBlock]) -> None:
+        """Add code blocks to database (alias for save()).
+
+        Args:
+            file_path: Path to file
+            mtime: File modification time
+            blocks: List of CodeBlock instances to add
+        """
+        self.save(file_path, mtime, blocks)
+
     def close(self) -> None:
         """Close database connection."""
         self.db.close()
 ```
+
+**Key Methods for Duplicate Detection**:
+- `find_duplicates_by_hash(hash_value)` - Query ALL blocks with this hash (PRIMARY method)
+- `get_blocks_for_file(file_path)` - Get blocks for specific file
+- `add_blocks()` - Insert new blocks into DB
+- `is_fresh()` - Check if file needs re-analysis
 
 ---
 
@@ -1029,20 +1100,161 @@ class TypeScriptAnalyzer:
 ```
 
 **File**: `src/linters/dry/linter.py`
+
+**CRITICAL**: This rule is STATEFUL - maintains cache across ALL check() calls
+
 ```python
+from pathlib import Path
+from src.core.base import BaseLintRule, BaseLintContext
+from src.core.types import Violation
+from .cache import DRYCache
+from .config import DRYConfig
+from .python_analyzer import PythonAnalyzer
+from .typescript_analyzer import TypeScriptAnalyzer
+from .violation_builder import DRYViolationBuilder
+
+
 class DRYRule(BaseLintRule):
-    """Main DRY linter rule with cache integration."""
+    """Main DRY linter rule with stateful cache integration.
+
+    IMPORTANT: This rule maintains state across ALL check() calls:
+    - Cache is initialized once and reused for all files
+    - Cache serves as both cache AND project-wide hash table
+    - Each file queries cache for duplicates immediately
+    """
 
     def __init__(self):
-        self._hash_table: dict[int, list[CodeBlock]] = defaultdict(list)
+        """Initialize stateful rule."""
         self._cache: DRYCache | None = None
-        self._config: DRYConfig | None = None
-        self._processed_files: set[Path] = set()
+        self._initialized: bool = False
+        self._violation_builder = DRYViolationBuilder(self.rule_id)
+
+    @property
+    def rule_id(self) -> str:
+        return "dry.duplicate-code"
+
+    @property
+    def rule_name(self) -> str:
+        return "Duplicate Code"
+
+    @property
+    def description(self) -> str:
+        return "Detects duplicate code across files for DRY principle compliance"
 
     def check(self, context: BaseLintContext) -> list[Violation]:
-        """Single-pass processing with smart caching."""
-        # Implementation of single-pass algorithm with cache
+        """Single-pass streaming algorithm with cache queries.
+
+        Algorithm:
+        1. Lazy init cache on first call
+        2. Check if file is fresh in cache
+        3. If stale/new: analyze file and insert blocks to DB
+        4. Query DB for duplicates for THIS file
+        5. Build and return violations
+        """
+        if context.file_content is None:
+            return []
+
+        config = self._load_config(context)
+        if not config.enabled:
+            return []
+
+        # Lazy initialization on first check() call
+        if not self._initialized:
+            self._init_cache(context, config)
+            self._initialized = True
+
+        file_path = Path(context.file_path)
+
+        # Analyze file or skip if cached
+        self._analyze_or_skip(file_path, config)
+
+        # Query cache for duplicates
+        violations = self._find_duplicates_for_file(file_path)
+
+        return violations
+
+    def _init_cache(self, context: BaseLintContext, config: DRYConfig) -> None:
+        """Initialize cache once for entire project."""
+        if not config.cache_enabled:
+            return
+
+        project_root = getattr(context, "project_root", None)
+        if not project_root:
+            return
+
+        cache_path = Path(project_root) / config.cache_path
+        self._cache = DRYCache(cache_path)
+
+    def _analyze_or_skip(self, file_path: Path, config: DRYConfig) -> None:
+        """Analyze file if new/stale, or skip if fresh in cache."""
+        if not file_path.exists():
+            return
+
+        mtime = file_path.stat().st_mtime
+
+        # Check if blocks already in cache
+        if self._cache and self._cache.is_fresh(file_path, mtime):
+            return  # Already in DB, skip analysis
+
+        # Analyze file based on language
+        if file_path.suffix == ".py":
+            analyzer = PythonAnalyzer(config.min_duplicate_lines)
+        elif file_path.suffix in (".ts", ".tsx", ".js", ".jsx"):
+            analyzer = TypeScriptAnalyzer(config.min_duplicate_lines)
+        else:
+            return
+
+        blocks = analyzer.analyze(file_path)
+
+        # Insert blocks into cache (makes them queryable)
+        if self._cache and blocks:
+            self._cache.add_blocks(file_path, mtime, blocks)
+
+    def _find_duplicates_for_file(self, file_path: Path) -> list[Violation]:
+        """Query cache for duplicates for this file."""
+        if not self._cache:
+            return []
+
+        violations = []
+
+        # Get all blocks for this file
+        file_blocks = self._cache.get_blocks_for_file(file_path)
+
+        # For each block, query DB for duplicates
+        for block in file_blocks:
+            all_blocks = self._cache.find_duplicates_by_hash(block.hash_value)
+
+            # If 2+ blocks with same hash → duplicate
+            if len(all_blocks) >= 2:
+                # Get OTHER blocks (not from this file)
+                other_blocks = [b for b in all_blocks if b.file_path != file_path]
+                if other_blocks:
+                    violation = self._violation_builder.build_violation(
+                        block, other_blocks
+                    )
+                    violations.append(violation)
+
+        return violations
+
+    def _load_config(self, context: BaseLintContext) -> DRYConfig:
+        """Load configuration from context metadata."""
+        metadata = getattr(context, "metadata", None)
+        if metadata is None or not isinstance(metadata, dict):
+            return DRYConfig()
+
+        config_dict = metadata.get("dry", {})
+        if not isinstance(config_dict, dict):
+            return DRYConfig()
+
+        return DRYConfig.from_dict(config_dict)
 ```
+
+**Key Implementation Points**:
+1. **Stateful**: Cache persists across all check() calls
+2. **Lazy Init**: Cache initialized on first file, reused thereafter
+3. **Cache IS Hash Table**: No separate in-memory dict needed
+4. **Query Per File**: Each file queries DB immediately for duplicates
+5. **Streaming**: Process one file at a time, no buffering
 
 ---
 

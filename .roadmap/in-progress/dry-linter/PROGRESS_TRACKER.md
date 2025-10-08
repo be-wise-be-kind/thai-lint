@@ -146,20 +146,26 @@ Implement DRY analyzer with SQLite caching to pass ~80% of PR1 tests (85+ of 106
 
 **Files to Create**:
 - src/linters/dry/__init__.py
-- src/linters/dry/linter.py (Main DRYRule class with cache integration)
 - src/linters/dry/config.py (DRYConfig dataclass with cache settings)
-- src/linters/dry/cache.py (SQLite cache manager - NEW)
+- src/linters/dry/cache.py (SQLite cache manager WITH query methods)
 - src/linters/dry/token_hasher.py (Tokenization + rolling hash)
-- src/linters/dry/duplicate_detector.py (Hash table + duplicate finding)
 - src/linters/dry/python_analyzer.py (Python tokenization)
-- src/linters/dry/typescript_analyzer.py (TypeScript tokenization stub)
 - src/linters/dry/violation_builder.py (Violation messages with locations)
+- src/linters/dry/linter.py (STATEFUL DRYRule class - cache persists across check() calls)
+- src/linters/dry/typescript_analyzer.py (TypeScript tokenization stub)
 
-**Key Algorithm**:
-1. Token-based rolling hash (Rabin-Karp)
-2. Single-pass processing (hash as we go)
-3. Smart caching (mtime-based invalidation)
-4. Per-file reporting (each file reports its own duplicates)
+**NOTE**: NO duplicate_detector.py - cache.py IS the hash table with query methods
+
+**Key Algorithm (Single-Pass Streaming)**:
+1. DRYRule is stateful - cache initialized once, persists across ALL check() calls
+2. For each file:
+   - Check if fresh in cache (mtime comparison)
+   - If stale/new: analyze file, insert blocks into DB
+   - Query DB for duplicates: `SELECT * FROM code_blocks WHERE hash_value = ?`
+   - Build violations for THIS file only
+3. SQLite cache IS the project-wide hash table (not just per-file cache)
+4. Token-based rolling hash (Rabin-Karp)
+5. Mtime-based cache invalidation
 
 **SQLite Schema**:
 ```sql
@@ -182,11 +188,18 @@ CREATE TABLE code_blocks (
 CREATE INDEX idx_hash ON code_blocks(hash_value);
 ```
 
+**Key Cache Methods**:
+- `find_duplicates_by_hash(hash_value)` - Query ALL blocks with this hash (PRIMARY method)
+- `get_blocks_for_file(file_path)` - Get blocks for specific file
+- `add_blocks(file_path, mtime, blocks)` - Insert new blocks into DB
+- `is_fresh(file_path, mtime)` - Check if file needs re-analysis
+
 **Completion Criteria**:
-- ✅ 64-80 tests passing (~80% of 80-100 tests)
+- ✅ 64-80 tests passing (~80% of 106 tests from PR1)
 - ✅ Python duplicate detection working
-- ✅ SQLite cache working (load/save/invalidate)
-- ✅ Cross-file detection working
+- ✅ SQLite cache working with query methods (find_duplicates_by_hash)
+- ✅ Cross-file detection working (DB queries across all files)
+- ✅ Stateful DRYRule maintains cache across check() calls
 - ✅ TypeScript stubbed (returns no violations)
 - ✅ Config loading with cache settings working
 - ✅ Violation messages show all duplicate locations
