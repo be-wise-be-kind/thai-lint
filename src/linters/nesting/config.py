@@ -35,16 +35,26 @@ class NestingConfig:
             raise ValueError(f"max_nesting_depth must be positive, got {self.max_nesting_depth}")
 
     @classmethod
-    def from_dict(cls, config: dict[str, Any]) -> "NestingConfig":
-        """Load configuration from dictionary.
+    def from_dict(cls, config: dict[str, Any], language: str | None = None) -> "NestingConfig":
+        """Load configuration from dictionary with language-specific overrides.
 
         Args:
             config: Dictionary containing configuration values
+            language: Programming language (python, typescript, javascript) for language-specific thresholds
 
         Returns:
             NestingConfig instance with values from dictionary
         """
+        # Get language-specific config if available
+        if language and language in config:
+            lang_config = config[language]
+            max_nesting_depth = lang_config.get(
+                "max_nesting_depth", config.get("max_nesting_depth", 4)
+            )
+        else:
+            max_nesting_depth = config.get("max_nesting_depth", 4)
+
         return cls(
-            max_nesting_depth=config.get("max_nesting_depth", 4),
+            max_nesting_depth=max_nesting_depth,
             enabled=config.get("enabled", True),
         )

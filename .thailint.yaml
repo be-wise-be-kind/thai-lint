@@ -1,11 +1,13 @@
 # Purpose: Thai-lint configuration for project linting rules
 #
-# Scope: Defines linter configurations including file placement and nesting depth rules
+# Scope: Defines linter configurations including file placement, nesting depth, and SRP rules
 #
 # Overview: Configuration file for thai-lint. Enforces project structure conventions
 #     for Python source files, tests, configuration files, and documentation. Also
-#     enforces code quality rules like maximum nesting depth to maintain readability.
-#     Uses regex patterns and configurable limits to ensure consistent code quality.
+#     enforces code quality rules like maximum nesting depth and SRP thresholds to maintain
+#     readability. Supports language-specific thresholds (python, typescript, javascript) to
+#     account for language verbosity differences. Uses regex patterns and configurable limits
+#     to ensure consistent code quality across the codebase.
 
 # File placement linter configuration
 file-placement:
@@ -71,6 +73,20 @@ file-placement:
 # Nesting depth linter configuration
 nesting:
   enabled: true
+
+  # Python-specific thresholds (strict for readability)
+  python:
+    max_nesting_depth: 3  # Python encourages flat structure
+
+  # TypeScript-specific thresholds (slightly more lenient for complex type guards)
+  typescript:
+    max_nesting_depth: 4  # TypeScript may need deeper nesting for type narrowing
+
+  # JavaScript-specific thresholds
+  javascript:
+    max_nesting_depth: 3
+
+  # Default fallback
   max_nesting_depth: 3  # Maximum allowed nesting depth (default: 4)
   # Higher values allow more complex nesting but may reduce readability
   # Lower values enforce flatter code structure but may require more refactoring
@@ -79,8 +95,26 @@ nesting:
 # SRP (Single Responsibility Principle) linter configuration
 srp:
   enabled: true
-  max_methods: 7  # Maximum methods per class (default: 7)
-  max_loc: 200  # Maximum lines of code per class (default: 200)
+
+  # Python-specific thresholds (more strict due to conciseness)
+  python:
+    max_methods: 8  # Maximum methods per class
+    max_loc: 200  # Maximum lines of code per class
+
+  # TypeScript-specific thresholds (more lenient due to type annotations and verbosity)
+  typescript:
+    max_methods: 10  # TypeScript can be more verbose with types/interfaces
+    max_loc: 250  # Type annotations and explicit returns add lines
+
+  # JavaScript-specific thresholds (similar to TypeScript but slightly more concise)
+  javascript:
+    max_methods: 10
+    max_loc: 225
+
+  # Default fallback for other languages
+  max_methods: 8
+  max_loc: 200
+
   check_keywords: true  # Check for responsibility keywords in class names
   keywords:
     - Manager
