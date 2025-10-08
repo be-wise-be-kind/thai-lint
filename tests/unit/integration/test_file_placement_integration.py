@@ -37,12 +37,15 @@ class TestFilePlacementIntegration:
     @pytest.fixture
     def project_root(self, tmp_path):
         """Create temporary project root with config."""
+        # Create .git marker for project root detection
+        (tmp_path / ".git").mkdir()
+
         # Create project structure
         (tmp_path / "src").mkdir()
         (tmp_path / "tests").mkdir()
         (tmp_path / "docs").mkdir()
 
-        # Create config file
+        # Create config file in .artifacts (where FilePlacementLinter expects it)
         config = {
             "file-placement": {
                 "directories": {
@@ -60,7 +63,7 @@ class TestFilePlacementIntegration:
             }
         }
 
-        config_file = tmp_path / ".ai" / "layout.json"
+        config_file = tmp_path / ".artifacts" / "generated-config.json"
         config_file.parent.mkdir(exist_ok=True)
         config_file.write_text(json.dumps(config, indent=2))
 

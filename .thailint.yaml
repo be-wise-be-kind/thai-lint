@@ -123,6 +123,7 @@ srp:
     - Utility
     - Helper
 
-  # Ignore test files - test classes can have many test methods
+  # Ignore test files and linter implementation files
   ignore:
     - "tests/"
+    - "src/linters/srp/linter.py"  # Linter rule must implement base interface with many methods

@@ -32,6 +32,18 @@ from .rule_checker import RuleChecker
 from .violation_factory import ViolationFactory
 
 
+class _Components:
+    """Container for linter components to reduce instance attributes."""
+
+    def __init__(self, project_root: Path):
+        self.config_loader = ConfigLoader(project_root)
+        self.path_resolver = PathResolver(project_root)
+        self.pattern_matcher = PatternMatcher()
+        self.pattern_validator = PatternValidator()
+        self.violation_factory = ViolationFactory()
+        self.rule_checker = RuleChecker(self.pattern_matcher, self.violation_factory)
+
+
 class FilePlacementLinter:
     """File placement linter for validating file organization."""
 
@@ -49,25 +61,24 @@ class FilePlacementLinter:
             project_root: Project root directory
         """
         self.project_root = project_root or Path.cwd()
-
-        # Initialize helper classes
-        self.config_loader = ConfigLoader(self.project_root)
-        self.path_resolver = PathResolver(self.project_root)
-        self.pattern_matcher = PatternMatcher()
-        self.pattern_validator = PatternValidator()
-        self.violation_factory = ViolationFactory()
-        self.rule_checker = RuleChecker(self.pattern_matcher, self.violation_factory)
+        self._components = _Components(self.project_root)
 
         # Load and validate config
         if config_obj:
-            self.config = config_obj
+            # Handle both wrapped and unwrapped config formats
+            # Wrapped: {"file-placement": {...}}
+            # Unwrapped: {"directories": {...}, "global_deny": [...], ...}
+            if "file-placement" in config_obj:
+                self.config = config_obj["file-placement"]
+            else:
+                self.config = config_obj
         elif config_file:
-            self.config = self.config_loader.load_config_file(config_file)
+            self.config = self._components.config_loader.load_config_file(config_file)
         else:
             self.config = {}
 
         # Validate regex patterns in config
-        self.pattern_validator.validate_config(self.config)
+        self._components.pattern_validator.validate_config(self.config)
 
     def lint_path(self, file_path: Path) -> list[Violation]:
         """Lint a single file path.
@@ -78,10 +89,11 @@ class FilePlacementLinter:
         Returns:
             List of violations found
         """
-        rel_path = self.path_resolver.get_relative_path(file_path)
-        path_str = self.path_resolver.normalize_path_string(rel_path)
-        fp_config = self.config.get("file-placement", {})
-        return self.rule_checker.check_all_rules(path_str, rel_path, fp_config)
+        rel_path = self._components.path_resolver.get_relative_path(file_path)
+        path_str = self._components.path_resolver.normalize_path_string(rel_path)
+        # Config is already unwrapped from file-placement key in _load_layout_config
+        fp_config = self.config
+        return self._components.rule_checker.check_all_rules(path_str, rel_path, fp_config)
 
     def check_file_allowed(self, file_path: Path) -> bool:
         """Check if file is allowed (no violations).
@@ -158,10 +170,13 @@ class FilePlacementRule(BaseLintRule):
         Returns:
             List of violations
         """
+        from src.utils.project_root import get_project_root
+
         if not context.file_path:
             return []
 
-        project_root = self._find_project_root(context.file_path)
+        start_path = context.file_path.parent if context.file_path.is_file() else context.file_path
+        project_root = get_project_root(start_path)
         linter = self._get_or_create_linter(project_root)
         return linter.lint_path(context.file_path)
 
@@ -195,13 +210,15 @@ class FilePlacementRule(BaseLintRule):
         if layout_file:
             return project_root / layout_file
 
-        yaml_path = project_root / ".ai" / "layout.yaml"
-        json_path = project_root / ".ai" / "layout.json"
-        if yaml_path.exists():
-            return yaml_path
-        if json_path.exists():
-            return json_path
-        return yaml_path
+        # Check .artifacts first (generated configs)
+        artifacts_yaml = project_root / ".artifacts" / "generated-config.yaml"
+        artifacts_json = project_root / ".artifacts" / "generated-config.json"
+
+        for path in [artifacts_yaml, artifacts_json]:
+            if path.exists():
+                return path
+
+        return artifacts_yaml  # Default if none exist
 
     def _load_layout_config(self, layout_path: Path) -> dict[str, Any]:
         """Load layout configuration from file.
@@ -210,10 +227,16 @@ class FilePlacementRule(BaseLintRule):
             layout_path: Path to layout file
 
         Returns:
-            Layout configuration dict, or empty dict on error
+            Layout configuration dict (unwrapped from file-placement key), or empty dict on error
         """
         try:
-            return self._parse_layout_file(layout_path)
+            config = self._parse_layout_file(layout_path)
+
+            # Unwrap file-placement key if present
+            if "file-placement" in config:
+                return config["file-placement"]
+
+            return config
         except Exception:
             return {}
 
@@ -230,23 +253,3 @@ class FilePlacementRule(BaseLintRule):
             if str(layout_path).endswith((".yaml", ".yml")):
                 return yaml.safe_load(f) or {}
             return json.load(f)
-
-    def _find_project_root(self, file_path: Path) -> Path:
-        """Find project root by looking for .ai directory.
-
-        Args:
-            file_path: File being linted
-
-        Returns:
-            Project root directory
-        """
-        current = file_path.parent if file_path.is_file() else file_path
-
-        # Walk up directory tree looking for .ai directory
-        while current != current.parent:
-            if (current / ".ai").exists():
-                return current
-            current = current.parent
-
-        # Fallback to current directory if no .ai found
-        return Path.cwd()

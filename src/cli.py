@@ -406,7 +406,7 @@ def _execute_file_placement_lint(  # pylint: disable=too-many-arguments,too-many
     all_violations = _execute_linting(orchestrator, path_obj, recursive)
 
     # Filter to only file-placement violations
-    violations = [v for v in all_violations if v.rule_id.startswith("file-placement.")]
+    violations = [v for v in all_violations if v.rule_id.startswith("file-placement")]
 
     if verbose:
         logger.info(f"Found {len(violations)} violation(s)")
@@ -423,11 +423,32 @@ def _handle_linting_error(error: Exception, verbose: bool) -> None:
     sys.exit(2)
 
 
+def _find_project_root(start_path: Path) -> Path:
+    """Find project root by looking for .git or pyproject.toml.
+
+    DEPRECATED: Use src.utils.project_root.get_project_root() instead.
+
+    Args:
+        start_path: Directory to start searching from
+
+    Returns:
+        Path to project root, or start_path if no markers found
+    """
+    from src.utils.project_root import get_project_root
+
+    return get_project_root(start_path)
+
+
 def _setup_orchestrator(path_obj, config_file, rules, verbose):
     """Set up and configure the orchestrator."""
     from src.orchestrator.core import Orchestrator
+    from src.utils.project_root import get_project_root
 
-    project_root = path_obj if path_obj.is_dir() else path_obj.parent
+    # Find actual project root (where .git or pyproject.toml exists)
+    # This ensures .artifacts/ is always created at project root, not in subdirectories
+    search_start = path_obj if path_obj.is_dir() else path_obj.parent
+    project_root = get_project_root(search_start)
+
     orchestrator = Orchestrator(project_root=project_root)
 
     if rules:
@@ -458,24 +479,24 @@ def _parse_json_rules(rules: str) -> dict:
 
 
 def _write_layout_config(orchestrator, rules_config: dict, verbose: bool) -> None:
-    """Write layout config to .ai/layout.yaml if possible."""
-    ai_dir = orchestrator.project_root / ".ai"
-    layout_file = ai_dir / "layout.yaml"
+    """Write layout config to .artifacts/generated-config.yaml if possible."""
+    artifacts_dir = orchestrator.project_root / ".artifacts"
+    config_file = artifacts_dir / "generated-config.yaml"
 
     try:
-        _write_layout_yaml_file(ai_dir, layout_file, rules_config)
-        _log_layout_written(layout_file, verbose)
+        _write_layout_yaml_file(artifacts_dir, config_file, rules_config)
+        _log_layout_written(config_file, verbose)
     except OSError as e:
         _log_layout_error(e, verbose)
 
 
-def _write_layout_yaml_file(ai_dir, layout_file, rules_config):
-    """Write layout YAML file."""
+def _write_layout_yaml_file(artifacts_dir, config_file, rules_config):
+    """Write generated config YAML file."""
     import yaml
 
-    ai_dir.mkdir(exist_ok=True)
+    artifacts_dir.mkdir(exist_ok=True)
     layout_config = {"file-placement": rules_config}
-    with layout_file.open("w", encoding="utf-8") as f:
+    with config_file.open("w", encoding="utf-8") as f:
         yaml.dump(layout_config, f)
 
 
@@ -507,36 +528,36 @@ def _load_config_file(orchestrator, config_file, verbose):
     # Load config into orchestrator
     orchestrator.config = orchestrator.config_loader.load(config_path)
 
-    # Also copy to .ai/layout.yaml for file-placement linter
+    # Also copy to .artifacts/generated-config.yaml for debugging
     _write_loaded_config_to_layout(orchestrator, config_file, verbose)
 
 
 def _write_loaded_config_to_layout(orchestrator, config_file: str, verbose: bool) -> None:
-    """Write loaded config to .ai/layout.yaml if possible."""
-    ai_dir = orchestrator.project_root / ".ai"
-    layout_file = ai_dir / "layout.yaml"
+    """Write loaded config to .artifacts/generated-config.yaml if possible."""
+    artifacts_dir = orchestrator.project_root / ".artifacts"
+    config_output_file = artifacts_dir / "generated-config.yaml"
 
     try:
-        _write_config_yaml(ai_dir, layout_file, orchestrator.config)
-        _log_config_loaded(config_file, layout_file, verbose)
+        _write_config_yaml(artifacts_dir, config_output_file, orchestrator.config)
+        _log_config_loaded(config_file, config_output_file, verbose)
     except OSError as e:
         _log_layout_error(e, verbose)
 
 
-def _write_config_yaml(ai_dir, layout_file, config):
+def _write_config_yaml(artifacts_dir, config_file, config):
     """Write config to YAML file."""
     import yaml
 
-    ai_dir.mkdir(exist_ok=True)
-    with layout_file.open("w", encoding="utf-8") as f:
+    artifacts_dir.mkdir(exist_ok=True)
+    with config_file.open("w", encoding="utf-8") as f:
         yaml.dump(config, f)
 
 
-def _log_config_loaded(config_file, layout_file, verbose):
+def _log_config_loaded(config_file, config_output_file, verbose):
     """Log config loaded and written."""
     if verbose:
         logger.debug(f"Loaded config from: {config_file}")
-        logger.debug(f"Written layout config to: {layout_file}")
+        logger.debug(f"Written generated config to: {config_output_file}")
 
 
 def _execute_linting(orchestrator, path_obj, recursive):

@@ -49,7 +49,7 @@ class TypeScriptNestingAnalyzer:
         "with_statement",  # Deprecated but exists
     }
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize analyzer with function extractor."""
         self.function_extractor = TypeScriptFunctionExtractor()
 

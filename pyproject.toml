@@ -99,6 +99,7 @@ xenon = "^0.9.3"
 # Comprehensive security
 safety = "^3.2.11"
 pip-audit = "^2.8.0"
+loguru = "^0.7.3"
 
 [tool.poetry.scripts]
 thailint = "src.cli:cli"
@@ -203,6 +204,7 @@ disallow_incomplete_defs = false
 # Pylint configuration
 [tool.pylint.messages_control]
 disable = [
+    "duplicate-code",
     "C0111",  # missing-docstring (handled by flake8-docstrings)
     "R0903",  # too-few-public-methods (often fine for CLIs)
     "R0912",  # too-many-branches (validation methods intentionally have many branches)

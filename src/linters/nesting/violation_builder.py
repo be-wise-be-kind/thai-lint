@@ -90,8 +90,7 @@ class NestingViolationBuilder:
 
     def create_typescript_nesting_violation(
         self,
-        func_node: Any,
-        func_name: str,
+        func_info: tuple[Any, str],
         max_depth: int,
         config: NestingConfig,
         context: BaseLintContext,
@@ -99,8 +98,7 @@ class NestingViolationBuilder:
         """Create violation for excessive nesting in TypeScript function.
 
         Args:
-            func_node: TypeScript function tree-sitter node
-            func_name: Function name
+            func_info: Tuple of (func_node, func_name)
             max_depth: Actual max nesting depth found
             config: Nesting configuration
             context: Lint context
@@ -108,6 +106,7 @@ class NestingViolationBuilder:
         Returns:
             Nesting depth violation
         """
+        func_node, func_name = func_info
         line = func_node.start_point[0] + 1  # Convert to 1-indexed
         column = func_node.start_point[1]
 
