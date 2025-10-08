@@ -7,13 +7,14 @@ Overview: Initializes the CLI application package, defines version number using 
     and exports the public API. Provides single source of truth for version information used by
     setup tools, CLI help text, and documentation. Exports main CLI entry point, high-level Linter
     class for library usage, configuration utilities, and direct linter imports for advanced usage.
-    Includes nesting depth linter exports for convenient access to nesting analysis functionality.
+    Includes nesting depth linter and SRP linter exports for convenient access to code analysis.
     Version is dynamically loaded from package metadata (pyproject.toml) using importlib.metadata.
 
 Dependencies: importlib.metadata for dynamic version loading from installed package metadata
 
 Exports: __version__, Linter (high-level API), cli (CLI entry point), load_config, save_config,
-    ConfigError, Orchestrator (advanced usage), file_placement_lint, nesting_lint, NestingDepthRule
+    ConfigError, Orchestrator (advanced usage), file_placement_lint, nesting_lint, NestingDepthRule,
+    srp_lint, SRPRule
 
 Interfaces: Package version string, Linter class API, CLI command group, configuration functions
 """
@@ -37,6 +38,8 @@ from src.config import ConfigError, load_config, save_config
 from src.linters.file_placement import lint as file_placement_lint
 from src.linters.nesting import NestingDepthRule
 from src.linters.nesting import lint as nesting_lint
+from src.linters.srp import SRPRule
+from src.linters.srp import lint as srp_lint
 from src.orchestrator.core import Orchestrator
 
 __all__ = [
@@ -53,4 +56,6 @@ __all__ = [
     "file_placement_lint",
     "nesting_lint",
     "NestingDepthRule",
+    "srp_lint",
+    "SRPRule",
 ]

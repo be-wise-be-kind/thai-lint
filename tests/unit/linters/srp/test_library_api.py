@@ -20,6 +20,7 @@ Interfaces: Tests from src import srp_lint, SRPRule class, orchestrator rules pa
 Implementation: Tests library imports, function invocations, and result parsing
 """
 
+import tempfile
 from pathlib import Path
 from unittest.mock import Mock
 
@@ -55,14 +56,21 @@ class DataManager:
     def m7(self): pass
     def m8(self): pass
 """
-        # Function should accept code or file path
-        result = srp_lint(content=test_code, language="python")
-        assert isinstance(result, list), "Should return list of violations"
+        # Write code to temporary file
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".py", delete=False) as f:
+            f.write(test_code)
+            temp_path = f.name
+
+        try:
+            result = srp_lint(temp_path)
+            assert isinstance(result, list), "Should return list of violations"
+        finally:
+            Path(temp_path).unlink()
 
     def test_orchestrator_with_srp_rule(self):
-        """Orchestrator should support rules=['srp'] parameter."""
-        # Test orchestrator integration
-        from src import lint
+        """Linter API should support rules=['srp.violation'] parameter."""
+        # Test Linter API integration
+        from src import Linter
 
         test_code = """
 class UserManager:
@@ -75,8 +83,17 @@ class UserManager:
     def m7(self): pass
     def m8(self): pass
 """
-        lint(content=test_code, language="python", rules=["srp"])
-        # Should run only SRP rule
+        # Write code to temporary file
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".py", delete=False) as f:
+            f.write(test_code)
+            temp_path = f.name
+
+        try:
+            linter = Linter()
+            violations = linter.lint(temp_path, rules=["srp.violation"])
+            assert isinstance(violations, list), "Should return list"
+        finally:
+            Path(temp_path).unlink()
 
     def test_direct_rule_instantiation(self):
         """Should be able to instantiate SRPRule directly."""
