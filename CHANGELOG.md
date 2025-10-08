@@ -24,6 +24,95 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0] - TBD
+
+**Single Responsibility Principle (SRP) Linter Release** - Adds comprehensive SRP violation detection for Python and TypeScript code. Uses heuristic-based analysis with configurable thresholds for method count, lines of code, and responsibility keywords. Includes language-specific configurations and extensive refactoring pattern documentation.
+
+### Added
+
+- **SRP Linter** - Complete Single Responsibility Principle violation detection
+  - Heuristic-based analysis using method count, LOC, and keyword detection
+  - Configurable thresholds: `max_methods` (default: 7), `max_loc` (default: 200)
+  - Language-specific thresholds for Python, TypeScript, and JavaScript
+  - Responsibility keyword detection (Manager, Handler, Processor, Utility, Helper)
+  - AST-based analysis using Python `ast` module and `tree-sitter-typescript`
+  - Helpful violation messages with refactoring suggestions
+
+- **CLI Command: `thailint srp`**
+  - `thailint srp [PATH]` - Check files for SRP violations
+  - `--max-methods N` - Override method count threshold
+  - `--max-loc N` - Override lines of code threshold
+  - `--config PATH` - Use specific config file
+  - `--format json/text` - Output format selection
+  - `--help` - Comprehensive command documentation
+
+- **Library API**
+  - `srp_lint(path, config)` - Convenience function
+  - `SRPRule` - Direct rule class for advanced usage
+  - `from src import srp_lint, SRPRule` - Exported in package
+
+- **Comprehensive Documentation**
+  - `docs/srp-linter.md` - Complete SRP linter guide
+  - Configuration examples and best practices
+  - 4 refactoring patterns with before/after code examples
+  - CI/CD integration examples (GitHub Actions, pre-commit hooks)
+  - Troubleshooting guide and common issues
+  - Real-world refactoring examples
+
+- **Language-Specific Configuration**
+  - Python: More strict thresholds (8 methods, 200 LOC)
+  - TypeScript: More lenient thresholds (10 methods, 250 LOC) for type verbosity
+  - JavaScript: Balanced thresholds (10 methods, 225 LOC)
+  - Configurable keyword list for responsibility detection
+
+- **Test Suite**
+  - 91 tests for SRP linter (100% passing)
+  - Python SRP tests (20 tests)
+  - TypeScript SRP tests (20 tests)
+  - Configuration tests (10 tests)
+  - Integration tests (13 tests)
+  - Edge case tests (10 tests)
+  - Violation message tests (8 tests)
+  - Ignore directive tests (10 tests)
+
+- **Refactoring Patterns Documentation**
+  - Extract Class pattern (split god classes into focused classes)
+  - Split Configuration/Logic pattern (separate concerns)
+  - Extract Language-Specific Logic pattern (per-language analyzers)
+  - Utility Module pattern (group related helpers)
+
+### Changed
+
+- **Code Quality Improvements**
+  - Refactored 6 classes with SRP violations
+  - Applied Extract Class pattern to large classes
+  - Improved modularity and maintainability
+  - Zero SRP violations in codebase
+
+- **README Updates**
+  - Added comprehensive SRP linter section with examples
+  - Updated feature list with SRP capabilities
+  - Added refactoring patterns and examples
+
+### Fixed
+
+- Language-specific configuration loading for SRP thresholds
+- Config priority: language-specific → top-level → built-in defaults
+
+### Documentation
+
+- Complete SRP linter guide (`docs/srp-linter.md`)
+- Updated CLI reference with SRP command
+- Configuration examples for SRP rules
+- 4 refactoring patterns with code examples
+- Real-world refactoring case studies
+
+### Infrastructure
+
+- Updated Makefile with `make lint-solid` target
+- Integrated SRP checks into quality gates
+- CI/CD ready (proper exit codes and JSON output)
+
 ## [0.2.0] - 2025-10-07
 
 **Nesting Depth Linter Release** - Adds comprehensive nesting depth analysis for Python and TypeScript code. Includes AST-based analysis with tree-sitter, configurable depth limits, and extensive refactoring patterns. Validated on the thai-lint codebase (zero violations after refactoring 23 functions).

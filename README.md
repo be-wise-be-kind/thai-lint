@@ -14,27 +14,31 @@ thailint is a modern, enterprise-ready multi-language linter designed specifical
 ## ✨ Features
 
 ### Core Capabilities
-- 🎯 **File Placement Linting** - Enforce project structure and organization
-- 🔄 **Nesting Depth Linting** - Detect excessive code nesting with AST analysis
+- **File Placement Linting** - Enforce project structure and organization
+- **Nesting Depth Linting** - Detect excessive code nesting with AST analysis
   - Python and TypeScript support with tree-sitter
   - Configurable max depth (default: 4, recommended: 3)
   - Helpful refactoring suggestions (guard clauses, extract method)
-- 🔌 **Pluggable Architecture** - Easy to extend with custom linters
-- 🌍 **Multi-Language Support** - Python, TypeScript, JavaScript, and more
-- ⚙️ **Flexible Configuration** - YAML/JSON configs with pattern matching
-- 🚫 **5-Level Ignore System** - Repo, directory, file, method, and line-level ignores
+- **SRP Linting** - Detect Single Responsibility Principle violations
+  - Heuristic-based analysis (method count, LOC, keywords)
+  - Language-specific thresholds (Python, TypeScript, JavaScript)
+  - Refactoring patterns from real-world examples
+- **Pluggable Architecture** - Easy to extend with custom linters
+- **Multi-Language Support** - Python, TypeScript, JavaScript, and more
+- **Flexible Configuration** - YAML/JSON configs with pattern matching
+- **5-Level Ignore System** - Repo, directory, file, method, and line-level ignores
 
 ### Deployment Modes
-- 💻 **CLI Mode** - Full-featured command-line interface
-- 📚 **Library API** - Python library for programmatic integration
-- 🐳 **Docker Support** - Containerized deployment for CI/CD
+- **CLI Mode** - Full-featured command-line interface
+- **Library API** - Python library for programmatic integration
+- **Docker Support** - Containerized deployment for CI/CD
 
 ### Enterprise Features
-- 📊 **Performance** - <100ms for single files, <5s for 1000 files
-- 🔒 **Type Safety** - Full type hints and MyPy strict mode
-- 🧪 **Test Coverage** - 90% coverage with 317 tests
-- 📈 **CI/CD Ready** - Proper exit codes and JSON output
-- 📝 **Comprehensive Docs** - Complete documentation and examples
+- **Performance** - <100ms for single files, <5s for 1000 files
+- **Type Safety** - Full type hints and MyPy strict mode
+- **Test Coverage** - 90% coverage with 317 tests
+- **CI/CD Ready** - Proper exit codes and JSON output
+- **Comprehensive Docs** - Complete documentation and examples
 
 ## Installation
 
@@ -248,7 +252,7 @@ def process_data(items):
 
 ### Refactoring Patterns
 
-Common patterns to reduce nesting (used to fix 23 violations in thai-lint):
+Common patterns to reduce nesting:
 
 1. **Guard Clauses (Early Returns)**
    - Replace `if x: do_something()` with `if not x: return`
@@ -272,15 +276,124 @@ Common patterns to reduce nesting (used to fix 23 violations in thai-lint):
 - ✅ **TypeScript**: Full support (if/for/while/try/switch)
 - ✅ **JavaScript**: Supported via TypeScript parser
 
-### Refactoring Case Study
-
-The thai-lint codebase serves as a validation of the nesting linter:
-- Identified: 23 functions requiring refactoring (depth 4 → depth ≤3)
-- Refactored using documented patterns
-- Time estimate: ~10 minutes per function
-- Result: Zero violations, improved readability
-
 See [Nesting Linter Guide](docs/nesting-linter.md) for comprehensive documentation and refactoring patterns.
+
+## Single Responsibility Principle (SRP) Linter
+
+### Overview
+
+The SRP linter detects classes that violate the Single Responsibility Principle by having too many methods, too many lines of code, or generic naming patterns. It uses AST analysis with configurable heuristics to identify classes that likely handle multiple responsibilities.
+
+### Quick Start
+
+```bash
+# Check SRP violations in current directory
+thailint srp .
+
+# Use custom thresholds
+thailint srp --max-methods 10 --max-loc 300 src/
+
+# Get JSON output
+thailint srp --format json src/
+```
+
+### Configuration
+
+Add to `.thailint.yaml`:
+
+```yaml
+srp:
+  enabled: true
+  max_methods: 7    # Maximum methods per class
+  max_loc: 200      # Maximum lines of code per class
+
+  # Language-specific thresholds
+  python:
+    max_methods: 8
+    max_loc: 200
+
+  typescript:
+    max_methods: 10  # TypeScript more verbose
+    max_loc: 250
+```
+
+### Detection Heuristics
+
+The SRP linter uses three heuristics to detect violations:
+
+1. **Method Count**: Classes with >7 methods (default) likely have multiple responsibilities
+2. **Lines of Code**: Classes with >200 LOC (default) are often doing too much
+3. **Responsibility Keywords**: Names containing "Manager", "Handler", "Processor", etc.
+
+### Example Violation
+
+**Code with SRP violation:**
+```python
+class UserManager:  # 8 methods, contains "Manager" keyword
+    def create_user(self): pass
+    def update_user(self): pass
+    def delete_user(self): pass
+    def send_email(self): pass      # ← Different responsibility
+    def log_action(self): pass      # ← Different responsibility
+    def validate_data(self): pass   # ← Different responsibility
+    def generate_report(self): pass # ← Different responsibility
+    def export_data(self): pass     # ← Violation at method 8
+```
+
+**Refactored following SRP:**
+```python
+class UserRepository:  # 3 methods ✓
+    def create(self, user): pass
+    def update(self, user): pass
+    def delete(self, user): pass
+
+class EmailService:  # 1 method ✓
+    def send(self, user, template): pass
+
+class UserAuditLog:  # 1 method ✓
+    def log(self, action, user): pass
+
+class UserValidator:  # 1 method ✓
+    def validate(self, data): pass
+
+class ReportGenerator:  # 1 method ✓
+    def generate(self, users): pass
+```
+
+### Refactoring Patterns
+
+Common patterns to fix SRP violations (discovered during dogfooding):
+
+1. **Extract Class**
+   - Split god classes into focused classes
+   - Each class handles one responsibility
+
+2. **Split Configuration and Logic**
+   - Separate config loading from business logic
+   - Create dedicated ConfigLoader classes
+
+3. **Extract Language-Specific Logic**
+   - Separate Python/TypeScript analysis
+   - Use analyzer classes per language
+
+4. **Utility Module Pattern**
+   - Group related helper methods
+   - Create focused utility classes
+
+### Language Support
+
+- ✅ **Python**: Full support with method counting and LOC analysis
+- ✅ **TypeScript**: Full support with tree-sitter parsing
+- ✅ **JavaScript**: Supported via TypeScript parser
+
+### Real-World Example
+
+**Large class refactoring:**
+- **Before**: FilePlacementLinter (33 methods, 382 LOC) - single class handling config, patterns, validation
+- **After**: Extract Class pattern applied - 5 focused classes (ConfigLoader, PatternValidator, RuleChecker, PathResolver, FilePlacementLinter)
+- **Result**: Each class ≤8 methods, ≤150 LOC, single responsibility
+
+See [SRP Linter Guide](docs/srp-linter.md) for comprehensive documentation and refactoring patterns.
 
 ## Pre-commit Hooks
 

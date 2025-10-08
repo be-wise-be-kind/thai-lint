@@ -34,10 +34,11 @@ def count_methods(class_node: ast.ClassDef) -> int:
     """
     methods = 0
     for node in class_node.body:
-        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
-            # Don't count @property decorators as methods
-            if not has_property_decorator(node):
-                methods += 1
+        if not isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+            continue
+        # Don't count @property decorators as methods
+        if not has_property_decorator(node):
+            methods += 1
     return methods
 
 

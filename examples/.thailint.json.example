@@ -55,5 +55,36 @@
     "_comment": "Nesting depth linter - detects excessive code nesting",
     "enabled": true,
     "max_nesting_depth": 4
+  },
+
+  "srp": {
+    "_comment": "SRP linter - detects Single Responsibility Principle violations",
+    "enabled": true,
+    "max_methods": 7,
+    "max_loc": 200,
+
+    "python": {
+      "max_methods": 8,
+      "max_loc": 200
+    },
+
+    "typescript": {
+      "max_methods": 10,
+      "max_loc": 250
+    },
+
+    "javascript": {
+      "max_methods": 10,
+      "max_loc": 225
+    },
+
+    "check_keywords": true,
+    "keywords": [
+      "Manager",
+      "Handler",
+      "Processor",
+      "Utility",
+      "Helper"
+    ]
   }
 }

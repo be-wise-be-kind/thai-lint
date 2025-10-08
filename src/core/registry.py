@@ -83,14 +83,13 @@ class RuleRegistry:
             Number of rules discovered and registered.
         """
         discovered_rules = self._discovery.discover_from_package(package_path)
-        registered_count = 0
+        return sum(1 for rule in discovered_rules if self._try_register(rule))
 
-        for rule in discovered_rules:
-            try:
-                self.register(rule)
-                registered_count += 1
-            except ValueError:
-                # Rule already registered, skip
-                pass
-
-        return registered_count
+    def _try_register(self, rule) -> bool:
+        """Try to register a rule, return True if successful."""
+        try:
+            self.register(rule)
+            return True
+        except ValueError:
+            # Rule already registered, skip
+            return False

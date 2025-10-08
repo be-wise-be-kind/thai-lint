@@ -94,10 +94,11 @@ class RuleDiscovery:
 
         rules = []
         for _name, obj in inspect.getmembers(module):
-            if self._is_rule_class(obj):
-                rule_instance = self._try_instantiate_rule(obj)
-                if rule_instance:
-                    rules.append(rule_instance)
+            if not self._is_rule_class(obj):
+                continue
+            rule_instance = self._try_instantiate_rule(obj)
+            if rule_instance:
+                rules.append(rule_instance)
         return rules
 
     def _try_instantiate_rule(self, rule_class: Any) -> BaseLintRule | None:

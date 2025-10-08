@@ -39,17 +39,5 @@ jobs:
       - name: Install project
         run: poetry install --no-interaction
 
-      - name: Run Ruff (fast linting)
-        run: poetry run ruff check src/ tests/
-
-      - name: Run Ruff format check
-        run: poetry run ruff format --check src/ tests/
-
-      - name: Run MyPy (type checking)
-        run: poetry run mypy src/ || true
-
-      - name: Run Pylint
-        run: poetry run pylint src/ || true
-
-      - name: Run Flake8
-        run: poetry run flake8 src/ tests/ || true
+      - name: Run all linters (make lint-full)
+        run: make lint-full

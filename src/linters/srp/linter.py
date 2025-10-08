@@ -61,20 +61,43 @@ class SRPRule(BaseLintRule):
         Returns:
             List of violations found
         """
-        if context.file_content is None:
+        if not context.file_content:
             return []
 
-        # Load configuration
         config = self._load_config(context)
         if not config.enabled:
             return []
+        if self._is_file_ignored(context, config):
+            return []
 
-        # Analyze based on language
+        return self._analyze_by_language(context, config)
+
+    def _analyze_by_language(self, context: BaseLintContext, config: SRPConfig) -> list[Violation]:
+        """Analyze based on language type."""
         if context.language == "python":
             return self._check_python(context, config)
         if context.language in ("typescript", "javascript"):
             return self._check_typescript(context, config)
         return []
+
+    def _is_file_ignored(self, context: BaseLintContext, config: SRPConfig) -> bool:
+        """Check if file matches ignore patterns.
+
+        Args:
+            context: Lint context
+            config: SRP configuration
+
+        Returns:
+            True if file should be ignored
+        """
+        if not config.ignore:
+            return False
+
+        file_path = str(context.file_path)
+        for pattern in config.ignore:
+            if pattern in file_path:
+                return True
+        return False
 
     def _load_config(self, context: BaseLintContext) -> SRPConfig:
         """Load configuration from context metadata with language-specific overrides.
@@ -142,12 +165,14 @@ class SRPRule(BaseLintRule):
         violations = []
         for metrics in metrics_list:
             issues = evaluate_metrics(metrics, config)
-            if issues:
-                violation = self._violation_builder.build_violation(
-                    metrics, issues, self.rule_id, context
-                )
-                if not self._should_ignore(violation, context):
-                    violations.append(violation)
+            if not issues:
+                continue
+
+            violation = self._violation_builder.build_violation(
+                metrics, issues, self.rule_id, context
+            )
+            if not self._should_ignore(violation, context):
+                violations.append(violation)
         return violations
 
     def _should_ignore(self, violation: Violation, context: BaseLintContext) -> bool:

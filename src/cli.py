@@ -403,7 +403,10 @@ def _execute_file_placement_lint(  # pylint: disable=too-many-arguments,too-many
 ):
     """Execute file placement linting."""
     orchestrator = _setup_orchestrator(path_obj, config_file, rules, verbose)
-    violations = _execute_linting(orchestrator, path_obj, recursive)
+    all_violations = _execute_linting(orchestrator, path_obj, recursive)
+
+    # Filter to only file-placement violations
+    violations = [v for v in all_violations if v.rule_id.startswith("file-placement.")]
 
     if verbose:
         logger.info(f"Found {len(violations)} violation(s)")

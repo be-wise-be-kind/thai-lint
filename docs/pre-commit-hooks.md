@@ -114,7 +114,9 @@ pre-commit run --all-files
 
 ## Configuration
 
-thai-lint uses a `.pre-commit-config.yaml` file to configure hooks. Here's the recommended configuration:
+thai-lint uses a `.pre-commit-config.yaml` file to configure hooks. Here are two recommended configurations:
+
+### Option 1: Using Poetry (Recommended for Development)
 
 ```yaml
 repos:
@@ -134,16 +136,23 @@ repos:
       # ========================================
       # PRE-COMMIT - Format and lint changed files
       # ========================================
-      - id: format
-        name: Auto-fix formatting issues
-        entry: make format
+      - id: thailint-file-placement
+        name: Check file placement
+        entry: poetry run thailint file-placement
         language: system
         pass_filenames: false
         stages: [pre-commit]
 
-      - id: lint-full-changed
-        name: Run all linting checks (changed files only)
-        entry: make lint-full FILES=changed
+      - id: thailint-nesting
+        name: Check nesting depth
+        entry: poetry run thailint nesting --max-depth 3
+        language: system
+        pass_filenames: false
+        stages: [pre-commit]
+
+      - id: thailint-srp
+        name: Check SRP violations
+        entry: poetry run thailint srp
         language: system
         pass_filenames: false
         stages: [pre-commit]
@@ -151,17 +160,62 @@ repos:
       # ========================================
       # PRE-PUSH - Full validation on entire codebase
       # ========================================
-      - id: pre-push-lint-full
-        name: Run all linting checks (entire codebase)
-        entry: make lint-full
+      - id: pre-push-lint-all
+        name: Run all linters (entire codebase)
+        entry: bash -c 'poetry run thailint file-placement . && poetry run thailint nesting . && poetry run thailint srp .'
         language: system
         pass_filenames: false
         stages: [pre-push]
         always_run: true
+```
 
-      - id: pre-push-test
-        name: Run all tests
-        entry: make test
+### Option 2: Using Docker (Recommended for CI/CD)
+
+```yaml
+repos:
+  - repo: local
+    hooks:
+      # ========================================
+      # BRANCH PROTECTION
+      # ========================================
+      - id: no-commit-to-main
+        name: Prevent commits to main branch
+        entry: bash -c 'branch=$(git rev-parse --abbrev-ref HEAD); if [ "$branch" = "main" ] || [ "$branch" = "master" ]; then echo "❌ Direct commits to main/master branch are not allowed! Create a feature branch instead."; exit 1; fi'
+        language: system
+        pass_filenames: false
+        stages: [pre-commit]
+        always_run: true
+
+      # ========================================
+      # PRE-COMMIT - Format and lint changed files
+      # ========================================
+      - id: thailint-docker-file-placement
+        name: Check file placement (Docker)
+        entry: docker run --rm -v $(pwd):/workspace washad/thailint:latest file-placement /workspace
+        language: system
+        pass_filenames: false
+        stages: [pre-commit]
+
+      - id: thailint-docker-nesting
+        name: Check nesting depth (Docker)
+        entry: docker run --rm -v $(pwd):/workspace washad/thailint:latest nesting --max-depth 3 /workspace
+        language: system
+        pass_filenames: false
+        stages: [pre-commit]
+
+      - id: thailint-docker-srp
+        name: Check SRP violations (Docker)
+        entry: docker run --rm -v $(pwd):/workspace washad/thailint:latest srp /workspace
+        language: system
+        pass_filenames: false
+        stages: [pre-commit]
+
+      # ========================================
+      # PRE-PUSH - Full validation on entire codebase
+      # ========================================
+      - id: pre-push-lint-all-docker
+        name: Run all linters (Docker, entire codebase)
+        entry: bash -c 'docker run --rm -v $(pwd):/workspace washad/thailint:latest file-placement /workspace && docker run --rm -v $(pwd):/workspace washad/thailint:latest nesting /workspace && docker run --rm -v $(pwd):/workspace washad/thailint:latest srp /workspace'
         language: system
         pass_filenames: false
         stages: [pre-push]
@@ -388,17 +442,31 @@ pre-commit install --hook-type pre-push
 ls -la .git/hooks/pre-commit .git/hooks/pre-push
 ```
 
-### Issue: Hooks Failing with "make: command not found"
+### Issue: Hooks Failing with Command Not Found
 
-**Symptoms:** `make: lint-full: No such file or directory`
+**Symptoms:** `poetry: command not found` or `docker: command not found`
 
-**Solution:** Ensure Makefile exists with required targets
+**Solution:** Install the required tool for your configuration
+
+**For Poetry:**
 ```bash
-# Check Makefile exists
-ls -la Makefile
+# Install Poetry
+curl -sSL https://install.python-poetry.org | python3 -
 
-# Check for required targets
-make help | grep lint
+# Or using pip
+pip install poetry
+
+# Verify installation
+poetry --version
+```
+
+**For Docker:**
+```bash
+# Install Docker (varies by OS)
+# See: https://docs.docker.com/get-docker/
+
+# Verify installation
+docker --version
 ```
 
 ### Issue: Want to Skip Hooks Temporarily
@@ -424,13 +492,24 @@ git commit --no-verify -m "Emergency fix"
 
 ### Issue: Hook Fails But I Don't Understand Why
 
-**Solution:** Run hook manually with verbose output
+**Solution:** Run the command manually with verbose output
+
+**For Poetry:**
 ```bash
 # Run specific hook manually
-pre-commit run lint-full-changed --verbose
+pre-commit run thailint-nesting --verbose
 
-# Run make target directly
-make lint-full FILES=changed
+# Run thailint directly
+poetry run thailint nesting . --format text
+```
+
+**For Docker:**
+```bash
+# Run specific hook manually
+pre-commit run thailint-docker-nesting --verbose
+
+# Run Docker command directly
+docker run --rm -v $(pwd):/workspace washad/thailint:latest nesting /workspace
 ```
 
 ---
@@ -448,13 +527,18 @@ git checkout main
 git commit -m "..."  # ❌ Blocked by branch protection
 ```
 
-### 2. Run Auto-fix Before Committing
+### 2. Fix Issues Before Committing
 
-Save time by fixing issues before commit:
+Save time by running linters before commit:
 
 ```bash
-# Fix formatting issues
-make format
+# Run linters manually first
+poetry run thailint file-placement .
+poetry run thailint nesting .
+poetry run thailint srp .
+
+# Or with Docker
+docker run --rm -v $(pwd):/workspace washad/thailint:latest file-placement /workspace
 
 # Stage fixes
 git add -u
