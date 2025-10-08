@@ -141,116 +141,135 @@ The DRY (Don't Repeat Yourself) Linter detects duplicate code across an entire p
 
 ---
 
-### Decision 3: Single-Pass vs Two-Pass Algorithm
+### Decision 3: Collection Phase + Finalize Hook
 
 **Options Considered**:
 
-**A) Two-Pass**:
-- Pass 1: Collect all files, buffer contents
-- Pass 2: Hash all files, build hash table, find duplicates
+**A) Single-Pass Streaming**:
+- For each file: hash, add to DB, query immediately, return violations
+- Violates causality: file1 doesn't know about file2 yet
 
-**B) Single-Pass (Chosen)**:
-- For each file: hash immediately, add to hash table
-- Find duplicates incrementally as files are processed
+**B) Collection + Finalize (Chosen)**:
+- Phase 1 (check): Analyze each file once, store blocks in DB
+- Phase 2 (finalize): Query DB for all duplicates, generate violations
 
-**Decision: Single-Pass (Option B)**
+**Decision: Collection + Finalize (Option B)**
 
 **Rationale**:
-1. **Memory Efficient**: Don't buffer all file contents
-2. **Streaming Friendly**: Can process files as they arrive
-3. **Simpler State**: No "collection phase" vs "processing phase"
-4. **Cache Integration**: Natural fit with cache-load-or-hash pattern
+1. **Logical Flow**: Collect all data first, then analyze
+2. **Per-File Violations**: All files with duplicates get violations (UX benefit)
+3. **Clean Separation**: Collection and analysis are separate concerns
+4. **Not Two-Pass**: Each file analyzed once (single pass over filesystem)
+5. **Framework Support**: Added finalize() hook to BaseLintRule
 
 **Algorithm**:
 ```
-For each file (orchestrator calls check() per file):
+Collection Phase (check() called per file):
   1. Check cache: is file unchanged? (compare mtime)
-     YES → blocks already in DB (skip to step 3)
-     NO  → hash file + insert blocks into DB
-  2. Query DB for duplicates for THIS file's blocks
-     - For each block: SELECT * FROM code_blocks WHERE hash_value = ?
-     - If 2+ results: duplicate found
-  3. Build and return violations for THIS file only
+     YES → blocks already in DB (nothing to do)
+     NO  → analyze file + insert blocks into DB
+  2. Return [] (no violations yet)
+
+Finalize Phase (finalize() called after all files):
+  1. Query DB: SELECT hash_value, COUNT(*) GROUP BY hash_value HAVING COUNT(*) >= 2
+  2. For each duplicate hash:
+     - Get all blocks with this hash
+     - Create violation for EACH block (per-file reporting)
+  3. Return all violations
 ```
 
-**Key Insight**: SQLite DB **IS** the hash table
-- No separate in-memory hash table needed
-- Blocks inserted into DB immediately (become queryable)
-- Each file queries DB for its duplicates
-- DB persists across files (project-wide context)
-- Report duplicates **per-file** (not all at once)
-- Each file reports its own violations
-- Violations reference OTHER file locations
-- Deduplication happens naturally (same violation from each file)
+**Key Insight**: finalize() hook enables post-processing
+- Framework change: Added BaseLintRule.finalize() -> list[Violation]
+- Orchestrator calls finalize() on all rules after lint_directory()
+- Clean separation: check() = collection, finalize() = analysis
+- Both files get violations (not just the second one)
 
 ---
 
-### Decision 4: Multi-File Context Integration
+### Decision 4: Multi-File Context via finalize() Hook
 
 **Challenge**: Existing linters (nesting, SRP) analyze files independently via `Orchestrator.lint_file()`. DRY needs ALL files to find cross-project duplicates.
 
 **Options Considered**:
 
-**A) Modify Orchestrator**:
+**A) Stateful Rule with Incremental Reporting**:
+- DRYRule maintains global state across check() calls
+- Each check() queries and reports violations immediately
+- Problem: file1 doesn't know about file2 yet (causality issue)
+
+**B) Post-Processing Hook (Chosen)**:
+- Add finalize() hook to BaseLintRule
+- DRY rule collects data during check(), reports during finalize()
+- Requires minimal framework changes
+
+**C) Multi-File Context**:
 - Add multi-file context support to BaseLintContext
 - Pass all files to DRYRule at once
-- Requires framework changes
+- Major framework redesign
 
-**B) File Buffering in Rule (Chosen)**:
-- DRYRule maintains global hash_table across check() calls
-- Each check() call adds file to hash_table
-- Report violations incrementally
-
-**C) Post-Processing Hook**:
-- Orchestrator collects all violations
-- DRY rule runs once after all files processed
-- Complex integration
-
-**Decision: File Buffering (Option B)**
+**Decision: Post-Processing Hook (Option B)**
 
 **Rationale**:
-1. **No Framework Changes**: Works with existing orchestrator
-2. **Simple Integration**: Just maintain state in rule instance
-3. **Cache Friendly**: Can load/save per file
-4. **Proven Pattern**: Works with existing architecture
+1. **Minimal Framework Change**: Just add finalize() method to BaseLintRule
+2. **Clean Separation**: check() = collection, finalize() = analysis
+3. **Cache Friendly**: Can load/save per file during check()
+4. **Causality Correct**: All files collected before analysis
 
 **Implementation**:
 ```python
 class DRYRule(BaseLintRule):
     def __init__(self):
         # Global state shared across ALL check() calls
-        self._cache: DRYCache | None = None  # SQLite cache IS the hash table
+        self._cache: DRYCache | None = None  # SQLite cache for storage
+        self._memory_store: dict[int, list[CodeBlock]] = {}  # Fallback
         self._initialized: bool = False
 
     def check(self, context: BaseLintContext) -> list[Violation]:
-        # Lazy initialization on first check() call
+        # Collection phase - analyze and store blocks
         if not self._initialized:
             self._init_cache(context.project_root)
             self._initialized = True
 
-        # Single-pass streaming algorithm:
         # 1. Analyze THIS file (or load from cache if fresh)
-        blocks = self._analyze_or_load(context.file_path)
+        blocks = self._analyze_or_load(context.file_path, context.file_content)
 
-        # 2. For each block, query cache (DB) for duplicates
+        # 2. Store blocks in DB/memory for later querying
+        self._add_blocks_to_storage(context.file_path, blocks)
+
+        # 3. Return empty - violations generated in finalize()
+        return []
+
+    def finalize(self) -> list[Violation]:
+        # Analysis phase - query for duplicates and generate violations
         violations = []
-        for block in blocks:
-            duplicates = self._cache.find_duplicates_by_hash(block.hash_value)
-            if len(duplicates) >= 2:  # Including current block
-                violations.append(self._build_violation(block, duplicates))
 
-        # 3. Insert blocks into cache (DB) for future queries
-        self._cache.add_blocks(blocks)
+        # Query for all hashes with 2+ occurrences
+        if self._cache:
+            duplicate_hashes = self._cache.get_duplicate_hashes()
+        else:
+            duplicate_hashes = [h for h, blocks in self._memory_store.items()
+                               if len(blocks) >= 2]
+
+        # For each duplicate hash, create violations for ALL participating files
+        for hash_value in duplicate_hashes:
+            all_blocks = self._cache.find_duplicates_by_hash(hash_value) \
+                        if self._cache else self._memory_store[hash_value]
+
+            # Create one violation per block (per-file reporting)
+            for block in all_blocks:
+                violation = self._build_violation(block, all_blocks)
+                violations.append(violation)
 
         return violations
 ```
 
 **Key Design Points**:
-1. **Cache IS Hash Table**: SQLite database serves as both cache AND hash table
-2. **Stateful Rule**: DRYRule instance persists across all check() calls in a lint run
-3. **Lazy Init**: Cache initialized once on first file, reused for all subsequent files
-4. **Query-Per-Block**: Each block queries DB for existing duplicates immediately
-5. **Streaming**: No need to buffer all files - process one at a time
+1. **Collection + Finalize**: check() collects data, finalize() analyzes and reports
+2. **Cache IS Storage**: SQLite database serves as both cache AND data store
+3. **Stateful Rule**: DRYRule instance persists across all check() calls
+4. **Lazy Init**: Cache initialized once on first file
+5. **Per-File Violations**: Each duplicate block gets its own violation (all files report)
+6. **Framework Support**: Added finalize() hook to BaseLintRule and Orchestrator
 
 ---
 

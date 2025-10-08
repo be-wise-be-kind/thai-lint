@@ -176,6 +176,10 @@ class Orchestrator:
             if file_path.is_file():
                 violations.extend(self.lint_file(file_path))
 
+        # Call finalize() on all rules after processing all files
+        for rule in self.registry.list_all():
+            violations.extend(rule.finalize())
+
         return violations
 
     def _get_rules_for_file(self, file_path: Path, language: str) -> list[BaseLintRule]:
