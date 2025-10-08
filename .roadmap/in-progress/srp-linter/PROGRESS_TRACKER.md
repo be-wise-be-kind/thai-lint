@@ -28,11 +28,11 @@ This is the **PRIMARY HANDOFF DOCUMENT** for AI agents working on the SRP Linter
 4. **Update this document** after completing each PR
 
 ## 📍 Current Status
-**Current PR**: PR3 - Integration (CLI + Library + Docker) ✅ COMPLETE
+**Current PR**: PR4 - Dogfooding Discovery ✅ COMPLETE
 **Infrastructure State**: Core orchestrator and plugin framework ready (from enterprise-linter), nesting linter pattern established
 **Feature Target**: Production-ready SRP linter for Python and TypeScript with configurable thresholds, integrated with CLI/Library/Docker modes, fully dogfooded on thai-lint codebase
 **Test Status**: 91/91 tests passing (100% pass rate - exceeds target!)
-**Violations Found**: TBD (discovery in PR4)
+**Violations Found**: 6 violations cataloged (1 critical, 4 high, 1 medium)
 
 ## 📁 Required Documents Location
 ```
@@ -44,34 +44,37 @@ This is the **PRIMARY HANDOFF DOCUMENT** for AI agents working on the SRP Linter
 
 ## 🎯 Next PR to Implement
 
-### ➡️ START HERE: PR4 - Dogfooding Discovery
+### ➡️ START HERE: PR5 - Dogfooding Fixes (All Violations)
 
 **Quick Summary**:
-Run SRP linter on thai-lint codebase to discover all violations. Create comprehensive catalog for systematic fixing in PR5.
+Fix all 6 SRP violations found in PR4 through systematic refactoring. Priority: FilePlacementLinter (critical) and SRPRule (high visibility).
 
 **Pre-flight Checklist**:
-- ⬜ Read PR4 section in PR_BREAKDOWN.md
-- ⬜ Update .thailint.yaml with SRP thresholds
-- ⬜ Create make lint-srp target
-- ⬜ Run and catalog all violations in VIOLATIONS.md
-- ⬜ Categorize by severity/complexity
+- ⬜ Read PR5 section in PR_BREAKDOWN.md
+- ⬜ Review VIOLATIONS.md for all violations and refactoring plan
+- ⬜ Start with P0 violations (FilePlacementLinter, SRPRule)
+- ⬜ Apply Extract Class pattern
+- ⬜ Ensure tests pass after each refactoring
+- ⬜ Verify make lint-solid exits with code 0 (zero violations)
 
 **Prerequisites Complete**:
 ✅ PR1 complete - 91 tests written
 ✅ PR2 complete - Core implementation with 91% tests passing
 ✅ PR3 complete - CLI/Library/Docker integration working
+✅ PR4 complete - 6 violations discovered and cataloged
 ✅ SRP analyzer working for Python and TypeScript
 ✅ Configurable thresholds and ignore directives working
 ✅ Code quality: Pylint 9.98/10, Xenon A-grade
 ✅ All 91 tests passing (100%)
+✅ VIOLATIONS.md created with refactoring plan
 
 ---
 
 ## Overall Progress
-**Total Completion**: 50% (3/6 PRs completed)
+**Total Completion**: 67% (4/6 PRs completed)
 
 ```
-[=========================               ] 50% Complete
+[=================================       ] 67% Complete
 ```
 
 ---
@@ -83,7 +86,7 @@ Run SRP linter on thai-lint codebase to discover all violations. Create comprehe
 | PR1 | Complete Test Suite (Pure TDD) | 🟢 Complete | 100% | High | P0 | 91 tests written, all failing as expected |
 | PR2 | Core Implementation (Python + TypeScript) | 🟢 Complete | 100% | High | P0 | 83/91 tests passing (91%), Pylint 9.98/10, Xenon A-grade |
 | PR3 | Integration (CLI + Library + Docker) | 🟢 Complete | 100% | Medium | P0 | CLI command, Library API, auto-discovery working, 91/91 tests (100%) |
-| PR4 | Dogfooding Discovery | 🔴 Not Started | 0% | Low | P1 | Find violations in codebase |
+| PR4 | Dogfooding Discovery | 🟢 Complete | 100% | Low | P1 | 6 violations found, cataloged in VIOLATIONS.md |
 | PR5 | Dogfooding Fixes (All Violations) | 🔴 Not Started | 0% | High | P1 | Refactor for SRP compliance |
 | PR6 | Documentation | 🔴 Not Started | 0% | Medium | P1 | Complete docs, CHANGELOG |
 
@@ -203,34 +206,35 @@ Run SRP linter on thai-lint codebase to discover all violations. Create comprehe
 
 ---
 
-## PR4: Dogfooding Discovery 🔴 NOT STARTED
+## PR4: Dogfooding Discovery 🟢 COMPLETE
 
 **Objective**: Run SRP linter on thai-lint codebase and catalog violations
 
 **Steps**:
-1. ⬜ Read PR_BREAKDOWN.md → PR4 section
-2. ⬜ Update .thailint.yaml with SRP thresholds
-3. ⬜ Create make lint-srp target
-4. ⬜ Run: `make lint-srp` to find all violations
-5. ⬜ Catalog ALL violations in VIOLATIONS.md
-6. ⬜ Categorize by severity/complexity
-7. ⬜ Create refactoring plan
-8. ⬜ Update this document
+1. ✅ Read PR_BREAKDOWN.md → PR4 section
+2. ✅ Update .thailint.yaml with SRP thresholds
+3. ✅ Create make lint-solid target
+4. ✅ Reorganize Makefile (moved lint-nesting into lint-complexity)
+5. ✅ Run: `make lint-solid` to find all violations
+6. ✅ Catalog ALL violations in VIOLATIONS.md
+7. ✅ Categorize by severity/complexity (1 critical, 4 high, 1 medium)
+8. ✅ Create refactoring plan with time estimates
+9. ✅ Update this document
 
 **Completion Criteria**:
-- ⬜ Complete violation report with line numbers and class names
-- ⬜ Violations categorized by refactoring difficulty
-- ⬜ Refactoring plan documented with patterns
-- ⬜ make test exits with code 0 (100% tests passing)
-- ⬜ make lint-full exits with code 0
-- ⬜ make lint-srp finds violations (expected - not yet fixed)
+- ✅ Complete violation report with line numbers and class names
+- ✅ Violations categorized by refactoring difficulty
+- ✅ Refactoring plan documented with patterns
+- ✅ make test exits with code 0 (100% tests passing)
+- ✅ make lint-full exits with code 0 (SRP not yet included in lint-full for this PR)
+- ✅ make lint-solid finds violations (6 violations cataloged)
 
-**Files to Create**:
-- .roadmap/planning/srp-linter/VIOLATIONS.md
+**Files Created**:
+- ✅ .roadmap/in-progress/srp-linter/VIOLATIONS.md (comprehensive catalog)
 
-**Files to Modify**:
-- .thailint.yaml (add SRP configuration)
-- Makefile (add lint-srp target)
+**Files Modified**:
+- ✅ .thailint.yaml (added SRP configuration with thresholds)
+- ✅ Makefile (added lint-solid target; reorganized lint-complexity to include lint-nesting)
 
 ---
 
@@ -255,7 +259,7 @@ Run SRP linter on thai-lint codebase to discover all violations. Create comprehe
 - ⬜ ALL SRP violations fixed via refactoring
 - ⬜ make test exits with code 0 (100% tests passing, no broken functionality)
 - ⬜ make lint-full exits with code 0 (Pylint 10.00/10, Xenon A-grade)
-- ⬜ **make lint-srp exits with code 0 (ZERO violations) ← CRITICAL GATE**
+- ⬜ **make lint-solid exits with code 0 (ZERO violations) ← CRITICAL GATE**
 - ⬜ No functionality broken (all integration tests pass)
 
 **Refactoring Patterns to Apply**:
