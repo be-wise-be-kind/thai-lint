@@ -15,7 +15,7 @@
 
 **Exports**: API documentation templates, endpoint documentation standards, OpenAPI guidelines, and examples
 
-**Related**: .ai/howto/how-to-document-api.md, file-headers.md, OpenAPI specification
+**Related**: .ai/howtos/how-to-document-api.md, file-headers.md, OpenAPI specification
 
 **Implementation**: Template-based API documentation with OpenAPI specification generation
 

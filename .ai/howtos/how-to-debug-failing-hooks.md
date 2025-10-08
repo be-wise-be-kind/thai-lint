@@ -691,8 +691,8 @@ When asking for help, provide:
 
 - Pre-commit framework: https://pre-commit.com/
 - Project standards: `.ai/docs/PRE_COMMIT_STANDARDS.md`
-- Installation guide: `.ai/howto/how-to-install-pre-commit.md`
-- Custom hooks: `.ai/howto/how-to-add-custom-hook.md`
+- Installation guide: `.ai/howtos/how-to-install-pre-commit.md`
+- Custom hooks: `.ai/howtos/how-to-add-custom-hook.md`
 
 ---
 
@@ -767,6 +767,6 @@ When asking for help, provide:
 ## Next Steps
 
 - **Review standards**: `.ai/docs/PRE_COMMIT_STANDARDS.md`
-- **Installation guide**: `.ai/howto/how-to-install-pre-commit.md`
-- **Custom hooks**: `.ai/howto/how-to-add-custom-hook.md`
+- **Installation guide**: `.ai/howtos/how-to-install-pre-commit.md`
+- **Custom hooks**: `.ai/howtos/how-to-add-custom-hook.md`
 - **Share solutions**: Document fixes for team

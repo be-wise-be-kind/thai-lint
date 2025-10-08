@@ -766,5 +766,5 @@ After creating your README:
 
 - **README standards**: `.ai/docs/readme-standards.md`
 - **README template**: `.ai/templates/README.template`
-- **File headers**: `.ai/howto/how-to-write-file-headers.md`
-- **API documentation**: `.ai/howto/how-to-document-api.md`
+- **File headers**: `.ai/howtos/how-to-write-file-headers.md`
+- **API documentation**: `.ai/howtos/how-to-document-api.md`

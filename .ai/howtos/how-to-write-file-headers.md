@@ -700,4 +700,4 @@ After writing file headers:
 - **Complete reference**: `.ai/docs/file-headers.md`
 - **Templates**: `.ai/templates/file-header-*.template`
 - **Standards**: `.ai/docs/FILE_HEADER_STANDARDS.md`
-- **README guide**: `.ai/howto/how-to-create-readme.md`
+- **README guide**: `.ai/howtos/how-to-create-readme.md`

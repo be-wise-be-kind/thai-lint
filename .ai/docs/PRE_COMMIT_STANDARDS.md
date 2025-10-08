@@ -482,9 +482,9 @@ test-all:
 
 **Standard**: Projects using pre-commit hooks MUST document
 
-1. **Installation instructions**: `.ai/howto/how-to-install-pre-commit.md`
-2. **Custom hook guide**: `.ai/howto/how-to-add-custom-hook.md`
-3. **Troubleshooting**: `.ai/howto/how-to-debug-failing-hooks.md`
+1. **Installation instructions**: `.ai/howtos/how-to-install-pre-commit.md`
+2. **Custom hook guide**: `.ai/howtos/how-to-add-custom-hook.md`
+3. **Troubleshooting**: `.ai/howtos/how-to-debug-failing-hooks.md`
 4. **Standards document**: `.ai/docs/PRE_COMMIT_STANDARDS.md` (this document)
 
 ### Configuration Comments
@@ -547,7 +547,7 @@ test-all:
 
 ### Team Collaboration
 
-1. **Share documentation**: Point team to `.ai/howto/` guides
+1. **Share documentation**: Point team to `.ai/howtos/` guides
 2. **Standardize skip policies**: Define acceptable use cases
 3. **Review hook failures in PRs**: Don't merge with failures
 4. **Update hooks together**: Coordinate tool version updates
@@ -676,4 +676,4 @@ rm test.txt
 - **Git Hooks Documentation**: https://git-scm.com/docs/githooks
 - **Plugin README**: `README.md`
 - **Agent Instructions**: `AGENT_INSTRUCTIONS.md`
-- **How-to Guides**: `.ai/howto/how-to-*.md`
+- **How-to Guides**: `.ai/howtos/how-to-*.md`

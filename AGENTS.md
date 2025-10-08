@@ -21,7 +21,7 @@ The AI Linter - Lint and governance for AI-generated code across multiple langua
 - **Layout**: `.ai/layout.yaml` - Directory organization
 
 ### How-To Guides
-See `.ai/howto/` for step-by-step guides on common tasks.
+See `.ai/howtos/` for step-by-step guides on common tasks.
 
 ### Templates
 See `.ai/templates/` for reusable file templates and boilerplate.
@@ -305,7 +305,7 @@ If `make lint-full` exits with non-zero code, if Pylint shows < 10.00/10, if Xen
 7. Submit PR
 
 ### Adding a New CLI Command
-See `.ai/howto/python-cli/how-to-add-cli-command.md`
+See `.ai/howtos/python-cli/how-to-add-cli-command.md`
 
 ### Adding a New Linter
 1. Create linter module in `src/linters/`
@@ -332,7 +332,7 @@ See `pyproject.toml` for the complete and authoritative list of Python dependenc
 
 ### When Stuck
 1. Check `.ai/docs/` for context and architecture
-2. Review `.ai/howto/` for guides
+2. Review `.ai/howtos/` for guides
 3. Check existing code for patterns
 4. Review git history for similar changes
 5. Read roadmap: `.roadmap/python-cli-install/`

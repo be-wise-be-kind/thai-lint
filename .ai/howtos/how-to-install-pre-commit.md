@@ -312,15 +312,15 @@ Copy pre-commit documentation to your project's .ai folder:
 ```bash
 # Create directories if needed
 mkdir -p .ai/docs
-mkdir -p .ai/howto
+mkdir -p .ai/howtos
 
 # Copy standards documentation
 cp plugins/standards/pre-commit-hooks/ai-content/standards/PRE_COMMIT_STANDARDS.md .ai/docs/
 
 # Copy how-to guides
-cp plugins/standards/pre-commit-hooks/ai-content/howtos/how-to-install-pre-commit.md .ai/howto/
-cp plugins/standards/pre-commit-hooks/ai-content/howtos/how-to-add-custom-hook.md .ai/howto/
-cp plugins/standards/pre-commit-hooks/ai-content/howtos/how-to-debug-failing-hooks.md .ai/howto/
+cp plugins/standards/pre-commit-hooks/ai-content/howtos/how-to-install-pre-commit.md .ai/howtos/
+cp plugins/standards/pre-commit-hooks/ai-content/howtos/how-to-add-custom-hook.md .ai/howtos/
+cp plugins/standards/pre-commit-hooks/ai-content/howtos/how-to-debug-failing-hooks.md .ai/howtos/
 
 echo "✅ Documentation copied to .ai folder"
 ```
@@ -555,8 +555,8 @@ git commit --no-verify -m "Emergency fix"
 After successful installation:
 
 1. **Read the standards document**: `.ai/docs/PRE_COMMIT_STANDARDS.md`
-2. **Learn to add custom hooks**: `.ai/howto/how-to-add-custom-hook.md`
-3. **Learn to debug hooks**: `.ai/howto/how-to-debug-failing-hooks.md`
+2. **Learn to add custom hooks**: `.ai/howtos/how-to-add-custom-hook.md`
+3. **Learn to debug hooks**: `.ai/howtos/how-to-debug-failing-hooks.md`
 4. **Share with team**: Send this guide to other developers
 5. **Integrate with CI/CD**: Run same hooks in GitHub Actions
 
