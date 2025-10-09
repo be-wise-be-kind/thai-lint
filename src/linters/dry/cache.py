@@ -24,6 +24,8 @@ import sqlite3
 from dataclasses import dataclass
 from pathlib import Path
 
+from .cache_query import CacheQueryService
+
 
 @dataclass
 class CodeBlock:
@@ -51,26 +53,20 @@ class DRYCache:
         cache_path.parent.mkdir(parents=True, exist_ok=True)
 
         self.db = sqlite3.connect(str(cache_path))
-        self._init_schema()
+        self._query_service = CacheQueryService()
 
-    def _init_schema(self) -> None:
-        """Create tables and indexes if they don't exist."""
-        # Files table: tracks file metadata
+        # Create schema
         self.db.execute(
-            """
-            CREATE TABLE IF NOT EXISTS files (
+            """CREATE TABLE IF NOT EXISTS files (
                 file_path TEXT PRIMARY KEY,
                 mtime REAL NOT NULL,
                 hash_count INTEGER,
                 last_scanned TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
-        """
+            )"""
         )
 
-        # Code blocks table: stores hashes for each file
         self.db.execute(
-            """
-            CREATE TABLE IF NOT EXISTS code_blocks (
+            """CREATE TABLE IF NOT EXISTS code_blocks (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 file_path TEXT NOT NULL,
                 hash_value INTEGER NOT NULL,
@@ -78,24 +74,11 @@ class DRYCache:
                 end_line INTEGER NOT NULL,
                 snippet TEXT NOT NULL,
                 FOREIGN KEY (file_path) REFERENCES files(file_path) ON DELETE CASCADE
-            )
-        """
+            )"""
         )
 
-        # Critical indexes for performance
-        self.db.execute(
-            """
-            CREATE INDEX IF NOT EXISTS idx_hash_value
-            ON code_blocks(hash_value)
-        """
-        )
-
-        self.db.execute(
-            """
-            CREATE INDEX IF NOT EXISTS idx_file_path
-            ON code_blocks(file_path)
-        """
-        )
+        self.db.execute("CREATE INDEX IF NOT EXISTS idx_hash_value ON code_blocks(hash_value)")
+        self.db.execute("CREATE INDEX IF NOT EXISTS idx_file_path ON code_blocks(file_path)")
 
         self.db.commit()
 
@@ -201,24 +184,16 @@ class DRYCache:
     def find_duplicates_by_hash(self, hash_value: int) -> list[CodeBlock]:
         """Find all code blocks with the given hash value.
 
-        This is the PRIMARY method for duplicate detection - queries the DB
-        for ALL blocks (across ALL files) with the same hash.
-
         Args:
             hash_value: Hash value to search for
 
         Returns:
             List of ALL CodeBlock instances with this hash (from all files)
         """
-        cursor = self.db.execute(
-            """SELECT file_path, hash_value, start_line, end_line, snippet
-               FROM code_blocks
-               WHERE hash_value = ?""",
-            (hash_value,),
-        )
+        rows = self._query_service.find_blocks_by_hash(self.db, hash_value)
 
         blocks = []
-        for file_path_str, hash_val, start, end, snippet in cursor:
+        for file_path_str, start, end, snippet, hash_val in rows:
             block = CodeBlock(
                 file_path=Path(file_path_str),
                 start_line=start,
@@ -230,42 +205,13 @@ class DRYCache:
 
         return blocks
 
-    def get_blocks_for_file(self, file_path: Path) -> list[CodeBlock]:
-        """Get all code blocks for a specific file.
-
-        Args:
-            file_path: Path to file
-
-        Returns:
-            List of CodeBlock instances for this file
-        """
-        return self.load(file_path)  # Same as load() method
-
-    def add_blocks(self, file_path: Path, mtime: float, blocks: list[CodeBlock]) -> None:
-        """Add code blocks to database (alias for save()).
-
-        Args:
-            file_path: Path to file
-            mtime: File modification time
-            blocks: List of CodeBlock instances to add
-        """
-        self.save(file_path, mtime, blocks)
-
     def get_duplicate_hashes(self) -> list[int]:
-        """Get all hash values that appear 2+ times (duplicates).
+        """Get all hash values that appear 2+ times.
 
         Returns:
             List of hash values with 2 or more occurrences
         """
-        cursor = self.db.execute(
-            """SELECT hash_value
-               FROM code_blocks
-               GROUP BY hash_value
-               HAVING COUNT(*) >= 2"""
-        )
-
-        hashes = [row[0] for row in cursor]
-        return hashes
+        return self._query_service.get_duplicate_hashes(self.db)
 
     def close(self) -> None:
         """Close database connection."""

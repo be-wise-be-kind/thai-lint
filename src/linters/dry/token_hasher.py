@@ -30,7 +30,7 @@ class TokenHasher:
             code: Source code string
 
         Returns:
-            List of normalized code lines (non-empty, comments removed)
+            List of normalized code lines (non-empty, comments removed, imports filtered)
         """
         lines = []
 
@@ -42,8 +42,14 @@ class TokenHasher:
             line = " ".join(line.split())
 
             # Skip empty lines
-            if line:
-                lines.append(line)
+            if not line:
+                continue
+
+            # Skip import statements (common false positive)
+            if self._is_import_statement(line):
+                continue
+
+            lines.append(line)
 
         return lines
 
@@ -65,6 +71,21 @@ class TokenHasher:
             line = line[: line.index("//")]
 
         return line
+
+    def _is_import_statement(self, line: str) -> bool:
+        """Check if line is an import statement.
+
+        Args:
+            line: Normalized code line
+
+        Returns:
+            True if line is an import statement
+        """
+        # Check all import/export patterns
+        import_prefixes = ("import ", "from ", "export ")
+        import_tokens = ("{", "}", "} from")
+
+        return line.startswith(import_prefixes) or line in import_tokens
 
     def rolling_hash(self, lines: list[str], window_size: int) -> list[tuple[int, int, int, str]]:
         """Create rolling hash windows over code lines.

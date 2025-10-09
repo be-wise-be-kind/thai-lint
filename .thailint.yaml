@@ -127,3 +127,19 @@ srp:
   ignore:
     - "tests/"
     - "src/linters/srp/linter.py"  # Linter rule must implement base interface with many methods
+
+# DRY (Don't Repeat Yourself) linter configuration
+dry:
+  enabled: false  # Must be explicitly enabled (opt-in for performance)
+  min_duplicate_lines: 3  # Minimum lines for duplicate detection
+  min_duplicate_tokens: 30  # Minimum tokens for duplicate detection
+
+  # Cache settings (SQLite-based)
+  cache_enabled: true  # Enable SQLite cache for fast incremental scans
+  cache_path: ".thailint-cache/dry.db"  # SQLite database path
+  cache_max_age_days: 30  # Remove cache entries older than this
+
+  # Ignore patterns
+  ignore:
+    - "tests/"  # Test code often has acceptable duplication
+    - "__init__.py"  # Import-only files are exempt
