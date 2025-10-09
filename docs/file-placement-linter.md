@@ -712,7 +712,7 @@ directories:
 
 thai-lint file-placement .
 if [ $? -ne 0 ]; then
-    echo "❌ File placement violations found"
+    echo "File placement violations found"
     echo "Fix violations or use 'git commit --no-verify'"
     exit 1
 fi

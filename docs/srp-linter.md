@@ -31,11 +31,11 @@ Classes with too many responsibilities are:
 
 ### Benefits
 
-- ✅ **Improved modularity**: Classes with single responsibilities are easier to compose
-- ✅ **Better testability**: Focused classes are simpler to test in isolation
-- ✅ **Easier maintenance**: Changes to one responsibility don't affect others
-- ✅ **Reduced coupling**: Smaller classes have fewer dependencies
-- ✅ **Team consistency**: Enforces shared architectural standards
+- **Improved modularity**: Classes with single responsibilities are easier to compose
+- **Better testability**: Focused classes are simpler to test in isolation
+- **Easier maintenance**: Changes to one responsibility don't affect others
+- **Reduced coupling**: Smaller classes have fewer dependencies
+- **Team consistency**: Enforces shared architectural standards
 
 ## How It Works
 
@@ -268,9 +268,9 @@ Options:
 ```bash
 thailint srp src/
 if [ $? -eq 0 ]; then
-    echo "✅ SRP checks passed"
+    echo "SRP checks passed"
 else
-    echo "❌ SRP violations found"
+    echo "SRP violations found"
 fi
 ```
 
@@ -746,7 +746,7 @@ Add to `Makefile`:
 lint-srp:
 	@echo "=== Running SRP linter ==="
 	@thailint srp src/ --config .thailint.yaml
-	@echo "✅ SRP checks complete"
+	@echo "SRP checks complete"
 ```
 
 ## Troubleshooting
@@ -801,12 +801,12 @@ class Child(Parent):  # Only counts methods defined in Child
 **Solution**: Ensure language-specific config is properly nested
 
 ```yaml
-# ❌ Wrong
+# Wrong
 srp:
   typescript:
     max_methods: 10
 
-# ✅ Correct
+# Correct
 srp:
   enabled: true
   typescript:
@@ -820,10 +820,10 @@ The SRP linter is designed for speed:
 
 | Operation | Performance | Target |
 |-----------|-------------|--------|
-| Single file analysis | ~20-40ms | <100ms ✅ |
-| 100 files | ~500ms | <2s ✅ |
-| 1000 files | ~3-5s | <30s ✅ |
-| AST parsing (cached) | ~5-10ms | <50ms ✅ |
+| Single file analysis | ~20-40ms | <100ms |
+| 100 files | ~500ms | <2s |
+| 1000 files | ~3-5s | <30s |
+| AST parsing (cached) | ~5-10ms | <50ms |
 
 *Performance benchmarks on standard hardware. Results may vary.*
 

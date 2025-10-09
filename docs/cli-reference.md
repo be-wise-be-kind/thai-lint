@@ -79,7 +79,7 @@ thai-lint --verbose file-placement .
 2025-10-06 12:34:56 | DEBUG | Loading config from .thailint.yaml
 2025-10-06 12:34:56 | DEBUG | Scanning directory: src/
 2025-10-06 12:34:56 | DEBUG | Checking file: src/main.py
-✅ No violations found
+No violations found
 ```
 
 ### --config, -c PATH
@@ -206,7 +206,7 @@ thai-lint file-placement --no-recursive src/
 
 **Text format (violations found):**
 ```
-❌ Found 2 violations:
+Found 2 violations:
 
 src/test_example.py:
   Rule: file-placement
@@ -223,7 +223,7 @@ Exit code: 1
 
 **Text format (no violations):**
 ```
-✅ No violations found
+No violations found
 
 Exit code: 0
 ```
@@ -318,7 +318,7 @@ thai-lint nesting --format json src/
 
 **Text format (violations found):**
 ```
-❌ Found 2 violations:
+Found 2 violations:
 
 src/processor.py:15
   Rule: nesting.excessive-depth
@@ -339,7 +339,7 @@ Exit code: 1
 
 **Text format (no violations):**
 ```
-✅ No violations found
+No violations found
 
 Exit code: 0
 ```
@@ -368,9 +368,9 @@ Exit code: 0
 ```
 
 **Language Support:**
-- ✅ Python (`.py`) - Full support
-- ✅ TypeScript (`.ts`, `.tsx`) - Full support
-- ✅ JavaScript (`.js`, `.jsx`) - Supported via TypeScript parser
+- Python (`.py`) - Full support
+- TypeScript (`.ts`, `.tsx`) - Full support
+- JavaScript (`.js`, `.jsx`) - Supported via TypeScript parser
 
 **Common Patterns:**
 
@@ -392,6 +392,291 @@ thai-lint --verbose nesting src/
 - `docs/nesting-linter.md` - Comprehensive nesting linter guide
 - Refactoring patterns and best practices
 - Configuration examples
+
+---
+
+### dry
+
+Detect duplicate code using token-based hash analysis with SQLite caching.
+
+```bash
+thai-lint dry [OPTIONS] [PATH]
+```
+
+**Arguments:**
+
+| Argument | Required | Default | Description |
+|----------|----------|---------|-------------|
+| `PATH` | No | `.` (current directory) | File or directory to check |
+
+**Options:**
+
+| Option | Short | Type | Default | Description |
+|--------|-------|------|---------|-------------|
+| `--config` | `-c` | PATH | Auto-discover | Path to config file |
+| `--min-lines` | `-l` | INTEGER | `4` | Minimum duplicate lines |
+| `--format` | `-f` | CHOICE | `text` | Output format: `text` or `json` |
+| `--no-cache` | | FLAG | `False` | Disable SQLite caching |
+| `--clear-cache` | | FLAG | `False` | Clear cache before running |
+| `--recursive` | | FLAG | `True` | Scan directories recursively |
+
+**Examples:**
+
+**Basic usage:**
+```bash
+# Check current directory
+thai-lint dry
+
+# Check specific directory
+thai-lint dry src/
+
+# Check specific file
+thai-lint dry src/main.py
+```
+
+**With custom thresholds:**
+```bash
+# Strict duplicate detection (3 lines)
+thai-lint dry --min-lines 3 src/
+
+# Lenient detection (6 lines)
+thai-lint dry --min-lines 6 src/
+```
+
+**Cache management:**
+```bash
+# Run without cache
+thai-lint dry --no-cache src/
+
+# Clear cache before run
+thai-lint dry --clear-cache src/
+
+# Clear cache only
+thai-lint dry --clear-cache .
+```
+
+**With configuration file:**
+```bash
+# Use specific config
+thai-lint dry --config .thailint.yaml src/
+
+# Short form
+thai-lint dry -c rules.yaml src/
+```
+
+**Output formats:**
+```bash
+# Text format (default, human-readable)
+thai-lint dry src/
+
+# JSON format (for parsing/CI/CD)
+thai-lint dry --format json src/
+```
+
+**Output Examples:**
+
+**Text format (violations found):**
+```
+Found 3 duplicate code blocks:
+
+Duplicate in 3 files (5 lines, 42 tokens):
+  src/api.py:15-19
+  src/handler.py:28-32
+  src/processor.py:42-46
+Suggestion: Extract common logic into shared function
+
+Duplicate in 2 files (4 lines, 38 tokens):
+  src/utils.py:55-58
+  src/helpers.py:120-123
+Suggestion: Consider creating utility function
+
+Exit code: 1
+```
+
+**Text format (no violations):**
+```
+No duplicate code found
+
+Exit code: 0
+```
+
+**JSON format:**
+```json
+{
+  "violations": [
+    {
+      "duplicate_group": {
+        "hash": "a1b2c3d4e5f6",
+        "line_count": 5,
+        "token_count": 42,
+        "occurrences": [
+          {
+            "file_path": "src/api.py",
+            "line_start": 15,
+            "line_end": 19
+          },
+          {
+            "file_path": "src/handler.py",
+            "line_start": 28,
+            "line_end": 32
+          },
+          {
+            "file_path": "src/processor.py",
+            "line_start": 42,
+            "line_end": 46
+          }
+        ]
+      },
+      "message": "Duplicate code found in 3 locations",
+      "severity": "WARNING"
+    }
+  ],
+  "total": 1,
+  "cache_stats": {
+    "cache_hits": 45,
+    "cache_misses": 12,
+    "hit_rate": 0.79
+  }
+}
+```
+
+**Language Support:**
+- Python (`.py`) - Full support with AST tokenization
+- TypeScript (`.ts`, `.tsx`) - Full support with tree-sitter
+- JavaScript (`.js`, `.jsx`) - Full support with tree-sitter
+
+**Performance:**
+```bash
+# First run (no cache)
+thai-lint dry src/
+# ~2-3 seconds for 100 files
+
+# Subsequent runs (with cache)
+thai-lint dry src/
+# ~200-300ms for 100 files (10-50x speedup)
+```
+
+**Cache Location:**
+```bash
+# Default cache location
+.thailint-cache/dry.db
+
+# Check cache stats
+sqlite3 .thailint-cache/dry.db "SELECT COUNT(*) FROM blocks;"
+
+# Clear cache manually
+rm -rf .thailint-cache/
+```
+
+**Common Patterns:**
+
+```bash
+# Strict project-wide check
+thai-lint dry --min-lines 3 .
+
+# Check only source code
+thai-lint dry src/
+
+# CI/CD integration with fresh cache
+thai-lint dry --clear-cache --format json src/ > dry-report.json
+
+# Quick check without cache (for testing config)
+thai-lint dry --no-cache --min-lines 5 src/
+
+# With verbose output
+thai-lint --verbose dry src/
+```
+
+**Configuration Examples:**
+
+Simple config (`.thailint.yaml`):
+```yaml
+dry:
+  enabled: true
+  min_duplicate_lines: 4
+  min_duplicate_tokens: 30
+  min_occurrences: 2
+```
+
+Advanced config with language-specific thresholds:
+```yaml
+dry:
+  enabled: true
+  min_duplicate_lines: 4
+  min_duplicate_tokens: 30
+  min_occurrences: 2
+
+  # Language-specific overrides
+  python:
+    min_occurrences: 3      # Python: require 3+ duplicates
+    min_duplicate_lines: 5
+
+  typescript:
+    min_duplicate_tokens: 35
+
+  # Cache settings
+  cache_enabled: true
+  cache_path: ".thailint-cache/dry.db"
+  cache_max_age_days: 30
+
+  # Ignore patterns
+  ignore:
+    - "tests/"
+    - "__init__.py"
+    - "migrations/"
+
+  # False positive filtering
+  filters:
+    keyword_argument_filter: true
+    import_group_filter: true
+```
+
+**Troubleshooting:**
+
+**Cache issues:**
+```bash
+# Clear and rebuild cache
+thai-lint dry --clear-cache src/
+
+# Disable cache temporarily
+thai-lint dry --no-cache src/
+
+# Remove cache directory
+rm -rf .thailint-cache/
+```
+
+**No duplicates found:**
+```bash
+# Lower thresholds
+thai-lint dry --min-lines 3 src/
+
+# Check verbose output
+thai-lint --verbose dry src/
+
+# Verify files are being scanned
+thai-lint --verbose dry --no-cache src/ 2>&1 | grep "Analyzing"
+```
+
+**False positives:**
+```bash
+# Enable filters in config
+dry:
+  filters:
+    keyword_argument_filter: true
+    import_group_filter: true
+
+# Or ignore specific directories
+dry:
+  ignore:
+    - "tests/"
+    - "generated/"
+```
+
+**See Also:**
+- `docs/dry-linter.md` - Comprehensive DRY linter guide
+- Token-based detection algorithm
+- Refactoring patterns for duplicates
+- Cache management and performance
 
 ---
 
@@ -601,9 +886,9 @@ echo $?  # 0 = success, 1 = violations, 2 = error
 # Use in script
 thai-lint file-placement src/
 if [ $? -eq 0 ]; then
-    echo "✅ Linting passed"
+    echo "Linting passed"
 else
-    echo "❌ Linting failed"
+    echo "Linting failed"
     exit 1
 fi
 
@@ -657,12 +942,12 @@ echo "Running thailint..."
 thai-lint file-placement .
 
 if [ $? -ne 0 ]; then
-    echo "❌ Pre-commit linting failed"
+    echo "Pre-commit linting failed"
     echo "Fix violations or use 'git commit --no-verify' to skip"
     exit 1
 fi
 
-echo "✅ Pre-commit linting passed"
+echo "Pre-commit linting passed"
 ```
 
 ### Multiple Configs
@@ -859,12 +1144,12 @@ thai-lint file-placement \
 EXIT_CODE=$?
 
 if [ $EXIT_CODE -eq 0 ]; then
-    echo "✅ No violations found"
+    echo "No violations found"
 elif [ $EXIT_CODE -eq 1 ]; then
-    echo "❌ Violations found:"
+    echo "Violations found:"
     jq -r '.[] | "  - \(.file_path): \(.message)"' lint-report.json
 else
-    echo "❌ Error occurred"
+    echo "Error occurred"
 fi
 
 exit $EXIT_CODE

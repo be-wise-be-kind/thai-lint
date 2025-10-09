@@ -81,12 +81,12 @@ thai-lint file-placement .
 
 **Expected output:**
 ```
-✅ No violations found
+No violations found
 ```
 
 Or with violations:
 ```
-❌ Found 2 violations:
+Found 2 violations:
   src/test_example.py: Test files should be in tests/ directory
   config.py: Python files should be in src/ directory
 ```
@@ -136,12 +136,67 @@ For quick testing without a config file:
 thai-lint file-placement . --rules '{"allow": [".*\\.py$"], "deny": ["test_.*"]}'
 ```
 
-### 5. Get JSON Output
+### 5. Check Nesting Depth
+
+Check for excessive nesting in your code:
+
+```bash
+# Check with default max depth (4)
+thai-lint nesting src/
+
+# Strict check (max depth 3)
+thai-lint nesting --max-depth 3 src/
+```
+
+**Expected output:**
+```
+Found 1 violation:
+
+src/processor.py:15
+  Function: process_data
+  Message: Function has nesting depth 5 (max: 3)
+  Suggestion: Consider refactoring with guard clauses
+```
+
+### 6. Check for Duplicate Code
+
+Detect duplicate code blocks using the DRY linter:
+
+```bash
+# Check for duplicates with default thresholds
+thai-lint dry src/
+
+# Strict detection (3+ lines)
+thai-lint dry --min-lines 3 src/
+
+# Clear cache before run
+thai-lint dry --clear-cache src/
+```
+
+**Expected output:**
+```
+Found 2 duplicate code blocks:
+
+Duplicate in 3 files (5 lines, 42 tokens):
+  src/api.py:15-19
+  src/handler.py:28-32
+  src/processor.py:42-46
+Suggestion: Extract common logic into shared function
+```
+
+### 7. Get JSON Output
 
 For CI/CD integration or programmatic parsing:
 
 ```bash
+# File placement
 thai-lint file-placement . --format json
+
+# Nesting depth
+thai-lint nesting --format json src/
+
+# Duplicate code
+thai-lint dry --format json src/
 ```
 
 **Output:**
@@ -166,8 +221,17 @@ from src import Linter
 # Initialize linter
 linter = Linter(config_file='.thailint.yaml')
 
-# Lint a directory
+# Lint with file placement rules
 violations = linter.lint('src/', rules=['file-placement'])
+
+# Check nesting depth
+violations = linter.lint('src/', rules=['nesting'])
+
+# Check for duplicate code
+violations = linter.lint('src/', rules=['dry'])
+
+# Run all linters
+violations = linter.lint('src/')
 
 # Process violations
 if violations:
@@ -176,6 +240,22 @@ if violations:
         print(f"  {v.file_path}: {v.message}")
 else:
     print("No violations found!")
+```
+
+### Direct Linter Usage
+
+```python
+from src import nesting_lint, dry_lint
+
+# Check nesting depth
+violations = nesting_lint('src/', max_nesting_depth=3)
+
+# Check for duplicates
+violations = dry_lint('src/', min_duplicate_lines=4)
+
+# Process results
+for v in violations:
+    print(f"{v.file_path}:{v.line_number} - {v.message}")
 ```
 
 ### Without Config File
@@ -373,12 +453,12 @@ thai-lint file-placement .
 EXIT_CODE=$?
 
 if [ $EXIT_CODE -eq 0 ]; then
-    echo "✅ Linting passed"
+    echo "Linting passed"
 elif [ $EXIT_CODE -eq 1 ]; then
-    echo "❌ Linting failed - violations found"
+    echo "Linting failed - violations found"
     exit 1
 elif [ $EXIT_CODE -eq 2 ]; then
-    echo "❌ Linting error - check configuration"
+    echo "Linting error - check configuration"
     exit 2
 fi
 ```
@@ -424,7 +504,9 @@ docker run --rm --user $(id -u):$(id -g) -v $(pwd):/workspace thailint/thailint 
 - **[Configuration Reference](configuration.md)** - Learn all configuration options
 - **[CLI Reference](cli-reference.md)** - Complete CLI command documentation
 - **[API Reference](api-reference.md)** - Use thailint as a library
-- **[File Placement Linter](file-placement-linter.md)** - Detailed linter guide
+- **[File Placement Linter](file-placement-linter.md)** - Enforce file organization rules
+- **[Nesting Linter](nesting-linter.md)** - Detect excessive code nesting
+- **[DRY Linter](dry-linter.md)** - Find duplicate code blocks
 - **[Deployment Modes](deployment-modes.md)** - CLI, Library, and Docker usage
 
 ## Getting Help
@@ -436,20 +518,32 @@ docker run --rm --user $(id -u):$(id -g) -v $(pwd):/workspace thailint/thailint 
 ## Quick Reference
 
 ```bash
-# Basic linting
+# File placement linting
 thai-lint file-placement .
-
-# With config
 thai-lint file-placement --config .thailint.yaml .
-
-# JSON output
 thai-lint file-placement --format json .
+
+# Nesting depth check
+thai-lint nesting src/
+thai-lint nesting --max-depth 3 src/
+thai-lint nesting --format json src/
+
+# Duplicate code detection
+thai-lint dry src/
+thai-lint dry --min-lines 3 src/
+thai-lint dry --clear-cache src/
+thai-lint dry --format json src/
+
+# With config file
+thai-lint nesting --config .thailint.yaml src/
+thai-lint dry --config .thailint.yaml src/
 
 # Inline rules
 thai-lint file-placement --rules '{"allow": [".*\\.py$"]}' .
 
 # Show help
 thai-lint --help
-thai-lint lint --help
 thai-lint file-placement --help
+thai-lint nesting --help
+thai-lint dry --help
 ```

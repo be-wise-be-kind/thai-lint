@@ -366,6 +366,175 @@ for v in violations:
     print(f"{v.file_path}: {v.message}")
 ```
 
+#### Nesting Depth Linter
+
+```python
+from src import nesting_lint
+# Or
+from src.linters.nesting import lint as nesting_lint
+```
+
+**Function Signature:**
+
+```python
+nesting_lint(
+    path: str | Path,
+    max_nesting_depth: int = 4,
+    config: dict[str, Any] | None = None
+) -> list[Violation]
+```
+
+**Parameters:**
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `path` | `str \| Path` | Required | File or directory to check |
+| `max_nesting_depth` | `int` | `4` | Maximum allowed nesting depth |
+| `config` | `dict \| None` | `None` | Optional config dictionary |
+
+**Returns:** `list[Violation]`
+
+**Example:**
+
+```python
+from src import nesting_lint
+from pathlib import Path
+
+# Basic usage
+violations = nesting_lint('src/')
+
+# With custom max depth
+violations = nesting_lint('src/', max_nesting_depth=3)
+
+# With config
+config = {'nesting': {'max_nesting_depth': 3}}
+violations = nesting_lint(Path('src/'), config=config)
+
+# Process results
+for v in violations:
+    print(f"{v.file_path}:{v.line_number} - {v.message}")
+```
+
+**Supported Languages:**
+- Python (`.py`) - Full AST analysis
+- TypeScript (`.ts`, `.tsx`) - Full tree-sitter analysis
+- JavaScript (`.js`, `.jsx`) - Via TypeScript parser
+
+#### DRY Linter (Don't Repeat Yourself)
+
+```python
+from src import dry_lint
+# Or
+from src.linters.dry import lint as dry_lint
+```
+
+**Function Signature:**
+
+```python
+dry_lint(
+    path: str | Path,
+    min_duplicate_lines: int = 4,
+    min_duplicate_tokens: int = 30,
+    min_occurrences: int = 2,
+    cache_enabled: bool = True,
+    clear_cache: bool = False,
+    config: dict[str, Any] | None = None
+) -> list[Violation]
+```
+
+**Parameters:**
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `path` | `str \| Path` | Required | File or directory to check for duplicates |
+| `min_duplicate_lines` | `int` | `4` | Minimum lines for duplicate detection |
+| `min_duplicate_tokens` | `int` | `30` | Minimum tokens for duplicate detection |
+| `min_occurrences` | `int` | `2` | Report duplicates appearing N+ times |
+| `cache_enabled` | `bool` | `True` | Enable SQLite caching for performance |
+| `clear_cache` | `bool` | `False` | Clear cache before running |
+| `config` | `dict \| None` | `None` | Optional config dictionary |
+
+**Returns:** `list[Violation]`
+
+**Example:**
+
+```python
+from src import dry_lint
+from pathlib import Path
+
+# Basic usage
+violations = dry_lint('src/')
+
+# With custom thresholds
+violations = dry_lint(
+    'src/',
+    min_duplicate_lines=3,
+    min_occurrences=2
+)
+
+# Without cache (for testing)
+violations = dry_lint('src/', cache_enabled=False)
+
+# Clear cache before run
+violations = dry_lint('src/', clear_cache=True)
+
+# With full config
+config = {
+    'dry': {
+        'min_duplicate_lines': 4,
+        'min_duplicate_tokens': 30,
+        'min_occurrences': 2,
+        'python': {
+            'min_occurrences': 3  # Language-specific override
+        },
+        'ignore': ['tests/', '__init__.py'],
+        'filters': {
+            'keyword_argument_filter': True,
+            'import_group_filter': True
+        }
+    }
+}
+violations = dry_lint(Path('src/'), config=config)
+
+# Process results
+for v in violations:
+    print(f"Duplicate code block:")
+    print(f"  Hash: {v.extra_data.get('hash')}")
+    print(f"  Lines: {v.extra_data.get('line_count')}")
+    print(f"  Tokens: {v.extra_data.get('token_count')}")
+    print(f"  Locations: {len(v.extra_data.get('occurrences', []))}")
+    for occ in v.extra_data.get('occurrences', []):
+        print(f"    {occ['file_path']}:{occ['line_start']}-{occ['line_end']}")
+```
+
+**Cache Management:**
+
+```python
+from src.linters.dry.cache import DRYCache
+from pathlib import Path
+
+# Clear cache programmatically
+cache = DRYCache(cache_path=Path('.thailint-cache/dry.db'))
+cache.clear()
+
+# Get cache stats
+stats = cache.get_stats()
+print(f"Cache entries: {stats['total_entries']}")
+print(f"Hit rate: {stats['hit_rate']:.2%}")
+
+# Check if file is cached
+is_cached = cache.is_cached(Path('src/main.py'))
+```
+
+**Supported Languages:**
+- Python (`.py`) - Full AST tokenization
+- TypeScript (`.ts`, `.tsx`) - Full tree-sitter analysis
+- JavaScript (`.js`, `.jsx`) - Full tree-sitter analysis
+
+**Performance:**
+- First run: ~2-3 seconds for 100 files
+- Cached runs: ~200-300ms for 100 files (10-50x speedup)
+
 ## Core Types
 
 ### Violation
@@ -574,12 +743,12 @@ def main():
     violations = linter.lint('.')
 
     if violations:
-        print("❌ Linting failed - violations found:")
+        print("Linting failed - violations found:")
         for v in violations:
             print(f"  {v.file_path}: {v.message}")
         return 1
 
-    print("✅ Linting passed")
+    print("Linting passed")
     return 0
 
 if __name__ == "__main__":
@@ -684,10 +853,10 @@ def main():
             json.dumps(report_data, indent=2, default=str)
         )
 
-        print(f"\n❌ Found {len(violations)} violations")
+        print(f"\nFound {len(violations)} violations")
         return 1
 
-    print("✅ Linting passed")
+    print("Linting passed")
     return 0
 
 if __name__ == "__main__":

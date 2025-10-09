@@ -168,17 +168,17 @@ fi
 
 ### CLI Mode Advantages
 
-✅ **Simple** - No code required, just terminal commands
-✅ **Interactive** - Immediate feedback
-✅ **Scriptable** - Easy integration with bash/shell
-✅ **Portable** - Works on any system with Python
-✅ **Standard** - Uses familiar CLI patterns
+**Simple** - No code required, just terminal commands
+**Interactive** - Immediate feedback
+**Scriptable** - Easy integration with bash/shell
+**Portable** - Works on any system with Python
+**Standard** - Uses familiar CLI patterns
 
 ### CLI Mode Limitations
 
-❌ **No Programmatic Control** - Can't customize behavior in code
-❌ **Less Flexible** - Limited to command-line options
-❌ **Text Processing** - Requires parsing output for automation
+**No Programmatic Control** - Can't customize behavior in code
+**Less Flexible** - Limited to command-line options
+**Text Processing** - Requires parsing output for automation
 
 ## Library Mode
 
@@ -280,10 +280,10 @@ def main():
         with open('lint-report.json', 'w') as f:
             json.dump([v.to_dict() for v in violations], f, indent=2, default=str)
 
-        print(f"❌ Found {len(violations)} violations")
+        print(f"Found {len(violations)} violations")
         return 1
 
-    print("✅ No violations")
+    print("No violations")
     return 0
 
 if __name__ == "__main__":
@@ -349,17 +349,17 @@ def suggest_fix(violation):
 
 ### Library Mode Advantages
 
-✅ **Programmatic Control** - Full customization in Python
-✅ **Integration** - Embed in apps, editors, frameworks
-✅ **Flexibility** - Custom workflows and processing
-✅ **Type Safety** - Full type hints and IDE support
-✅ **Performance** - Direct API calls, no subprocess overhead
+**Programmatic Control** - Full customization in Python
+**Integration** - Embed in apps, editors, frameworks
+**Flexibility** - Custom workflows and processing
+**Type Safety** - Full type hints and IDE support
+**Performance** - Direct API calls, no subprocess overhead
 
 ### Library Mode Limitations
 
-❌ **Python Only** - Requires Python application
-❌ **Dependencies** - Must install package
-❌ **Complexity** - More code than CLI
+**Python Only** - Requires Python application
+**Dependencies** - Must install package
+**Complexity** - More code than CLI
 
 ## Docker Mode
 
@@ -548,44 +548,44 @@ docker-compose run linter-dev --watch
 
 ### Docker Mode Advantages
 
-✅ **Isolation** - No local Python required
-✅ **Consistency** - Same environment everywhere
-✅ **CI/CD Ready** - Perfect for pipelines
-✅ **No Dependencies** - Self-contained image
-✅ **Versioning** - Pin specific versions
+**Isolation** - No local Python required
+**Consistency** - Same environment everywhere
+**CI/CD Ready** - Perfect for pipelines
+**No Dependencies** - Self-contained image
+**Versioning** - Pin specific versions
 
 ### Docker Mode Limitations
 
-❌ **Overhead** - Container startup time
-❌ **Complexity** - More complex setup
-❌ **Volume Mounts** - File permission issues
-❌ **Size** - Image download required
+**Overhead** - Container startup time
+**Complexity** - More complex setup
+**Volume Mounts** - File permission issues
+**Size** - Image download required
 
 ## Choosing a Deployment Mode
 
 ### Use CLI Mode When:
 
-- ✅ Working interactively in terminal
-- ✅ Writing shell scripts
-- ✅ Quick local development checks
-- ✅ Pre-commit hooks
-- ✅ Simple automation
+- Working interactively in terminal
+- Writing shell scripts
+- Quick local development checks
+- Pre-commit hooks
+- Simple automation
 
 ### Use Library Mode When:
 
-- ✅ Integrating into Python applications
-- ✅ Building editor extensions
-- ✅ Custom workflows and processing
-- ✅ Test suite integration
-- ✅ Advanced automation
+- Integrating into Python applications
+- Building editor extensions
+- Custom workflows and processing
+- Test suite integration
+- Advanced automation
 
 ### Use Docker Mode When:
 
-- ✅ CI/CD pipelines
-- ✅ Consistent environments needed
-- ✅ Multiple projects with different configs
-- ✅ No local Python installation
-- ✅ Containerized infrastructure
+- CI/CD pipelines
+- Consistent environments needed
+- Multiple projects with different configs
+- No local Python installation
+- Containerized infrastructure
 
 ## Hybrid Approaches
 

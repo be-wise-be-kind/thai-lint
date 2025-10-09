@@ -127,7 +127,7 @@ repos:
       # ========================================
       - id: no-commit-to-main
         name: Prevent commits to main branch
-        entry: bash -c 'branch=$(git rev-parse --abbrev-ref HEAD); if [ "$branch" = "main" ] || [ "$branch" = "master" ]; then echo "❌ Direct commits to main/master branch are not allowed! Create a feature branch instead."; exit 1; fi'
+        entry: bash -c 'branch=$(git rev-parse --abbrev-ref HEAD); if [ "$branch" = "main" ] || [ "$branch" = "master" ]; then echo "Direct commits to main/master branch are not allowed! Create a feature branch instead."; exit 1; fi'
         language: system
         pass_filenames: false
         stages: [pre-commit]
@@ -180,7 +180,7 @@ repos:
       # ========================================
       - id: no-commit-to-main
         name: Prevent commits to main branch
-        entry: bash -c 'branch=$(git rev-parse --abbrev-ref HEAD); if [ "$branch" = "main" ] || [ "$branch" = "master" ]; then echo "❌ Direct commits to main/master branch are not allowed! Create a feature branch instead."; exit 1; fi'
+        entry: bash -c 'branch=$(git rev-parse --abbrev-ref HEAD); if [ "$branch" = "main" ] || [ "$branch" = "master" ]; then echo "Direct commits to main/master branch are not allowed! Create a feature branch instead."; exit 1; fi'
         language: system
         pass_filenames: false
         stages: [pre-commit]
@@ -404,7 +404,7 @@ Prevent commits to main branch..................................Failed
 - hook id: no-commit-to-main
 - exit code: 1
 
-❌ Direct commits to main/master branch are not allowed! Create a feature branch instead.
+Direct commits to main/master branch are not allowed! Create a feature branch instead.
 
 # Create feature branch instead
 $ git checkout -b feature/my-feature
@@ -524,7 +524,7 @@ git checkout -b feature/my-feature
 
 # Bad: Commit directly to main (blocked by hooks)
 git checkout main
-git commit -m "..."  # ❌ Blocked by branch protection
+git commit -m "..."  # Blocked by branch protection
 ```
 
 ### 2. Fix Issues Before Committing
@@ -641,10 +641,10 @@ jobs:
 
 Pre-commit hooks help maintain code quality by:
 
-✅ **Preventing bad commits**: Stop low-quality code from entering version control
-✅ **Automating checks**: Run formatters, linters, and tests automatically
-✅ **Saving time**: Catch issues locally before CI/CD
-✅ **Enforcing standards**: Consistent quality across all contributors
+**Preventing bad commits**: Stop low-quality code from entering version control
+**Automating checks**: Run formatters, linters, and tests automatically
+**Saving time**: Catch issues locally before CI/CD
+**Enforcing standards**: Consistent quality across all contributors
 
 **Quick reference:**
 ```bash
