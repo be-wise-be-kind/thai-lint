@@ -122,7 +122,7 @@ Extract the command from `.pre-commit-config.yaml` and run it directly:
 grep -A 10 "id: python-ruff" .pre-commit-config.yaml
 
 # Copy the entry command and run it
-bash -c 'files=$(git diff --cached --name-only --diff-filter=ACM | grep -E "\.py$" | grep -E "^(app|tools)/" || true); if [ -n "$files" ]; then make lint-ensure-containers >/dev/null 2>&1; docker exec <container> ruff check $files; fi'
+bash -c 'files=$(git diff --cached --name-only --diff-filter=ACM | grep -E "\.py$" | grep -E "^(app|tools)/" || true); if [ -n "$files" ]; then just lint-ensure-containers >/dev/null 2>&1; docker exec <container> ruff check $files; fi'
 ```
 
 ### Step 4: Break Down the Command
@@ -177,7 +177,7 @@ docker ps | grep linter
 **Solution A: Start containers**
 ```bash
 # Start linting containers
-make lint-ensure-containers
+just lint-ensure-containers
 
 # Or start all containers
 docker compose up -d
@@ -283,7 +283,7 @@ lint-all:
 
 Test target:
 ```bash
-make lint-fix
+just lint-fix
 ```
 
 ### Issue 4: Permission Denied
@@ -457,12 +457,12 @@ pre-commit run no-commit-to-main
 ### Issue 8: Auto-fix Not Working
 
 **Symptoms**:
-Hooks fail even after running `make lint-fix`.
+Hooks fail even after running `just lint-fix`.
 
 **Diagnosis**:
 ```bash
 # Run auto-fix manually
-make lint-fix
+just lint-fix
 
 # Check for errors
 echo $?  # Should be 0 if successful
@@ -473,10 +473,10 @@ pre-commit run --all-files
 
 **Solutions**:
 
-**Solution A: Check make lint-fix works**
+**Solution A: Check just lint-fix works**
 ```bash
 # Test make target
-make lint-fix
+just lint-fix
 
 # Check what it does
 grep -A 10 "lint-fix:" Makefile
@@ -487,7 +487,7 @@ grep -A 10 "lint-fix:" Makefile
 Auto-fix hook should stage changes:
 ```yaml
 - id: make-lint-fix
-  entry: bash -c 'make lint-fix && git add -u'  # git add -u is important
+  entry: bash -c 'just lint-fix && git add -u'  # git add -u is important
   language: system
   pass_filenames: false
   stages: [pre-commit]
@@ -712,7 +712,7 @@ When asking for help, provide:
 
 3. **Run lint-fix before committing**:
    ```bash
-   make lint-fix
+   just lint-fix
    git add -u
    git commit
    ```
@@ -737,12 +737,12 @@ When asking for help, provide:
 
 | Issue | Quick Fix |
 |-------|-----------|
-| Container not found | `make lint-ensure-containers` |
+| Container not found | `just lint-ensure-containers` |
 | Command not found | Check tool exists in container |
 | Permission denied | Check file permissions |
 | Hook times out | Move to pre-push or increase timeout |
 | Hooks don't run | `pre-commit install` |
-| Auto-fix not working | Check `make lint-fix && git add -u` |
+| Auto-fix not working | Check `just lint-fix && git add -u` |
 | Branch protection fails | Check `always_run: true` |
 
 ### Debugging Steps

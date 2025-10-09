@@ -474,7 +474,7 @@ docker compose run cli --help
   - ✅ Config loading: <100ms (actual: ~10ms)
   - ✅ Complex patterns: <500ms (actual: ~0.1s)
 - ✅ Real-world dogfooding: thai-lint can lint itself
-- ✅ make lint-full exits with code 0
+- ✅ just lint-full exits with code 0
 
 **Files Created**:
 - `tests/integration/__init__.py`

@@ -1592,7 +1592,7 @@ For each violation:
 1. Read the function and understand its logic
 2. Choose appropriate refactoring pattern
 3. Apply refactoring
-4. Run tests: `make test` (verify no breakage)
+4. Run tests: `just test` (verify no breakage)
 5. Run linter: `thai lint nesting <file>` (verify violation fixed)
 6. Commit with message describing refactoring
 
@@ -1600,12 +1600,12 @@ For each violation:
 
 ```bash
 # Run full test suite after all refactorings
-make test
+just test
 
 # Expected: All tests pass (exit code 0)
 
 # Run full linting
-make lint-full
+just lint-full
 
 # Expected: No new violations introduced
 ```
@@ -1616,8 +1616,8 @@ Mark fixed violations as complete, update remaining count.
 
 ### Completion Criteria
 - ✅ ~50% of violations fixed
-- ✅ All tests still pass (make test exits with code 0)
-- ✅ make lint-full still passes
+- ✅ All tests still pass (just test exits with code 0)
+- ✅ just lint-full still passes
 - ✅ No functionality broken
 - ✅ VIOLATIONS.md updated with progress
 - ✅ Clear commit messages describing refactorings
@@ -1831,8 +1831,8 @@ linters:
 
 ### Completion Criteria
 - ✅ Zero nesting violations (or all explicitly ignored with justification)
-- ✅ All tests pass (make test exits with code 0)
-- ✅ make lint-full exits with code 0
+- ✅ All tests pass (just test exits with code 0)
+- ✅ just lint-full exits with code 0
 - ✅ README.md updated with nesting linter section
 - ✅ docs/nesting-linter.md created with comprehensive guide
 - ✅ examples/nesting-config-example.yaml created
@@ -1844,7 +1844,7 @@ linters:
 - Codebase is clean (zero violations)
 - Comprehensive documentation
 - Real-world refactoring examples documented
-- Quality gate: make lint-full passes
+- Quality gate: just lint-full passes
 
 ---
 
@@ -1857,7 +1857,7 @@ The nesting depth linter feature is complete when:
 - [ ] Both Python and TypeScript support functional
 - [ ] All deployment modes working (CLI, Library, Docker)
 - [ ] thai-lint codebase has zero nesting violations
-- [ ] make lint-full exits with code 0
+- [ ] just lint-full exits with code 0
 - [ ] Comprehensive documentation complete
 - [ ] Real-world refactoring patterns documented
 - [ ] CHANGELOG.md updated with v0.2.0

@@ -190,7 +190,7 @@ Pre-commit hooks execute in Docker containers. Ensure containers are running:
 
 ```bash
 # Start linting containers using Makefile
-make lint-ensure-containers
+just lint-ensure-containers
 
 # Or start all containers
 docker compose up -d
@@ -228,7 +228,7 @@ pre-commit run --all-files
 **Address failures**:
 ```bash
 # Auto-fix issues first
-make lint-fix
+just lint-fix
 
 # Add fixed files
 git add -u
@@ -435,7 +435,7 @@ pre-commit install --hook-type pre-push
 
 **Solution**: Start Docker containers
 ```bash
-make lint-ensure-containers
+just lint-ensure-containers
 # or
 docker compose up -d
 ```
@@ -473,7 +473,7 @@ EOF
 2. Subsequent runs should be faster (3-10s)
 3. Ensure Docker containers are already running:
    ```bash
-   make lint-ensure-containers
+   just lint-ensure-containers
    ```
 
 ### Issue: Want to skip hooks temporarily
@@ -500,7 +500,7 @@ git commit --no-verify -m "Emergency fix"
 
 2. **Run lint-fix before committing**
    ```bash
-   make lint-fix
+   just lint-fix
    git add -u
    git commit -m "Your message"
    ```

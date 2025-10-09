@@ -86,7 +86,7 @@ PR5 completed ALL violation fixes (18 src/ + 5 examples/tests = 23 total). Now c
 | PR2 | Core Implementation (Python + TypeScript) | 🟢 Complete | 100% | High | P0 | 53/68 tests passing, Python working, TS stubbed |
 | PR3 | Integration (CLI + Library + Docker) | 🟢 Complete | 100% | Medium | P0 | All integration working, 64/76 tests passing |
 | PR3.5 | TypeScript Analyzer Implementation | 🟢 Complete | 100% | High | P1 | tree-sitter implementation, 76/76 tests (100%) |
-| PR4 | Dogfooding Discovery | 🟢 Complete | 100% | Low | P1 | 18 violations found, max_depth=3, make lint-nesting created |
+| PR4 | Dogfooding Discovery | 🟢 Complete | 100% | Low | P1 | 18 violations found, max_depth=3, just lint-nesting created |
 | PR5 | Dogfooding Fixes (All Violations) | 🟢 Complete | 100% | High | P1 | Fixed all 23 violations (18 src + 5 tests/examples) |
 | PR6 | Documentation | 🔴 Not Started | 0% | Medium | P1 | Complete docs, README, CHANGELOG |
 
@@ -280,8 +280,8 @@ PR5 completed ALL violation fixes (18 src/ + 5 examples/tests = 23 total). Now c
 **Steps**:
 1. ✅ Read PR_BREAKDOWN.md → PR4 section
 2. ✅ Updated .thailint.yaml to set max_nesting_depth=3
-3. ✅ Created make lint-nesting target and updated help
-4. ✅ Run: `make lint-nesting` to find all violations
+3. ✅ Created just lint-nesting target and updated help
+4. ✅ Run: `just lint-nesting` to find all violations
 5. ✅ Cataloged ALL violations in .roadmap/planning/nesting-linter/VIOLATIONS.md
 6. ✅ Categorized by severity/complexity (9 easy, 9 moderate)
 7. ✅ Created plan for PR5/PR6 splits (50/50 - 9 functions each)
@@ -307,7 +307,7 @@ PR5 completed ALL violation fixes (18 src/ + 5 examples/tests = 23 total). Now c
 
 **Notes**:
 - NO fixes in this PR - pure discovery and planning
-- make lint-nesting now integrated into make lint-full
+- just lint-nesting now integrated into just lint-full
 - Ready for PR5 implementation
 
 ---
@@ -325,17 +325,17 @@ PR5 completed ALL violation fixes (18 src/ + 5 examples/tests = 23 total). Now c
    - Dispatch patterns for if-elif-else chains
    - Flattening nested error handling
 4. ✅ Fix additional 5 tests/examples violations found
-5. ✅ Run tests after refactoring: `make test` (317/317 passing)
+5. ✅ Run tests after refactoring: `just test` (317/317 passing)
 6. ✅ Verify no functionality broken
 7. ✅ Run nesting linter: Zero violations achieved!
 8. ✅ Update this document
 
 **Completion Criteria**:
 - ✅ ALL violations fixed (23 total: 18 src + 5 tests/examples)
-- ✅ All tests pass (make test exits with code 0 - 317 tests)
-- ✅ make lint-full passes (Pylint 10.00/10, all A-grade complexity)
+- ✅ All tests pass (just test exits with code 0 - 317 tests)
+- ✅ just lint-full passes (Pylint 10.00/10, all A-grade complexity)
 - ✅ No functionality broken (all integration tests pass)
-- ✅ make lint-nesting shows ZERO violations
+- ✅ just lint-nesting shows ZERO violations
 
 **Refactoring Patterns Applied**:
 - **Extract helper functions** (13 functions): Moved complex nested logic to dedicated helpers
@@ -418,7 +418,7 @@ Use the linter on itself to find real-world issues, fix them systematically, and
 
 ### Code Quality Metrics
 - ✅ thai-lint codebase has zero nesting violations (or all explicitly ignored)
-- ✅ make lint-full exits with code 0
+- ✅ just lint-full exits with code 0
 - ✅ All integration tests pass
 - ✅ No functionality broken during refactoring
 
@@ -496,7 +496,7 @@ The feature is considered complete when:
 - [ ] Both Python and TypeScript analysis working
 - [ ] All three deployment modes working (CLI, Library, Docker)
 - [ ] thai-lint codebase has zero nesting violations (or all explicitly acknowledged)
-- [ ] make lint-full exits with code 0
+- [ ] just lint-full exits with code 0
 - [ ] Documentation complete with configuration examples
 - [ ] Refactoring patterns documented
 - [ ] CHANGELOG.md updated

@@ -59,7 +59,7 @@ This is the **PRIMARY HANDOFF DOCUMENT** for AI agents working on the SRP Linter
 ✅ Configurable thresholds and ignore directives working
 ✅ Code quality: Pylint 10.00/10, Xenon A-grade
 ✅ All 91 tests passing (100%)
-✅ Zero SRP violations (make lint-solid exits with code 0)
+✅ Zero SRP violations (just lint-solid exits with code 0)
 ✅ Complete documentation and examples
 
 ---
@@ -153,7 +153,7 @@ This is the **PRIMARY HANDOFF DOCUMENT** for AI agents working on the SRP Linter
 - ✅ TypeScript SRP detection accurate
 - ✅ Configurable thresholds: max_methods (default: 7), max_loc (default: 200)
 - ✅ Helpful violation messages with refactoring suggestions
-- ✅ make lint-full exits with code 0 (Pylint 9.98/10, Xenon A-grade)
+- ✅ just lint-full exits with code 0 (Pylint 9.98/10, Xenon A-grade)
 
 **Files Created**:
 - ✅ src/linters/srp/__init__.py (package init with exports)
@@ -185,7 +185,7 @@ This is the **PRIMARY HANDOFF DOCUMENT** for AI agents working on the SRP Linter
 - ✅ Library API works: `linter.lint(path, rules=['srp.violation'])`
 - ✅ Direct import works: `from src import srp_lint`
 - ✅ Auto-discovery finds SRPRule (verified)
-- ✅ make lint-full exits with code 0
+- ✅ just lint-full exits with code 0
 
 **Files Created**:
 - None (integration already covered by existing tests)
@@ -207,9 +207,9 @@ This is the **PRIMARY HANDOFF DOCUMENT** for AI agents working on the SRP Linter
 **Steps**:
 1. ✅ Read PR_BREAKDOWN.md → PR4 section
 2. ✅ Update .thailint.yaml with SRP thresholds
-3. ✅ Create make lint-solid target
+3. ✅ Create just lint-solid target
 4. ✅ Reorganize Makefile (moved lint-nesting into lint-complexity)
-5. ✅ Run: `make lint-solid` to find all violations
+5. ✅ Run: `just lint-solid` to find all violations
 6. ✅ Catalog ALL violations in VIOLATIONS.md
 7. ✅ Categorize by severity/complexity (1 critical, 4 high, 1 medium)
 8. ✅ Create refactoring plan with time estimates
@@ -219,9 +219,9 @@ This is the **PRIMARY HANDOFF DOCUMENT** for AI agents working on the SRP Linter
 - ✅ Complete violation report with line numbers and class names
 - ✅ Violations categorized by refactoring difficulty
 - ✅ Refactoring plan documented with patterns
-- ✅ make test exits with code 0 (100% tests passing)
-- ✅ make lint-full exits with code 0 (SRP not yet included in lint-full for this PR)
-- ✅ make lint-solid finds violations (6 violations cataloged)
+- ✅ just test exits with code 0 (100% tests passing)
+- ✅ just lint-full exits with code 0 (SRP not yet included in lint-full for this PR)
+- ✅ just lint-solid finds violations (6 violations cataloged)
 
 **Files Created**:
 - ✅ .roadmap/in-progress/srp-linter/VIOLATIONS.md (comprehensive catalog)
@@ -244,16 +244,16 @@ This is the **PRIMARY HANDOFF DOCUMENT** for AI agents working on the SRP Linter
    - Split responsibilities
    - Create focused utility modules
    - Apply composition over inheritance
-4. ⬜ Run tests after refactoring: `make test` (must pass)
+4. ⬜ Run tests after refactoring: `just test` (must pass)
 5. ⬜ Verify no functionality broken
 6. ⬜ Run SRP linter: Zero violations achieved!
 7. ⬜ Update this document
 
 **Completion Criteria**:
 - ⬜ ALL SRP violations fixed via refactoring
-- ⬜ make test exits with code 0 (100% tests passing, no broken functionality)
-- ⬜ make lint-full exits with code 0 (Pylint 10.00/10, Xenon A-grade)
-- ⬜ **make lint-solid exits with code 0 (ZERO violations) ← CRITICAL GATE**
+- ⬜ just test exits with code 0 (100% tests passing, no broken functionality)
+- ⬜ just lint-full exits with code 0 (Pylint 10.00/10, Xenon A-grade)
+- ⬜ **just lint-solid exits with code 0 (ZERO violations) ← CRITICAL GATE**
 - ⬜ No functionality broken (all integration tests pass)
 
 **Refactoring Patterns to Apply**:
@@ -326,7 +326,7 @@ Use the linter on itself to find real-world issues, fix them systematically, and
 
 ### Code Quality Metrics
 - ⬜ thai-lint codebase has zero SRP violations (or all explicitly ignored)
-- ⬜ make lint-full exits with code 0
+- ⬜ just lint-full exits with code 0
 - ⬜ All integration tests pass
 - ⬜ No functionality broken during refactoring
 
@@ -393,7 +393,7 @@ The feature is considered complete when:
 - ✅ Both Python and TypeScript analysis working
 - ✅ All three deployment modes working (CLI, Library, Docker)
 - ✅ thai-lint codebase has zero SRP violations
-- ✅ make lint-full exits with code 0 (includes SRP linter)
+- ✅ just lint-full exits with code 0 (includes SRP linter)
 - ✅ Documentation complete with configuration examples
 - ✅ Refactoring patterns documented
 - ✅ CHANGELOG.md updated with v0.3.0

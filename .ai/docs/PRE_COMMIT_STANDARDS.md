@@ -101,7 +101,7 @@ Pre-commit hooks provide automated code quality enforcement at the git commit an
 ```yaml
 - id: make-lint-fix
   name: Auto-fix linting issues
-  entry: bash -c 'make lint-fix && git add -u'
+  entry: bash -c 'just lint-fix && git add -u'
   language: system
   pass_filenames: false
   stages: [pre-commit]
@@ -216,7 +216,7 @@ repos:
 ```yaml
 - id: python-ruff
   name: Ruff (Python format + lint)
-  entry: bash -c 'files=$(git diff --cached --name-only --diff-filter=ACM | grep -E "\.py$" | grep -E "^(app|tools)/" || true); if [ -n "$files" ]; then make lint-ensure-containers >/dev/null 2>&1; docker exec <container> ruff check $files; fi'
+  entry: bash -c 'files=$(git diff --cached --name-only --diff-filter=ACM | grep -E "\.py$" | grep -E "^(app|tools)/" || true); if [ -n "$files" ]; then just lint-ensure-containers >/dev/null 2>&1; docker exec <container> ruff check $files; fi'
   language: system
   files: \.(py)$
   pass_filenames: false
@@ -225,7 +225,7 @@ repos:
 
 **Key patterns**:
 1. **File detection**: Use `git diff --cached --name-only` for changed files
-2. **Container check**: Ensure containers running with `make lint-ensure-containers`
+2. **Container check**: Ensure containers running with `just lint-ensure-containers`
 3. **Conditional execution**: Only run if files match filter
 4. **Docker execution**: Run tool in container, not locally
 
@@ -247,7 +247,7 @@ repos:
 ```yaml
 - id: typescript-check
   name: TypeScript type checking
-  entry: bash -c 'if git diff --cached --name-only --diff-filter=ACM | grep -qE "frontend/.*\.(ts|tsx)$"; then make lint-ensure-containers >/dev/null 2>&1; docker exec <container> sh -c "cd /workspace/frontend && npm run typecheck"; fi'
+  entry: bash -c 'if git diff --cached --name-only --diff-filter=ACM | grep -qE "frontend/.*\.(ts|tsx)$"; then just lint-ensure-containers >/dev/null 2>&1; docker exec <container> sh -c "cd /workspace/frontend && npm run typecheck"; fi'
   language: system
   files: ^frontend/.*\.(ts|tsx)$
   pass_filenames: false
@@ -325,7 +325,7 @@ repos:
 **Implementation**:
 ```yaml
 - id: pre-push-lint-all
-  entry: bash -c 'if [ -z "$PRE_PUSH_SKIP" ]; then make lint-all; else echo "⚠️  Linting skipped via PRE_PUSH_SKIP"; fi'
+  entry: bash -c 'if [ -z "$PRE_PUSH_SKIP" ]; then just lint-all; else echo "⚠️  Linting skipped via PRE_PUSH_SKIP"; fi'
 ```
 
 **Usage** (emergency only):
@@ -523,7 +523,7 @@ test-all:
 
 2. **Run auto-fix before committing**
    ```bash
-   make lint-fix
+   just lint-fix
    git add -u
    ```
 
@@ -562,7 +562,7 @@ test-all:
 | Issue | Cause | Solution |
 |-------|-------|----------|
 | Hooks not running | Not installed | `pre-commit install` |
-| Docker errors | Containers not running | `make lint-ensure-containers` |
+| Docker errors | Containers not running | `just lint-ensure-containers` |
 | Slow hooks | First run downloads tools | Subsequent runs faster |
 | False positives | Tool configuration | Update tool config, not hook |
 | Skip not working | Wrong syntax | Use `--no-verify` or `PRE_PUSH_SKIP=1` |

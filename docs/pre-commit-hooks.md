@@ -388,7 +388,7 @@ src/buggy.py:5:1: E302 expected 2 blank lines, found 1
 src/buggy.py:10:80: E501 line too long (85 > 79 characters)
 
 # Fix the errors
-$ make format
+$ just format
 $ git add -u
 $ git commit -m "Add feature (fixed linting)"
 # Hooks pass, commit succeeds
@@ -596,7 +596,7 @@ pre-commit run --all-files
 ```yaml
 - id: lint-parallel
   name: Run linting in parallel
-  entry: bash -c 'make lint & make test & wait'
+  entry: bash -c 'just lint & just test & wait'
   language: system
 ```
 
@@ -671,7 +671,7 @@ git commit --no-verify -m "..."
 - **Pre-commit Framework**: https://pre-commit.com/
 - **thai-lint Documentation**: [README.md](../README.md)
 - **Configuration Reference**: [.pre-commit-config.yaml](../.pre-commit-config.yaml)
-- **Makefile Targets**: `make help`
+- **Makefile Targets**: `just help`
 
 ## Support
 

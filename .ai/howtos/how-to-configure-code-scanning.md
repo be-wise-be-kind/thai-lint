@@ -134,8 +134,8 @@ jobs:
 
       # Alternative: Manual build commands
       # - run: |
-      #     make bootstrap
-      #     make release
+      #     just bootstrap
+      #     just release
 
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v2

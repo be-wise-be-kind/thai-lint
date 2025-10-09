@@ -255,7 +255,7 @@ Show users how to use your project:
 
 Start the development server:
 ```bash
-make dev
+just dev
 ```
 
 Access the application:
@@ -302,11 +302,11 @@ curl -X PATCH http://localhost:8000/api/v1/tasks/1 \
 ### Common Commands
 
 ```bash
-make dev              # Start development environment
-make test             # Run all tests
-make lint             # Run linting
-make format           # Format code
-make migrate          # Run database migrations
+just dev              # Start development environment
+just test             # Run all tests
+just lint             # Run linting
+just format           # Format code
+just migrate          # Run database migrations
 ```
 
 ### Advanced Usage
@@ -407,10 +407,10 @@ Help contributors work on the project:
 
 ```bash
 # Run all tests
-make test
+just test
 
 # Run with coverage
-make test-coverage
+just test-coverage
 
 # Run specific test file
 poetry run pytest tests/unit/test_tasks.py
@@ -431,10 +431,10 @@ This project follows strict code quality standards:
 
 **Tools**:
 ```bash
-make lint              # Run Ruff linting
-make lint-fix          # Auto-fix issues
-make typecheck         # MyPy type checking
-make security-scan     # Bandit security scan
+just lint              # Run Ruff linting
+just lint-fix          # Auto-fix issues
+just typecheck         # MyPy type checking
+just security-scan     # Bandit security scan
 ```
 
 ### Git Workflow
@@ -712,9 +712,9 @@ taskflow-api/
 ## Development
 
 ```bash
-make dev          # Start dev environment
-make test         # Run tests
-make lint         # Lint code
+just dev          # Start dev environment
+just test         # Run tests
+just lint         # Lint code
 ```
 
 See [Development Guide](docs/DEVELOPMENT.md).

@@ -137,7 +137,7 @@ The DRY linter found **212 violations** across **35 source files** in the `src/`
 **Benchmark Results** (src/ directory only):
 - **First run** (cache creation): 0.751s - 0.961s
 - **Second run** (cache hit): 0.764s
-- **make lint-dry**: 0.961s (includes Makefile overhead)
+- **just lint-dry**: 0.961s (includes Makefile overhead)
 
 **Decision**: ✅ **ADD TO `lint-full`** - Performance is excellent (<1s), well under the 1-second threshold.
 

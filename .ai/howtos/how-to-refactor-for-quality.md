@@ -10,7 +10,7 @@
     with all constraints in mind. Includes decision trees, before/after examples, anti-patterns to avoid, and
     validation workflows. Prerequisite: Complete basic linting fixes first (see how-to-fix-linting-errors.md).
 
-**Dependencies**: make lint-complexity, make lint-solid, make lint-dry, poetry, radon, xenon, thai-lint srp, thai-lint dry
+**Dependencies**: just lint-complexity, just lint-solid, just lint-dry, poetry, radon, xenon, thai-lint srp, thai-lint dry
 
 **Exports**: Well-architected code with A-grade complexity, no SRP violations, and no duplicate code
 
@@ -46,8 +46,8 @@ Before starting architectural refactoring:
 ✅ **Complete basic linting first**: See `.ai/howtos/how-to-fix-linting-errors.md`
 
 Ensure:
-- `make lint` passes (Ruff, Flake8)
-- `make lint-security` passes (Bandit, pip-audit)
+- `just lint` passes (Ruff, Flake8)
+- `just lint-security` passes (Bandit, pip-audit)
 - MyPy type checking passes
 - Pylint score is 10.00/10
 - All tests pass
@@ -187,7 +187,7 @@ Before making any changes, analyze the code holistically.
 
 ```bash
 # Run complexity analysis
-make lint-complexity
+just lint-complexity
 
 # Look for:
 # - Radon: Average complexity score
@@ -195,7 +195,7 @@ make lint-complexity
 # - Nesting linter: Deep nesting violations
 
 # Run SRP analysis
-make lint-solid
+just lint-solid
 
 # Look for:
 # - Classes with multiple responsibilities
@@ -203,7 +203,7 @@ make lint-solid
 # - Classes with unrelated method groups
 
 # Run DRY analysis
-make lint-dry
+just lint-dry
 
 # Look for:
 # - Duplicate code blocks (3+ lines)
@@ -755,9 +755,9 @@ class UserProfile:
 
 ```bash
 # Run all three checks
-make lint-complexity
-make lint-solid
-make lint-dry
+just lint-complexity
+just lint-solid
+just lint-dry
 
 # Review output and note:
 # - Which files have violations in ALL THREE?
@@ -808,10 +808,10 @@ Priority 6: Only DRY violations (same file)
 # Refactor
 
 # Validate ALL THREE constraints
-make lint-complexity
-make lint-solid
-make lint-dry
-make test
+just lint-complexity
+just lint-solid
+just lint-dry
+just test
 
 # If all pass, move to next file/pattern
 # If not, adjust refactoring
@@ -821,14 +821,14 @@ make test
 
 ```bash
 # Keep refactoring until:
-make lint-complexity  # All A-grade
-make lint-solid       # No violations
-make lint-dry         # No duplicates
-make test            # All pass
+just lint-complexity  # All A-grade
+just lint-solid       # No violations
+just lint-dry         # No duplicates
+just test            # All pass
 
 # Then run full validation
-make lint-full
-make test
+just lint-full
+just test
 ```
 
 ---
@@ -994,7 +994,7 @@ Signs of SRP violations:
 
 ```bash
 # Run SRP linter
-make lint-solid
+just lint-solid
 
 # Or directly:
 poetry run thai-lint srp src/ --config .thailint.yaml
@@ -1097,7 +1097,7 @@ def calculate_subscription_discount(subscription):
 
 ```bash
 # Run DRY linter
-make lint-dry
+just lint-dry
 
 # Or directly:
 poetry run thai-lint dry src/ --config .thailint.yaml
@@ -2105,7 +2105,7 @@ Before committing DRY refactoring, verify:
 - [ ] **Did I create any parallel structures?** (multiple similar functions/classes)
 - [ ] **Are function names generic or entity-specific?** (Generic is better)
 - [ ] **Did I parameterize sufficiently?** (Check for hardcoded entity names)
-- [ ] **Run `make lint-dry` - did violations DECREASE?** (Not just shift)
+- [ ] **Run `just lint-dry` - did violations DECREASE?** (Not just shift)
 - [ ] **Review NEW code for potential duplication patterns**
 
 ### Success Metrics
@@ -2137,14 +2137,14 @@ Before committing DRY refactoring, verify:
 
 ### Recovery: What to Do If You Created New Violations
 
-**If `make lint-dry` shows NEW violations after refactoring**:
+**If `just lint-dry` shows NEW violations after refactoring**:
 
 1. **Stop** - Don't continue refactoring
 2. **Analyze** - What pattern did the new violations create?
 3. **Identify** - Are the new violations parallel structures?
 4. **Re-extract** - Extract at a HIGHER level of abstraction
 5. **Parameterize** - Make the code handle ALL variations with parameters
-6. **Validate** - Run `make lint-dry` again - violations should decrease significantly
+6. **Validate** - Run `just lint-dry` again - violations should decrease significantly
 
 **Example Recovery**:
 ```python
@@ -2297,7 +2297,7 @@ class OrderService:
 
 ```bash
 # Check complexity
-make lint-complexity
+just lint-complexity
 
 # Look for:
 # - Radon output: Average complexity per file
@@ -2305,14 +2305,14 @@ make lint-complexity
 # - Nesting linter: Should show no violations
 
 # Check SRP
-make lint-solid
+just lint-solid
 
 # Look for:
 # - Classes flagged for multiple responsibilities
 # - Should show no violations
 
 # Check tests still pass
-make test
+just test
 
 # Must exit with code 0
 ```
@@ -2322,7 +2322,7 @@ make test
 **Xenon Output**:
 ```
 # Good - no output means all A-grade
-make lint-complexity
+just lint-complexity
 ✓ Xenon passed
 
 # Bad - shows violations
@@ -2335,7 +2335,7 @@ ERROR:xenon:src/example.py
 **SRP Linter Output**:
 ```
 # Good
-make lint-solid
+just lint-solid
 ✓ SRP checks passed
 
 # Bad
@@ -2352,14 +2352,14 @@ src/user_service.py:10
 
 Before committing:
 
-- [ ] `make lint-complexity` exits with code 0
+- [ ] `just lint-complexity` exits with code 0
 - [ ] Xenon shows **NO errors** (all A-grade)
 - [ ] Radon average complexity is **< 5.0 per file**
-- [ ] `make lint-solid` exits with code 0
+- [ ] `just lint-solid` exits with code 0
 - [ ] No SRP violations flagged
-- [ ] `make lint-dry` exits with code 0
+- [ ] `just lint-dry` exits with code 0
 - [ ] No duplicate code violations
-- [ ] `make test` exits with code 0
+- [ ] `just test` exits with code 0
 - [ ] All tests still pass
 
 ---
@@ -2704,8 +2704,8 @@ After completing architectural refactoring:
 
 ```bash
 # Run everything
-make lint-full
-make test
+just lint-full
+just test
 
 # Both must exit with code 0
 ```

@@ -109,7 +109,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Infrastructure
 
-- Updated Makefile with `make lint-solid` target
+- Updated Makefile with `just lint-solid` target
 - Integrated SRP checks into quality gates
 - CI/CD ready (proper exit codes and JSON output)
 
@@ -232,8 +232,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Infrastructure
 
-- Updated Makefile with `make lint-nesting` target
-- Integrated nesting checks into `make lint-full`
+- Updated Makefile with `just lint-nesting` target
+- Integrated nesting checks into `just lint-full`
 - CI/CD ready (proper exit codes and JSON output)
 
 ## [0.1.0] - 2025-10-06

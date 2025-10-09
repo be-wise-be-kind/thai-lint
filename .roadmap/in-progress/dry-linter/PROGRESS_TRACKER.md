@@ -55,8 +55,8 @@ Refactor all 212 DRY violations found in PR4 using systematic patterns.
 - ⬜ Read VIOLATIONS.md for categorized violation list
 - ⬜ Review refactoring patterns (extract base classes, utilities)
 - ⬜ Start with high-impact fixes (CLI utilities, violation builders)
-- ⬜ Test after each refactoring (make test)
-- ⬜ Verify violation count decreases (make lint-dry)
+- ⬜ Test after each refactoring (just test)
+- ⬜ Verify violation count decreases (just lint-dry)
 - ⬜ Maintain all quality gates (Pylint 10/10, Xenon A, tests passing)
 - ⬜ Document new base classes and patterns
 
@@ -373,7 +373,7 @@ CREATE INDEX idx_hash ON code_blocks(hash_value);
 
 **Activities Completed**:
 1. ✅ Performance benchmarking with cache testing
-2. ✅ Run `make lint-dry` on thai-lint codebase
+2. ✅ Run `just lint-dry` on thai-lint codebase
 3. ✅ Catalog violations in `.roadmap/in-progress/dry-linter/VIOLATIONS.md`
 4. ✅ Analyze patterns (CLI helpers, violation builders, linter framework, TypeScript, DRY linter self-violations)
 5. ✅ Configure `.thailint.yaml` (`dry.enabled: true`)
@@ -391,8 +391,8 @@ CREATE INDEX idx_hash ON code_blocks(hash_value);
 **Performance Metrics**:
 - **First run** (cache creation): 0.751s - 0.961s
 - **Second run** (cache hit): 0.764s (similar - cache overhead minimal)
-- **make lint-dry**: 0.961s
-- **make lint-full** (with DRY): 15.1s total (+0.96s for DRY component)
+- **just lint-dry**: 0.961s
+- **just lint-full** (with DRY): 15.1s total (+0.96s for DRY component)
 - **Decision**: ✅ **Added to lint-full** - Performance excellent (<1s threshold met)
 
 **Completion Criteria**:
@@ -429,8 +429,8 @@ CREATE INDEX idx_hash ON code_blocks(hash_value);
 
 **Process**:
 1. Fix violations one-by-one (commit per fix)
-2. Run tests after each fix: `make test`
-3. Verify violation count decreases: `make lint-dry`
+2. Run tests after each fix: `just test`
+3. Verify violation count decreases: `just lint-dry`
 4. Update VIOLATIONS.md with ✅ status
 5. Document refactoring decisions
 

@@ -40,11 +40,11 @@ Before starting a release, ensure all quality gates pass:
 
 ```bash
 # Run full linting suite (must exit with code 0)
-make lint-full
+just lint-full
 echo $?  # Should output: 0
 
 # Run fast linting
-make lint
+just lint
 echo $?  # Should output: 0
 
 # Run type checking
@@ -53,17 +53,17 @@ echo $?  # Should output: 0
 ```
 
 **Quality Gates:**
-- [ ] `make lint-full` exits with code 0 (no Pylint violations)
-- [ ] `make lint` exits with code 0 (no Ruff errors)
+- [ ] `just lint-full` exits with code 0 (no Pylint violations)
+- [ ] `just lint` exits with code 0 (no Ruff errors)
 - [ ] `mypy src/` exits with code 0 (no type errors)
-- [ ] No security vulnerabilities (`make lint-security`)
-- [ ] Complexity metrics meet standards (`make lint-complexity`)
+- [ ] No security vulnerabilities (`just lint-security`)
+- [ ] Complexity metrics meet standards (`just lint-complexity`)
 
 ### 2. Test Suite
 
 ```bash
 # Run all tests with coverage
-make test-coverage
+just test-coverage
 
 # Check coverage threshold (80% minimum)
 poetry run coverage report --fail-under=80
@@ -244,7 +244,7 @@ Once the tag is pushed, GitHub Actions automatically:
 
 1. **Runs Tests** (`test` job)
    - Installs dependencies
-   - Runs linting (`make lint`)
+   - Runs linting (`just lint`)
    - Runs type checking (`mypy`)
    - Runs test suite with coverage
    - Verifies ≥80% coverage
@@ -463,8 +463,8 @@ git tag -d vX.Y.Z
 Quick checklist for releases:
 
 ### Pre-Release
-- [ ] All tests pass (`make test`)
-- [ ] Linting clean (`make lint-full`)
+- [ ] All tests pass (`just test`)
+- [ ] Linting clean (`just lint-full`)
 - [ ] Documentation updated (CHANGELOG, README)
 - [ ] Local build succeeds (`poetry build`)
 - [ ] Clean environment install test passes

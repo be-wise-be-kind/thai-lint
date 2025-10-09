@@ -48,7 +48,7 @@ jobs:
         run: poetry install --with dev
 
       - name: Run linting (fast)
-        run: poetry run make lint
+        run: poetry run just lint
 
       - name: Run type checking
         run: poetry run mypy src/

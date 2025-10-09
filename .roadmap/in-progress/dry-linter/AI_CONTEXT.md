@@ -275,7 +275,7 @@ class DRYRule(BaseLintRule):
 
 ### Decision 5: Excluded from lint-full
 
-**Decision**: DRY linter is **opt-in** (not in `make lint-full`)
+**Decision**: DRY linter is **opt-in** (not in `just lint-full`)
 
 **Rationale**:
 1. **Performance**: ~8 min for large projects (too slow for fast iteration)

@@ -43,7 +43,7 @@ jobs:
         run: poetry install --no-interaction
 
       - name: Run tests with coverage
-        run: make test-coverage
+        run: just test-coverage
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v5
