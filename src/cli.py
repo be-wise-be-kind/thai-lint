@@ -382,17 +382,24 @@ def file_placement(  # pylint: disable=too-many-arguments,too-many-positional-ar
     Checks that files are placed in appropriate directories according to
     configured rules and patterns.
 
-    PATH: File or directory to lint (defaults to current directory)
+    PATH: Single file or directory to lint (defaults to current directory)
+
+    Note: Pass ONE path at a time. To lint multiple files, pass their parent
+    directory and files will be scanned recursively.
 
     Examples:
 
         \b
-        # Lint current directory
+        # Lint current directory (all files recursively)
         thai-lint file-placement
 
         \b
         # Lint specific directory
         thai-lint file-placement src/
+
+        \b
+        # Lint single file
+        thai-lint file-placement src/app.py
 
         \b
         # Use custom config
@@ -568,17 +575,24 @@ def nesting(  # pylint: disable=too-many-arguments,too-many-positional-arguments
     Analyzes Python and TypeScript files for deeply nested code structures
     (if/for/while/try statements) and reports violations.
 
-    PATH: File or directory to lint (defaults to current directory)
+    PATH: Single file or directory to lint (defaults to current directory)
+
+    Note: Pass ONE path at a time. To lint multiple files, pass their parent
+    directory and files will be scanned recursively.
 
     Examples:
 
         \b
-        # Check current directory
+        # Check current directory (all files recursively)
         thai-lint nesting
 
         \b
         # Check specific directory
         thai-lint nesting src/
+
+        \b
+        # Check single file
+        thai-lint nesting src/app.py
 
         \b
         # Use custom max depth
@@ -693,17 +707,24 @@ def srp(  # pylint: disable=too-many-arguments,too-many-positional-arguments
     - Lines of code exceeding threshold (default: 200)
     - Responsibility keywords in class names (Manager, Handler, Processor, etc.)
 
-    PATH: File or directory to lint (defaults to current directory)
+    PATH: Single file or directory to lint (defaults to current directory)
+
+    Note: Pass ONE path at a time. To lint multiple files, pass their parent
+    directory and files will be scanned recursively.
 
     Examples:
 
         \b
-        # Check current directory
+        # Check current directory (all files recursively)
         thai-lint srp
 
         \b
         # Check specific directory
         thai-lint srp src/
+
+        \b
+        # Check single file
+        thai-lint srp src/app.py
 
         \b
         # Use custom thresholds
@@ -769,17 +790,24 @@ def dry(  # pylint: disable=too-many-arguments,too-many-positional-arguments
     Detects duplicate code blocks across your project using token-based hashing
     with SQLite caching for fast incremental scans.
 
-    PATH: File or directory to lint (defaults to current directory)
+    PATH: Single file or directory to lint (defaults to current directory)
+
+    Note: Pass ONE path at a time. To lint multiple files, pass their parent
+    directory and files will be scanned recursively.
 
     Examples:
 
         \b
-        # Check current directory
+        # Check current directory (all files recursively)
         thai-lint dry
 
         \b
         # Check specific directory
         thai-lint dry src/
+
+        \b
+        # Check single file
+        thai-lint dry src/app.py
 
         \b
         # Use custom config file
