@@ -12,17 +12,29 @@ Dependencies: PythonDuplicateAnalyzer, TypeScriptDuplicateAnalyzer, DRYCache, DR
 
 Exports: FileAnalyzer class
 
-Interfaces: FileAnalyzer.analyze_or_load(file_path, content, language, config)
+Interfaces: FileAnalyzer.analyze_or_load(file_path, content, language, config, cache)
 
 Implementation: Delegates to language-specific analyzers, checks cache freshness
 """
 
+from dataclasses import dataclass
 from pathlib import Path
 
 from .cache import CodeBlock, DRYCache
 from .config import DRYConfig
 from .python_analyzer import PythonDuplicateAnalyzer
 from .typescript_analyzer import TypeScriptDuplicateAnalyzer
+
+
+@dataclass
+class FileAnalysisContext:
+    """Context for file analysis."""
+
+    file_path: Path
+    content: str
+    language: str
+    config: DRYConfig
+    cache: DRYCache | None
 
 
 class FileAnalyzer:
@@ -33,13 +45,13 @@ class FileAnalyzer:
         self._python_analyzer = PythonDuplicateAnalyzer()
         self._typescript_analyzer = TypeScriptDuplicateAnalyzer()
 
-    def analyze_or_load(
+    def analyze_or_load(  # pylint: disable=too-many-arguments,too-many-positional-arguments
         self,
         file_path: Path,
         content: str,
         language: str,
         config: DRYConfig,
-        cache: DRYCache | None,
+        cache: DRYCache | None = None,
     ) -> list[CodeBlock]:
         """Analyze file or load from cache.
 

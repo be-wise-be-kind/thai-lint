@@ -41,9 +41,20 @@ documentation:
 howto:
   location: .ai/howtos/
   files:
-    - how-to-prevent-secrets-in-git.md
-    - how-to-setup-dependency-scanning.md
+    - documentation-howtos-README.md
+    - how-to-add-custom-hook.md
     - how-to-configure-code-scanning.md
+    - how-to-create-readme.md
+    - how-to-debug-failing-hooks.md
+    - how-to-document-api.md
+    - how-to-fix-linting-errors.md
+    - how-to-install-pre-commit.md
+    - how-to-prevent-secrets-in-git.md
+    - how-to-refactor-for-quality.md
+    - how-to-roadmap.md
+    - how-to-setup-dependency-scanning.md
+    - how-to-write-file-headers.md
+    - how-to-write-tests.md
 
 standards:
   security:

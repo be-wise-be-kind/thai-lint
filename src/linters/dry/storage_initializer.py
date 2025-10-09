@@ -41,8 +41,10 @@ class StorageInitializer:
         cache = None
         if config.cache_enabled:
             # Use SQLite cache
-            project_root = getattr(context, "project_root", Path.cwd())
+            metadata = getattr(context, "metadata", {})
+            project_root = metadata.get("_project_root", Path.cwd())
             cache_path = project_root / config.cache_path
+            cache_path.parent.mkdir(parents=True, exist_ok=True)
             cache = DRYCache(cache_path)
         # else: cache = None triggers in-memory fallback in DuplicateStorage
 

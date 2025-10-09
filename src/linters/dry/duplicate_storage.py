@@ -36,30 +36,55 @@ class DuplicateStorage:
         self._memory_store: dict[int, list[CodeBlock]] = {}
 
     def add_blocks(self, file_path: Path, blocks: list[CodeBlock]) -> None:
-        """Add code blocks to storage.
+        """Add code blocks to storage and cache.
 
         Args:
             file_path: Path to source file
             blocks: List of code blocks to store
         """
+        # Always add to memory for duplicate detection
+        self._add_to_memory(blocks)
+
+        # Also persist to cache if available
         if self._cache:
             self._add_to_cache(file_path, blocks)
-        else:
-            self._add_to_memory(blocks)
+
+    def add_blocks_to_memory(self, file_path: Path, blocks: list[CodeBlock]) -> None:
+        """Add code blocks to in-memory storage only (for cache hits).
+
+        Args:
+            file_path: Path to source file (used for cache persistence check)
+            blocks: List of code blocks to store
+        """
+        # Add to memory for duplicate detection this run
+        self._add_to_memory(blocks)
+
+        # Update cache with new blocks if needed (for fresh analysis)
+        # Skip if blocks were loaded from cache (they're already persisted)
+        if self._cache and blocks:
+            # Check if file analysis is fresh (not from cache)
+            # This is indicated by the blocks not having been persisted yet
+            # We can tell by checking mtime freshness
+            try:
+                mtime = file_path.stat().st_mtime
+                if not self._cache.is_fresh(file_path, mtime):
+                    # File was analyzed (not cached), so persist
+                    self._add_to_cache(file_path, blocks)
+            except OSError:
+                # File doesn't exist, skip cache
+                pass
 
     def get_duplicate_hashes(self) -> list[int]:
-        """Get all hash values with 2+ occurrences.
+        """Get all hash values with 2+ occurrences from memory.
 
         Returns:
             List of hash values that appear in multiple blocks
         """
-        if self._cache:
-            return self._cache.get_duplicate_hashes()
-
+        # Always query from in-memory store for this run's files
         return [h for h, blocks in self._memory_store.items() if len(blocks) >= 2]
 
     def get_blocks_for_hash(self, hash_value: int) -> list[CodeBlock]:
-        """Get all blocks with given hash value.
+        """Get all blocks with given hash value from memory.
 
         Args:
             hash_value: Hash to search for
@@ -67,9 +92,7 @@ class DuplicateStorage:
         Returns:
             List of code blocks with this hash
         """
-        if self._cache:
-            return self._cache.find_duplicates_by_hash(hash_value)
-
+        # Always query from in-memory store for this run's files
         return self._memory_store.get(hash_value, [])
 
     def _add_to_cache(self, file_path: Path, blocks: list[CodeBlock]) -> None:

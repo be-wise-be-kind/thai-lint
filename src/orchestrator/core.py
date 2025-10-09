@@ -129,7 +129,10 @@ class Orchestrator:
 
         language = detect_language(file_path)
         rules = self._get_rules_for_file(file_path, language)
-        context = FileLintContext(file_path, language, metadata=self.config)
+
+        # Add project_root to metadata for rules that need it (e.g., DRY linter cache)
+        metadata = {**self.config, "_project_root": self.project_root}
+        context = FileLintContext(file_path, language, metadata=metadata)
 
         return self._execute_rules(rules, context)
 
@@ -155,6 +158,9 @@ class Orchestrator:
         """Safely check a rule, returning empty list on error."""
         try:
             return rule.check(context)
+        except ValueError:
+            # Re-raise configuration validation errors (these are user-facing)
+            raise
         except Exception:  # nosec B112
             # Skip rules that fail (defensive programming)
             return []

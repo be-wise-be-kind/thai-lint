@@ -18,16 +18,36 @@ Interfaces: DRYRule.check(context) -> list[Violation], finalize() -> list[Violat
 Implementation: Delegates all logic to helper classes, maintains only orchestration and state
 """
 
+from __future__ import annotations
+
+from dataclasses import dataclass
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 from src.core.base import BaseLintContext, BaseLintRule
 from src.core.types import Violation
 
+from .config import DRYConfig
 from .config_loader import ConfigLoader
 from .duplicate_storage import DuplicateStorage
 from .file_analyzer import FileAnalyzer
+from .inline_ignore import InlineIgnoreParser
 from .storage_initializer import StorageInitializer
 from .violation_generator import ViolationGenerator
+
+if TYPE_CHECKING:
+    from .cache import CodeBlock, DRYCache
+
+
+@dataclass
+class DRYRuleHelpers:
+    """Helper components for DRY rule."""
+
+    config_loader: ConfigLoader
+    storage_initializer: StorageInitializer
+    file_analyzer: FileAnalyzer
+    violation_generator: ViolationGenerator
+    inline_ignore: InlineIgnoreParser
 
 
 class DRYRule(BaseLintRule):
@@ -37,12 +57,16 @@ class DRYRule(BaseLintRule):
         """Initialize the DRY rule with helper components."""
         self._storage: DuplicateStorage | None = None
         self._initialized = False
+        self._config: DRYConfig | None = None
 
-        # Helper components
-        self._config_loader = ConfigLoader()
-        self._storage_initializer = StorageInitializer()
-        self._file_analyzer = FileAnalyzer()
-        self._violation_generator = ViolationGenerator()
+        # Helper components grouped to reduce instance attributes
+        self._helpers = DRYRuleHelpers(
+            config_loader=ConfigLoader(),
+            storage_initializer=StorageInitializer(),
+            file_analyzer=FileAnalyzer(),
+            violation_generator=ViolationGenerator(),
+            inline_ignore=InlineIgnoreParser(),
+        )
 
     @property
     def rule_id(self) -> str:
@@ -71,9 +95,17 @@ class DRYRule(BaseLintRule):
         if not self._should_process_file(context):
             return []
 
-        config = self._config_loader.load_config(context)
+        config = self._helpers.config_loader.load_config(context)
         if not config.enabled:
             return []
+
+        # Store config for finalize()
+        if self._config is None:
+            self._config = config
+
+        # Parse inline ignore directives from this file
+        file_path = Path(context.file_path)  # type: ignore[arg-type]
+        self._helpers.inline_ignore.parse_file(file_path, context.file_content or "")
 
         self._ensure_storage_initialized(context, config)
         self._analyze_and_store(context, config)
@@ -84,22 +116,37 @@ class DRYRule(BaseLintRule):
         """Check if file should be processed."""
         return context.file_content is not None and context.file_path is not None
 
-    def _ensure_storage_initialized(self, context: BaseLintContext, config) -> None:
+    def _ensure_storage_initialized(self, context: BaseLintContext, config: DRYConfig) -> None:
         """Initialize storage on first call."""
         if not self._initialized:
-            self._storage = self._storage_initializer.initialize(context, config)
+            self._storage = self._helpers.storage_initializer.initialize(context, config)
             self._initialized = True
 
-    def _analyze_and_store(self, context: BaseLintContext, config) -> None:
+    def _analyze_and_store(self, context: BaseLintContext, config: DRYConfig) -> None:
         """Analyze file and store blocks."""
-        file_path = Path(context.file_path)  # type: ignore[arg-type]
-        cache = self._storage._cache if self._storage else None  # pylint: disable=protected-access
-        blocks = self._file_analyzer.analyze_or_load(
+        # Guaranteed by _should_process_file check
+        assert context.file_path is not None
+        assert context.file_content is not None
+
+        file_path = Path(context.file_path)
+        cache = self._get_cache()
+        blocks = self._helpers.file_analyzer.analyze_or_load(
             file_path, context.file_content, context.language, config, cache
         )
 
-        if blocks and self._storage:
-            self._storage.add_blocks(file_path, blocks)
+        if blocks:
+            self._store_blocks(file_path, blocks)
+
+    def _get_cache(self) -> DRYCache | None:
+        """Get cache from storage if available."""
+        if not self._storage:
+            return None
+        return self._storage._cache  # pylint: disable=protected-access
+
+    def _store_blocks(self, file_path: Path, blocks: list[CodeBlock]) -> None:
+        """Store blocks in memory if storage available."""
+        if self._storage:
+            self._storage.add_blocks_to_memory(file_path, blocks)
 
     def finalize(self) -> list[Violation]:
         """Generate violations after all files processed.
@@ -107,7 +154,14 @@ class DRYRule(BaseLintRule):
         Returns:
             List of all violations found across all files
         """
-        if not self._storage:
+        if not self._storage or not self._config:
             return []
 
-        return self._violation_generator.generate_violations(self._storage, self.rule_id)
+        violations = self._helpers.violation_generator.generate_violations(
+            self._storage, self.rule_id, self._config, self._helpers.inline_ignore
+        )
+
+        # Clear inline ignore cache for next run
+        self._helpers.inline_ignore.clear()
+
+        return violations

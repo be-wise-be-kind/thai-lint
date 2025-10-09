@@ -17,6 +17,8 @@ Interfaces: Click CLI commands, configuration context via Click ctx, logging int
 
 Implementation: Click decorators for commands, context passing for shared state, comprehensive help text
 """
+# pylint: disable=too-many-lines
+# Justification: CLI modules naturally have many commands and helper functions
 
 import logging
 import sys

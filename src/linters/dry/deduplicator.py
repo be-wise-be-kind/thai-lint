@@ -34,14 +34,14 @@ class ViolationDeduplicator:
     def deduplicate_blocks(self, blocks: list[CodeBlock]) -> list[CodeBlock]:
         """Remove overlapping blocks from same file.
 
-        When rolling hash creates overlapping windows, keep only the first block
-        per file to avoid duplicate violations.
+        When rolling hash creates overlapping windows, keep non-overlapping blocks.
+        Blocks are overlapping if they share any line numbers in the same file.
 
         Args:
             blocks: List of code blocks (may have overlaps from rolling hash)
 
         Returns:
-            Deduplicated list of blocks (one per file)
+            Deduplicated list of blocks (non-overlapping blocks preserved)
         """
         if not blocks:
             return []
@@ -50,11 +50,52 @@ class ViolationDeduplicator:
         deduplicated = []
 
         for file_blocks in grouped.values():
-            # Sort by start_line and keep only the first one per file
-            sorted_blocks = sorted(file_blocks, key=lambda b: b.start_line)
-            deduplicated.append(sorted_blocks[0])
+            kept = self._remove_overlaps_from_file(file_blocks)
+            deduplicated.extend(kept)
 
         return deduplicated
+
+    def _remove_overlaps_from_file(self, file_blocks: list[CodeBlock]) -> list[CodeBlock]:
+        """Remove overlapping blocks from single file.
+
+        Args:
+            file_blocks: Blocks from same file
+
+        Returns:
+            Non-overlapping blocks
+        """
+        sorted_blocks = sorted(file_blocks, key=lambda b: b.start_line)
+        kept_blocks: list[CodeBlock] = []
+
+        for block in sorted_blocks:
+            if not self._overlaps_any_kept(block, kept_blocks):
+                kept_blocks.append(block)
+
+        return kept_blocks
+
+    def _overlaps_any_kept(self, block: CodeBlock, kept_blocks: list[CodeBlock]) -> bool:
+        """Check if block overlaps with any kept blocks.
+
+        Args:
+            block: Block to check
+            kept_blocks: Previously kept blocks
+
+        Returns:
+            True if block overlaps with any kept block
+        """
+        return any(self._blocks_overlap(block, kept) for kept in kept_blocks)
+
+    def _blocks_overlap(self, block1: CodeBlock, block2: CodeBlock) -> bool:
+        """Check if two blocks overlap (share any lines).
+
+        Args:
+            block1: First code block
+            block2: Second code block
+
+        Returns:
+            True if blocks overlap
+        """
+        return block1.start_line <= block2.end_line and block2.start_line <= block1.end_line
 
     def deduplicate_violations(self, violations: list[Violation]) -> list[Violation]:
         """Remove overlapping violations from same file.
