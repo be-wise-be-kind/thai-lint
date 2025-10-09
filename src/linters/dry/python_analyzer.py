@@ -333,29 +333,55 @@ class PythonDuplicateAnalyzer(BaseTokenAnalyzer):
         except SyntaxError:
             return False
 
-    def _is_part_of_decorator(self, lines: list[str], start_line: int, end_line: int) -> bool:
-        """Check if lines are part of a decorator + function definition.
+    def _check_ast_context(
+        self,
+        lines: list[str],
+        start_line: int,
+        end_line: int,
+        lookback: int,
+        lookforward: int,
+        predicate,
+    ) -> bool:
+        """Generic helper for AST-based context checking.
 
-        A decorator pattern is @something(...) followed by def/class.
+        Args:
+            lines: Source file lines
+            start_line: Starting line number (1-indexed)
+            end_line: Ending line number (1-indexed)
+            lookback: Number of lines to look backward
+            lookforward: Number of lines to look forward
+            predicate: Function that takes AST tree and returns bool
+
+        Returns:
+            True if predicate returns True for the parsed context
         """
-        # Look backwards for @ symbol, forwards for def/class
-        lookback_start = max(0, start_line - 10)
-        lookforward_end = min(len(lines), end_line + 10)
+        lookback_start = max(0, start_line - lookback)
+        lookforward_end = min(len(lines), end_line + lookforward)
 
-        # Extract expanded context
         context_lines = lines[lookback_start:lookforward_end]
         context = "\n".join(context_lines)
 
         try:
             tree = ast.parse(context)
-            # Find a function or class with decorators in the context
-            for stmt in tree.body:
-                if isinstance(stmt, (ast.FunctionDef, ast.ClassDef)) and stmt.decorator_list:
-                    return True
+            return predicate(tree, lookback_start)
         except SyntaxError:
             pass
 
         return False
+
+    def _is_part_of_decorator(self, lines: list[str], start_line: int, end_line: int) -> bool:
+        """Check if lines are part of a decorator + function definition.
+
+        A decorator pattern is @something(...) followed by def/class.
+        """
+        def has_decorators(tree: ast.AST, _lookback_start: int) -> bool:
+            """Check if any function or class in the tree has decorators."""
+            for stmt in tree.body:
+                if isinstance(stmt, (ast.FunctionDef, ast.ClassDef)) and stmt.decorator_list:
+                    return True
+            return False
+
+        return self._check_ast_context(lines, start_line, end_line, 10, 10, has_decorators)
 
     def _is_part_of_function_call(self, lines: list[str], start_line: int, end_line: int) -> bool:
         """Check if lines are arguments inside a function/constructor call.
@@ -366,25 +392,16 @@ class PythonDuplicateAnalyzer(BaseTokenAnalyzer):
                 arg2=value2,
             )
         """
-        # Look backwards for opening paren, forwards for closing paren
-        lookback_start = max(0, start_line - 10)
-        lookforward_end = min(len(lines), end_line + 10)
+        def is_single_non_function_statement(tree: ast.AST, _lookback_start: int) -> bool:
+            """Check if context has exactly one statement that's not a function/class def."""
+            return (
+                len(tree.body) == 1
+                and not isinstance(tree.body[0], (ast.FunctionDef, ast.ClassDef))
+            )
 
-        context_lines = lines[lookback_start:lookforward_end]
-        context = "\n".join(context_lines)
-
-        try:
-            tree = ast.parse(context)
-            # If the expanded context has exactly 1 statement (and it's not a function def),
-            # the flagged lines are part of it
-            if len(tree.body) == 1 and not isinstance(
-                tree.body[0], (ast.FunctionDef, ast.ClassDef)
-            ):
-                return True
-        except SyntaxError:
-            pass
-
-        return False
+        return self._check_ast_context(
+            lines, start_line, end_line, 10, 10, is_single_non_function_statement
+        )
 
     def _is_part_of_class_body(self, lines: list[str], start_line: int, end_line: int) -> bool:
         """Check if lines are field definitions inside a class body.
@@ -394,32 +411,24 @@ class PythonDuplicateAnalyzer(BaseTokenAnalyzer):
                 field1: Type1
                 field2: Type2
         """
-        # Look backwards for class definition
-        lookback_start = max(0, start_line - 10)
-        lookforward_end = min(len(lines), end_line + 5)
-
-        context_lines = lines[lookback_start:lookforward_end]
-        context = "\n".join(context_lines)
-
-        try:
-            tree = ast.parse(context)
-            # Check if any statement is a class definition and the flagged lines
-            # fall within the class body range
+        def is_within_class_body(tree: ast.AST, lookback_start: int) -> bool:
+            """Check if flagged range falls within a class body."""
             for stmt in tree.body:
-                if isinstance(stmt, ast.ClassDef):
-                    # Adjust line numbers: stmt.lineno is relative to context
-                    # We need to convert back to original file line numbers
-                    class_start_in_context = stmt.lineno
-                    class_end_in_context = stmt.end_lineno if stmt.end_lineno else stmt.lineno
+                if not isinstance(stmt, ast.ClassDef):
+                    continue
 
-                    # Convert to original file line numbers (1-indexed)
-                    class_start_original = lookback_start + class_start_in_context
-                    class_end_original = lookback_start + class_end_in_context
+                # Adjust line numbers: stmt.lineno is relative to context
+                # We need to convert back to original file line numbers
+                class_start_in_context = stmt.lineno
+                class_end_in_context = stmt.end_lineno if stmt.end_lineno else stmt.lineno
 
-                    # Check if the flagged range overlaps with class body
-                    if start_line >= class_start_original and end_line <= class_end_original:
-                        return True
-        except SyntaxError:
-            pass
+                # Convert to original file line numbers (1-indexed)
+                class_start_original = lookback_start + class_start_in_context
+                class_end_original = lookback_start + class_end_in_context
 
-        return False
+                # Check if the flagged range overlaps with class body
+                if start_line >= class_start_original and end_line <= class_end_original:
+                    return True
+            return False
+
+        return self._check_ast_context(lines, start_line, end_line, 10, 5, is_within_class_body)
