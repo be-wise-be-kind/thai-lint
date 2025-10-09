@@ -291,6 +291,7 @@ class TestLibraryErrorHandling:
         import yaml
 
         from src import Linter
+        from src.core.config_parser import ConfigParseError
 
         with tempfile.TemporaryDirectory() as tmpdir:
             tmp_path = Path(tmpdir)
@@ -299,6 +300,7 @@ class TestLibraryErrorHandling:
             config_file = tmp_path / ".thailint.yaml"
             config_file.write_text("invalid: yaml: content:")
 
-            # Should raise error on initialization (yaml.scanner.ScannerError is a subclass of yaml.YAMLError)
-            with pytest.raises((ValueError, OSError, yaml.YAMLError)):
+            # Should raise error on initialization
+            # (ConfigParseError wraps yaml.YAMLError, ValueError for unsupported formats)
+            with pytest.raises((ValueError, OSError, yaml.YAMLError, ConfigParseError)):
                 Linter(config_file=str(config_file), project_root=str(tmp_path))

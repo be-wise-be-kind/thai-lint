@@ -3,32 +3,28 @@ Purpose: Extract function information from TypeScript AST nodes
 
 Scope: Identifies and extracts function metadata from tree-sitter nodes
 
-Overview: Provides function extraction functionality for TypeScript AST analysis. Handles multiple
-    TypeScript function forms including function declarations, arrow functions, method definitions,
-    and function expressions. Extracts function name and node for each form. Recursively collects
-    all functions in an AST tree. Isolates function identification logic from nesting depth calculation.
+Overview: Provides function extraction functionality for TypeScript AST analysis. Extends
+    TypeScriptBaseAnalyzer to reuse tree-sitter utilities. Handles multiple TypeScript
+    function forms including function declarations, arrow functions, method definitions,
+    and function expressions. Extracts function name and node for each form. Recursively
+    collects all functions in an AST tree. Isolates function identification logic from
+    nesting depth calculation.
 
-Dependencies: tree-sitter, typing
+Dependencies: TypeScriptBaseAnalyzer, tree-sitter
 
 Exports: TypeScriptFunctionExtractor
 
 Interfaces: extract_function_info(node) -> (node, name), collect_all_functions(root_node) -> list
 
-Implementation: Pattern matching on tree-sitter node types, child node traversal
+Implementation: Inherits tree-sitter utilities from base, pattern matching on node types
 """
 
 from typing import Any
 
-try:
-    from tree_sitter import Node  # pylint: disable=unused-import  # type: ignore[unused-ignore]
-
-    TREE_SITTER_AVAILABLE = True
-except ImportError:
-    TREE_SITTER_AVAILABLE = False
-    Node = Any  # type: ignore[misc,assignment]
+from src.analyzers.typescript_base import TypeScriptBaseAnalyzer
 
 
-class TypeScriptFunctionExtractor:
+class TypeScriptFunctionExtractor(TypeScriptBaseAnalyzer):
     """Extracts function information from TypeScript AST nodes."""
 
     def collect_all_functions(self, root_node: Any) -> list[tuple[Any, str]]:
@@ -86,10 +82,8 @@ class TypeScriptFunctionExtractor:
         Returns:
             Tuple of (node, function_name)
         """
-        for child in node.children:
-            if child.type == "identifier":
-                return node, child.text.decode()
-        return node, "anonymous"
+        name = self.extract_identifier_name(node)
+        return node, name
 
     def _extract_arrow_function(self, node: Any) -> tuple[Any, str]:
         """Extract name from arrow function (usually anonymous).
@@ -98,16 +92,14 @@ class TypeScriptFunctionExtractor:
             node: arrow_function node
 
         Returns:
-            Tuple of (node, "arrow_function")
+            Tuple of (node, "arrow_function" or variable name)
         """
         parent = node.parent
         if not (parent and parent.type == "variable_declarator"):
             return node, "arrow_function"
 
-        for child in parent.children:
-            if child.type == "identifier":
-                return node, child.text.decode()
-        return node, "arrow_function"
+        name = self.extract_identifier_name(parent)
+        return node, name if name != "anonymous" else "arrow_function"
 
     def _extract_method_definition(self, node: Any) -> tuple[Any, str]:
         """Extract name from method definition.
@@ -118,10 +110,8 @@ class TypeScriptFunctionExtractor:
         Returns:
             Tuple of (node, method_name)
         """
-        for child in node.children:
-            if child.type == "property_identifier":
-                return node, child.text.decode()
-        return node, "anonymous"
+        name = self.extract_identifier_name(node)
+        return node, name
 
     def _extract_function_expression(self, node: Any) -> tuple[Any, str]:
         """Extract name from function expression.
@@ -130,13 +120,11 @@ class TypeScriptFunctionExtractor:
             node: function expression node
 
         Returns:
-            Tuple of (node, function_name or "anonymous")
+            Tuple of (node, function_name or "function_expression")
         """
         parent = node.parent
         if not (parent and parent.type == "variable_declarator"):
             return node, "function_expression"
 
-        for child in parent.children:
-            if child.type == "identifier":
-                return node, child.text.decode()
-        return node, "function_expression"
+        name = self.extract_identifier_name(parent)
+        return node, name if name != "anonymous" else "function_expression"

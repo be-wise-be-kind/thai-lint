@@ -56,10 +56,12 @@ rules:
         config_file = tmp_path / "bad.yaml"
         config_file.write_text("invalid: yaml: content: [")
 
+        from src.core.config_parser import ConfigParseError
         from src.linter_config.loader import LinterConfigLoader
 
         loader = LinterConfigLoader()
-        with pytest.raises((ValueError, yaml.YAMLError)):  # YAML parse error
+        # ConfigParseError wraps yaml.YAMLError
+        with pytest.raises((ValueError, yaml.YAMLError, ConfigParseError)):
             loader.load(config_file)
 
     def test_load_nonexistent_file_returns_defaults(self, tmp_path):
@@ -155,10 +157,12 @@ rules:
         config_file = tmp_path / "bad.json"
         config_file.write_text("{invalid json content")
 
+        from src.core.config_parser import ConfigParseError
         from src.linter_config.loader import LinterConfigLoader
 
         loader = LinterConfigLoader()
-        with pytest.raises((ValueError, json.JSONDecodeError)):  # JSON parse error
+        # ConfigParseError wraps json.JSONDecodeError
+        with pytest.raises((ValueError, json.JSONDecodeError, ConfigParseError)):
             loader.load(config_file)
 
 
@@ -183,8 +187,10 @@ class TestConfigDefaults:
         config_file = tmp_path / "config.txt"
         config_file.write_text("some content")
 
+        from src.core.config_parser import ConfigParseError
         from src.linter_config.loader import LinterConfigLoader
 
         loader = LinterConfigLoader()
-        with pytest.raises(ValueError, match="Unsupported config format"):
+        # ConfigParseError raised for unsupported formats
+        with pytest.raises((ValueError, ConfigParseError), match="Unsupported config format"):
             loader.load(config_file)

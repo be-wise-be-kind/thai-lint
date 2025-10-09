@@ -25,11 +25,10 @@ Implementation: Extension-based format detection (.yaml/.yml vs .json), yaml.saf
     for security, empty dict handling for null YAML, ValueError for unsupported formats
 """
 
-import json
 from pathlib import Path
 from typing import Any
 
-import yaml
+from src.core.config_parser import parse_config_file
 
 
 class LinterConfigLoader:
@@ -49,21 +48,12 @@ class LinterConfigLoader:
             Configuration dictionary.
 
         Raises:
-            ValueError: If file format is unsupported.
-            yaml.YAMLError: If YAML is malformed.
-            json.JSONDecodeError: If JSON is malformed.
+            ConfigParseError: If file format is unsupported or parsing fails.
         """
         if not config_path.exists():
             return self.get_defaults()
 
-        suffix = config_path.suffix.lower()
-
-        with config_path.open(encoding="utf-8") as f:
-            if suffix in [".yaml", ".yml"]:
-                return yaml.safe_load(f) or {}
-            if suffix == ".json":
-                return json.load(f)
-            raise ValueError(f"Unsupported config format: {suffix}")
+        return parse_config_file(config_path)
 
     def get_defaults(self) -> dict[str, Any]:
         """Get default configuration.

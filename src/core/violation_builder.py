@@ -1,0 +1,78 @@
+"""
+Purpose: Base violation builder class for consistent violation creation across all linters
+
+Scope: Core violation building functionality used by all linter violation builders
+
+Overview: Provides base classes and data structures for violation creation across all linters.
+    Defines ViolationInfo dataclass containing all required and optional violation fields,
+    and BaseViolationBuilder class with common build() method. Eliminates duplicate violation
+    construction patterns across file_placement, nesting, and srp linters. Ensures consistent
+    violation creation with proper defaults for column and severity fields. Linter-specific
+    builders extend this base class to inherit common construction logic while maintaining
+    their domain-specific message generation and suggestion logic.
+
+Dependencies: dataclasses, src.core.types (Violation, Severity)
+
+Exports: ViolationInfo dataclass, BaseViolationBuilder class
+
+Interfaces: ViolationInfo(rule_id, file_path, line, message, column, severity),
+    BaseViolationBuilder.build(info: ViolationInfo) -> Violation
+
+Implementation: Uses dataclass for type-safe violation info, base class provides build()
+    method that constructs Violation objects with proper defaults
+"""
+
+from dataclasses import dataclass
+
+from src.core.types import Severity, Violation
+
+
+@dataclass
+class ViolationInfo:
+    """Information needed to build a violation.
+
+    Attributes:
+        rule_id: Identifier for the rule that was violated
+        file_path: Path to the file containing the violation
+        line: Line number where violation occurs (1-indexed)
+        message: Description of the violation
+        column: Column number where violation occurs (0-indexed, default=1)
+        severity: Severity level of the violation (default=ERROR)
+        suggestion: Optional suggestion for fixing the violation
+    """
+
+    rule_id: str
+    file_path: str
+    line: int
+    message: str
+    column: int = 1
+    severity: Severity = Severity.ERROR
+    suggestion: str | None = None
+
+
+class BaseViolationBuilder:
+    """Base class for building violations with consistent structure.
+
+    Provides common build() method for creating Violation objects from ViolationInfo.
+    Linter-specific builders extend this class to add their domain-specific violation
+    creation methods while inheriting the common construction logic.
+    """
+
+    def build(self, info: ViolationInfo) -> Violation:
+        """Build a Violation from ViolationInfo.
+
+        Args:
+            info: ViolationInfo containing all violation details
+
+        Returns:
+            Violation object with all fields populated
+        """
+        return Violation(
+            rule_id=info.rule_id,
+            file_path=info.file_path,
+            line=info.line,
+            column=info.column,
+            message=info.message,
+            severity=info.severity,
+            suggestion=info.suggestion,
+        )
