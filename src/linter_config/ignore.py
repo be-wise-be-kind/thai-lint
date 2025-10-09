@@ -5,18 +5,18 @@ Scope: Multi-level ignore system across repository, directory, file, method, and
 
 Overview: Implements a sophisticated ignore directive system that allows developers to suppress
     linting violations at five different granularity levels, from entire repository patterns down
-    to individual lines of code. Repository level uses .thailintignore file with gitignore-style
-    glob patterns for excluding files like build artifacts and dependencies. File level scans the
-    first 10 lines for ignore-file directives (performance optimization). Method level supports
-    ignore-next-line directives placed before functions. Line level enables inline ignore comments
-    at the end of code lines. All levels support rule-specific ignores using bracket syntax
-    [rule-id] and wildcard rule matching (literals.* matches literals.magic-number). The
-    should_ignore_violation() method provides unified checking across all levels, integrating
+    to individual lines of code. Repository level uses global ignore patterns from .thailint.yaml
+    with gitignore-style glob patterns for excluding files like build artifacts and dependencies.
+    File level scans the first 10 lines for ignore-file directives (performance optimization).
+    Method level supports ignore-next-line directives placed before functions. Line level enables
+    inline ignore comments at the end of code lines. All levels support rule-specific ignores
+    using bracket syntax [rule-id] and wildcard rule matching (literals.* matches literals.magic-number).
+    The should_ignore_violation() method provides unified checking across all levels, integrating
     with the violation reporting system to filter out suppressed violations before displaying
     results to users.
 
 Dependencies: fnmatch for gitignore-style pattern matching, re for regex-based directive parsing,
-    pathlib for file operations, Violation type for violation checking
+    pathlib for file operations, Violation type for violation checking, yaml for config loading
 
 Exports: IgnoreDirectiveParser class
 
@@ -25,15 +25,17 @@ Interfaces: is_ignored(file_path: Path) -> bool for repo-level checking,
     has_line_ignore(code: str, line_num: int, rule_id: str | None) -> bool for line-level,
     should_ignore_violation(violation: Violation, file_content: str) -> bool for unified checking
 
-Implementation: Gitignore-style pattern matching with fnmatch, first-10-lines scanning for
-    performance, regex-based directive parsing with rule ID extraction, wildcard rule matching
-    with prefix comparison, graceful error handling for malformed directives
+Implementation: Gitignore-style pattern matching with fnmatch, YAML config loading for global patterns,
+    first-10-lines scanning for performance, regex-based directive parsing with rule ID extraction,
+    wildcard rule matching with prefix comparison, graceful error handling for malformed directives
 """
 
 import fnmatch
 import re
 from pathlib import Path
 from typing import TYPE_CHECKING
+
+import yaml
 
 if TYPE_CHECKING:
     from src.core.types import Violation
@@ -56,22 +58,58 @@ class IgnoreDirectiveParser:
         self.repo_patterns = self._load_repo_ignores()
 
     def _load_repo_ignores(self) -> list[str]:
-        """Load .thailintignore file patterns.
+        """Load global ignore patterns from .thailintignore or .thailint.yaml."""
+        # First, try to load from .thailintignore (gitignore-style)
+        thailintignore = self.project_root / ".thailintignore"
+        if thailintignore.exists():
+            return self._parse_thailintignore_file(thailintignore)
+
+        # Fall back to .thailint.yaml
+        config_file = self.project_root / ".thailint.yaml"
+        if config_file.exists():
+            return self._parse_config_file(config_file)
+
+        return []
+
+    def _parse_thailintignore_file(self, ignore_file: Path) -> list[str]:
+        """Parse .thailintignore file (gitignore-style).
+
+        Args:
+            ignore_file: Path to .thailintignore file
 
         Returns:
-            List of gitignore-style patterns.
+            List of ignore patterns
         """
-        ignore_file = self.project_root / ".thailintignore"
-        if not ignore_file.exists():
+        try:
+            content = ignore_file.read_text(encoding="utf-8")
+            patterns = []
+            for line in content.splitlines():
+                line = line.strip()
+                # Skip empty lines and comments
+                if line and not line.startswith("#"):
+                    patterns.append(line)
+            return patterns
+        except (OSError, UnicodeDecodeError):
             return []
 
-        patterns = []
-        for line in ignore_file.read_text(encoding="utf-8").splitlines():
-            line = line.strip()
-            # Skip comments and blank lines
-            if line and not line.startswith("#"):
-                patterns.append(line)
-        return patterns
+    def _parse_config_file(self, config_file: Path) -> list[str]:
+        """Parse YAML config file and extract ignore patterns."""
+        try:
+            config = yaml.safe_load(config_file.read_text(encoding="utf-8"))
+            return self._extract_ignore_patterns(config)
+        except (yaml.YAMLError, OSError, UnicodeDecodeError):
+            return []
+
+    @staticmethod
+    def _extract_ignore_patterns(config: dict | None) -> list[str]:
+        """Extract ignore patterns from config dict."""
+        if not config or not isinstance(config, dict):
+            return []
+
+        ignore_patterns = config.get("ignore", [])
+        if isinstance(ignore_patterns, list):
+            return [str(pattern) for pattern in ignore_patterns]
+        return []
 
     def is_ignored(self, file_path: Path) -> bool:
         """Check if file matches repository-level ignore patterns.

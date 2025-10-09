@@ -675,14 +675,44 @@ message = f"Count: {count}"
 
 ### Disabling Pylint Checks
 
-Only disable when truly necessary. Always add justification.
+**CRITICAL: NEVER add suppression comments without user permission!**
 
+**STOP** before adding any of these:
+- `# type: ignore` (MyPy)
+- `# pylint: disable=rule` (Pylint)
+- `# noqa` (Flake8/Ruff)
+- `# nosec` (Bandit)
+
+**Required Process:**
+1. Try to fix the issue properly first
+2. If truly impossible to fix, EXPLAIN to the user:
+   - What the error is
+   - Why you can't fix it properly
+   - What alternatives you tried
+3. ASK for explicit permission
+4. WAIT for user approval
+5. Only then add the suppression with detailed justification
+
+**Example Request to User:**
+```
+"I'm encountering Pylint R0913 (too many arguments) on line 45.
+The function needs 7 parameters due to the external API contract.
+I've considered:
+- Using a dataclass (but the API expects individual args)
+- Splitting the function (but it's a single atomic operation)
+
+May I add `# pylint: disable=too-many-arguments` with a comment
+explaining the API contract requirement?"
+```
+
+**If approved, format like this:**
 ```python
 # Disable for one line
 result = some_function()  # pylint: disable=line-too-long  # Long URL cannot be broken
 
 # Disable for a block
 # pylint: disable=too-many-locals
+# Justification: Complex algorithm requires tracking multiple intermediate values
 def complex_function():
     # Complex logic requiring many variables
     pass
@@ -690,8 +720,31 @@ def complex_function():
 
 # Disable for entire file (use very sparingly)
 # pylint: disable=invalid-name
-# This file uses non-standard naming for compatibility with external API
+# Justification: This file uses non-standard naming for compatibility with external API
 ```
+
+**CRITICAL: Permission Does NOT Transfer Between Issue Types**
+
+If you get permission to suppress one type of issue, that permission does NOT apply to other issues:
+
+❌ **NEVER assume permission transfers:**
+- MyPy permission ≠ Pylint permission ≠ Bandit permission
+- Permission for file A ≠ permission for file B
+- Permission for Priority 1 (style) ≠ permission for Priority 2 (security)
+
+✅ **Always ask separately for each new issue type:**
+```
+"I've completed the MyPy fixes you approved. Now I'm working on Priority 4
+(Pylint) and found R0913 (too many arguments). The function needs 7 parameters
+due to the external API contract. May I suppress this with justification?"
+```
+
+**Examples of Scope Violations:**
+1. User approves MyPy `# type: ignore` → Agent adds Pylint `# pylint: disable` ❌
+2. User approves suppression in file X → Agent applies to file Y ❌
+3. User says "if you believe it's justified" → Agent suppresses everything ❌
+
+**The Rule**: Each distinct linter tool + file + issue category requires separate explicit permission.
 
 ### Validation
 
@@ -1275,11 +1328,28 @@ poetry run pylint src/specific_file.py
 
 ### "Tests break after linting fixes!"
 
-This means your tests were relying on buggy behavior.
+**IMPORTANT: You MUST fix broken tests. There is NO exception for "tests were already broken" or "not related to our changes".**
+
+When tests fail, you own them. Period. The excuses below are NOT acceptable:
+- ❌ "These tests were already failing before my changes"
+- ❌ "This isn't related to our changes"
+- ❌ "This was broken by someone else"
+- ❌ "These failures are in a different area of the codebase"
+
+**The Rule**: If `make test` fails, you fix the tests until it passes. You leave the codebase in a better state than you found it.
+
+**Steps to fix broken tests:**
 
 1. Check what broke: `pytest -v`
-2. Fix the test to match the corrected code
-3. If the linting fix was wrong, revert and find a better approach
+2. Investigate the root cause:
+   - Did your linting fixes change behavior?
+   - Were tests relying on buggy behavior?
+   - Did refactoring break assumptions?
+3. Fix the tests:
+   - Update test expectations to match correct behavior
+   - Fix any bugs your changes revealed
+   - If the linting fix was wrong, revert and find a better approach
+4. Verify: `make test` must exit with code 0
 
 ### "Auto-fix made things worse!"
 

@@ -37,7 +37,7 @@ def make_project(tmp_path) -> Callable:
     Example - Project with custom config:
         def test_custom(make_project):
             project = make_project(
-                config_content="file-placement:\\n  global_allow:\\n    - pattern: '.*\\\\.ts$'"
+                thailint_yaml="file-placement:\\n  global_allow:\\n    - pattern: '.*\\\\.ts$'"
             )
 
     Example - Project with .thailint.yaml:
@@ -63,7 +63,6 @@ def make_project(tmp_path) -> Callable:
     def _create_project(
         git: bool = True,
         config_type: str | None = None,
-        config_content: str | None = None,
         thailint_yaml: str | None = None,
         files: dict[str, str] | None = None,
     ) -> Path:
@@ -72,7 +71,6 @@ def make_project(tmp_path) -> Callable:
         Args:
             git: If True, create .git directory (default: True)
             config_type: Preset config type ("deny_all_python", "allow_all_python")
-            config_content: Custom YAML content for .artifacts/generated-config.yaml
             thailint_yaml: Custom YAML content for .thailint.yaml
             files: Dict of {filepath: content} to create
 
@@ -80,9 +78,8 @@ def make_project(tmp_path) -> Callable:
             Path: Path to the project root directory
 
         Note:
-            - config_type and config_content are mutually exclusive
-            - Both create .artifacts/generated-config.yaml
-            - thailint_yaml creates .thailint.yaml instead
+            - config_type and thailint_yaml are mutually exclusive
+            - Both create .thailint.yaml at project root
         """
         # Create .git marker if requested
         if git:
@@ -90,8 +87,8 @@ def make_project(tmp_path) -> Callable:
 
         # Handle config presets
         if config_type:
-            if config_content:
-                raise ValueError("Cannot specify both config_type and config_content")
+            if thailint_yaml:
+                raise ValueError("Cannot specify both config_type and thailint_yaml")
 
             presets = {
                 "deny_all_python": """file-placement:
@@ -110,16 +107,9 @@ def make_project(tmp_path) -> Callable:
                     f"Unknown config_type: {config_type}. Choose from: {list(presets.keys())}"
                 )
 
-            config_content = presets[config_type]
+            thailint_yaml = presets[config_type]
 
-        # Create .artifacts/generated-config.yaml if config specified
-        if config_content:
-            artifacts_dir = tmp_path / ".artifacts"
-            artifacts_dir.mkdir(exist_ok=True)
-            config_file = artifacts_dir / "generated-config.yaml"
-            config_file.write_text(config_content)
-
-        # Create .thailint.yaml if specified
+        # Create .thailint.yaml if config specified
         if thailint_yaml:
             thailint_file = tmp_path / ".thailint.yaml"
             thailint_file.write_text(thailint_yaml)
@@ -151,7 +141,7 @@ def mock_project_root(make_project):
 def mock_project_with_config(make_project):
     """Legacy fixture - use make_project(config_type='deny_all_python') instead.
 
-    Creates a mock project root with .artifacts/generated-config.yaml.
+    Creates a mock project root with .thailint.yaml.
     Kept for backward compatibility with existing tests.
     """
     project = make_project(git=True, config_type="deny_all_python")

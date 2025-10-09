@@ -105,7 +105,7 @@ def _load_from_default_locations() -> dict[str, Any]:
         loaded_config = _try_load_from_location(location)
         if loaded_config:
             return loaded_config
-    logger.info("No config file found, using defaults")
+    logger.debug("No CLI config file found, using defaults")
     return DEFAULT_CONFIG.copy()
 
 

@@ -476,7 +476,6 @@ def _apply_inline_rules(orchestrator, rules, verbose):
     """Parse and apply inline JSON rules."""
     rules_config = _parse_json_rules(rules)
     orchestrator.config.update(rules_config)
-    _write_layout_config(orchestrator, rules_config, verbose)
     _log_applied_rules(rules_config, verbose)
 
 
@@ -489,40 +488,6 @@ def _parse_json_rules(rules: str) -> dict:
     except json.JSONDecodeError as e:
         click.echo(f"Error: Invalid JSON in --rules: {e}", err=True)
         sys.exit(2)
-
-
-def _write_layout_config(orchestrator, rules_config: dict, verbose: bool) -> None:
-    """Write layout config to .artifacts/generated-config.yaml if possible."""
-    artifacts_dir = orchestrator.project_root / ".artifacts"
-    config_file = artifacts_dir / "generated-config.yaml"
-
-    try:
-        _write_layout_yaml_file(artifacts_dir, config_file, rules_config)
-        _log_layout_written(config_file, verbose)
-    except OSError as e:
-        _log_layout_error(e, verbose)
-
-
-def _write_layout_yaml_file(artifacts_dir, config_file, rules_config):
-    """Write generated config YAML file."""
-    import yaml
-
-    artifacts_dir.mkdir(exist_ok=True)
-    layout_config = {"file-placement": rules_config}
-    with config_file.open("w", encoding="utf-8") as f:
-        yaml.dump(layout_config, f)
-
-
-def _log_layout_written(layout_file, verbose):
-    """Log layout file written."""
-    if verbose:
-        logger.debug(f"Written layout config to: {layout_file}")
-
-
-def _log_layout_error(error, verbose):
-    """Log layout write error."""
-    if verbose:
-        logger.debug(f"Could not write layout config: {error}")
 
 
 def _log_applied_rules(rules_config: dict, verbose: bool) -> None:
@@ -541,36 +506,8 @@ def _load_config_file(orchestrator, config_file, verbose):
     # Load config into orchestrator
     orchestrator.config = orchestrator.config_loader.load(config_path)
 
-    # Also copy to .artifacts/generated-config.yaml for debugging
-    _write_loaded_config_to_layout(orchestrator, config_file, verbose)
-
-
-def _write_loaded_config_to_layout(orchestrator, config_file: str, verbose: bool) -> None:
-    """Write loaded config to .artifacts/generated-config.yaml if possible."""
-    artifacts_dir = orchestrator.project_root / ".artifacts"
-    config_output_file = artifacts_dir / "generated-config.yaml"
-
-    try:
-        _write_config_yaml(artifacts_dir, config_output_file, orchestrator.config)
-        _log_config_loaded(config_file, config_output_file, verbose)
-    except OSError as e:
-        _log_layout_error(e, verbose)
-
-
-def _write_config_yaml(artifacts_dir, config_file, config):
-    """Write config to YAML file."""
-    import yaml
-
-    artifacts_dir.mkdir(exist_ok=True)
-    with config_file.open("w", encoding="utf-8") as f:
-        yaml.dump(config, f)
-
-
-def _log_config_loaded(config_file, config_output_file, verbose):
-    """Log config loaded and written."""
     if verbose:
         logger.debug(f"Loaded config from: {config_file}")
-        logger.debug(f"Written generated config to: {config_output_file}")
 
 
 def _execute_linting(orchestrator, path_obj, recursive):

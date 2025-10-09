@@ -62,14 +62,48 @@ class SRPRule(BaseLintRule):
         Returns:
             List of violations found
         """
-        if not has_file_content(context):
+        if not self._should_check_file(context):
             return []
 
         config = load_linter_config(context, "srp", SRPConfig)
-        if not config.enabled or self._is_file_ignored(context, config):
+        if not self._is_linter_enabled(context, config):
             return []
 
-        # Analyze based on language type
+        return self._check_by_language(context, config)
+
+    def _should_check_file(self, context: BaseLintContext) -> bool:
+        """Check if file has content to analyze.
+
+        Args:
+            context: Lint context
+
+        Returns:
+            True if file should be checked
+        """
+        return has_file_content(context)
+
+    def _is_linter_enabled(self, context: BaseLintContext, config: SRPConfig) -> bool:
+        """Check if linter is enabled and file is not ignored.
+
+        Args:
+            context: Lint context
+            config: SRP configuration
+
+        Returns:
+            True if linter should run on this file
+        """
+        return config.enabled and not self._is_file_ignored(context, config)
+
+    def _check_by_language(self, context: BaseLintContext, config: SRPConfig) -> list[Violation]:
+        """Dispatch to language-specific checker.
+
+        Args:
+            context: Lint context
+            config: SRP configuration
+
+        Returns:
+            List of violations found
+        """
         if context.language == "python":
             return self._check_python(context, config)
         if context.language in ("typescript", "javascript"):

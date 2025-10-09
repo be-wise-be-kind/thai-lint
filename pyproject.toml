@@ -73,6 +73,7 @@ click = "^8.1.0"
 pyyaml = "^6.0"
 tree-sitter = "^0.25.2"
 tree-sitter-typescript = "^0.23.2"
+pyprojroot = "^0.3.0"
 
 [tool.poetry.group.dev.dependencies]
 # Core testing and linting

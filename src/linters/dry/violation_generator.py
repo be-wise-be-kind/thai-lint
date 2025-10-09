@@ -20,6 +20,7 @@ Implementation: Queries storage, deduplicates blocks, builds violations, filters
 from pathlib import Path
 
 from src.core.types import Violation
+from src.orchestrator.language_detector import detect_language
 
 from .config import DRYConfig
 from .deduplicator import ViolationDeduplicator
@@ -61,8 +62,8 @@ class ViolationGenerator:
             blocks = storage.get_blocks_for_hash(hash_value)
             dedup_blocks = self._deduplicator.deduplicate_blocks(blocks)
 
-            # After deduplication, we might have < 2 blocks (no real duplicates)
-            if len(dedup_blocks) < 2:
+            # Check min_occurrences threshold (language-aware)
+            if not self._meets_min_occurrences(dedup_blocks, config):
                 continue
 
             for block in dedup_blocks:
@@ -72,6 +73,28 @@ class ViolationGenerator:
         deduplicated = self._deduplicator.deduplicate_violations(violations)
         pattern_filtered = self._filter_ignored(deduplicated, config.ignore_patterns)
         return self._filter_inline_ignored(pattern_filtered, inline_ignore)
+
+    def _meets_min_occurrences(self, blocks: list, config: DRYConfig) -> bool:
+        """Check if blocks meet minimum occurrence threshold for the language.
+
+        Args:
+            blocks: List of duplicate code blocks
+            config: DRY configuration with min_occurrences settings
+
+        Returns:
+            True if blocks meet or exceed minimum occurrence threshold
+        """
+        if len(blocks) == 0:
+            return False
+
+        # Get language from first block's file extension
+        first_block = blocks[0]
+        language = detect_language(first_block.file_path)
+
+        # Get language-specific threshold
+        min_occurrences = config.get_min_occurrences_for_language(language)
+
+        return len(blocks) >= min_occurrences
 
     def _filter_ignored(
         self, violations: list[Violation], ignore_patterns: list[str]

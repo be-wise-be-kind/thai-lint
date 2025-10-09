@@ -114,8 +114,8 @@ class TestLibraryMultipleRules:
         from src import Linter
 
         # Create project with .git marker and deny-all-python config
-        # Note: Using config_type which creates .artifacts/generated-config.yaml
-        # (file-placement linter currently only reads from .artifacts/)
+        # Note: Using config_type which creates .thailint.yaml
+        # (file-placement linter reads from .thailint.yaml at project root)
         project_root = make_project(
             git=True, config_type="deny_all_python", files={"test.py": "print('test')"}
         )

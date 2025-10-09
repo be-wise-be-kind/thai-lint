@@ -16,18 +16,48 @@ Interfaces: PythonDuplicateAnalyzer.analyze(file_path: Path, content: str, confi
     -> list[CodeBlock]
 
 Implementation: Uses custom tokenizer that filters docstrings before hashing
+
+SRP Exception: PythonDuplicateAnalyzer has 32 methods and 358 lines (exceeds max 8 methods/200 lines)
+    Justification: Complex AST analysis algorithm for duplicate code detection with sophisticated
+    false positive filtering. Methods form tightly coupled algorithm pipeline: docstring extraction,
+    tokenization with line tracking, single-statement pattern detection across 5+ AST node types
+    (ClassDef, FunctionDef, Call, Assign, Expr), and context-aware filtering (decorators, function
+    calls, class bodies). Similar to parser or compiler pass architecture where algorithmic
+    cohesion is critical. Splitting would fragment the algorithm logic and make maintenance
+    harder by separating interdependent AST analysis steps. All methods contribute to single
+    responsibility: accurately detecting duplicate Python code while minimizing false positives.
 """
 
 import ast
+from collections.abc import Callable
 from pathlib import Path
+from typing import cast
 
 from .base_token_analyzer import BaseTokenAnalyzer
+from .block_filter import BlockFilterRegistry, create_default_registry
 from .cache import CodeBlock
 from .config import DRYConfig
 
+# Type alias for AST nodes that have line number attributes
+# All stmt and expr nodes have lineno and end_lineno after parsing
+ASTWithLineNumbers = ast.stmt | ast.expr
 
-class PythonDuplicateAnalyzer(BaseTokenAnalyzer):
-    """Analyzes Python code for duplicate blocks, excluding docstrings."""
+
+class PythonDuplicateAnalyzer(BaseTokenAnalyzer):  # thailint: ignore[srp.violation]
+    """Analyzes Python code for duplicate blocks, excluding docstrings.
+
+    SRP suppression: Complex AST analysis algorithm requires 32 methods to implement
+    sophisticated duplicate detection with false positive filtering. See file header for justification.
+    """
+
+    def __init__(self, filter_registry: BlockFilterRegistry | None = None):
+        """Initialize analyzer with optional custom filter registry.
+
+        Args:
+            filter_registry: Custom filter registry (uses defaults if None)
+        """
+        super().__init__()
+        self._filter_registry = filter_registry or create_default_registry()
 
     def analyze(self, file_path: Path, content: str, config: DRYConfig) -> list[CodeBlock]:
         """Analyze Python file for duplicate code blocks, excluding docstrings.
@@ -63,6 +93,11 @@ class PythonDuplicateAnalyzer(BaseTokenAnalyzer):
                 snippet=snippet,
                 hash_value=hash_val,
             )
+
+            # Apply extensible filters (keyword arguments, imports, etc.)
+            if self._filter_registry.should_filter_block(block, content):
+                continue
+
             blocks.append(block)
 
         return blocks
@@ -140,13 +175,13 @@ class PythonDuplicateAnalyzer(BaseTokenAnalyzer):
                 continue
 
             # Use hasher's existing tokenization logic
-            line = self._hasher._strip_comments(line)
+            line = self._hasher._strip_comments(line)  # pylint: disable=protected-access
             line = " ".join(line.split())
 
             if not line:
                 continue
 
-            if self._hasher._is_import_statement(line):
+            if self._hasher._is_import_statement(line):  # pylint: disable=protected-access
                 continue
 
             lines_with_numbers.append((line_num, line))
@@ -186,37 +221,38 @@ class PythonDuplicateAnalyzer(BaseTokenAnalyzer):
         return hashes
 
     def _is_single_statement_in_source(self, content: str, start_line: int, end_line: int) -> bool:
-        """Check if a line range in the original source is a single logical statement.
-
-        Uses AST to find nodes that overlap with the line range and determines if they
-        represent single logical statements that shouldn't be flagged as duplicates.
-
-        Args:
-            content: Original source code
-            start_line: Starting line number (1-indexed)
-            end_line: Ending line number (1-indexed)
-
-        Returns:
-            True if the line range is part of a single statement (shouldn't be flagged)
-        """
-        try:
-            tree = ast.parse(content)
-        except SyntaxError:
+        """Check if a line range in the original source is a single logical statement."""
+        tree = self._parse_content_safe(content)
+        if tree is None:
             return False
 
-        # Walk the AST to find nodes that overlap with this line range
+        return self._check_overlapping_nodes(tree, start_line, end_line)
+
+    @staticmethod
+    def _parse_content_safe(content: str) -> ast.Module | None:
+        """Parse content, returning None on syntax error."""
+        try:
+            return ast.parse(content)
+        except SyntaxError:
+            return None
+
+    def _check_overlapping_nodes(self, tree: ast.Module, start_line: int, end_line: int) -> bool:
+        """Check if any AST node overlaps and matches single-statement pattern."""
         for node in ast.walk(tree):
-            if not hasattr(node, "lineno") or not hasattr(node, "end_lineno"):
-                continue
-
-            # Check if this node overlaps with the line range
-            overlaps = not (node.end_lineno < start_line or node.lineno > end_line)
-            if overlaps:
-                # Check if this is a single-statement pattern we should filter
-                if self._is_single_statement_pattern(node, start_line, end_line):
-                    return True
-
+            if self._node_overlaps_and_matches(node, start_line, end_line):
+                return True
         return False
+
+    def _node_overlaps_and_matches(self, node: ast.AST, start_line: int, end_line: int) -> bool:
+        """Check if node overlaps with range and matches single-statement pattern."""
+        if not hasattr(node, "lineno") or not hasattr(node, "end_lineno"):
+            return False
+
+        overlaps = not (node.end_lineno < start_line or node.lineno > end_line)
+        if not overlaps:
+            return False
+
+        return self._is_single_statement_pattern(node, start_line, end_line)
 
     def _is_single_statement_pattern(self, node: ast.AST, start_line: int, end_line: int) -> bool:
         """Check if an AST node represents a single-statement pattern to filter.
@@ -229,81 +265,141 @@ class PythonDuplicateAnalyzer(BaseTokenAnalyzer):
         Returns:
             True if this node represents a single logical statement pattern
         """
-        # Check if node completely contains the range
-        # (This ensures the entire flagged range is part of one statement)
-        contains = node.lineno <= start_line and node.end_lineno >= end_line
-
-        # ClassDef: Class field definitions (but NOT method bodies)
-        if isinstance(node, ast.ClassDef):
-            # Only filter if the flagged range is in the class header/fields area,
-            # not in method bodies
-            # Find where the first method starts
-            first_method_line = None
-            for item in node.body:
-                if isinstance(item, (ast.FunctionDef, ast.AsyncFunctionDef)):
-                    first_method_line = item.lineno
-                    break
-
-            # For classes with decorators, extend the range to include decorators
-            class_start = node.lineno
-            if node.decorator_list:
-                class_start = min(d.lineno for d in node.decorator_list)
-
-            # Only filter if the range is before the first method (i.e., in the fields area)
-            if first_method_line is not None:
-                # There are methods - only filter if range is before them
-                if class_start <= start_line and end_line < first_method_line:
-                    return True
-            else:
-                # No methods - filter if in class range (all fields)
-                extended_contains = class_start <= start_line and node.end_lineno >= end_line
-                if extended_contains:
-                    return True
-
-        # FunctionDef/AsyncFunctionDef: Decorator patterns
-        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
-            # If decorators exist and the range overlaps with decorators
-            if node.decorator_list:
-                # Get the first decorator's line
-                first_decorator_line = min(d.lineno for d in node.decorator_list)
-                # The function body starts after the def line
-                if node.body and hasattr(node.body[0], "lineno"):
-                    first_body_line = node.body[0].lineno
-                    # If the range is between first decorator and first body line,
-                    # it's part of the decorator pattern
-                    if start_line >= first_decorator_line and end_line < first_body_line:
-                        return True
+        contains = self._node_contains_range(node, start_line, end_line)
+        if contains is None:
             return False
 
-        # Call: Function/constructor call (including multiline arguments)
-        # For multi-line calls, filter if the call contains the start of the range
-        # This handles cases where a 3-line window includes the end of a constructor
-        # plus some trailing code
+        return self._dispatch_pattern_check(node, start_line, end_line, contains)
+
+    def _node_contains_range(self, node: ast.AST, start_line: int, end_line: int) -> bool | None:
+        """Check if node completely contains the range. Returns None if invalid."""
+        if not self._has_valid_line_numbers(node):
+            return None
+        # Type narrowing: _has_valid_line_numbers ensures node has line numbers
+        # Safe to cast after validation check above
+        typed_node = cast(ASTWithLineNumbers, node)
+        # Use type: ignore to suppress MyPy's inability to understand runtime validation
+        return typed_node.lineno <= start_line and typed_node.end_lineno >= end_line  # type: ignore[operator]
+
+    @staticmethod
+    def _has_valid_line_numbers(node: ast.AST) -> bool:
+        """Check if node has valid line number attributes."""
+        if not (hasattr(node, "lineno") and hasattr(node, "end_lineno")):
+            return False
+        return node.lineno is not None and node.end_lineno is not None
+
+    def _dispatch_pattern_check(
+        self, node: ast.AST, start_line: int, end_line: int, contains: bool
+    ) -> bool:
+        """Dispatch to node-type-specific pattern checkers."""
+        # Simple containment check for Expr nodes
+        if isinstance(node, ast.Expr):
+            return contains
+
+        # Delegate to specialized checkers
+        return self._check_specific_pattern(node, start_line, end_line, contains)
+
+    def _check_specific_pattern(
+        self, node: ast.AST, start_line: int, end_line: int, contains: bool
+    ) -> bool:
+        """Check specific node types with their pattern rules."""
+        if isinstance(node, ast.ClassDef):
+            return self._check_class_def_pattern(node, start_line, end_line)
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+            return self._check_function_def_pattern(node, start_line, end_line)
         if isinstance(node, ast.Call):
-            is_multiline = node.lineno < node.end_lineno
-            if is_multiline and node.lineno <= start_line <= node.end_lineno:
-                return True
-            # For single-line calls, require full containment
-            if not is_multiline and contains:
-                return True
-
-        # Expr: Expression statement (could be a single multiline expression)
-        # Only filter if this Expr completely contains the flagged range
-        if isinstance(node, ast.Expr) and contains:
-            return True
-
-        # Single assignment
-        # For multi-line assignments, filter if the assignment contains the start of the range
-        # This handles cases where constructor arguments span into the flagged range
+            return self._check_call_pattern(node, start_line, end_line, contains)
         if isinstance(node, ast.Assign):
-            is_multiline = node.lineno < node.end_lineno
-            if is_multiline and node.lineno <= start_line <= node.end_lineno:
-                return True
-            # For single-line assignments, require full containment
-            if not is_multiline and contains:
-                return True
-
+            return self._check_assign_pattern(node, start_line, end_line, contains)
         return False
+
+    def _check_class_def_pattern(self, node: ast.ClassDef, start_line: int, end_line: int) -> bool:
+        """Check if range is in class field definitions (not method bodies)."""
+        first_method_line = self._find_first_method_line(node)
+        class_start = self._get_class_start_with_decorators(node)
+        return self._is_in_class_fields_area(
+            class_start, start_line, end_line, first_method_line, node.end_lineno
+        )
+
+    @staticmethod
+    def _find_first_method_line(node: ast.ClassDef) -> int | None:
+        """Find line number of first method in class."""
+        for item in node.body:
+            if isinstance(item, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                return item.lineno
+        return None
+
+    @staticmethod
+    def _get_class_start_with_decorators(node: ast.ClassDef) -> int:
+        """Get class start line, including decorators if present."""
+        if node.decorator_list:
+            return min(d.lineno for d in node.decorator_list)
+        return node.lineno
+
+    @staticmethod
+    def _is_in_class_fields_area(
+        class_start: int,
+        start_line: int,
+        end_line: int,
+        first_method_line: int | None,
+        class_end_line: int | None,
+    ) -> bool:
+        """Check if range is in class fields area (before methods)."""
+        if first_method_line is not None:
+            return class_start <= start_line and end_line < first_method_line
+        if class_end_line is not None:
+            return class_start <= start_line and class_end_line >= end_line
+        return False
+
+    def _check_function_def_pattern(
+        self, node: ast.FunctionDef | ast.AsyncFunctionDef, start_line: int, end_line: int
+    ) -> bool:
+        """Check if range is in function decorator pattern."""
+        if not node.decorator_list:
+            return False
+
+        first_decorator_line = min(d.lineno for d in node.decorator_list)
+        first_body_line = self._get_function_body_start(node)
+
+        if first_body_line is None:
+            return False
+
+        return start_line >= first_decorator_line and end_line < first_body_line
+
+    @staticmethod
+    def _get_function_body_start(node: ast.FunctionDef | ast.AsyncFunctionDef) -> int | None:
+        """Get the line number where function body starts."""
+        if not node.body or not hasattr(node.body[0], "lineno"):
+            return None
+        return node.body[0].lineno
+
+    def _check_call_pattern(
+        self, node: ast.Call, start_line: int, end_line: int, contains: bool
+    ) -> bool:
+        """Check if range is part of a function/constructor call."""
+        return self._check_multiline_or_contained(node, start_line, end_line, contains)
+
+    def _check_assign_pattern(
+        self, node: ast.Assign, start_line: int, end_line: int, contains: bool
+    ) -> bool:
+        """Check if range is part of a multi-line assignment."""
+        return self._check_multiline_or_contained(node, start_line, end_line, contains)
+
+    def _check_multiline_or_contained(
+        self, node: ast.AST, start_line: int, end_line: int, contains: bool
+    ) -> bool:
+        """Check if node is multiline containing start, or single-line containing range."""
+        if not self._has_valid_line_numbers(node):
+            return False
+
+        # Type narrowing: _has_valid_line_numbers ensures node has line numbers
+        # Safe to cast after validation check above
+        typed_node = cast(ASTWithLineNumbers, node)
+        # Use type: ignore to suppress MyPy's inability to understand runtime validation
+        is_multiline = typed_node.lineno < typed_node.end_lineno  # type: ignore[operator]
+        if is_multiline:
+            return typed_node.lineno <= start_line <= typed_node.end_lineno  # type: ignore[operator]
+        return contains
 
     def _is_standalone_single_statement(
         self, lines: list[str], start_line: int, end_line: int
@@ -318,29 +414,56 @@ class PythonDuplicateAnalyzer(BaseTokenAnalyzer):
         except SyntaxError:
             return False
 
-    def _is_part_of_decorator(self, lines: list[str], start_line: int, end_line: int) -> bool:
-        """Check if lines are part of a decorator + function definition.
+    def _check_ast_context(  # pylint: disable=too-many-arguments,too-many-positional-arguments
+        self,
+        lines: list[str],
+        start_line: int,
+        end_line: int,
+        lookback: int,
+        lookforward: int,
+        predicate: Callable[[ast.Module, int], bool],
+    ) -> bool:
+        """Generic helper for AST-based context checking.
 
-        A decorator pattern is @something(...) followed by def/class.
+        Args:
+            lines: Source file lines
+            start_line: Starting line number (1-indexed)
+            end_line: Ending line number (1-indexed)
+            lookback: Number of lines to look backward
+            lookforward: Number of lines to look forward
+            predicate: Function that takes AST tree and returns bool
+
+        Returns:
+            True if predicate returns True for the parsed context
         """
-        # Look backwards for @ symbol, forwards for def/class
-        lookback_start = max(0, start_line - 10)
-        lookforward_end = min(len(lines), end_line + 10)
+        lookback_start = max(0, start_line - lookback)
+        lookforward_end = min(len(lines), end_line + lookforward)
 
-        # Extract expanded context
         context_lines = lines[lookback_start:lookforward_end]
         context = "\n".join(context_lines)
 
         try:
             tree = ast.parse(context)
-            # Find a function or class with decorators in the context
-            for stmt in tree.body:
-                if isinstance(stmt, (ast.FunctionDef, ast.ClassDef)) and stmt.decorator_list:
-                    return True
+            return predicate(tree, lookback_start)
         except SyntaxError:
             pass
 
         return False
+
+    def _is_part_of_decorator(self, lines: list[str], start_line: int, end_line: int) -> bool:
+        """Check if lines are part of a decorator + function definition.
+
+        A decorator pattern is @something(...) followed by def/class.
+        """
+
+        def has_decorators(tree: ast.Module, _lookback_start: int) -> bool:
+            """Check if any function or class in the tree has decorators."""
+            for stmt in tree.body:
+                if isinstance(stmt, (ast.FunctionDef, ast.ClassDef)) and stmt.decorator_list:
+                    return True
+            return False
+
+        return self._check_ast_context(lines, start_line, end_line, 10, 10, has_decorators)
 
     def _is_part_of_function_call(self, lines: list[str], start_line: int, end_line: int) -> bool:
         """Check if lines are arguments inside a function/constructor call.
@@ -351,25 +474,16 @@ class PythonDuplicateAnalyzer(BaseTokenAnalyzer):
                 arg2=value2,
             )
         """
-        # Look backwards for opening paren, forwards for closing paren
-        lookback_start = max(0, start_line - 10)
-        lookforward_end = min(len(lines), end_line + 10)
 
-        context_lines = lines[lookback_start:lookforward_end]
-        context = "\n".join(context_lines)
-
-        try:
-            tree = ast.parse(context)
-            # If the expanded context has exactly 1 statement (and it's not a function def),
-            # the flagged lines are part of it
-            if len(tree.body) == 1 and not isinstance(
+        def is_single_non_function_statement(tree: ast.Module, _lookback_start: int) -> bool:
+            """Check if context has exactly one statement that's not a function/class def."""
+            return len(tree.body) == 1 and not isinstance(
                 tree.body[0], (ast.FunctionDef, ast.ClassDef)
-            ):
-                return True
-        except SyntaxError:
-            pass
+            )
 
-        return False
+        return self._check_ast_context(
+            lines, start_line, end_line, 10, 10, is_single_non_function_statement
+        )
 
     def _is_part_of_class_body(self, lines: list[str], start_line: int, end_line: int) -> bool:
         """Check if lines are field definitions inside a class body.
@@ -379,32 +493,25 @@ class PythonDuplicateAnalyzer(BaseTokenAnalyzer):
                 field1: Type1
                 field2: Type2
         """
-        # Look backwards for class definition
-        lookback_start = max(0, start_line - 10)
-        lookforward_end = min(len(lines), end_line + 5)
 
-        context_lines = lines[lookback_start:lookforward_end]
-        context = "\n".join(context_lines)
-
-        try:
-            tree = ast.parse(context)
-            # Check if any statement is a class definition and the flagged lines
-            # fall within the class body range
+        def is_within_class_body(tree: ast.Module, lookback_start: int) -> bool:
+            """Check if flagged range falls within a class body."""
             for stmt in tree.body:
-                if isinstance(stmt, ast.ClassDef):
-                    # Adjust line numbers: stmt.lineno is relative to context
-                    # We need to convert back to original file line numbers
-                    class_start_in_context = stmt.lineno
-                    class_end_in_context = stmt.end_lineno if stmt.end_lineno else stmt.lineno
+                if not isinstance(stmt, ast.ClassDef):
+                    continue
 
-                    # Convert to original file line numbers (1-indexed)
-                    class_start_original = lookback_start + class_start_in_context
-                    class_end_original = lookback_start + class_end_in_context
+                # Adjust line numbers: stmt.lineno is relative to context
+                # We need to convert back to original file line numbers
+                class_start_in_context = stmt.lineno
+                class_end_in_context = stmt.end_lineno if stmt.end_lineno else stmt.lineno
 
-                    # Check if the flagged range overlaps with class body
-                    if start_line >= class_start_original and end_line <= class_end_original:
-                        return True
-        except SyntaxError:
-            pass
+                # Convert to original file line numbers (1-indexed)
+                class_start_original = lookback_start + class_start_in_context
+                class_end_original = lookback_start + class_end_in_context
 
-        return False
+                # Check if the flagged range overlaps with class body
+                if start_line >= class_start_original and end_line <= class_end_original:
+                    return True
+            return False
+
+        return self._check_ast_context(lines, start_line, end_line, 10, 5, is_within_class_body)

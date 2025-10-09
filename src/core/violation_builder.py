@@ -77,7 +77,7 @@ class BaseViolationBuilder:
             suggestion=info.suggestion,
         )
 
-    def build_from_params(
+    def build_from_params(  # pylint: disable=too-many-arguments,too-many-positional-arguments
         self,
         rule_id: str,
         file_path: str,
@@ -88,6 +88,12 @@ class BaseViolationBuilder:
         suggestion: str | None = None,
     ) -> Violation:
         """Build a Violation directly from parameters.
+
+        Note: Pylint too-many-arguments disabled. This convenience method mirrors the
+        ViolationInfo dataclass fields (7 parameters, 3 with defaults). The alternative
+        would require every caller to create ViolationInfo objects manually, reducing
+        readability. This is a standard builder pattern where all parameters are
+        inherently related (Violation fields).
 
         This is a convenience method that combines ViolationInfo creation and build()
         to reduce duplication in violation builder methods.

@@ -59,12 +59,13 @@ class DRYRule(BaseLintRule):
         self._storage: DuplicateStorage | None = None
         self._initialized = False
         self._config: DRYConfig | None = None
+        self._file_analyzer: FileAnalyzer | None = None
 
         # Helper components grouped to reduce instance attributes
         self._helpers = DRYComponents(
             config_loader=ConfigLoader(),
             storage_initializer=StorageInitializer(),
-            file_analyzer=FileAnalyzer(),
+            file_analyzer=FileAnalyzer(),  # Placeholder, will be replaced with configured one
             violation_generator=ViolationGenerator(),
             inline_ignore=InlineIgnoreParser(),
         )
@@ -114,9 +115,11 @@ class DRYRule(BaseLintRule):
         return []
 
     def _ensure_storage_initialized(self, context: BaseLintContext, config: DRYConfig) -> None:
-        """Initialize storage on first call."""
+        """Initialize storage and file analyzer on first call."""
         if not self._initialized:
             self._storage = self._helpers.storage_initializer.initialize(context, config)
+            # Create file analyzer with config for filter configuration
+            self._file_analyzer = FileAnalyzer(config)
             self._initialized = True
 
     def _analyze_and_store(self, context: BaseLintContext, config: DRYConfig) -> None:
@@ -125,9 +128,12 @@ class DRYRule(BaseLintRule):
         if context.file_path is None or context.file_content is None:
             return  # Should never happen due to should_process_file check
 
+        if not self._file_analyzer:
+            return  # Should never happen after initialization
+
         file_path = Path(context.file_path)
         cache = self._get_cache()
-        blocks = self._helpers.file_analyzer.analyze_or_load(
+        blocks = self._file_analyzer.analyze_or_load(
             file_path, context.file_content, context.language, config, cache
         )
 

@@ -22,12 +22,25 @@ from typing import Any
 
 
 @dataclass
-class DRYConfig:
-    """Configuration for DRY linter."""
+class DRYConfig:  # pylint: disable=too-many-instance-attributes
+    """Configuration for DRY linter.
+
+    Note: Pylint too-many-instance-attributes disabled. This is a configuration
+    dataclass serving as a data container for related DRY linter settings.
+    All 12 attributes are cohesively related (detection thresholds, language
+    overrides, caching, filtering). Splitting would reduce cohesion and make
+    configuration loading more complex without meaningful benefit.
+    """
 
     enabled: bool = False  # Must be explicitly enabled
     min_duplicate_lines: int = 3
     min_duplicate_tokens: int = 30
+    min_occurrences: int = 2  # Minimum occurrences to report (default: 2)
+
+    # Language-specific overrides
+    python_min_occurrences: int | None = None
+    typescript_min_occurrences: int | None = None
+    javascript_min_occurrences: int | None = None
 
     # Cache settings
     cache_enabled: bool = True  # ON by default for performance
@@ -36,6 +49,14 @@ class DRYConfig:
 
     # Ignore patterns
     ignore_patterns: list[str] = field(default_factory=lambda: ["tests/", "__init__.py"])
+
+    # Block filters (extensible false positive filtering)
+    filters: dict[str, bool] = field(
+        default_factory=lambda: {
+            "keyword_argument_filter": True,  # Filter keyword argument blocks
+            "import_group_filter": True,  # Filter import statement groups
+        }
+    )
 
     def __post_init__(self) -> None:
         """Validate configuration values."""
@@ -47,6 +68,28 @@ class DRYConfig:
             raise ValueError(
                 f"min_duplicate_tokens must be positive, got {self.min_duplicate_tokens}"
             )
+        if self.min_occurrences <= 0:
+            raise ValueError(f"min_occurrences must be positive, got {self.min_occurrences}")
+
+    def get_min_occurrences_for_language(self, language: str) -> int:
+        """Get minimum occurrences threshold for a specific language.
+
+        Args:
+            language: Language identifier (e.g., "python", "typescript", "javascript")
+
+        Returns:
+            Minimum occurrences threshold for the language, or global default
+        """
+        language_lower = language.lower()
+
+        language_overrides = {
+            "python": self.python_min_occurrences,
+            "typescript": self.typescript_min_occurrences,
+            "javascript": self.javascript_min_occurrences,
+        }
+
+        override = language_overrides.get(language_lower)
+        return override if override is not None else self.min_occurrences
 
     @classmethod
     def from_dict(cls, config: dict[str, Any]) -> "DRYConfig":
@@ -58,12 +101,30 @@ class DRYConfig:
         Returns:
             DRYConfig instance with values from dictionary
         """
+        # Extract language-specific min_occurrences
+        python_config = config.get("python", {})
+        typescript_config = config.get("typescript", {})
+        javascript_config = config.get("javascript", {})
+
+        # Load filter configuration (merge with defaults)
+        default_filters = {
+            "keyword_argument_filter": True,
+            "import_group_filter": True,
+        }
+        custom_filters = config.get("filters", {})
+        filters = {**default_filters, **custom_filters}
+
         return cls(
             enabled=config.get("enabled", False),
             min_duplicate_lines=config.get("min_duplicate_lines", 3),
             min_duplicate_tokens=config.get("min_duplicate_tokens", 30),
+            min_occurrences=config.get("min_occurrences", 2),
+            python_min_occurrences=python_config.get("min_occurrences"),
+            typescript_min_occurrences=typescript_config.get("min_occurrences"),
+            javascript_min_occurrences=javascript_config.get("min_occurrences"),
             cache_enabled=config.get("cache_enabled", True),
             cache_path=config.get("cache_path", ".thailint-cache/dry.db"),
             cache_max_age_days=config.get("cache_max_age_days", 30),
             ignore_patterns=config.get("ignore", []),
+            filters=filters,
         )
