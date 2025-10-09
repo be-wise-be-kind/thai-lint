@@ -30,11 +30,11 @@ Deeply nested code is:
 
 ### Benefits
 
-- ✅ **Improved readability**: Flatter code is easier to understand
-- ✅ **Better testability**: Simpler functions are easier to test
-- ✅ **Easier maintenance**: Refactored code is more modular
-- ✅ **Reduced complexity**: Lower cognitive load for developers
-- ✅ **Team consistency**: Enforces shared code quality standards
+- **Improved readability**: Flatter code is easier to understand
+- **Better testability**: Simpler functions are easier to test
+- **Easier maintenance**: Refactored code is more modular
+- **Reduced complexity**: Lower cognitive load for developers
+- **Team consistency**: Enforces shared code quality standards
 
 ## How It Works
 
@@ -287,7 +287,7 @@ function validateUser(user: User): boolean {
 
 ## Refactoring Patterns
 
-Proven patterns for reducing nesting depth (validated in thai-lint codebase refactoring):
+Proven patterns for reducing nesting depth:
 
 ### Pattern 1: Guard Clauses (Early Returns)
 
@@ -542,7 +542,7 @@ lint-all: lint-nesting
 
 ### Python Support
 
-✅ **Fully Supported**
+**Fully Supported**
 
 **Nesting constructs detected:**
 - `if` / `elif` / `else`
@@ -559,7 +559,7 @@ lint-all: lint-nesting
 
 ### TypeScript Support
 
-✅ **Fully Supported**
+**Fully Supported**
 
 **Nesting constructs detected:**
 - `if` / `else` conditionals
@@ -576,7 +576,7 @@ lint-all: lint-nesting
 
 ### JavaScript Support
 
-✅ **Supported** (via TypeScript parser)
+**Supported** (via TypeScript parser)
 
 JavaScript files are analyzed using the TypeScript parser, which handles JavaScript syntax.
 
@@ -586,10 +586,10 @@ The nesting linter is designed for speed:
 
 | Operation | Performance | Target |
 |-----------|-------------|--------|
-| Single file parse | ~10-30ms | <100ms ✅ |
-| Single file analysis | ~5-15ms | <50ms ✅ |
-| 100 files | ~500ms | <2s ✅ |
-| 1000 files | ~2-3s | <10s ✅ |
+| Single file parse | ~10-30ms | <100ms |
+| Single file analysis | ~5-15ms | <50ms |
+| 100 files | ~500ms | <2s |
+| 1000 files | ~2-3s | <10s |
 
 **Optimizations:**
 - AST parsing is cached during file processing
@@ -686,30 +686,6 @@ Make nesting checks mandatory in CI pipeline:
 ### 6. Review Violations in PRs
 
 Include nesting depth checks in code review process.
-
-## Case Study: thai-lint Codebase Refactoring
-
-The thai-lint codebase validates the nesting linter through self-application:
-
-**Baseline Assessment:**
-- 18 violations in `src/`
-- 5 violations in tests/examples
-- All functions at depth 4 (configured max: 3)
-- Total: 23 functions requiring refactoring
-
-**Refactoring Strategy:**
-- 13 functions: Extract helper method
-- 7 functions: Guard clauses (early returns)
-- 5 functions: Dispatch pattern
-- 6 functions: Flatten error handling
-
-**Results:**
-- Zero violations
-- All tests passing (317/317)
-- Code quality maintained (Pylint 10.00/10)
-- Readability improvements
-
-**Time Investment**: ~4 hours for 23 functions = ~10 min per function average
 
 ## API Reference
 

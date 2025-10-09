@@ -126,6 +126,9 @@ file-placement:
 | Option | Type | Required | Description |
 |--------|------|----------|-------------|
 | `file-placement` | object | No | File placement linter configuration |
+| `nesting` | object | No | Nesting depth linter configuration |
+| `srp` | object | No | Single Responsibility Principle linter configuration |
+| `dry` | object | No | DRY (Don't Repeat Yourself) linter configuration |
 | `code-quality` | object | No | Code quality linter configuration (future) |
 
 ### File Placement Linter Options
@@ -137,6 +140,192 @@ Under the `file-placement` key:
 | `global_patterns` | object | No | Patterns that apply to all directories |
 | `directories` | object | No | Directory-specific rule configurations |
 | `ignore` | array | No | Files/directories to skip during linting |
+
+### Nesting Depth Linter Options
+
+Under the `nesting` key:
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `enabled` | boolean | `true` | Enable/disable nesting depth linter |
+| `max_nesting_depth` | integer | `4` | Maximum allowed nesting depth within functions |
+
+**Example:**
+
+```yaml
+nesting:
+  enabled: true
+  max_nesting_depth: 3  # Stricter than default
+```
+
+```json
+{
+  "nesting": {
+    "enabled": true,
+    "max_nesting_depth": 3
+  }
+}
+```
+
+### Single Responsibility Principle (SRP) Linter Options
+
+Under the `srp` key:
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `enabled` | boolean | `true` | Enable/disable SRP linter |
+| `max_responsibility_score` | integer | `5` | Maximum allowed responsibility score |
+
+**Example:**
+
+```yaml
+srp:
+  enabled: true
+  max_responsibility_score: 4
+```
+
+```json
+{
+  "srp": {
+    "enabled": true,
+    "max_responsibility_score": 4
+  }
+}
+```
+
+### DRY (Don't Repeat Yourself) Linter Options
+
+Under the `dry` key:
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `enabled` | boolean | `true` | Enable/disable DRY linter |
+| `min_duplicate_lines` | integer | `4` | Minimum lines for duplicate detection |
+| `min_duplicate_tokens` | integer | `30` | Minimum tokens for duplicate detection |
+| `min_occurrences` | integer | `2` | Report duplicates appearing N+ times |
+| `cache_enabled` | boolean | `true` | Enable SQLite caching for performance |
+| `cache_path` | string | `.thailint-cache/dry.db` | SQLite cache file location |
+| `cache_max_age_days` | integer | `30` | Cache entries older than N days are invalidated |
+| `ignore` | array | `[]` | Files/directories to exclude from DRY analysis |
+| `filters` | object | See below | False positive filtering configuration |
+| `python` | object | `{}` | Python-specific threshold overrides |
+| `typescript` | object | `{}` | TypeScript-specific threshold overrides |
+| `javascript` | object | `{}` | JavaScript-specific threshold overrides |
+
+**Filter Options** (under `dry.filters`):
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `keyword_argument_filter` | boolean | `true` | Filter duplicate keyword argument patterns |
+| `import_group_filter` | boolean | `true` | Filter duplicate import statement groups |
+
+**Language-Specific Overrides:**
+
+Each language key (`python`, `typescript`, `javascript`) supports:
+
+| Option | Type | Description |
+|--------|------|-------------|
+| `min_duplicate_lines` | integer | Override global line threshold |
+| `min_duplicate_tokens` | integer | Override global token threshold |
+| `min_occurrences` | integer | Override global occurrence threshold |
+
+**Complete YAML Example:**
+
+```yaml
+dry:
+  enabled: true
+
+  # Detection thresholds
+  min_duplicate_lines: 4
+  min_duplicate_tokens: 30
+  min_occurrences: 2
+
+  # Cache configuration (SQLite)
+  cache_enabled: true
+  cache_path: ".thailint-cache/dry.db"
+  cache_max_age_days: 30
+
+  # Language-specific thresholds
+  python:
+    min_occurrences: 3      # Python: require 3+ duplicates
+    min_duplicate_lines: 5  # Python: stricter line threshold
+
+  typescript:
+    min_duplicate_tokens: 35  # TypeScript: require more tokens
+
+  javascript:
+    min_occurrences: 2  # JavaScript: use global default
+
+  # Ignore patterns
+  ignore:
+    - "tests/"
+    - "__init__.py"
+    - "migrations/"
+    - "*.generated.py"
+
+  # False positive filtering
+  filters:
+    keyword_argument_filter: true
+    import_group_filter: true
+```
+
+**Complete JSON Example:**
+
+```json
+{
+  "dry": {
+    "enabled": true,
+    "min_duplicate_lines": 4,
+    "min_duplicate_tokens": 30,
+    "min_occurrences": 2,
+    "cache_enabled": true,
+    "cache_path": ".thailint-cache/dry.db",
+    "cache_max_age_days": 30,
+    "python": {
+      "min_occurrences": 3,
+      "min_duplicate_lines": 5
+    },
+    "typescript": {
+      "min_duplicate_tokens": 35
+    },
+    "javascript": {
+      "min_occurrences": 2
+    },
+    "ignore": [
+      "tests/",
+      "__init__.py",
+      "migrations/",
+      "*.generated.py"
+    ],
+    "filters": {
+      "keyword_argument_filter": true,
+      "import_group_filter": true
+    }
+  }
+}
+```
+
+**Configuration Hierarchy:**
+
+Language-specific settings override global settings:
+
+1. **Language-specific** (highest priority): `dry.python.min_occurrences`
+2. **Global defaults** (fallback): `dry.min_occurrences`
+
+**Cache Behavior:**
+
+- Cache entries are invalidated when file mtime changes
+- Cache is stored in SQLite database for fast lookups
+- Provides 10-50x speedup on incremental scans
+- Can be disabled with `cache_enabled: false`
+- Clear cache: `thailint dry --clear-cache`
+
+**Filter Behavior:**
+
+Filters reduce false positives:
+
+- **keyword_argument_filter**: Ignores function calls with only keyword arguments (common pattern in configs)
+- **import_group_filter**: Ignores import statement groups (naturally similar structure)
 
 ### Global Patterns
 

@@ -126,7 +126,7 @@ thailint --help
 thailint --version
 
 # Test library import
-python -c "from thailint import Linter; print('✅ Library import works')"
+python -c "from thailint import Linter; print('Library import works')"
 
 # Test file-placement linter
 thailint lint file-placement --help

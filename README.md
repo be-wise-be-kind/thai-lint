@@ -11,7 +11,7 @@ The AI Linter - Enterprise-ready linting and governance for AI-generated code ac
 
 thailint is a modern, enterprise-ready multi-language linter designed specifically for AI-generated code. It enforces project structure, file placement rules, and coding standards across Python, TypeScript, and other languages.
 
-## ✨ Features
+## Features
 
 ### Core Capabilities
 - **File Placement Linting** - Enforce project structure and organization
@@ -23,6 +23,12 @@ thailint is a modern, enterprise-ready multi-language linter designed specifical
   - Heuristic-based analysis (method count, LOC, keywords)
   - Language-specific thresholds (Python, TypeScript, JavaScript)
   - Refactoring patterns from real-world examples
+- **DRY Linting** - Detect duplicate code across projects
+  - Token-based hash detection with SQLite caching
+  - Fast incremental scans (10-50x speedup with cache)
+  - Configurable thresholds (lines, tokens, occurrences)
+  - Language-specific detection (Python, TypeScript, JavaScript)
+  - False positive filtering (keyword args, imports)
 - **Pluggable Architecture** - Easy to extend with custom linters
 - **Multi-Language Support** - Python, TypeScript, JavaScript, and more
 - **Flexible Configuration** - YAML/JSON configs with pattern matching
@@ -80,11 +86,14 @@ thailint file-placement .
 # Check nesting depth
 thailint nesting src/
 
+# Check for duplicate code
+thailint dry .
+
 # With config file
-thailint nesting --config .thailint.yaml src/
+thailint dry --config .thailint.yaml src/
 
 # JSON output for CI/CD
-thailint nesting --format json src/
+thailint dry --format json src/
 ```
 
 ### Library Mode
@@ -163,6 +172,26 @@ nesting:
       max_depth: 4
     javascript:
       max_depth: 4
+
+# DRY linter configuration
+dry:
+  enabled: true
+  min_duplicate_lines: 4         # Minimum lines to consider duplicate
+  min_duplicate_tokens: 30       # Minimum tokens to consider duplicate
+  min_occurrences: 2             # Report if appears 2+ times
+
+  # Language-specific thresholds
+  python:
+    min_occurrences: 3           # Python: require 3+ occurrences
+
+  # Cache settings (SQLite)
+  cache_enabled: true
+  cache_path: ".thailint-cache/dry.db"
+
+  # Ignore patterns
+  ignore:
+    - "tests/"
+    - "__init__.py"
 ```
 
 **JSON format also supported** (`.thailint.json`):
@@ -186,6 +215,18 @@ nesting:
       "python": { "max_depth": 4 },
       "typescript": { "max_depth": 4 }
     }
+  },
+  "dry": {
+    "enabled": true,
+    "min_duplicate_lines": 4,
+    "min_duplicate_tokens": 30,
+    "min_occurrences": 2,
+    "python": {
+      "min_occurrences": 3
+    },
+    "cache_enabled": true,
+    "cache_path": ".thailint-cache/dry.db",
+    "ignore": ["tests/", "__init__.py"]
   }
 }
 ```
@@ -272,9 +313,9 @@ Common patterns to reduce nesting:
 
 ### Language Support
 
-- ✅ **Python**: Full support (if/for/while/with/try/match)
-- ✅ **TypeScript**: Full support (if/for/while/try/switch)
-- ✅ **JavaScript**: Supported via TypeScript parser
+- **Python**: Full support (if/for/while/with/try/match)
+- **TypeScript**: Full support (if/for/while/try/switch)
+- **JavaScript**: Supported via TypeScript parser
 
 See [Nesting Linter Guide](docs/nesting-linter.md) for comprehensive documentation and refactoring patterns.
 
@@ -382,9 +423,9 @@ Common patterns to fix SRP violations (discovered during dogfooding):
 
 ### Language Support
 
-- ✅ **Python**: Full support with method counting and LOC analysis
-- ✅ **TypeScript**: Full support with tree-sitter parsing
-- ✅ **JavaScript**: Supported via TypeScript parser
+- **Python**: Full support with method counting and LOC analysis
+- **TypeScript**: Full support with tree-sitter parsing
+- **JavaScript**: Supported via TypeScript parser
 
 ### Real-World Example
 
@@ -394,6 +435,178 @@ Common patterns to fix SRP violations (discovered during dogfooding):
 - **Result**: Each class ≤8 methods, ≤150 LOC, single responsibility
 
 See [SRP Linter Guide](docs/srp-linter.md) for comprehensive documentation and refactoring patterns.
+
+## DRY Linter (Don't Repeat Yourself)
+
+### Overview
+
+The DRY linter detects duplicate code blocks across your entire project using token-based hashing with SQLite caching. It identifies identical or near-identical code that violates the Don't Repeat Yourself (DRY) principle, helping maintain code quality at scale.
+
+### Quick Start
+
+```bash
+# Check for duplicate code in current directory
+thailint dry .
+
+# Use custom thresholds
+thailint dry --min-lines 5 src/
+
+# Clear cache and re-scan
+thailint dry --clear-cache src/
+
+# Get JSON output
+thailint dry --format json src/
+```
+
+### Configuration
+
+Add to `.thailint.yaml`:
+
+```yaml
+dry:
+  enabled: true
+  min_duplicate_lines: 4         # Minimum lines to consider duplicate
+  min_duplicate_tokens: 30       # Minimum tokens to consider duplicate
+  min_occurrences: 2             # Report if appears 2+ times
+
+  # Language-specific thresholds
+  python:
+    min_occurrences: 3           # Python: require 3+ occurrences
+  typescript:
+    min_occurrences: 3           # TypeScript: require 3+ occurrences
+
+  # Cache settings (SQLite for fast incremental scans)
+  cache_enabled: true
+  cache_path: ".thailint-cache/dry.db"
+  cache_max_age_days: 30
+
+  # Ignore patterns
+  ignore:
+    - "tests/"           # Test code often has acceptable duplication
+    - "__init__.py"      # Import-only files exempt
+
+  # False positive filters
+  filters:
+    keyword_argument_filter: true   # Filter function call kwargs
+    import_group_filter: true       # Filter import groups
+```
+
+### How It Works
+
+**Token-Based Detection:**
+1. Parse code into tokens (stripping comments, normalizing whitespace)
+2. Create rolling hash windows of N lines
+3. Store hashes in SQLite database with file locations
+4. Query for hashes appearing 2+ times across project
+
+**SQLite Caching:**
+- First scan: Hash all files (~1-3s for 1000 files)
+- Subsequent scans: Load cached hashes for unchanged files (~0.1-0.5s)
+- 10-50x speedup for incremental scans
+- Mtime-based cache invalidation (automatic and safe)
+
+### Example Violation
+
+**Code with duplication:**
+```python
+# src/auth.py
+def validate_user(user_data):
+    if not user_data:
+        return False
+    if not user_data.get('email'):
+        return False
+    if not user_data.get('password'):
+        return False
+    return True
+
+# src/admin.py
+def validate_admin(admin_data):
+    if not admin_data:
+        return False
+    if not admin_data.get('email'):
+        return False
+    if not admin_data.get('password'):
+        return False
+    return True
+```
+
+**Violation message:**
+```
+src/auth.py:3 - Duplicate code detected (4 lines, 2 occurrences)
+  Locations:
+    - src/auth.py:3-6
+    - src/admin.py:3-6
+  Consider extracting to shared function
+```
+
+**Refactored (DRY):**
+```python
+# src/validators.py
+def validate_credentials(data):
+    if not data:
+        return False
+    if not data.get('email'):
+        return False
+    if not data.get('password'):
+        return False
+    return True
+
+# src/auth.py & src/admin.py
+from src.validators import validate_credentials
+
+def validate_user(user_data):
+    return validate_credentials(user_data)
+
+def validate_admin(admin_data):
+    return validate_credentials(admin_data)
+```
+
+### Cache Management
+
+```bash
+# Normal cached run (default)
+thailint dry src/
+
+# Force re-analysis (ignore cache)
+thailint dry --no-cache src/
+
+# Clear cache before running
+thailint dry --clear-cache src/
+
+# Manual cache cleanup
+rm -rf .thailint-cache/dry.db
+```
+
+### Performance
+
+| Operation | Performance | Cache Status |
+|-----------|-------------|--------------|
+| First scan (1000 files) | 1-3s | Cache write |
+| Unchanged files | 0.1-0.5s | Cache hit |
+| 50 changed files | 0.5-1s | Partial cache |
+
+**Speedup**: 3-10x for incremental scans with cache
+
+### Language Support
+
+- **Python**: Full support with AST-based tokenization
+- **TypeScript**: Full support with tree-sitter parsing
+- **JavaScript**: Supported via TypeScript parser
+
+### False Positive Filtering
+
+Built-in filters automatically exclude common non-duplication patterns:
+- **keyword_argument_filter**: Excludes function calls with keyword arguments
+- **import_group_filter**: Excludes import statement groups
+
+### Refactoring Patterns
+
+1. **Extract Function**: Move repeated logic to shared function
+2. **Extract Base Class**: Create base class for similar implementations
+3. **Extract Utility Module**: Move helper functions to shared utilities
+4. **Template Method**: Use function parameters for variations
+
+See [DRY Linter Guide](docs/dry-linter.md) for comprehensive documentation, cache management, and refactoring patterns.
 
 ## Pre-commit Hooks
 
@@ -416,13 +629,13 @@ pre-commit run --all-files
 ### What You Get
 
 **On every commit:**
-- 🚫 Prevents commits to main/master branch
-- 🎨 Auto-fixes formatting issues
-- ✅ Runs thailint on changed files (fast)
+- Prevents commits to main/master branch
+- Auto-fixes formatting issues
+- Runs thailint on changed files (fast)
 
 **On every push:**
-- 🔍 Full linting on entire codebase
-- 🧪 Runs complete test suite
+- Full linting on entire codebase
+- Runs complete test suite
 
 ### Example Configuration
 
@@ -434,7 +647,7 @@ repos:
       # Prevent commits to protected branches
       - id: no-commit-to-main
         name: Prevent commits to main branch
-        entry: bash -c 'branch=$(git rev-parse --abbrev-ref HEAD); if [ "$branch" = "main" ]; then echo "❌ Use a feature branch!"; exit 1; fi'
+        entry: bash -c 'branch=$(git rev-parse --abbrev-ref HEAD); if [ "$branch" = "main" ]; then echo "ERROR: Use a feature branch!"; exit 1; fi'
         language: system
         pass_filenames: false
         always_run: true
@@ -574,16 +787,18 @@ docker run --rm -v $(pwd):/data \
 
 ### Comprehensive Guides
 
-- 📖 **[Getting Started](docs/getting-started.md)** - Installation, first lint, basic config
-- ⚙️ **[Configuration Reference](docs/configuration.md)** - Complete config options (YAML/JSON)
-- 📚 **[API Reference](docs/api-reference.md)** - Library API documentation
-- 💻 **[CLI Reference](docs/cli-reference.md)** - All CLI commands and options
-- 🚀 **[Deployment Modes](docs/deployment-modes.md)** - CLI, Library, and Docker usage
-- 📁 **[File Placement Linter](docs/file-placement-linter.md)** - Detailed linter guide
-- 🔄 **[Nesting Depth Linter](docs/nesting-linter.md)** - Nesting depth analysis guide
-- 🪝 **[Pre-commit Hooks](docs/pre-commit-hooks.md)** - Automated quality checks
-- 📦 **[Publishing Guide](docs/releasing.md)** - Release and publishing workflow
-- ✅ **[Publishing Checklist](docs/publishing-checklist.md)** - Post-publication validation
+- **[Getting Started](docs/getting-started.md)** - Installation, first lint, basic config
+- **[Configuration Reference](docs/configuration.md)** - Complete config options (YAML/JSON)
+- **[API Reference](docs/api-reference.md)** - Library API documentation
+- **[CLI Reference](docs/cli-reference.md)** - All CLI commands and options
+- **[Deployment Modes](docs/deployment-modes.md)** - CLI, Library, and Docker usage
+- **[File Placement Linter](docs/file-placement-linter.md)** - Detailed linter guide
+- **[Nesting Depth Linter](docs/nesting-linter.md)** - Nesting depth analysis guide
+- **[SRP Linter](docs/srp-linter.md)** - Single Responsibility Principle guide
+- **[DRY Linter](docs/dry-linter.md)** - Duplicate code detection guide
+- **[Pre-commit Hooks](docs/pre-commit-hooks.md)** - Automated quality checks
+- **[Publishing Guide](docs/releasing.md)** - Release and publishing workflow
+- **[Publishing Checklist](docs/publishing-checklist.md)** - Post-publication validation
 
 ### Examples
 
@@ -659,10 +874,10 @@ thailint is designed for speed and efficiency:
 
 | Operation | Performance | Target |
 |-----------|-------------|--------|
-| Single file lint | ~20ms | <100ms ✅ |
-| 100 files | ~300ms | <1s ✅ |
-| 1000 files | ~900ms | <5s ✅ |
-| Config loading | ~10ms | <100ms ✅ |
+| Single file lint | ~20ms | <100ms |
+| 100 files | ~300ms | <1s |
+| 1000 files | ~900ms | <5s |
+| Config loading | ~10ms | <100ms |
 
 *Performance benchmarks run on standard hardware, your results may vary.*
 
@@ -677,9 +892,9 @@ thailint uses standard exit codes for CI/CD integration:
 ```bash
 thailint file-placement .
 if [ $? -eq 0 ]; then
-    echo "✅ Linting passed"
+    echo "Linting passed"
 else
-    echo "❌ Linting failed"
+    echo "Linting failed"
 fi
 ```
 

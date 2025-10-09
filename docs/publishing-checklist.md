@@ -141,7 +141,7 @@ thailint nesting --help
 
 ```bash
 # Test library import
-python -c "from src import Linter; print('✅ Library import works')"
+python -c "from src import Linter; print('Library import works')"
 
 # Test basic API usage
 python << 'EOF'
@@ -149,14 +149,14 @@ from src import Linter
 
 # Create linter instance
 linter = Linter()
-print("✅ Linter instantiated successfully")
+print("Linter instantiated successfully")
 
 # Test configuration
 config_file = ".thailint.yaml"
 linter_with_config = Linter(config_file=config_file)
-print("✅ Linter with config works")
+print("Linter with config works")
 
-print("✅ Library API validation complete")
+print("Library API validation complete")
 EOF
 ```
 
@@ -217,7 +217,7 @@ deactivate
 rm -rf /tmp/test-thailint-pypi
 rm -rf /tmp/test-thailint-project
 
-echo "✅ PyPI validation complete and cleaned up"
+echo "PyPI validation complete and cleaned up"
 ```
 
 **Final PyPI checklist:**
@@ -376,7 +376,7 @@ DOCKERHUB_USERNAME=$(grep DOCKERHUB_USERNAME .env | cut -d'=' -f2)
 docker rmi "$DOCKERHUB_USERNAME/thailint:$VERSION"
 docker rmi "$DOCKERHUB_USERNAME/thailint:latest"
 
-echo "✅ Docker validation complete and cleaned up"
+echo "Docker validation complete and cleaned up"
 ```
 
 **Final Docker checklist:**
@@ -609,7 +609,7 @@ deactivate
 cd ~
 rm -rf ~/test-thailint-integration
 
-echo "✅ Integration test complete and cleaned up"
+echo "Integration test complete and cleaned up"
 ```
 
 **Final integration checklist:**
@@ -758,7 +758,7 @@ Consider automating this checklist with a validation script:
 
 set -e
 
-echo "🔍 Validating thai-lint publication..."
+echo "Validating thai-lint publication..."
 
 # Test PyPI installation
 python3 -m venv /tmp/test-env
@@ -768,16 +768,16 @@ thailint --version
 deactivate
 rm -rf /tmp/test-env
 
-echo "✅ PyPI validation passed"
+echo "PyPI validation passed"
 
 # Test Docker pull
 DOCKERHUB_USERNAME=$(grep DOCKERHUB_USERNAME .env | cut -d'=' -f2)
 docker pull "$DOCKERHUB_USERNAME/thailint:latest"
 docker run --rm "$DOCKERHUB_USERNAME/thailint:latest" --version
 
-echo "✅ Docker validation passed"
+echo "Docker validation passed"
 
-echo "✅ All validations passed!"
+echo "All validations passed!"
 ```
 
 Make it executable:
@@ -792,10 +792,10 @@ chmod +x validate-publication.sh
 
 Use this checklist after every publication to ensure:
 
-- ✅ PyPI package works correctly
-- ✅ Docker image works correctly
-- ✅ End-to-end user experience works
-- ✅ Documentation is accurate
-- ✅ Rollback plan is ready if needed
+- PyPI package works correctly
+- Docker image works correctly
+- End-to-end user experience works
+- Documentation is accurate
+- Rollback plan is ready if needed
 
 **Remember:** It's better to catch issues in validation than after users report them!
