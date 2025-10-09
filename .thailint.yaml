@@ -130,7 +130,7 @@ srp:
 
 # DRY (Don't Repeat Yourself) linter configuration
 dry:
-  enabled: false  # Must be explicitly enabled (opt-in for performance)
+  enabled: true  # Enabled for dogfooding (PR4)
   min_duplicate_lines: 3  # Minimum lines for duplicate detection
   min_duplicate_tokens: 30  # Minimum tokens for duplicate detection
 

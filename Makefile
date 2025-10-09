@@ -33,7 +33,7 @@ help: ## Show available targets
 	@echo "  make lint-solid FILES=...      - SOLID principle linting on specific files"
 	@echo "  make lint-dry          - DRY principle linting (duplicate code detection)"
 	@echo "  make clean-cache       - Clear DRY linter cache"
-	@echo "  make lint-full         - ALL quality checks (excludes lint-dry for performance)"
+	@echo "  make lint-full         - ALL quality checks (includes lint-dry as of PR4)"
 	@echo "  make lint-full FILES=changed   - ALL quality checks on changed files (pre-commit)"
 	@echo "  make format            - Auto-fix formatting and linting issues"
 	@echo ""
@@ -192,10 +192,8 @@ clean-cache: ## Clear DRY linter cache
 	@rm -rf .thailint-cache/
 	@echo "✓ Cache cleared"
 
-lint-full: lint-all lint-security lint-complexity lint-placement lint-solid ## ALL quality checks (excludes lint-dry for performance)
-	@echo "✅ All linting checks complete!"
-	@echo ""
-	@echo "Note: lint-dry excluded for performance (run separately with 'make lint-dry')"
+lint-full: lint-all lint-security lint-complexity lint-placement lint-solid lint-dry ## ALL quality checks (includes lint-dry as of PR4)
+	@echo "✅ All linting checks complete (including DRY)!"
 
 format: ## Auto-fix formatting and linting issues
 	@poetry run ruff format src/ tests/
