@@ -24,6 +24,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.1] - 2025-10-09
+
+**Docker Path Validation Fix** - Fixes critical Docker image bug where file-specific linting failed due to premature path validation.
+
+### Fixed
+
+- **Docker Path Validation** - Removed Click's `exists=True` parameter that validated paths before Docker volumes were mounted
+  - All linter commands now work with file paths in Docker: `docker run -v $(pwd):/data thailint nesting /data/file.py`
+  - Better error messages when paths don't exist, with Docker usage hints
+  - Manual path validation happens after argument parsing, compatible with both CLI and Docker contexts
+
+### Changed
+
+- Path validation moved from Click argument parsing to execution functions
+- Added `_validate_paths_exist()` helper function with user-friendly error messages
+
 ## [0.3.0] - TBD
 
 **Single Responsibility Principle (SRP) Linter Release** - Adds comprehensive SRP violation detection for Python and TypeScript code. Uses heuristic-based analysis with configurable thresholds for method count, lines of code, and responsibility keywords. Includes language-specific configurations and extensive refactoring pattern documentation.

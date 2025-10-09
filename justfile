@@ -701,28 +701,48 @@ _publish-docker-only:
     fi
 
 # Publish to both PyPI and Docker Hub
-publish:
+# Usage:
+#   just publish                 - Run with tests and linting
+#   just publish --skip-checks   - Skip tests and linting (already validated)
+publish *ARGS="":
     #!/usr/bin/env bash
     echo "=========================================="
     echo "Publishing to PyPI and Docker Hub"
     echo "=========================================="
     echo ""
-    echo "Step 1: Running tests..."
-    just test
-    if [ $? -ne 0 ]; then
-        echo "❌ Tests failed! Cannot publish."
-        exit 1
+
+    # Check for --skip-checks flag
+    SKIP_CHECKS=false
+    for arg in {{ARGS}}; do
+        if [ "$arg" = "--skip-checks" ]; then
+            SKIP_CHECKS=true
+        fi
+    done
+
+    # Run checks unless skipped
+    if [ "$SKIP_CHECKS" = "false" ]; then
+        echo "Step 1: Running tests..."
+        just test
+        if [ $? -ne 0 ]; then
+            echo "❌ Tests failed! Cannot publish."
+            exit 1
+        fi
+        echo "✓ Tests passed"
+        echo ""
+        echo "Step 2: Running full linting..."
+        just lint-full
+        if [ $? -ne 0 ]; then
+            echo "❌ Linting failed! Cannot publish."
+            exit 1
+        fi
+        echo "✓ Linting passed"
+        echo ""
+    else
+        echo "⚠️  SKIPPING tests and linting checks (--skip-checks flag)"
+        echo ""
     fi
-    echo "✓ Tests passed"
-    echo ""
-    echo "Step 2: Running full linting..."
-    just lint-full
-    if [ $? -ne 0 ]; then
-        echo "❌ Linting failed! Cannot publish."
-        exit 1
-    fi
-    echo "✓ Linting passed"
-    echo ""
+
+    # Version bump always runs (even with --skip-checks)
     echo "Step 3: Version bump..."
     just bump-version
     if [ $? -ne 0 ]; then
@@ -730,6 +750,7 @@ publish:
         exit 1
     fi
     echo ""
+
     just _publish-pypi-only
     if [ $? -ne 0 ]; then
         echo "❌ PyPI publishing failed! Stopping."
