@@ -76,3 +76,41 @@ class BaseViolationBuilder:
             severity=info.severity,
             suggestion=info.suggestion,
         )
+
+    def build_from_params(
+        self,
+        rule_id: str,
+        file_path: str,
+        line: int,
+        message: str,
+        column: int = 1,
+        severity: Severity = Severity.ERROR,
+        suggestion: str | None = None,
+    ) -> Violation:
+        """Build a Violation directly from parameters.
+
+        This is a convenience method that combines ViolationInfo creation and build()
+        to reduce duplication in violation builder methods.
+
+        Args:
+            rule_id: Identifier for the rule that was violated
+            file_path: Path to the file containing the violation
+            line: Line number where violation occurs (1-indexed)
+            message: Description of the violation
+            column: Column number where violation occurs (0-indexed, default=1)
+            severity: Severity level of the violation (default=ERROR)
+            suggestion: Optional suggestion for fixing the violation
+
+        Returns:
+            Violation object with all fields populated
+        """
+        info = ViolationInfo(
+            rule_id=rule_id,
+            file_path=file_path,
+            line=line,
+            message=message,
+            column=column,
+            severity=severity,
+            suggestion=suggestion,
+        )
+        return self.build(info)

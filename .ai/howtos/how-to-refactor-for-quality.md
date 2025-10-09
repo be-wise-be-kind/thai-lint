@@ -1767,6 +1767,402 @@ def calculate_user_discount(user):
 
 ---
 
+## Critical: Avoiding "For Every 10 Fixed, 3 Created"
+
+**THE PROBLEM**: When refactoring DRY violations, you can inadvertently create NEW duplication patterns while fixing old ones. This is the single biggest cause of refactoring failures.
+
+### Why This Happens
+
+**Root Cause**: Extracting at the wrong level of abstraction creates parallel structures that are themselves violations.
+
+**Example of Creating New Violations**:
+```python
+# Original: 3 files have duplicate email validation
+# File 1
+def process_user(user):
+    if "@" not in user["email"]:
+        raise ValueError("Invalid email")
+    # ... process user
+
+# File 2
+def process_admin(admin):
+    if "@" not in admin["email"]:  # DUPLICATE
+        raise ValueError("Invalid email")
+    # ... process admin
+
+# File 3
+def process_customer(customer):
+    if "@" not in customer["email"]:  # DUPLICATE
+        raise ValueError("Invalid email")
+    # ... process customer
+
+# ❌ BAD FIX: Create entity-specific validators
+def validate_user_email(user):
+    if "@" not in user["email"]:
+        raise ValueError("Invalid email")
+
+def validate_admin_email(admin):
+    if "@" not in admin["email"]:  # STILL DUPLICATED!
+        raise ValueError("Invalid email")
+
+def validate_customer_email(customer):
+    if "@" not in customer["email"]:  # STILL DUPLICATED!
+        raise ValueError("Invalid email")
+
+# You just created 3 NEW duplicates!
+# The linter will report 3 new violations
+```
+
+**✅ GOOD FIX: Extract at the right abstraction level**:
+```python
+def validate_email(email: str) -> None:
+    """Validate email address format.
+
+    Args:
+        email: Email address to validate
+
+    Raises:
+        ValueError: If email is invalid
+    """
+    if "@" not in email:
+        raise ValueError("Invalid email")
+
+# Usage - ONE function handles ALL cases
+def process_user(user):
+    validate_email(user["email"])
+    # ... process user
+
+def process_admin(admin):
+    validate_email(admin["email"])
+    # ... process admin
+
+def process_customer(customer):
+    validate_email(customer["email"])
+    # ... process customer
+
+# Result: 3 violations eliminated, 0 created
+```
+
+### The "Rule of Three" - Wait Before Extracting
+
+**CRITICAL PRINCIPLE**: Don't extract duplication the first or second time. Wait for the THIRD occurrence.
+
+**Why**: The first two instances might be coincidentally similar. The third confirms a real pattern.
+
+**Process**:
+1. **First time**: Write the code
+2. **Second time**: Duplicate it (yes, leave the duplication!)
+3. **Third time**: NOW analyze the pattern and extract appropriately
+
+**Example**:
+```python
+# Occurrence 1: Write code
+def save_user(user):
+    db.execute("INSERT INTO users VALUES (?)", (user,))
+    db.commit()
+
+# Occurrence 2: Copy-paste (OK for now)
+def save_product(product):
+    db.execute("INSERT INTO products VALUES (?)", (product,))
+    db.commit()
+
+# Occurrence 3: NOW extract
+class Repository:
+    def save(self, table: str, entity: dict) -> None:
+        """Save entity to database table."""
+        db.execute(f"INSERT INTO {table} VALUES (?)", (entity,))
+        db.commit()
+
+# Usage
+repo = Repository()
+repo.save("users", user)
+repo.save("products", product)
+repo.save("orders", order)  # Third+ uses benefit immediately
+```
+
+### Extract PATTERNS, Not INSTANCES
+
+**Wrong approach**: Extract entity-specific functions
+**Right approach**: Extract parameterized generic functions
+
+**❌ BAD - Creating Parallel Structures**:
+```python
+# You find validation duplication and extract these:
+def validate_user_required_fields(user):
+    if not user.get("name"):
+        raise ValueError("Missing name")
+    if not user.get("email"):
+        raise ValueError("Missing email")
+
+def validate_product_required_fields(product):
+    if not product.get("name"):
+        raise ValueError("Missing name")
+    if not product.get("price"):
+        raise ValueError("Missing price")
+
+def validate_order_required_fields(order):
+    if not order.get("customer_id"):
+        raise ValueError("Missing customer_id")
+    if not order.get("items"):
+        raise ValueError("Missing items")
+
+# You created a PATTERN of duplication!
+# Structure is identical, just field names differ
+```
+
+**✅ GOOD - Extract the Pattern Once**:
+```python
+def validate_required_fields(
+    data: dict,
+    required_fields: list[str],
+    entity_name: str
+) -> None:
+    """Validate required fields exist in data dictionary.
+
+    Args:
+        data: Dictionary to validate
+        required_fields: List of required field names
+        entity_name: Name of entity for error messages
+
+    Raises:
+        ValueError: If any required field is missing
+    """
+    for field in required_fields:
+        if not data.get(field):
+            raise ValueError(f"Missing {field} in {entity_name}")
+
+# Usage - one function, infinite entities
+validate_required_fields(user, ["name", "email"], "user")
+validate_required_fields(product, ["name", "price"], "product")
+validate_required_fields(order, ["customer_id", "items"], "order")
+validate_required_fields(invoice, ["amount", "due_date"], "invoice")
+# ... any future entity
+```
+
+### Use Dataclasses to Reduce Parameter Duplication
+
+**Problem**: Multiple builder functions with same structure
+
+**❌ BAD - Parallel Builder Functions**:
+```python
+def create_user_error(user_id, message):
+    return {
+        "entity": "user",
+        "id": user_id,
+        "message": message,
+        "severity": "ERROR",
+        "timestamp": now()
+    }
+
+def create_order_error(order_id, message):
+    return {
+        "entity": "order",
+        "id": order_id,
+        "message": message,
+        "severity": "ERROR",
+        "timestamp": now()
+    }
+
+def create_product_error(product_id, message):
+    return {
+        "entity": "product",
+        "id": product_id,
+        "message": message,
+        "severity": "ERROR",
+        "timestamp": now()
+    }
+
+# THREE duplicate builder functions!
+```
+
+**✅ GOOD - Single Builder with Dataclass**:
+```python
+from dataclasses import dataclass, field
+from datetime import datetime
+from typing import Literal
+
+@dataclass
+class ErrorInfo:
+    """Information for creating error dictionaries."""
+    entity: str
+    entity_id: str
+    message: str
+    severity: Literal["ERROR", "WARNING", "INFO"] = "ERROR"
+    timestamp: datetime = field(default_factory=datetime.now)
+
+def create_error(info: ErrorInfo) -> dict:
+    """Create error dictionary from info.
+
+    Args:
+        info: Error information
+
+    Returns:
+        Error dictionary
+    """
+    return {
+        "entity": info.entity,
+        "id": info.entity_id,
+        "message": info.message,
+        "severity": info.severity,
+        "timestamp": info.timestamp,
+    }
+
+# Usage - one function, all entities
+create_error(ErrorInfo("user", user_id, "Invalid email"))
+create_error(ErrorInfo("order", order_id, "Missing items"))
+create_error(ErrorInfo("product", product_id, "Out of stock"))
+```
+
+### Template Method Pattern for Workflow Duplication
+
+**Problem**: Multiple classes with same workflow structure
+
+**❌ BAD - Duplicated Workflow in Each Class**:
+```python
+class UserProcessor:
+    def process(self, user):
+        self._validate_user(user)
+        result = self._transform_user(user)
+        self._save_user(result)
+        return result
+
+class OrderProcessor:
+    def process(self, order):  # SAME WORKFLOW
+        self._validate_order(order)  # Different validation
+        result = self._transform_order(order)  # Different transform
+        self._save_order(result)  # Different save
+        return result
+
+class ProductProcessor:
+    def process(self, product):  # SAME WORKFLOW
+        self._validate_product(product)
+        result = self._transform_product(product)
+        self._save_product(result)
+        return result
+
+# Workflow structure duplicated 3 times!
+```
+
+**✅ GOOD - Template Method with Extension Points**:
+```python
+from abc import ABC, abstractmethod
+
+class BaseProcessor(ABC):
+    """Base processor with template method workflow."""
+
+    def process(self, data: dict) -> dict:
+        """Process data using template method pattern.
+
+        Workflow defined here, variations in subclasses.
+
+        Args:
+            data: Data to process
+
+        Returns:
+            Processed data
+        """
+        self.validate(data)
+        result = self.transform(data)
+        self.save(result)
+        return result
+
+    @abstractmethod
+    def validate(self, data: dict) -> None:
+        """Validate data - subclasses implement."""
+
+    @abstractmethod
+    def transform(self, data: dict) -> dict:
+        """Transform data - subclasses implement."""
+
+    @abstractmethod
+    def save(self, data: dict) -> None:
+        """Save data - subclasses implement."""
+
+class UserProcessor(BaseProcessor):
+    def validate(self, data: dict) -> None:
+        # User-specific validation
+        pass
+
+    def transform(self, data: dict) -> dict:
+        # User-specific transformation
+        pass
+
+    def save(self, data: dict) -> None:
+        # User-specific save
+        pass
+
+# Workflow defined ONCE, extended cleanly
+```
+
+### Validation Checklist Before Committing
+
+Before committing DRY refactoring, verify:
+
+- [ ] **Did I wait for third occurrence?** (Rule of Three)
+- [ ] **Did I extract the PATTERN or just the INSTANCE?**
+- [ ] **Can my extracted code handle ALL current cases?**
+- [ ] **Will it handle FUTURE similar cases without modification?**
+- [ ] **Did I create any parallel structures?** (multiple similar functions/classes)
+- [ ] **Are function names generic or entity-specific?** (Generic is better)
+- [ ] **Did I parameterize sufficiently?** (Check for hardcoded entity names)
+- [ ] **Run `make lint-dry` - did violations DECREASE?** (Not just shift)
+- [ ] **Review NEW code for potential duplication patterns**
+
+### Success Metrics
+
+**Good refactoring**:
+- Violations decrease by **>50%**
+- **Zero new duplication patterns** created
+- Code is **more flexible** and parameterized
+- Can handle future entities **without modification**
+- Tests still pass
+
+**Bad refactoring** (revert and rethink):
+- Violations decrease by **<20%**
+- **New parallel structures** appear
+- Created entity-specific functions (validate_user_*, validate_order_*, etc.)
+- Abstraction is **more complex** than original duplication
+- Future entities require **adding new similar functions**
+
+### Red Flags - Stop and Rethink
+
+**Stop immediately if you find yourself**:
+- Creating functions named `function_user()`, `function_order()`, `function_product()`
+- Copy-pasting your extracted function to create variations
+- Adding entity names to function parameters AND function names
+- Creating matching sets of classes (UserValidator, OrderValidator, ProductValidator)
+- Writing similar `if entity_type == "user"` chains in multiple places
+
+**These are signs you're creating new duplication!**
+
+### Recovery: What to Do If You Created New Violations
+
+**If `make lint-dry` shows NEW violations after refactoring**:
+
+1. **Stop** - Don't continue refactoring
+2. **Analyze** - What pattern did the new violations create?
+3. **Identify** - Are the new violations parallel structures?
+4. **Re-extract** - Extract at a HIGHER level of abstraction
+5. **Parameterize** - Make the code handle ALL variations with parameters
+6. **Validate** - Run `make lint-dry` again - violations should decrease significantly
+
+**Example Recovery**:
+```python
+# You created these (new violations):
+def format_user_error(...): pass
+def format_order_error(...): pass
+def format_product_error(...): pass
+
+# Re-extract at higher level:
+def format_entity_error(entity_type: str, ...):
+    """Format error for any entity type."""
+    return f"{entity_type.title()} error: ..."
+
+# Now the 3 parallel functions are gone
+```
+
+---
+
 ## Anti-Patterns to Avoid
 
 ### Anti-Pattern 1: Over-Splitting

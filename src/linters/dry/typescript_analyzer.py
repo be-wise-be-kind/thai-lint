@@ -4,72 +4,40 @@ Purpose: TypeScript/JavaScript source code tokenization and duplicate block anal
 Scope: TypeScript and JavaScript file analysis for duplicate detection
 
 Overview: Analyzes TypeScript and JavaScript source files to extract code blocks for duplicate
-    detection. Uses token-based hashing approach to normalize code and generate rolling hash windows.
-    Integrates TokenHasher for normalization and CodeBlock creation. Returns list of code blocks with
-    hash values that can be stored in cache and queried for duplicates across the project. Implementation
-    mirrors PythonDuplicateAnalyzer using TokenHasher which handles both Python (#) and TS/JS (//) comments.
+    detection. Inherits from BaseTokenAnalyzer for common token-based hashing and rolling hash
+    window logic. Adds TypeScript-specific filtering to exclude interface/type definition bodies
+    from duplicate detection since these often have intentional structural similarity. Returns list
+    of code blocks with hash values that can be stored in cache and queried for duplicates.
 
-Dependencies: TokenHasher, CodeBlock, DRYConfig, pathlib.Path
+Dependencies: BaseTokenAnalyzer, CodeBlock, DRYConfig, pathlib.Path
 
 Exports: TypeScriptDuplicateAnalyzer class
 
 Interfaces: TypeScriptDuplicateAnalyzer.analyze(file_path: Path, content: str, config: DRYConfig)
     -> list[CodeBlock]
 
-Implementation: Token-based analysis using TokenHasher, rolling hash windows, CodeBlock creation
+Implementation: Inherits analyze() workflow from BaseTokenAnalyzer, adds interface filtering logic
 """
 
-from pathlib import Path
-
-from .cache import CodeBlock
-from .config import DRYConfig
-from .token_hasher import TokenHasher
+from .base_token_analyzer import BaseTokenAnalyzer
 
 
-class TypeScriptDuplicateAnalyzer:
+class TypeScriptDuplicateAnalyzer(BaseTokenAnalyzer):
     """Analyzes TypeScript/JavaScript code for duplicate blocks."""
 
-    def __init__(self) -> None:
-        """Initialize analyzer with token hasher."""
-        self._hasher = TokenHasher()
-
-    def analyze(self, file_path: Path, content: str, config: DRYConfig) -> list[CodeBlock]:
-        """Analyze TypeScript/JavaScript file for code blocks.
+    def _should_include_block(self, content: str, start_line: int, end_line: int) -> bool:
+        """Filter out blocks that overlap with interface/type definitions.
 
         Args:
-            file_path: Path to TypeScript/JavaScript file
             content: File content
-            config: DRY configuration
+            start_line: Block start line
+            end_line: Block end line
 
         Returns:
-            List of CodeBlock instances with hash values
+            False if block overlaps interface definition, True otherwise
         """
-        # Tokenize code
-        lines = self._hasher.tokenize(content)
-
-        # Generate rolling hash windows
-        windows = self._hasher.rolling_hash(lines, config.min_duplicate_lines)
-
-        # Get interface/type definition ranges to filter out
         interface_ranges = self._find_interface_ranges(content)
-
-        # Create CodeBlock instances, filtering out interface bodies
-        blocks = []
-        for hash_val, start_line, end_line, snippet in windows:
-            # Skip blocks that overlap with interface definitions
-            if self._overlaps_interface(start_line, end_line, interface_ranges):
-                continue
-
-            block = CodeBlock(
-                file_path=file_path,
-                start_line=start_line,
-                end_line=end_line,
-                snippet=snippet,
-                hash_value=hash_val,
-            )
-            blocks.append(block)
-
-        return blocks
+        return not self._overlaps_interface(start_line, end_line, interface_ranges)
 
     def _find_interface_ranges(self, content: str) -> list[tuple[int, int]]:
         """Find line ranges of interface/type definitions.

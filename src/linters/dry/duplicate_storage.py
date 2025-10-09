@@ -59,20 +59,35 @@ class DuplicateStorage:
         # Add to memory for duplicate detection this run
         self._add_to_memory(blocks)
 
+        # Guard clauses - early returns for skip conditions
+        if not self._cache:
+            return
+
+        if not blocks:
+            return
+
         # Update cache with new blocks if needed (for fresh analysis)
-        # Skip if blocks were loaded from cache (they're already persisted)
-        if self._cache and blocks:
-            # Check if file analysis is fresh (not from cache)
-            # This is indicated by the blocks not having been persisted yet
-            # We can tell by checking mtime freshness
-            try:
-                mtime = file_path.stat().st_mtime
-                if not self._cache.is_fresh(file_path, mtime):
-                    # File was analyzed (not cached), so persist
-                    self._add_to_cache(file_path, blocks)
-            except OSError:
-                # File doesn't exist, skip cache
-                pass
+        self._update_cache_if_fresh(file_path, blocks)
+
+    def _update_cache_if_fresh(self, file_path: Path, blocks: list[CodeBlock]) -> None:
+        """Update cache if file analysis is fresh (not from cache).
+
+        Args:
+            file_path: Path to source file
+            blocks: List of code blocks to store
+        """
+        if not self._cache:
+            return
+
+        try:
+            mtime = file_path.stat().st_mtime
+        except OSError:
+            # File doesn't exist, skip cache
+            return
+
+        # File was analyzed (not cached), so persist if not fresh
+        if not self._cache.is_fresh(file_path, mtime):
+            self._add_to_cache(file_path, blocks)
 
     def get_duplicate_hashes(self) -> list[int]:
         """Get all hash values with 2+ occurrences from memory.

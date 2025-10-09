@@ -21,7 +21,7 @@ Implementation: Uses file extension and name patterns to generate context-aware 
 from pathlib import Path
 
 from src.core.types import Severity, Violation
-from src.core.violation_builder import BaseViolationBuilder, ViolationInfo
+from src.core.violation_builder import BaseViolationBuilder
 
 
 class ViolationFactory(BaseViolationBuilder):
@@ -49,7 +49,7 @@ class ViolationFactory(BaseViolationBuilder):
         """
         message = f"File '{rel_path}' not allowed in {matched_path}: {reason}"
         suggestion = self._get_suggestion(rel_path.name)
-        info = ViolationInfo(
+        return self.build_from_params(
             rule_id="file-placement",
             file_path=str(rel_path),
             line=1,
@@ -58,7 +58,6 @@ class ViolationFactory(BaseViolationBuilder):
             severity=Severity.ERROR,
             suggestion=suggestion,
         )
-        return self.build(info)
 
     def create_allow_violation(self, rel_path: Path, matched_path: str) -> Violation:
         """Create violation for file not matching allow patterns.
@@ -72,7 +71,7 @@ class ViolationFactory(BaseViolationBuilder):
         """
         message = f"File '{rel_path}' does not match allowed patterns for {matched_path}"
         suggestion = f"Move to {matched_path} or ensure file type is allowed"
-        info = ViolationInfo(
+        return self.build_from_params(
             rule_id="file-placement",
             file_path=str(rel_path),
             line=1,
@@ -81,7 +80,6 @@ class ViolationFactory(BaseViolationBuilder):
             severity=Severity.ERROR,
             suggestion=suggestion,
         )
-        return self.build(info)
 
     def create_global_deny_violation(self, rel_path: Path, reason: str | None) -> Violation:
         """Create violation for global deny pattern match.
@@ -95,7 +93,7 @@ class ViolationFactory(BaseViolationBuilder):
         """
         message = reason or f"File '{rel_path}' matches denied pattern"
         suggestion = self._get_suggestion(rel_path.name)
-        info = ViolationInfo(
+        return self.build_from_params(
             rule_id="file-placement",
             file_path=str(rel_path),
             line=1,
@@ -104,7 +102,6 @@ class ViolationFactory(BaseViolationBuilder):
             severity=Severity.ERROR,
             suggestion=suggestion,
         )
-        return self.build(info)
 
     def create_global_allow_violation(self, rel_path: Path) -> Violation:
         """Create violation for file not matching global allow patterns.
@@ -117,7 +114,7 @@ class ViolationFactory(BaseViolationBuilder):
         """
         message = f"File '{rel_path}' does not match any allowed patterns"
         suggestion = "Ensure file matches project structure patterns"
-        info = ViolationInfo(
+        return self.build_from_params(
             rule_id="file-placement",
             file_path=str(rel_path),
             line=1,
@@ -126,7 +123,6 @@ class ViolationFactory(BaseViolationBuilder):
             severity=Severity.ERROR,
             suggestion=suggestion,
         )
-        return self.build(info)
 
     def _is_temp_file(self, filename: str) -> bool:
         """Check if file is a temporary or utility file.

@@ -36,23 +36,53 @@ class InlineIgnoreParser:
             content: File content to parse
         """
         lines = content.split("\n")
-        ranges = []
-
-        for i, line in enumerate(lines, start=1):
-            # Check for ignore-block directive
-            if re.search(r"#\s*dry:\s*ignore-block", line):
-                # Find the block that follows (next 10 lines or until empty line)
-                start = i + 1
-                end = min(i + 10, len(lines))
-                ranges.append((start, end))
-
-            # Check for ignore-next directive
-            elif re.search(r"#\s*dry:\s*ignore-next", line):
-                # Ignore next line only
-                ranges.append((i + 1, i + 1))
+        ranges = self._extract_ignore_ranges(lines)
 
         if ranges:
             self._ignore_ranges[str(file_path)] = ranges
+
+    def _extract_ignore_ranges(self, lines: list[str]) -> list[tuple[int, int]]:
+        """Extract ignore ranges from lines.
+
+        Args:
+            lines: List of lines to process
+
+        Returns:
+            List of (start, end) tuples for ignore ranges
+        """
+        ranges = []
+
+        for i, line in enumerate(lines, start=1):
+            ignore_range = self._parse_ignore_directive(line, i, len(lines))
+            if ignore_range:
+                ranges.append(ignore_range)
+
+        return ranges
+
+    def _parse_ignore_directive(
+        self, line: str, line_num: int, total_lines: int
+    ) -> tuple[int, int] | None:
+        """Parse a single line for ignore directives.
+
+        Args:
+            line: Line content
+            line_num: Current line number
+            total_lines: Total number of lines
+
+        Returns:
+            (start, end) tuple if directive found, None otherwise
+        """
+        # Check for ignore-block directive
+        if re.search(r"#\s*dry:\s*ignore-block", line):
+            start = line_num + 1
+            end = min(line_num + 10, total_lines)
+            return (start, end)
+
+        # Check for ignore-next directive
+        if re.search(r"#\s*dry:\s*ignore-next", line):
+            return (line_num + 1, line_num + 1)
+
+        return None
 
     def should_ignore(self, file_path: str, line: int, end_line: int | None = None) -> bool:
         """Check if a line or range should be ignored.

@@ -22,6 +22,7 @@ import json
 import sys
 from collections.abc import Callable
 from pathlib import Path
+from typing import Any
 
 import click
 
@@ -58,7 +59,7 @@ def common_linter_options(func: Callable) -> Callable:
     return func
 
 
-def load_linter_config(config_path: str | None) -> dict[str, any]:
+def load_linter_config(config_path: str | None) -> dict[str, Any]:
     """Load linter configuration from file or return empty dict.
 
     Args:
@@ -93,7 +94,7 @@ def _validate_config_file_exists(config_file: Path, config_path: str) -> None:
         sys.exit(2)
 
 
-def _load_config_by_format(config_file: Path) -> dict[str, any]:
+def _load_config_by_format(config_file: Path) -> dict[str, Any]:
     """Load config based on file extension.
 
     Args:
@@ -110,7 +111,7 @@ def _load_config_by_format(config_file: Path) -> dict[str, any]:
     return _load_yaml_config(config_file)
 
 
-def _load_yaml_config(config_file: Path) -> dict[str, any]:
+def _load_yaml_config(config_file: Path) -> dict[str, Any]:
     """Load YAML config file.
 
     Args:
@@ -122,10 +123,11 @@ def _load_yaml_config(config_file: Path) -> dict[str, any]:
     import yaml
 
     with config_file.open("r", encoding="utf-8") as f:
-        return yaml.safe_load(f) or {}
+        result = yaml.safe_load(f)
+        return dict(result) if result is not None else {}
 
 
-def _load_json_config(config_file: Path) -> dict[str, any]:
+def _load_json_config(config_file: Path) -> dict[str, Any]:
     """Load JSON config file.
 
     Args:
@@ -135,7 +137,8 @@ def _load_json_config(config_file: Path) -> dict[str, any]:
         Loaded configuration
     """
     with config_file.open("r", encoding="utf-8") as f:
-        return json.load(f)
+        result = json.load(f)
+        return dict(result) if isinstance(result, dict) else {}
 
 
 def format_violations(violations: list, output_format: str) -> None:
@@ -189,7 +192,7 @@ def _output_text(violations: list) -> None:
         _print_violation(v)
 
 
-def _print_violation(v: any) -> None:
+def _print_violation(v: Any) -> None:
     """Print single violation in text format.
 
     Args:

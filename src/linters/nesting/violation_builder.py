@@ -24,7 +24,7 @@ from typing import Any
 
 from src.core.base import BaseLintContext
 from src.core.types import Severity, Violation
-from src.core.violation_builder import BaseViolationBuilder, ViolationInfo
+from src.core.violation_builder import BaseViolationBuilder
 
 from .config import NestingConfig
 
@@ -52,7 +52,7 @@ class NestingViolationBuilder(BaseViolationBuilder):
         Returns:
             Syntax error violation
         """
-        info = ViolationInfo(
+        return self.build_from_params(
             rule_id=self.rule_id,
             file_path=str(context.file_path or ""),
             line=error.lineno or 0,
@@ -61,7 +61,6 @@ class NestingViolationBuilder(BaseViolationBuilder):
             severity=Severity.ERROR,
             suggestion="Fix syntax errors before checking nesting depth",
         )
-        return self.build(info)
 
     def create_nesting_violation(
         self,
@@ -81,7 +80,7 @@ class NestingViolationBuilder(BaseViolationBuilder):
         Returns:
             Nesting depth violation
         """
-        info = ViolationInfo(
+        return self.build_from_params(
             rule_id=self.rule_id,
             file_path=str(context.file_path or ""),
             line=func.lineno,
@@ -90,7 +89,6 @@ class NestingViolationBuilder(BaseViolationBuilder):
             severity=Severity.ERROR,
             suggestion=self._generate_suggestion(max_depth, config.max_nesting_depth),
         )
-        return self.build(info)
 
     def create_typescript_nesting_violation(
         self,
@@ -114,7 +112,7 @@ class NestingViolationBuilder(BaseViolationBuilder):
         line = func_node.start_point[0] + 1  # Convert to 1-indexed
         column = func_node.start_point[1]
 
-        info = ViolationInfo(
+        return self.build_from_params(
             rule_id=self.rule_id,
             file_path=str(context.file_path or ""),
             line=line,
@@ -123,7 +121,6 @@ class NestingViolationBuilder(BaseViolationBuilder):
             severity=Severity.ERROR,
             suggestion=self._generate_suggestion(max_depth, config.max_nesting_depth),
         )
-        return self.build(info)
 
     def _generate_suggestion(self, actual_depth: int, max_depth: int) -> str:
         """Generate refactoring suggestion based on depth.

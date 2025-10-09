@@ -34,6 +34,14 @@ from src.core.cli_utils import format_violations
 logger = logging.getLogger(__name__)
 
 
+# Shared Click option decorators for common CLI options
+def format_option(func):
+    """Add --format option to a command for output format selection."""
+    return click.option(
+        "--format", "-f", type=click.Choice(["text", "json"]), default="text", help="Output format"
+    )(func)
+
+
 def setup_logging(verbose: bool = False):
     """
     Configure logging for the CLI application.
@@ -358,9 +366,7 @@ def config_reset(ctx, yes: bool):
 @click.argument("path", type=click.Path(exists=True), default=".")
 @click.option("--config", "-c", "config_file", type=click.Path(), help="Path to config file")
 @click.option("--rules", "-r", help="Inline JSON rules configuration")
-@click.option(
-    "--format", "-f", type=click.Choice(["text", "json"]), default="text", help="Output format"
-)
+@format_option
 @click.option("--recursive/--no-recursive", default=True, help="Scan directories recursively")
 @click.pass_context
 def file_placement(  # pylint: disable=too-many-arguments,too-many-positional-arguments,too-many-locals,too-many-statements
@@ -613,9 +619,7 @@ def _run_nesting_lint(orchestrator, path_obj: Path, recursive: bool):
 @cli.command("nesting")
 @click.argument("path", type=click.Path(exists=True), default=".")
 @click.option("--config", "-c", "config_file", type=click.Path(), help="Path to config file")
-@click.option(
-    "--format", "-f", type=click.Choice(["text", "json"]), default="text", help="Output format"
-)
+@format_option
 @click.option("--max-depth", type=int, help="Override max nesting depth (default: 4)")
 @click.option("--recursive/--no-recursive", default=True, help="Scan directories recursively")
 @click.pass_context
@@ -731,9 +735,7 @@ def _run_srp_lint(orchestrator, path_obj: Path, recursive: bool):
 @cli.command("srp")
 @click.argument("path", type=click.Path(exists=True), default=".")
 @click.option("--config", "-c", "config_file", type=click.Path(), help="Path to config file")
-@click.option(
-    "--format", "-f", type=click.Choice(["text", "json"]), default="text", help="Output format"
-)
+@format_option
 @click.option("--max-methods", type=int, help="Override max methods per class (default: 7)")
 @click.option("--max-loc", type=int, help="Override max lines of code per class (default: 200)")
 @click.option("--recursive/--no-recursive", default=True, help="Scan directories recursively")
@@ -805,9 +807,7 @@ def _execute_srp_lint(  # pylint: disable=too-many-arguments,too-many-positional
 @cli.command("dry")
 @click.argument("path", type=click.Path(exists=True), default=".")
 @click.option("--config", "-c", "config_file", type=click.Path(), help="Path to config file")
-@click.option(
-    "--format", "-f", type=click.Choice(["text", "json"]), default="text", help="Output format"
-)
+@format_option
 @click.option("--min-lines", type=int, help="Override min duplicate lines threshold")
 @click.option("--no-cache", is_flag=True, help="Disable SQLite cache (force rehash)")
 @click.option("--clear-cache", is_flag=True, help="Clear cache before running")
