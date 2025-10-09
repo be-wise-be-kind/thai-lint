@@ -143,12 +143,12 @@ lint-complexity: ## Complexity analysis (Radon + Xenon + Nesting)
 	@echo ""
 	@echo "=== Analyzing complexity (Xenon) - demanding A grade ==="
 	@if [ -n "$(SRC_TARGETS)" ]; then \
-		poetry run xenon --max-absolute A --max-modules A --max-average A --exclude 'src/linters/srp/linter.py' $(SRC_TARGETS); \
+		poetry run xenon --max-absolute A --max-modules A --max-average A $(SRC_TARGETS); \
 	fi
 	@echo ""
 	@echo "=== Running nesting depth linter (dogfooding) ==="
 	@if [ -n "$(SRC_TARGETS)" ]; then \
-		poetry run thai-lint nesting $(SRC_TARGETS) --config .thailint.yaml; \
+		poetry run thai-lint nesting $(SRC_TARGETS) --config .thailint.yaml && \
 		echo "✓ Nesting depth checks passed"; \
 	fi
 
@@ -156,7 +156,7 @@ lint-placement: ## File placement linting (dogfooding our own linter)
 	@echo ""
 	@echo "=== Running file placement linter (dogfooding) ==="
 	@if [ -n "$(PLACEMENT_TARGETS)" ]; then \
-		poetry run thai-lint file-placement $(PLACEMENT_TARGETS); \
+		poetry run thai-lint file-placement $(PLACEMENT_TARGETS) && \
 		echo "✓ File placement checks passed"; \
 	fi
 
@@ -164,7 +164,7 @@ lint-nesting: ## Nesting depth linting (dogfooding our own linter)
 	@echo ""
 	@echo "=== Running nesting depth linter (dogfooding) ==="
 	@if [ -n "$(SRC_TARGETS)" ]; then \
-		poetry run thai-lint nesting $(SRC_TARGETS) --config .thailint.yaml; \
+		poetry run thai-lint nesting $(SRC_TARGETS) --config .thailint.yaml && \
 		echo "✓ Nesting depth checks passed"; \
 	fi
 
@@ -172,7 +172,7 @@ lint-solid: ## SOLID principle linting (SRP)
 	@echo ""
 	@echo "=== Running SRP linter (dogfooding) ==="
 	@if [ -n "$(SRC_TARGETS)" ]; then \
-		poetry run thai-lint srp $(SRC_TARGETS) --config .thailint.yaml; \
+		poetry run thai-lint srp $(SRC_TARGETS) --config .thailint.yaml && \
 		echo "✓ SRP checks passed"; \
 	fi
 	@echo "✅ SOLID principle checks complete!"
@@ -182,7 +182,7 @@ lint-dry: ## DRY principle linting (duplicate code detection) - opt-in for perfo
 	@echo "=== Running DRY linter (duplicate code detection) ==="
 	@echo "Note: This may take several minutes on large codebases (first run)"
 	@if [ -n "$(SRC_TARGETS)" ]; then \
-		poetry run thai-lint dry $(SRC_TARGETS) --config .thailint.yaml; \
+		poetry run thai-lint dry $(SRC_TARGETS) --config .thailint.yaml && \
 		echo "✓ DRY checks passed"; \
 	fi
 	@echo "✅ DRY principle checks complete!"

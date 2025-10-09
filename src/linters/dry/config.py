@@ -22,8 +22,15 @@ from typing import Any
 
 
 @dataclass
-class DRYConfig:
-    """Configuration for DRY linter."""
+class DRYConfig:  # pylint: disable=too-many-instance-attributes
+    """Configuration for DRY linter.
+
+    Note: Pylint too-many-instance-attributes disabled. This is a configuration
+    dataclass serving as a data container for related DRY linter settings.
+    All 12 attributes are cohesively related (detection thresholds, language
+    overrides, caching, filtering). Splitting would reduce cohesion and make
+    configuration loading more complex without meaningful benefit.
+    """
 
     enabled: bool = False  # Must be explicitly enabled
     min_duplicate_lines: int = 3
@@ -44,10 +51,12 @@ class DRYConfig:
     ignore_patterns: list[str] = field(default_factory=lambda: ["tests/", "__init__.py"])
 
     # Block filters (extensible false positive filtering)
-    filters: dict[str, bool] = field(default_factory=lambda: {
-        "keyword_argument_filter": True,  # Filter keyword argument blocks
-        "import_group_filter": True,      # Filter import statement groups
-    })
+    filters: dict[str, bool] = field(
+        default_factory=lambda: {
+            "keyword_argument_filter": True,  # Filter keyword argument blocks
+            "import_group_filter": True,  # Filter import statement groups
+        }
+    )
 
     def __post_init__(self) -> None:
         """Validate configuration values."""
@@ -60,9 +69,7 @@ class DRYConfig:
                 f"min_duplicate_tokens must be positive, got {self.min_duplicate_tokens}"
             )
         if self.min_occurrences <= 0:
-            raise ValueError(
-                f"min_occurrences must be positive, got {self.min_occurrences}"
-            )
+            raise ValueError(f"min_occurrences must be positive, got {self.min_occurrences}")
 
     def get_min_occurrences_for_language(self, language: str) -> int:
         """Get minimum occurrences threshold for a specific language.
@@ -74,13 +81,15 @@ class DRYConfig:
             Minimum occurrences threshold for the language, or global default
         """
         language_lower = language.lower()
-        if language_lower == "python" and self.python_min_occurrences is not None:
-            return self.python_min_occurrences
-        if language_lower == "typescript" and self.typescript_min_occurrences is not None:
-            return self.typescript_min_occurrences
-        if language_lower == "javascript" and self.javascript_min_occurrences is not None:
-            return self.javascript_min_occurrences
-        return self.min_occurrences
+
+        language_overrides = {
+            "python": self.python_min_occurrences,
+            "typescript": self.typescript_min_occurrences,
+            "javascript": self.javascript_min_occurrences,
+        }
+
+        override = language_overrides.get(language_lower)
+        return override if override is not None else self.min_occurrences
 
     @classmethod
     def from_dict(cls, config: dict[str, Any]) -> "DRYConfig":

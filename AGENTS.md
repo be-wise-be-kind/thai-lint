@@ -318,11 +318,102 @@ fi
 
 **When Standards Seem Difficult:**
 - ✅ DO refactor code to meet standards (extract functions, simplify logic)
-- ✅ DO add `# pylint: disable=rule` with detailed justification if truly necessary
+- ✅ DO ask the user for permission BEFORE adding any ignore/disable comments
 - ✅ DO ask the user if standards should be adjusted (but don't assume they should)
+- ❌ DON'T add `# type: ignore`, `# pylint: disable`, `# noqa`, or similar without explicit user permission
 - ❌ DON'T lower standards on your own
 - ❌ DON'T skip checks or claim "close enough"
 - ❌ DON'T rationalize why violations are "acceptable"
+
+**CRITICAL: Suppression Comments Require User Permission**
+
+**NEVER add linter suppression comments without explicit user permission:**
+- `# type: ignore` (MyPy)
+- `# pylint: disable=rule` (Pylint)
+- `# noqa` (Flake8/Ruff)
+- `# nosec` (Bandit)
+- Any similar suppression directive
+
+**Required Process for Suppressions:**
+1. ✅ **STOP** - Don't add the suppression yet
+2. ✅ **EXPLAIN** the problem clearly to the user
+3. ✅ **PROPOSE** why suppression might be needed
+4. ✅ **ASK** for explicit permission from the user
+5. ✅ **WAIT** for user approval before adding suppression
+6. ✅ **ADD** detailed justification comment if approved
+
+**Good Example:**
+```
+"I'm encountering a MyPy error on line 260 where it doesn't understand that
+node.lineno is guaranteed non-None after our validation check. I've tried:
+- Using cast() with a type alias
+- Creating a Protocol
+- TypeGuard functions
+
+None of these work because MyPy's AST typing is limited.
+
+May I add `# type: ignore[assignment]` with a detailed comment explaining
+the runtime validation guarantees this is safe?"
+```
+
+**Bad Example:**
+```
+*Just adds # type: ignore[assignment] without asking*
+```
+
+**CRITICAL: Suppression Permission is Issue-Specific and Never Transfers**
+
+Permission to suppress one type of linting issue does NOT grant permission for other issues:
+
+❌ **NEVER Transfer Permission Across:**
+- **Issue types**: MyPy permission ≠ Pylint permission ≠ SRP permission
+- **Files**: Permission for file A ≠ permission for file B
+- **Phases**: Permission in Phase 1 (basic linting) ≠ permission in Phase 2 (refactoring)
+- **Sessions**: Permission expires when context changes to a new issue category
+
+✅ **When Context Changes, Always Ask Again:**
+```
+Correct: "I've completed the MyPy fixes you approved. Now I found an SRP
+violation in FilePlacementRule. The class has 13 methods (max 8) because
+it's a framework adapter handling multiple config sources. May I suppress
+this with justification?"
+
+Wrong: "You said I could suppress things, so I'm suppressing this SRP
+violation too."
+```
+
+**Examples of Scope Violations to AVOID:**
+
+1. ❌ **User approves MyPy suppression → Agent also suppresses Pylint**
+   - These are different tools checking different things
+   - Must ask separately for each tool
+
+2. ❌ **User approves suppression in Phase 1 → Agent suppresses in Phase 2**
+   - Phase 1 (MyPy) and Phase 2 (SRP) are different categories
+   - Must ask separately for each phase
+
+3. ❌ **User says "if you believe it's justified" → Agent interprets as blanket permission**
+   - Conditional phrasing still requires explicit approval
+   - Must demonstrate belief and ask "May I proceed?"
+
+4. ❌ **User approves for file X → Agent applies to file Y**
+   - Each file requires separate evaluation
+   - Must ask separately for each file
+
+**The Permission Boundary Rule:**
+
+Every time you encounter a NEW:
+- Linter tool (MyPy vs Pylint vs Bandit vs SRP)
+- File being modified
+- Phase of work (Phase 1 vs Phase 2)
+- Category of violation
+
+You MUST:
+1. Stop
+2. Explain the new issue
+3. Justify why suppression might be needed
+4. Ask explicitly: "May I add suppression for THIS issue?"
+5. Wait for approval
 
 **The Bottom Line:**
 If `make lint-full` exits with non-zero code, if Pylint shows < 10.00/10, if Xenon shows ANY errors, or if tests fail - **your code is not ready to commit**. Period. No excuses, no rationalizations, no "but this was pre-existing" - fix it before committing.

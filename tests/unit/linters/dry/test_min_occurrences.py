@@ -21,8 +21,6 @@ Implementation: TDD approach - tests written before implementation. Tests use ca
     or exceeds the configured threshold.
 """
 
-import pytest
-
 from src import Linter
 
 

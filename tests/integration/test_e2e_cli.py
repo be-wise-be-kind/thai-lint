@@ -86,9 +86,9 @@ class TestCLILinting:
             # Create .git marker so project root detection works
             Path(".git").mkdir()
 
-            # Create .artifacts directory and generated config
-            Path(".artifacts").mkdir()
-            Path(".artifacts/generated-config.yaml").write_text(
+            # Create .thailint.yaml config
+            # Config will be created at .thailint.yaml by fixture
+            Path(".thailint.yaml").write_text(
                 "file-placement:\n  global_deny:\n    - pattern: '.*\\.py$'\n      reason: 'No Python files'\n"
             )
 
@@ -153,7 +153,7 @@ class TestCLILinting:
                 "file-placement:\n  global_deny:\n    - pattern: '.*\\.py$'\n      reason: 'No Python files'\n"
             )
 
-            # Run with external config (CLI will copy it to .artifacts/generated-config.yaml)
+            # Run with external config
             result = runner.invoke(cli, ["file-placement", "--config", "custom.yaml", "test.py"])
 
             # Should find violations
@@ -186,9 +186,9 @@ class TestCLIExitCodes:
             # Create .git marker so project root detection works
             Path(".git").mkdir()
 
-            # Create .artifacts directory and generated config
-            Path(".artifacts").mkdir()
-            Path(".artifacts/generated-config.yaml").write_text(
+            # Create .thailint.yaml config
+            # Config will be created at .thailint.yaml by fixture
+            Path(".thailint.yaml").write_text(
                 "file-placement:\n  global_deny:\n    - pattern: '.*\\.py$'\n      reason: 'No Python files'\n"
             )
 
@@ -220,9 +220,9 @@ class TestCLIOutputFormats:
             # Create .git marker so project root detection works
             Path(".git").mkdir()
 
-            # Create .artifacts directory and generated config
-            Path(".artifacts").mkdir()
-            Path(".artifacts/generated-config.yaml").write_text(
+            # Create .thailint.yaml config
+            # Config will be created at .thailint.yaml by fixture
+            Path(".thailint.yaml").write_text(
                 "file-placement:\n  global_deny:\n    - pattern: '.*\\.py$'\n      reason: 'No Python files'\n"
             )
 
@@ -239,9 +239,9 @@ class TestCLIOutputFormats:
         # Create .git marker so project root detection works
         Path(".git").mkdir()
 
-        # Create .artifacts directory and generated config
-        Path(".artifacts").mkdir()
-        Path(".artifacts/generated-config.yaml").write_text(
+        # Create .thailint.yaml config
+        # Config will be created at .thailint.yaml by fixture
+        Path(".thailint.yaml").write_text(
             "file-placement:\n  global_deny:\n    - pattern: '.*\\.py$'\n      reason: 'No Python files'\n"
         )
 
@@ -289,9 +289,9 @@ class TestCLIRecursive:
             # Create .git marker so project root detection works
             Path(".git").mkdir()
 
-            # Create .artifacts directory and generated config
-            Path(".artifacts").mkdir()
-            Path(".artifacts/generated-config.yaml").write_text(
+            # Create .thailint.yaml config
+            # Config will be created at .thailint.yaml by fixture
+            Path(".thailint.yaml").write_text(
                 "file-placement:\n  global_deny:\n    - pattern: '.*\\.py$'\n      reason: 'No Python files'\n"
             )
 

@@ -45,7 +45,7 @@ class TestFilePlacementIntegration:
         (tmp_path / "tests").mkdir()
         (tmp_path / "docs").mkdir()
 
-        # Create config file in .artifacts (where FilePlacementLinter expects it)
+        # Create config file as .thailint.json (where FilePlacementLinter expects it)
         config = {
             "file-placement": {
                 "directories": {
@@ -63,8 +63,8 @@ class TestFilePlacementIntegration:
             }
         }
 
-        config_file = tmp_path / ".artifacts" / "generated-config.json"
-        config_file.parent.mkdir(exist_ok=True)
+        config_file = tmp_path / ".thailint.json"
+
         config_file.write_text(json.dumps(config, indent=2))
 
         return tmp_path

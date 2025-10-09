@@ -33,7 +33,7 @@ Implementation: Gitignore-style pattern matching with fnmatch, YAML config loadi
 import fnmatch
 import re
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 import yaml
 
@@ -58,28 +58,58 @@ class IgnoreDirectiveParser:
         self.repo_patterns = self._load_repo_ignores()
 
     def _load_repo_ignores(self) -> list[str]:
-        """Load global ignore patterns from .thailint.yaml.
+        """Load global ignore patterns from .thailintignore or .thailint.yaml."""
+        # First, try to load from .thailintignore (gitignore-style)
+        thailintignore = self.project_root / ".thailintignore"
+        if thailintignore.exists():
+            return self._parse_thailintignore_file(thailintignore)
+
+        # Fall back to .thailint.yaml
+        config_file = self.project_root / ".thailint.yaml"
+        if config_file.exists():
+            return self._parse_config_file(config_file)
+
+        return []
+
+    def _parse_thailintignore_file(self, ignore_file: Path) -> list[str]:
+        """Parse .thailintignore file (gitignore-style).
+
+        Args:
+            ignore_file: Path to .thailintignore file
 
         Returns:
-            List of gitignore-style patterns.
+            List of ignore patterns
         """
-        config_file = self.project_root / ".thailint.yaml"
-        if not config_file.exists():
+        try:
+            content = ignore_file.read_text(encoding="utf-8")
+            patterns = []
+            for line in content.splitlines():
+                line = line.strip()
+                # Skip empty lines and comments
+                if line and not line.startswith("#"):
+                    patterns.append(line)
+            return patterns
+        except (OSError, UnicodeDecodeError):
             return []
 
+    def _parse_config_file(self, config_file: Path) -> list[str]:
+        """Parse YAML config file and extract ignore patterns."""
         try:
             config = yaml.safe_load(config_file.read_text(encoding="utf-8"))
-            if not config or not isinstance(config, dict):
-                return []
-
-            # Get global ignore patterns (top-level 'ignore' key)
-            ignore_patterns = config.get("ignore", [])
-            if isinstance(ignore_patterns, list):
-                return [str(pattern) for pattern in ignore_patterns]
-            return []
+            return self._extract_ignore_patterns(config)
         except (yaml.YAMLError, OSError, UnicodeDecodeError):
-            # Silently fall back to no patterns if config can't be loaded
             return []
+
+    @staticmethod
+    def _extract_ignore_patterns(config: dict | None) -> list[str]:
+        """Extract ignore patterns from config dict."""
+        if not config or not isinstance(config, dict):
+            return []
+
+        ignore_patterns = config.get("ignore", [])
+        if isinstance(ignore_patterns, list):
+            return [str(pattern) for pattern in ignore_patterns]
+        return []
 
     def is_ignored(self, file_path: Path) -> bool:
         """Check if file matches repository-level ignore patterns.

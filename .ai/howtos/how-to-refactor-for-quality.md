@@ -2727,6 +2727,54 @@ git commit -m "refactor: Improve code quality (complexity + SRP)"
 
 ---
 
+## CRITICAL: Permission Scope for Quality Violations
+
+**Suppression Permission is Issue-Specific and Never Transfers**
+
+Permission to suppress one architectural violation does NOT apply to other violations:
+
+❌ **NEVER Transfer Permission Across:**
+- **Linter types**: SRP permission ≠ Complexity permission ≠ DRY permission
+- **Files**: Permission for file A ≠ permission for file B
+- **Classes/Functions**: Permission for ClassA ≠ permission for ClassB in same file
+- **Violation categories**: Permission for "complex algorithm cohesion" ≠ permission for "framework adapter pattern"
+
+**The Permission Boundary Rule:**
+
+Every time you encounter a NEW:
+- Architectural linter (SRP vs Complexity vs DRY)
+- File requiring suppression
+- Class/function requiring suppression
+- Justification category (algorithm cohesion vs framework adapter vs inherent domain complexity)
+
+You MUST:
+1. **Stop** - Do not add suppression
+2. **Analyze** - Determine root cause and whether refactoring is possible
+3. **Document** - Write detailed justification in file header (why splitting would harm maintainability)
+4. **Ask explicitly**: "May I add [LINTER_TYPE] suppression for [CLASS_NAME] in [FILE_PATH]? Justification: [DETAILED_REASON]"
+5. **Wait** for approval before adding suppression
+
+**Example - Correct Approach**:
+```
+I found 2 SRP violations after fixing MyPy errors:
+
+1. FilePlacementRule (13 methods) - Framework adapter pattern
+   Justification: Bridges BaseLintRule interface with FilePlacementLinter,
+   handles multiple config sources and formats. Splitting would create
+   unnecessary indirection.
+
+2. PythonDuplicateAnalyzer (32 methods, 358 lines) - Complex algorithm cohesion
+   Justification: Tightly coupled AST analysis pipeline for duplicate detection.
+   Methods form algorithm passes (docstring extraction, tokenization, filtering).
+   Similar to parser architecture. Splitting would fragment algorithm logic.
+
+May I add SRP suppressions with these justifications documented in file headers?
+```
+
+**Never assume permission transfers from previous issues!**
+
+---
+
 ## See Also
 
 - **Basic linting**: `.ai/howtos/how-to-fix-linting-errors.md`

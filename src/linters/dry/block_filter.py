@@ -75,7 +75,7 @@ class KeywordArgumentFilter(BaseBlockFilter):
         """
         self.threshold = threshold
         # Pattern: optional whitespace, identifier, =, value, optional comma
-        self._kwarg_pattern = re.compile(r'^\s*\w+\s*=\s*.+,?\s*$')
+        self._kwarg_pattern = re.compile(r"^\s*\w+\s*=\s*.+,?\s*$")
 
     def should_filter(self, block: CodeBlock, file_content: str) -> bool:
         """Check if block is primarily keyword arguments.
@@ -87,7 +87,7 @@ class KeywordArgumentFilter(BaseBlockFilter):
         Returns:
             True if block should be filtered
         """
-        lines = file_content.split('\n')[block.start_line - 1:block.end_line]
+        lines = file_content.split("\n")[block.start_line - 1 : block.end_line]
 
         if not lines:
             return False
@@ -103,36 +103,51 @@ class KeywordArgumentFilter(BaseBlockFilter):
         return False
 
     def _is_inside_function_call(self, block: CodeBlock, file_content: str) -> bool:
-        """Verify the block is inside a function call, not standalone code.
-
-        Args:
-            block: Code block to evaluate
-            file_content: Full file content
-
-        Returns:
-            True if block is inside a function/constructor call
-        """
+        """Verify the block is inside a function call, not standalone code."""
         try:
             tree = ast.parse(file_content)
         except SyntaxError:
             return False
 
-        # Find Call nodes that contain this block
+        # Find if any Call node contains the block
         for node in ast.walk(tree):
-            if not isinstance(node, ast.Call):
-                continue
-
-            if not (hasattr(node, 'lineno') and hasattr(node, 'end_lineno')):
-                continue
-
-            # Check if call spans multiple lines and contains the block
-            is_multiline = node.lineno < node.end_lineno
-            contains_block = node.lineno <= block.start_line and node.end_lineno >= block.end_line
-
-            if is_multiline and contains_block:
+            if isinstance(node, ast.Call) and self._check_multiline_containment(node, block):
                 return True
-
         return False
+
+    @staticmethod
+    def _check_multiline_containment(node: ast.Call, block: CodeBlock) -> bool:
+        """Check if Call node is multiline and contains block."""
+        if not KeywordArgumentFilter._has_valid_line_info(node):
+            return False
+
+        # After validation, these are guaranteed to be non-None integers
+        # Use type: ignore to suppress MyPy's inability to understand runtime validation
+        is_multiline = node.lineno < node.end_lineno  # type: ignore[operator]
+        contains_block = (
+            node.lineno <= block.start_line and node.end_lineno >= block.end_line  # type: ignore[operator]
+        )
+        return is_multiline and contains_block
+
+    @staticmethod
+    def _has_valid_line_info(node: ast.Call) -> bool:
+        """Check if node has valid line information.
+
+        Args:
+            node: AST Call node to check
+
+        Returns:
+            True if node has valid line number attributes
+        """
+        if not hasattr(node, "lineno"):
+            return False
+        if not hasattr(node, "end_lineno"):
+            return False
+        if node.lineno is None:
+            return False
+        if node.end_lineno is None:
+            return False
+        return True
 
     def get_name(self) -> str:
         """Get filter name."""
@@ -155,13 +170,13 @@ class ImportGroupFilter(BaseBlockFilter):
         Returns:
             True if block should be filtered
         """
-        lines = file_content.split('\n')[block.start_line - 1:block.end_line]
+        lines = file_content.split("\n")[block.start_line - 1 : block.end_line]
 
         for line in lines:
             stripped = line.strip()
             if not stripped:
                 continue
-            if not (stripped.startswith('import ') or stripped.startswith('from ')):
+            if not (stripped.startswith("import ") or stripped.startswith("from ")):
                 return False
 
         return True
@@ -174,7 +189,7 @@ class ImportGroupFilter(BaseBlockFilter):
 class BlockFilterRegistry:
     """Registry for managing duplicate block filters."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize empty registry."""
         self._filters: list[BaseBlockFilter] = []
         self._enabled_filters: set[str] = set()

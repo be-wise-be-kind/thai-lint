@@ -7,12 +7,11 @@ Overview: TDD tests ensuring filters correctly identify and filter false positiv
     like keyword arguments in function calls, import groups, and other API boilerplate patterns.
 """
 
-import pytest
 from pathlib import Path
+
 from src.linters.dry.block_filter import (
-    KeywordArgumentFilter,
     ImportGroupFilter,
-    BlockFilterRegistry,
+    KeywordArgumentFilter,
     create_default_registry,
 )
 from src.linters.dry.cache import CodeBlock
@@ -74,8 +73,9 @@ class ViolationBuilder(BaseViolationBuilder):
         # This should be filtered (return True) because:
         # 1. All 3 lines are keyword arguments (100% >= 80%)
         # 2. They're inside the ViolationInfo() constructor call
-        assert filter_instance.should_filter(block, file_content), \
+        assert filter_instance.should_filter(block, file_content), (
             "Filter should detect keyword arguments inside function call"
+        )
 
     def test_filters_violation_factory_pattern(self):
         """Test filter catches violation_factory.py pattern (lines 57-59)."""
@@ -109,8 +109,9 @@ class ViolationFactory(BaseViolationBuilder):
         )
 
         filter_instance = KeywordArgumentFilter(threshold=0.8)
-        assert filter_instance.should_filter(block, file_content), \
+        assert filter_instance.should_filter(block, file_content), (
             "Should filter keyword arguments in build_from_params call"
+        )
 
     def test_does_not_filter_similar_looking_code(self):
         """Test that filter doesn't incorrectly filter non-keyword-arg code."""
@@ -132,8 +133,9 @@ def process_data():
 
         filter_instance = KeywordArgumentFilter(threshold=0.8)
         # These are assignments, not keyword arguments - should NOT filter
-        assert not filter_instance.should_filter(block, file_content), \
+        assert not filter_instance.should_filter(block, file_content), (
             "Should not filter regular assignments"
+        )
 
     def test_threshold_filters_all_keyword_args(self):
         """Test that 100% keyword arguments gets filtered with default threshold."""
