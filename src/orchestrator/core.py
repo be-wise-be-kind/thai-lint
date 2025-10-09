@@ -136,6 +136,26 @@ class Orchestrator:
 
         return self._execute_rules(rules, context)
 
+    def lint_files(self, file_paths: list[Path]) -> list[Violation]:
+        """Lint multiple files.
+
+        Args:
+            file_paths: List of file paths to lint.
+
+        Returns:
+            List of violations found across all files.
+        """
+        violations = []
+
+        for file_path in file_paths:
+            violations.extend(self.lint_file(file_path))
+
+        # Call finalize() on all rules after processing all files
+        for rule in self.registry.list_all():
+            violations.extend(rule.finalize())
+
+        return violations
+
     def _execute_rules(
         self, rules: list[BaseLintRule], context: BaseLintContext
     ) -> list[Violation]:

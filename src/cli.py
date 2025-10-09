@@ -363,14 +363,19 @@ def config_reset(ctx, yes: bool):
 
 
 @cli.command("file-placement")
-@click.argument("path", type=click.Path(exists=True), default=".")
+@click.argument("paths", nargs=-1, type=click.Path(exists=True))
 @click.option("--config", "-c", "config_file", type=click.Path(), help="Path to config file")
 @click.option("--rules", "-r", help="Inline JSON rules configuration")
 @format_option
 @click.option("--recursive/--no-recursive", default=True, help="Scan directories recursively")
 @click.pass_context
 def file_placement(  # pylint: disable=too-many-arguments,too-many-positional-arguments,too-many-locals,too-many-statements
-    ctx, path: str, config_file: str | None, rules: str | None, format: str, recursive: bool
+    ctx,
+    paths: tuple[str, ...],
+    config_file: str | None,
+    rules: str | None,
+    format: str,
+    recursive: bool,
 ):
     # Justification for Pylint disables:
     # - too-many-arguments/positional: CLI requires 1 ctx + 1 arg + 4 options = 6 params
@@ -382,10 +387,7 @@ def file_placement(  # pylint: disable=too-many-arguments,too-many-positional-ar
     Checks that files are placed in appropriate directories according to
     configured rules and patterns.
 
-    PATH: Single file or directory to lint (defaults to current directory)
-
-    Note: Pass ONE path at a time. To lint multiple files, pass their parent
-    directory and files will be scanned recursively.
+    PATHS: Files or directories to lint (defaults to current directory if none provided)
 
     Examples:
 
@@ -402,6 +404,10 @@ def file_placement(  # pylint: disable=too-many-arguments,too-many-positional-ar
         thai-lint file-placement src/app.py
 
         \b
+        # Lint multiple files
+        thai-lint file-placement src/app.py src/utils.py tests/test_app.py
+
+        \b
         # Use custom config
         thai-lint file-placement --config rules.json .
 
@@ -410,20 +416,24 @@ def file_placement(  # pylint: disable=too-many-arguments,too-many-positional-ar
         thai-lint file-placement --rules '{"allow": [".*\\.py$"]}' .
     """
     verbose = ctx.obj.get("verbose", False)
-    path_obj = Path(path)
+
+    if not paths:
+        paths = (".",)
+
+    path_objs = [Path(p) for p in paths]
 
     try:
-        _execute_file_placement_lint(path_obj, config_file, rules, format, recursive, verbose)
+        _execute_file_placement_lint(path_objs, config_file, rules, format, recursive, verbose)
     except Exception as e:
         _handle_linting_error(e, verbose)
 
 
 def _execute_file_placement_lint(  # pylint: disable=too-many-arguments,too-many-positional-arguments
-    path_obj, config_file, rules, format, recursive, verbose
+    path_objs, config_file, rules, format, recursive, verbose
 ):
     """Execute file placement linting."""
-    orchestrator = _setup_orchestrator(path_obj, config_file, rules, verbose)
-    all_violations = _execute_linting(orchestrator, path_obj, recursive)
+    orchestrator = _setup_orchestrator(path_objs, config_file, rules, verbose)
+    all_violations = _execute_linting_on_paths(orchestrator, path_objs, recursive)
 
     # Filter to only file-placement violations
     violations = [v for v in all_violations if v.rule_id.startswith("file-placement")]
@@ -459,14 +469,15 @@ def _find_project_root(start_path: Path) -> Path:
     return get_project_root(start_path)
 
 
-def _setup_orchestrator(path_obj, config_file, rules, verbose):
+def _setup_orchestrator(path_objs, config_file, rules, verbose):
     """Set up and configure the orchestrator."""
     from src.orchestrator.core import Orchestrator
     from src.utils.project_root import get_project_root
 
     # Find actual project root (where .git or pyproject.toml exists)
     # This ensures .artifacts/ is always created at project root, not in subdirectories
-    search_start = path_obj if path_obj.is_dir() else path_obj.parent
+    first_path = path_objs[0] if path_objs else Path.cwd()
+    search_start = first_path if first_path.is_dir() else first_path.parent
     project_root = get_project_root(search_start)
 
     orchestrator = Orchestrator(project_root=project_root)
@@ -524,9 +535,78 @@ def _execute_linting(orchestrator, path_obj, recursive):
     return orchestrator.lint_directory(path_obj, recursive=recursive)
 
 
-def _setup_nesting_orchestrator(path_obj: Path, config_file: str | None, verbose: bool):
+def _separate_files_and_dirs(path_objs: list[Path]) -> tuple[list[Path], list[Path]]:
+    """Separate file paths from directory paths.
+
+    Args:
+        path_objs: List of Path objects
+
+    Returns:
+        Tuple of (files, directories)
+    """
+    files = [p for p in path_objs if p.is_file()]
+    dirs = [p for p in path_objs if p.is_dir()]
+    return files, dirs
+
+
+def _lint_files_if_any(orchestrator, files: list[Path]) -> list:
+    """Lint files if list is non-empty.
+
+    Args:
+        orchestrator: Orchestrator instance
+        files: List of file paths
+
+    Returns:
+        List of violations
+    """
+    if files:
+        return orchestrator.lint_files(files)
+    return []
+
+
+def _lint_directories(orchestrator, dirs: list[Path], recursive: bool) -> list:
+    """Lint all directories.
+
+    Args:
+        orchestrator: Orchestrator instance
+        dirs: List of directory paths
+        recursive: Whether to scan recursively
+
+    Returns:
+        List of violations from all directories
+    """
+    violations = []
+    for dir_path in dirs:
+        violations.extend(orchestrator.lint_directory(dir_path, recursive=recursive))
+    return violations
+
+
+def _execute_linting_on_paths(orchestrator, path_objs: list[Path], recursive: bool) -> list:
+    """Execute linting on list of file/directory paths.
+
+    Args:
+        orchestrator: Orchestrator instance
+        path_objs: List of Path objects (files or directories)
+        recursive: Whether to scan directories recursively
+
+    Returns:
+        List of violations from all paths
+    """
+    files, dirs = _separate_files_and_dirs(path_objs)
+
+    violations = []
+    violations.extend(_lint_files_if_any(orchestrator, files))
+    violations.extend(_lint_directories(orchestrator, dirs, recursive))
+
+    return violations
+
+
+def _setup_nesting_orchestrator(path_objs: list[Path], config_file: str | None, verbose: bool):
     """Set up orchestrator for nesting command."""
-    project_root = path_obj if path_obj.is_dir() else path_obj.parent
+    # Use first path to determine project root
+    first_path = path_objs[0] if path_objs else Path.cwd()
+    project_root = first_path if first_path.is_dir() else first_path.parent
+
     from src.orchestrator.core import Orchestrator
 
     orchestrator = Orchestrator(project_root=project_root)
@@ -550,35 +630,33 @@ def _apply_nesting_config_override(orchestrator, max_depth: int | None, verbose:
         logger.debug(f"Overriding max_nesting_depth to {max_depth}")
 
 
-def _run_nesting_lint(orchestrator, path_obj: Path, recursive: bool):
-    """Execute nesting lint on file or directory."""
-    if path_obj.is_file():
-        violations = orchestrator.lint_file(path_obj)
-    else:
-        violations = orchestrator.lint_directory(path_obj, recursive=recursive)
-
-    return [v for v in violations if "nesting" in v.rule_id]
+def _run_nesting_lint(orchestrator, path_objs: list[Path], recursive: bool):
+    """Execute nesting lint on files or directories."""
+    all_violations = _execute_linting_on_paths(orchestrator, path_objs, recursive)
+    return [v for v in all_violations if "nesting" in v.rule_id]
 
 
 @cli.command("nesting")
-@click.argument("path", type=click.Path(exists=True), default=".")
+@click.argument("paths", nargs=-1, type=click.Path(exists=True))
 @click.option("--config", "-c", "config_file", type=click.Path(), help="Path to config file")
 @format_option
 @click.option("--max-depth", type=int, help="Override max nesting depth (default: 4)")
 @click.option("--recursive/--no-recursive", default=True, help="Scan directories recursively")
 @click.pass_context
 def nesting(  # pylint: disable=too-many-arguments,too-many-positional-arguments
-    ctx, path: str, config_file: str | None, format: str, max_depth: int | None, recursive: bool
+    ctx,
+    paths: tuple[str, ...],
+    config_file: str | None,
+    format: str,
+    max_depth: int | None,
+    recursive: bool,
 ):
     """Check for excessive nesting depth in code.
 
     Analyzes Python and TypeScript files for deeply nested code structures
     (if/for/while/try statements) and reports violations.
 
-    PATH: Single file or directory to lint (defaults to current directory)
-
-    Note: Pass ONE path at a time. To lint multiple files, pass their parent
-    directory and files will be scanned recursively.
+    PATHS: Files or directories to lint (defaults to current directory if none provided)
 
     Examples:
 
@@ -595,6 +673,14 @@ def nesting(  # pylint: disable=too-many-arguments,too-many-positional-arguments
         thai-lint nesting src/app.py
 
         \b
+        # Check multiple files
+        thai-lint nesting src/app.py src/utils.py tests/test_app.py
+
+        \b
+        # Check mix of files and directories
+        thai-lint nesting src/app.py tests/
+
+        \b
         # Use custom max depth
         thai-lint nesting --max-depth 3 src/
 
@@ -607,21 +693,26 @@ def nesting(  # pylint: disable=too-many-arguments,too-many-positional-arguments
         thai-lint nesting --config .thailint.yaml src/
     """
     verbose = ctx.obj.get("verbose", False)
-    path_obj = Path(path)
+
+    # Default to current directory if no paths provided
+    if not paths:
+        paths = (".",)
+
+    path_objs = [Path(p) for p in paths]
 
     try:
-        _execute_nesting_lint(path_obj, config_file, format, max_depth, recursive, verbose)
+        _execute_nesting_lint(path_objs, config_file, format, max_depth, recursive, verbose)
     except Exception as e:
         _handle_linting_error(e, verbose)
 
 
 def _execute_nesting_lint(  # pylint: disable=too-many-arguments,too-many-positional-arguments
-    path_obj, config_file, format, max_depth, recursive, verbose
+    path_objs, config_file, format, max_depth, recursive, verbose
 ):
     """Execute nesting lint."""
-    orchestrator = _setup_nesting_orchestrator(path_obj, config_file, verbose)
+    orchestrator = _setup_nesting_orchestrator(path_objs, config_file, verbose)
     _apply_nesting_config_override(orchestrator, max_depth, verbose)
-    nesting_violations = _run_nesting_lint(orchestrator, path_obj, recursive)
+    nesting_violations = _run_nesting_lint(orchestrator, path_objs, recursive)
 
     if verbose:
         logger.info(f"Found {len(nesting_violations)} nesting violation(s)")
@@ -630,9 +721,11 @@ def _execute_nesting_lint(  # pylint: disable=too-many-arguments,too-many-positi
     sys.exit(1 if nesting_violations else 0)
 
 
-def _setup_srp_orchestrator(path_obj: Path, config_file: str | None, verbose: bool):
+def _setup_srp_orchestrator(path_objs: list[Path], config_file: str | None, verbose: bool):
     """Set up orchestrator for SRP command."""
-    project_root = path_obj if path_obj.is_dir() else path_obj.parent
+    first_path = path_objs[0] if path_objs else Path.cwd()
+    project_root = first_path if first_path.is_dir() else first_path.parent
+
     from src.orchestrator.core import Orchestrator
 
     orchestrator = Orchestrator(project_root=project_root)
@@ -673,18 +766,14 @@ def _apply_srp_max_loc(orchestrator, max_loc: int | None, verbose: bool):
             logger.debug(f"Overriding max_loc to {max_loc}")
 
 
-def _run_srp_lint(orchestrator, path_obj: Path, recursive: bool):
-    """Execute SRP lint on file or directory."""
-    if path_obj.is_file():
-        violations = orchestrator.lint_file(path_obj)
-    else:
-        violations = orchestrator.lint_directory(path_obj, recursive=recursive)
-
-    return [v for v in violations if "srp" in v.rule_id]
+def _run_srp_lint(orchestrator, path_objs: list[Path], recursive: bool):
+    """Execute SRP lint on files or directories."""
+    all_violations = _execute_linting_on_paths(orchestrator, path_objs, recursive)
+    return [v for v in all_violations if "srp" in v.rule_id]
 
 
 @cli.command("srp")
-@click.argument("path", type=click.Path(exists=True), default=".")
+@click.argument("paths", nargs=-1, type=click.Path(exists=True))
 @click.option("--config", "-c", "config_file", type=click.Path(), help="Path to config file")
 @format_option
 @click.option("--max-methods", type=int, help="Override max methods per class (default: 7)")
@@ -693,7 +782,7 @@ def _run_srp_lint(orchestrator, path_obj: Path, recursive: bool):
 @click.pass_context
 def srp(  # pylint: disable=too-many-arguments,too-many-positional-arguments
     ctx,
-    path: str,
+    paths: tuple[str, ...],
     config_file: str | None,
     format: str,
     max_methods: int | None,
@@ -707,10 +796,7 @@ def srp(  # pylint: disable=too-many-arguments,too-many-positional-arguments
     - Lines of code exceeding threshold (default: 200)
     - Responsibility keywords in class names (Manager, Handler, Processor, etc.)
 
-    PATH: Single file or directory to lint (defaults to current directory)
-
-    Note: Pass ONE path at a time. To lint multiple files, pass their parent
-    directory and files will be scanned recursively.
+    PATHS: Files or directories to lint (defaults to current directory if none provided)
 
     Examples:
 
@@ -727,6 +813,10 @@ def srp(  # pylint: disable=too-many-arguments,too-many-positional-arguments
         thai-lint srp src/app.py
 
         \b
+        # Check multiple files
+        thai-lint srp src/app.py src/service.py tests/test_app.py
+
+        \b
         # Use custom thresholds
         thai-lint srp --max-methods 10 --max-loc 300 src/
 
@@ -739,21 +829,25 @@ def srp(  # pylint: disable=too-many-arguments,too-many-positional-arguments
         thai-lint srp --config .thailint.yaml src/
     """
     verbose = ctx.obj.get("verbose", False)
-    path_obj = Path(path)
+
+    if not paths:
+        paths = (".",)
+
+    path_objs = [Path(p) for p in paths]
 
     try:
-        _execute_srp_lint(path_obj, config_file, format, max_methods, max_loc, recursive, verbose)
+        _execute_srp_lint(path_objs, config_file, format, max_methods, max_loc, recursive, verbose)
     except Exception as e:
         _handle_linting_error(e, verbose)
 
 
 def _execute_srp_lint(  # pylint: disable=too-many-arguments,too-many-positional-arguments
-    path_obj, config_file, format, max_methods, max_loc, recursive, verbose
+    path_objs, config_file, format, max_methods, max_loc, recursive, verbose
 ):
     """Execute SRP lint."""
-    orchestrator = _setup_srp_orchestrator(path_obj, config_file, verbose)
+    orchestrator = _setup_srp_orchestrator(path_objs, config_file, verbose)
     _apply_srp_config_override(orchestrator, max_methods, max_loc, verbose)
-    srp_violations = _run_srp_lint(orchestrator, path_obj, recursive)
+    srp_violations = _run_srp_lint(orchestrator, path_objs, recursive)
 
     if verbose:
         logger.info(f"Found {len(srp_violations)} SRP violation(s)")
@@ -763,7 +857,7 @@ def _execute_srp_lint(  # pylint: disable=too-many-arguments,too-many-positional
 
 
 @cli.command("dry")
-@click.argument("path", type=click.Path(exists=True), default=".")
+@click.argument("paths", nargs=-1, type=click.Path(exists=True))
 @click.option("--config", "-c", "config_file", type=click.Path(), help="Path to config file")
 @format_option
 @click.option("--min-lines", type=int, help="Override min duplicate lines threshold")
@@ -773,7 +867,7 @@ def _execute_srp_lint(  # pylint: disable=too-many-arguments,too-many-positional
 @click.pass_context
 def dry(  # pylint: disable=too-many-arguments,too-many-positional-arguments
     ctx,
-    path: str,
+    paths: tuple[str, ...],
     config_file: str | None,
     format: str,
     min_lines: int | None,
@@ -790,10 +884,7 @@ def dry(  # pylint: disable=too-many-arguments,too-many-positional-arguments
     Detects duplicate code blocks across your project using token-based hashing
     with SQLite caching for fast incremental scans.
 
-    PATH: Single file or directory to lint (defaults to current directory)
-
-    Note: Pass ONE path at a time. To lint multiple files, pass their parent
-    directory and files will be scanned recursively.
+    PATHS: Files or directories to lint (defaults to current directory if none provided)
 
     Examples:
 
@@ -808,6 +899,10 @@ def dry(  # pylint: disable=too-many-arguments,too-many-positional-arguments
         \b
         # Check single file
         thai-lint dry src/app.py
+
+        \b
+        # Check multiple files
+        thai-lint dry src/app.py src/service.py tests/test_app.py
 
         \b
         # Use custom config file
@@ -830,27 +925,31 @@ def dry(  # pylint: disable=too-many-arguments,too-many-positional-arguments
         thai-lint dry --format json .
     """
     verbose = ctx.obj.get("verbose", False)
-    path_obj = Path(path)
+
+    if not paths:
+        paths = (".",)
+
+    path_objs = [Path(p) for p in paths]
 
     try:
         _execute_dry_lint(
-            path_obj, config_file, format, min_lines, no_cache, clear_cache, recursive, verbose
+            path_objs, config_file, format, min_lines, no_cache, clear_cache, recursive, verbose
         )
     except Exception as e:
         _handle_linting_error(e, verbose)
 
 
 def _execute_dry_lint(  # pylint: disable=too-many-arguments,too-many-positional-arguments
-    path_obj, config_file, format, min_lines, no_cache, clear_cache, recursive, verbose
+    path_objs, config_file, format, min_lines, no_cache, clear_cache, recursive, verbose
 ):
     """Execute DRY linting."""
-    orchestrator = _setup_dry_orchestrator(path_obj, config_file, verbose)
+    orchestrator = _setup_dry_orchestrator(path_objs, config_file, verbose)
     _apply_dry_config_override(orchestrator, min_lines, no_cache, verbose)
 
     if clear_cache:
         _clear_dry_cache(orchestrator, verbose)
 
-    dry_violations = _run_dry_lint(orchestrator, path_obj, recursive)
+    dry_violations = _run_dry_lint(orchestrator, path_objs, recursive)
 
     if verbose:
         logger.info(f"Found {len(dry_violations)} DRY violation(s)")
@@ -859,12 +958,13 @@ def _execute_dry_lint(  # pylint: disable=too-many-arguments,too-many-positional
     sys.exit(1 if dry_violations else 0)
 
 
-def _setup_dry_orchestrator(path_obj, config_file, verbose):
+def _setup_dry_orchestrator(path_objs, config_file, verbose):
     """Set up orchestrator for DRY linting."""
     from src.orchestrator.core import Orchestrator
     from src.utils.project_root import get_project_root
 
-    search_start = path_obj if path_obj.is_dir() else path_obj.parent
+    first_path = path_objs[0] if path_objs else Path.cwd()
+    search_start = first_path if first_path.is_dir() else first_path.parent
     project_root = get_project_root(search_start)
 
     orchestrator = Orchestrator(project_root=project_root)
@@ -941,9 +1041,9 @@ def _clear_dry_cache(orchestrator, verbose):
             logger.info("Cache file does not exist, nothing to clear")
 
 
-def _run_dry_lint(orchestrator, path_obj, recursive):
+def _run_dry_lint(orchestrator, path_objs, recursive):
     """Run DRY linting and return violations."""
-    all_violations = _execute_linting(orchestrator, path_obj, recursive)
+    all_violations = _execute_linting_on_paths(orchestrator, path_objs, recursive)
 
     # Filter to only DRY violations
     dry_violations = [v for v in all_violations if v.rule_id.startswith("dry.")]
