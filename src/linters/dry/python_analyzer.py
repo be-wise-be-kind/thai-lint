@@ -188,8 +188,8 @@ class PythonDuplicateAnalyzer(BaseTokenAnalyzer):
     def _is_single_statement_in_source(self, content: str, start_line: int, end_line: int) -> bool:
         """Check if a line range in the original source is a single logical statement.
 
-        A decorator by itself is not a complete statement - it needs the function it decorates.
-        We need to look ahead to include the decorated function/class to parse correctly.
+        Uses AST to find nodes that overlap with the line range and determines if they
+        represent single logical statements that shouldn't be flagged as duplicates.
 
         Args:
             content: Original source code
@@ -197,31 +197,214 @@ class PythonDuplicateAnalyzer(BaseTokenAnalyzer):
             end_line: Ending line number (1-indexed)
 
         Returns:
-            True if the line range contains a single statement (shouldn't be flagged)
+            True if the line range is part of a single statement (shouldn't be flagged)
         """
-        # Extract the original source lines
-        lines = content.split("\n")
+        try:
+            tree = ast.parse(content)
+        except SyntaxError:
+            return False
+
+        # Walk the AST to find nodes that overlap with this line range
+        for node in ast.walk(tree):
+            if not hasattr(node, "lineno") or not hasattr(node, "end_lineno"):
+                continue
+
+            # Check if this node overlaps with the line range
+            overlaps = not (node.end_lineno < start_line or node.lineno > end_line)
+            if overlaps:
+                # Check if this is a single-statement pattern we should filter
+                if self._is_single_statement_pattern(node, start_line, end_line):
+                    return True
+
+        return False
+
+    def _is_single_statement_pattern(self, node: ast.AST, start_line: int, end_line: int) -> bool:
+        """Check if an AST node represents a single-statement pattern to filter.
+
+        Args:
+            node: AST node that overlaps with the line range
+            start_line: Starting line number (1-indexed)
+            end_line: Ending line number (1-indexed)
+
+        Returns:
+            True if this node represents a single logical statement pattern
+        """
+        # Check if node completely contains the range
+        # (This ensures the entire flagged range is part of one statement)
+        contains = node.lineno <= start_line and node.end_lineno >= end_line
+
+        # ClassDef: Class field definitions (but NOT method bodies)
+        if isinstance(node, ast.ClassDef):
+            # Only filter if the flagged range is in the class header/fields area,
+            # not in method bodies
+            # Find where the first method starts
+            first_method_line = None
+            for item in node.body:
+                if isinstance(item, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                    first_method_line = item.lineno
+                    break
+
+            # For classes with decorators, extend the range to include decorators
+            class_start = node.lineno
+            if node.decorator_list:
+                class_start = min(d.lineno for d in node.decorator_list)
+
+            # Only filter if the range is before the first method (i.e., in the fields area)
+            if first_method_line is not None:
+                # There are methods - only filter if range is before them
+                if class_start <= start_line and end_line < first_method_line:
+                    return True
+            else:
+                # No methods - filter if in class range (all fields)
+                extended_contains = class_start <= start_line and node.end_lineno >= end_line
+                if extended_contains:
+                    return True
+
+        # FunctionDef/AsyncFunctionDef: Decorator patterns
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+            # If decorators exist and the range overlaps with decorators
+            if node.decorator_list:
+                # Get the first decorator's line
+                first_decorator_line = min(d.lineno for d in node.decorator_list)
+                # The function body starts after the def line
+                if node.body and hasattr(node.body[0], "lineno"):
+                    first_body_line = node.body[0].lineno
+                    # If the range is between first decorator and first body line,
+                    # it's part of the decorator pattern
+                    if start_line >= first_decorator_line and end_line < first_body_line:
+                        return True
+            return False
+
+        # Call: Function/constructor call (including multiline arguments)
+        # For multi-line calls, filter if the call contains the start of the range
+        # This handles cases where a 3-line window includes the end of a constructor
+        # plus some trailing code
+        if isinstance(node, ast.Call):
+            is_multiline = node.lineno < node.end_lineno
+            if is_multiline and node.lineno <= start_line <= node.end_lineno:
+                return True
+            # For single-line calls, require full containment
+            if not is_multiline and contains:
+                return True
+
+        # Expr: Expression statement (could be a single multiline expression)
+        # Only filter if this Expr completely contains the flagged range
+        if isinstance(node, ast.Expr) and contains:
+            return True
+
+        # Single assignment
+        # For multi-line assignments, filter if the assignment contains the start of the range
+        # This handles cases where constructor arguments span into the flagged range
+        if isinstance(node, ast.Assign):
+            is_multiline = node.lineno < node.end_lineno
+            if is_multiline and node.lineno <= start_line <= node.end_lineno:
+                return True
+            # For single-line assignments, require full containment
+            if not is_multiline and contains:
+                return True
+
+        return False
+
+    def _is_standalone_single_statement(
+        self, lines: list[str], start_line: int, end_line: int
+    ) -> bool:
+        """Check if the exact range parses as a single statement on its own."""
         source_lines = lines[start_line - 1 : end_line]
         source_snippet = "\n".join(source_lines)
 
-        # First, try to parse the exact range
         try:
             tree = ast.parse(source_snippet)
-            # If it parses and has exactly 1 statement, filter it
             return len(tree.body) == 1
+        except SyntaxError:
+            return False
+
+    def _is_part_of_decorator(self, lines: list[str], start_line: int, end_line: int) -> bool:
+        """Check if lines are part of a decorator + function definition.
+
+        A decorator pattern is @something(...) followed by def/class.
+        """
+        # Look backwards for @ symbol, forwards for def/class
+        lookback_start = max(0, start_line - 10)
+        lookforward_end = min(len(lines), end_line + 10)
+
+        # Extract expanded context
+        context_lines = lines[lookback_start:lookforward_end]
+        context = "\n".join(context_lines)
+
+        try:
+            tree = ast.parse(context)
+            # Find a function or class with decorators in the context
+            for stmt in tree.body:
+                if isinstance(stmt, (ast.FunctionDef, ast.ClassDef)) and stmt.decorator_list:
+                    return True
         except SyntaxError:
             pass
 
-        # If it doesn't parse, it might be a decorator without the function
-        # Try to extend the range to include the next few lines (likely the function)
-        extended_lines = lines[start_line - 1 : min(end_line + 10, len(lines))]
-        extended_snippet = "\n".join(extended_lines)
+        return False
+
+    def _is_part_of_function_call(self, lines: list[str], start_line: int, end_line: int) -> bool:
+        """Check if lines are arguments inside a function/constructor call.
+
+        Detects patterns like:
+            obj = Constructor(
+                arg1=value1,
+                arg2=value2,
+            )
+        """
+        # Look backwards for opening paren, forwards for closing paren
+        lookback_start = max(0, start_line - 10)
+        lookforward_end = min(len(lines), end_line + 10)
+
+        context_lines = lines[lookback_start:lookforward_end]
+        context = "\n".join(context_lines)
 
         try:
-            tree = ast.parse(extended_snippet)
-            # If the extended version parses and has exactly 1 statement,
-            # then our original range is part of a single statement (decorator + function)
-            return len(tree.body) == 1
+            tree = ast.parse(context)
+            # If the expanded context has exactly 1 statement (and it's not a function def),
+            # the flagged lines are part of it
+            if len(tree.body) == 1 and not isinstance(
+                tree.body[0], (ast.FunctionDef, ast.ClassDef)
+            ):
+                return True
         except SyntaxError:
-            # Can't parse even with extension - let it through for detection
-            return False
+            pass
+
+        return False
+
+    def _is_part_of_class_body(self, lines: list[str], start_line: int, end_line: int) -> bool:
+        """Check if lines are field definitions inside a class body.
+
+        Detects patterns like:
+            class Foo:
+                field1: Type1
+                field2: Type2
+        """
+        # Look backwards for class definition
+        lookback_start = max(0, start_line - 10)
+        lookforward_end = min(len(lines), end_line + 5)
+
+        context_lines = lines[lookback_start:lookforward_end]
+        context = "\n".join(context_lines)
+
+        try:
+            tree = ast.parse(context)
+            # Check if any statement is a class definition and the flagged lines
+            # fall within the class body range
+            for stmt in tree.body:
+                if isinstance(stmt, ast.ClassDef):
+                    # Adjust line numbers: stmt.lineno is relative to context
+                    # We need to convert back to original file line numbers
+                    class_start_in_context = stmt.lineno
+                    class_end_in_context = stmt.end_lineno if stmt.end_lineno else stmt.lineno
+
+                    # Convert to original file line numbers (1-indexed)
+                    class_start_original = lookback_start + class_start_in_context
+                    class_end_original = lookback_start + class_end_in_context
+
+                    # Check if the flagged range overlaps with class body
+                    if start_line >= class_start_original and end_line <= class_end_original:
+                        return True
+        except SyntaxError:
+            pass
+
+        return False
