@@ -115,14 +115,20 @@ if violations:
 
 ### Docker Mode
 
+**Note:** Pass one path at a time (file or directory). For multiple files, use their parent directory.
+
 ```bash
-# Run with volume mount
+# Lint directory (recommended - lints all files inside)
 docker run --rm -v $(pwd):/data \
   washad/thailint:latest file-placement /data
 
-# Check nesting depth
+# Lint single file
 docker run --rm -v $(pwd):/data \
-  washad/thailint:latest nesting /data
+  washad/thailint:latest file-placement /data/src/app.py
+
+# Check nesting depth in subdirectory
+docker run --rm -v $(pwd):/data \
+  washad/thailint:latest nesting /data/src
 ```
 
 ## Configuration
@@ -765,6 +771,8 @@ docker build -t washad/thailint:latest .
 
 ## Docker Usage
 
+**Note:** thailint accepts **one path at a time** (file or directory), not multiple files. To lint multiple files, pass their parent directory.
+
 ```bash
 # Pull published image
 docker pull washad/thailint:latest
@@ -772,15 +780,22 @@ docker pull washad/thailint:latest
 # Run CLI help
 docker run --rm washad/thailint:latest --help
 
-# Run file-placement linter
+# Lint entire directory (recommended for multiple files)
 docker run --rm -v $(pwd):/data washad/thailint:latest file-placement /data
 
-# Run nesting linter
-docker run --rm -v $(pwd):/data washad/thailint:latest nesting /data
+# Lint single file
+docker run --rm -v $(pwd):/data washad/thailint:latest file-placement /data/src/app.py
+
+# Lint specific subdirectory
+docker run --rm -v $(pwd):/data washad/thailint:latest nesting /data/src
 
 # With custom config
 docker run --rm -v $(pwd):/data \
     washad/thailint:latest nesting --config /data/.thailint.yaml /data
+
+# JSON output for CI/CD
+docker run --rm -v $(pwd):/data \
+    washad/thailint:latest file-placement --format json /data
 ```
 
 ## Documentation

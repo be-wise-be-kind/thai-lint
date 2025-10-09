@@ -378,9 +378,17 @@ docker-compose build
 
 ### Basic Usage
 
+**Note:** thailint accepts **one path at a time** (file or directory), not multiple files. To lint multiple files, pass their parent directory.
+
 ```bash
-# Run with volume mount
+# Lint entire directory (recommended - lints all files recursively)
 docker run --rm -v $(pwd):/workspace thailint/thailint lint file-placement /workspace
+
+# Lint single file
+docker run --rm -v $(pwd):/workspace thailint/thailint lint file-placement /workspace/src/app.py
+
+# Lint specific subdirectory
+docker run --rm -v $(pwd):/workspace thailint/thailint lint file-placement /workspace/src
 
 # With config file
 docker run --rm \

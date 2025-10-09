@@ -45,6 +45,8 @@ thailint --version
 thai-lint [GLOBAL_OPTIONS] COMMAND [COMMAND_OPTIONS] [ARGS]
 ```
 
+**Important:** All linting commands accept **one path at a time** (file or directory), not multiple files. To lint multiple files, pass their parent directory and files will be scanned recursively.
+
 ## Global Options
 
 Available for all commands:
@@ -136,7 +138,7 @@ thai-lint nesting [OPTIONS] [PATH]
 
 | Argument | Required | Default | Description |
 |----------|----------|---------|-------------|
-| `PATH` | No | `.` (current directory) | File or directory to lint |
+| `PATH` | No | `.` (current directory) | Single file or directory to lint (one path only) |
 
 **Options:**
 
@@ -260,7 +262,7 @@ thai-lint nesting [OPTIONS] [PATH]
 
 | Argument | Required | Default | Description |
 |----------|----------|---------|-------------|
-| `PATH` | No | `.` (current directory) | File or directory to check |
+| `PATH` | No | `.` (current directory) | Single file or directory to check (one path only) |
 
 **Options:**
 
@@ -407,7 +409,7 @@ thai-lint dry [OPTIONS] [PATH]
 
 | Argument | Required | Default | Description |
 |----------|----------|---------|-------------|
-| `PATH` | No | `.` (current directory) | File or directory to check |
+| `PATH` | No | `.` (current directory) | Single file or directory to check (one path only) |
 
 **Options:**
 
