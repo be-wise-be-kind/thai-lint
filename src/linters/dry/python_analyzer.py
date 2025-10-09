@@ -22,12 +22,22 @@ import ast
 from pathlib import Path
 
 from .base_token_analyzer import BaseTokenAnalyzer
+from .block_filter import BlockFilterRegistry, create_default_registry
 from .cache import CodeBlock
 from .config import DRYConfig
 
 
 class PythonDuplicateAnalyzer(BaseTokenAnalyzer):
     """Analyzes Python code for duplicate blocks, excluding docstrings."""
+
+    def __init__(self, filter_registry: BlockFilterRegistry | None = None):
+        """Initialize analyzer with optional custom filter registry.
+
+        Args:
+            filter_registry: Custom filter registry (uses defaults if None)
+        """
+        super().__init__()
+        self._filter_registry = filter_registry or create_default_registry()
 
     def analyze(self, file_path: Path, content: str, config: DRYConfig) -> list[CodeBlock]:
         """Analyze Python file for duplicate code blocks, excluding docstrings.
@@ -63,6 +73,11 @@ class PythonDuplicateAnalyzer(BaseTokenAnalyzer):
                 snippet=snippet,
                 hash_value=hash_val,
             )
+
+            # Apply extensible filters (keyword arguments, imports, etc.)
+            if self._filter_registry.should_filter_block(block, content):
+                continue
+
             blocks.append(block)
 
         return blocks

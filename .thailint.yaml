@@ -9,6 +9,22 @@
 #     account for language verbosity differences. Uses regex patterns and configurable limits
 #     to ensure consistent code quality across the codebase.
 
+# Global ignore patterns (apply to all linters)
+# Files and directories matching these patterns will be skipped during linting
+ignore:
+  - "__pycache__/"
+  - "*.pyc"
+  - ".git/"
+  - ".venv/"
+  - "venv/"
+  - ".pytest_cache/"
+  - ".mypy_cache/"
+  - ".ruff_cache/"
+  - "htmlcov/"
+  - "*.egg-info/"
+  - "dist/"
+  - "build/"
+
 # File placement linter configuration
 file-placement:
   # Global patterns that apply to all directories
@@ -54,21 +70,6 @@ file-placement:
     .roadmap:
       allow:
         - '.*\\.md$'
-
-  # Ignore patterns (files/directories to skip)
-  ignore:
-    - "__pycache__/"
-    - "*.pyc"
-    - ".git/"
-    - ".venv/"
-    - "venv/"
-    - ".pytest_cache/"
-    - ".mypy_cache/"
-    - ".ruff_cache/"
-    - "htmlcov/"
-    - "*.egg-info/"
-    - "dist/"
-    - "build/"
 
 # Nesting depth linter configuration
 nesting:
@@ -133,6 +134,18 @@ dry:
   enabled: true  # Enabled for dogfooding (PR4)
   min_duplicate_lines: 3  # Minimum lines for duplicate detection
   min_duplicate_tokens: 30  # Minimum tokens for duplicate detection
+  min_occurrences: 2  # Global default: report duplicates appearing 2+ times
+
+  # Language-specific minimum occurrence thresholds
+  # These override the global min_occurrences for specific languages
+  python:
+    min_occurrences: 3
+
+  typescript:
+    min_occurrences: 3
+
+  javascript:
+    min_occurrences: 3
 
   # Cache settings (SQLite-based)
   cache_enabled: true  # Enable SQLite cache for fast incremental scans
@@ -143,3 +156,10 @@ dry:
   ignore:
     - "tests/"  # Test code often has acceptable duplication
     - "__init__.py"  # Import-only files are exempt
+    - "src/cli.py"  # CLI modules contain acceptable boilerplate across command handlers
+
+  # Block filters (extensible false positive filtering)
+  # These filters automatically exclude common non-duplication patterns
+  filters:
+    keyword_argument_filter: true  # Filter function call keyword arguments (e.g., param=value, ...)
+    import_group_filter: true       # Filter import statement groups
