@@ -1,40 +1,41 @@
-# How to: Refactor for Quality (Complexity + SRP)
+# How to: Refactor for Quality (Complexity + SRP + DRY)
 
-**Purpose**: Architectural refactoring guide for resolving complexity and SRP violations together
+**Purpose**: Architectural refactoring guide for resolving complexity, SRP, and DRY violations together
 
-**Scope**: Holistic approach to fixing cyclomatic complexity (Radon, Xenon) and Single Responsibility Principle violations using architecture-first analysis
+**Scope**: Holistic approach to fixing cyclomatic complexity (Radon, Xenon), Single Responsibility Principle violations, and DRY (Don't Repeat Yourself) duplicate code using architecture-first analysis
 
-**Overview**: This guide addresses the tension between complexity and SRP violations through holistic refactoring
-    rather than sequential fixing. Covers analyzing why code is complex (too many responsibilities vs just verbose),
-    choosing appropriate refactoring strategies (extract methods vs classes vs modules), and iteratively refactoring
-    with both constraints in mind. Includes decision trees, before/after examples, anti-patterns to avoid, and
+**Overview**: This guide addresses the tension between complexity, SRP, and DRY violations through holistic refactoring
+    rather than sequential fixing. Covers analyzing why code is complex or duplicated (too many responsibilities vs just verbose),
+    choosing appropriate refactoring strategies (extract methods vs classes vs modules vs utilities), and iteratively refactoring
+    with all constraints in mind. Includes decision trees, before/after examples, anti-patterns to avoid, and
     validation workflows. Prerequisite: Complete basic linting fixes first (see how-to-fix-linting-errors.md).
 
-**Dependencies**: make lint-complexity, make lint-solid, poetry, radon, xenon, thai-lint srp
+**Dependencies**: make lint-complexity, make lint-solid, make lint-dry, poetry, radon, xenon, thai-lint srp, thai-lint dry
 
-**Exports**: Well-architected code with A-grade complexity and no SRP violations
+**Exports**: Well-architected code with A-grade complexity, no SRP violations, and no duplicate code
 
 **Related**: how-to-fix-linting-errors.md, AGENTS.md (Quality Gates section)
 
-**Implementation**: Architecture-first analysis followed by iterative refactoring with dual constraint validation
+**Implementation**: Architecture-first analysis followed by iterative refactoring with triple constraint validation
 
 ---
 
 ## Overview
 
-Complexity and SRP violations are **architectural issues**, not mechanical fixes. They require understanding why code is structured the way it is and making thoughtful refactoring decisions.
+Complexity, SRP, and DRY violations are **architectural issues**, not mechanical fixes. They require understanding why code is structured the way it is and making thoughtful refactoring decisions.
 
 **The Problem**: Sequential fixing creates a back-and-forth cycle:
 - Fix complexity by extracting methods → Creates SRP violations (too many methods in one class)
 - Fix SRP by splitting classes → Creates complexity elsewhere (more integration code)
+- Fix DRY by extracting shared code → May create inappropriate coupling between unrelated modules
 - Repeat endlessly without improvement
 
 **The Solution**: Holistic refactoring
-- Analyze complexity and SRP violations together
-- Understand the root cause (multi-responsibility vs verbosity)
+- Analyze complexity, SRP, and DRY violations together
+- Understand the root cause (multi-responsibility vs verbosity vs genuine duplication)
 - Choose refactoring strategy based on the cause
-- Refactor with both constraints in mind
-- Validate both constraints after each change
+- Refactor with all three constraints in mind
+- Validate all three constraints after each change
 
 ---
 
@@ -52,6 +53,8 @@ Ensure:
 - All tests pass
 
 **Why**: Architectural refactoring is complex. Don't complicate it with style issues, security problems, or type errors.
+
+**Note**: It's OK to have complexity, SRP, and DRY violations before starting. This guide will help you fix them holistically.
 
 ---
 
@@ -198,6 +201,14 @@ make lint-solid
 # - Classes with multiple responsibilities
 # - Classes with too many public methods
 # - Classes with unrelated method groups
+
+# Run DRY analysis
+make lint-dry
+
+# Look for:
+# - Duplicate code blocks (3+ lines)
+# - Number of occurrences
+# - Files affected
 ```
 
 ### Step 2: Analyze Root Cause
@@ -743,49 +754,66 @@ class UserProfile:
 ### Step 1: Analyze Together
 
 ```bash
-# Run both checks
+# Run all three checks
 make lint-complexity
 make lint-solid
+make lint-dry
 
 # Review output and note:
-# - Which files have violations in BOTH?
-# - Which have only complexity issues?
-# - Which have only SRP issues?
+# - Which files have violations in ALL THREE?
+# - Which have complexity + SRP but not DRY?
+# - Which have only DRY violations?
+# - Which have only complexity or SRP issues?
 ```
 
 ### Step 2: Prioritize Violations
 
-Focus on files with both complexity AND SRP issues first - these give the biggest improvement.
+Focus on files with multiple violation types first - these give the biggest improvement.
 
 ```
-Priority 1: Both complexity + SRP violations
-  → These are doing too many things
+Priority 1: Complexity + SRP + DRY violations
+  → These are doing too many things AND have duplicates
+  → Extract separate classes with shared utilities (Strategies 2 + DRY patterns)
+  → Biggest refactoring wins
+
+Priority 2: Complexity + SRP violations (no DRY)
+  → Doing too many things but code is unique
   → Extract separate classes (Strategy 2)
 
-Priority 2: Only complexity violations
+Priority 3: DRY violations across multiple files
+  → Same logic duplicated in different modules
+  → Extract shared utility/base class
+  → May also resolve complexity if helpers are extracted
+
+Priority 4: Only complexity violations
   → Analyze: Multi-responsibility or just verbose?
   → If verbose: Extract helper methods (Strategy 1)
   → If nested: Use guard clauses (Strategy 3)
 
-Priority 3: Only SRP violations
+Priority 5: Only SRP violations
   → Move methods to appropriate classes
   → Or split if class is large (Strategy 4)
+
+Priority 6: Only DRY violations (same file)
+  → Internal duplication within one class
+  → Extract private helper methods
 ```
 
-### Step 3: Refactor One File at a Time
+### Step 3: Refactor One File/Pattern at a Time
 
 ```bash
-# Pick one file
-# Analyze root cause (see decision tree above)
+# Pick one file or duplication pattern
+# Analyze root cause (see decision trees above)
 # Choose strategy
 # Refactor
 
-# Validate BOTH constraints
+# Validate ALL THREE constraints
 make lint-complexity
 make lint-solid
+make lint-dry
 make test
 
-# If all pass, move to next file
+# If all pass, move to next file/pattern
 # If not, adjust refactoring
 ```
 
@@ -795,6 +823,7 @@ make test
 # Keep refactoring until:
 make lint-complexity  # All A-grade
 make lint-solid       # No violations
+make lint-dry         # No duplicates
 make test            # All pass
 
 # Then run full validation
@@ -1027,6 +1056,717 @@ class OrderService:
 
 ---
 
+## DRY Analysis Deep Dive
+
+### What is DRY (Don't Repeat Yourself)?
+
+Code should not contain duplicate logic. Each piece of knowledge should exist in exactly one place.
+
+**Good DRY**:
+```python
+def calculate_discount(customer_type: str, total: float) -> float:
+    """Calculate discount based on customer type."""
+    rates = {"vip": 0.20, "member": 0.10, "regular": 0.0}
+    return total * rates.get(customer_type, 0.0)
+
+# Discount logic exists in ONE place
+```
+
+**Bad DRY**:
+```python
+def calculate_order_discount(order):
+    """Calculate order discount."""
+    if order.customer_type == "vip":
+        return order.total * 0.20
+    elif order.customer_type == "member":
+        return order.total * 0.10
+    return 0.0
+
+def calculate_subscription_discount(subscription):
+    """Calculate subscription discount."""
+    if subscription.customer_type == "vip":
+        return subscription.price * 0.20  # DUPLICATE LOGIC
+    elif subscription.customer_type == "member":
+        return subscription.price * 0.10  # DUPLICATE LOGIC
+    return 0.0
+
+# Discount logic duplicated - changes require updating both functions
+```
+
+### Running DRY Linter
+
+```bash
+# Run DRY linter
+make lint-dry
+
+# Or directly:
+poetry run thai-lint dry src/ --config .thailint.yaml
+
+# Check specific files:
+poetry run thai-lint dry src/services/order_service.py
+```
+
+### Understanding DRY Violations
+
+The DRY linter detects duplicates using:
+- **Minimum duplicate lines**: 3+ lines (configurable in `.thailint.yaml`)
+- **Minimum duplicate tokens**: 30+ tokens (configurable)
+- **SQLite cache**: Tracks file hashes for fast incremental scans
+
+**Example violation output**:
+```
+src/cli.py:232:1
+  [ERROR] dry.duplicate-code: Duplicate code (3 lines, 4 occurrences).
+  Also found in: src/cli.py:431-433, src/cli.py:512-514, src/cli.py:566-568
+```
+
+This means:
+- Line 232 in src/cli.py starts a 3-line duplicate
+- The same code appears in 4 total locations
+- Other occurrences are at lines 431, 512, and 566
+
+### Categories of DRY Violations
+
+#### Category 1: Copy-Paste Code Blocks
+
+**Pattern**: Exact same logic duplicated in multiple places
+
+**Before**:
+```python
+# src/services/user_service.py
+class UserService:
+    """User operations."""
+
+    def create_user(self, email: str) -> dict:
+        """Create user."""
+        if "@" not in email:
+            raise ValueError("Invalid email")
+        if len(email) > 255:
+            raise ValueError("Email too long")
+        if email.count("@") > 1:
+            raise ValueError("Invalid email format")
+        # Create user...
+
+# src/services/admin_service.py
+class AdminService:
+    """Admin operations."""
+
+    def create_admin(self, email: str) -> dict:
+        """Create admin."""
+        if "@" not in email:  # DUPLICATE
+            raise ValueError("Invalid email")  # DUPLICATE
+        if len(email) > 255:  # DUPLICATE
+            raise ValueError("Email too long")  # DUPLICATE
+        if email.count("@") > 1:  # DUPLICATE
+            raise ValueError("Invalid email format")  # DUPLICATE
+        # Create admin...
+```
+
+**After**:
+```python
+# src/validators/email_validator.py
+class EmailValidator:
+    """Validate email addresses."""
+
+    def validate(self, email: str) -> None:
+        """Validate email format and length.
+
+        Args:
+            email: Email address to validate
+
+        Raises:
+            ValueError: If email is invalid
+        """
+        if "@" not in email:
+            raise ValueError("Invalid email")
+        if len(email) > 255:
+            raise ValueError("Email too long")
+        if email.count("@") > 1:
+            raise ValueError("Invalid email format")
+
+# src/services/user_service.py
+class UserService:
+    """User operations."""
+
+    def __init__(self, email_validator: EmailValidator):
+        """Initialize with validator."""
+        self.email_validator = email_validator
+
+    def create_user(self, email: str) -> dict:
+        """Create user."""
+        self.email_validator.validate(email)
+        # Create user...
+
+# src/services/admin_service.py
+class AdminService:
+    """Admin operations."""
+
+    def __init__(self, email_validator: EmailValidator):
+        """Initialize with validator."""
+        self.email_validator = email_validator
+
+    def create_admin(self, email: str) -> dict:
+        """Create admin."""
+        self.email_validator.validate(email)
+        # Create admin...
+
+# ✅ DRY: Validation logic in ONE place
+# ✅ Reusable: EmailValidator can be used anywhere
+# ✅ Testable: Can test validation independently
+```
+
+#### Category 2: Similar Patterns with Minor Variations
+
+**Pattern**: Almost identical code with small differences
+
+**Before**:
+```python
+def get_user_profile(user_id: str) -> dict:
+    """Get user profile."""
+    user = db.query("SELECT * FROM users WHERE id = ?", (user_id,))
+    if not user:
+        raise ValueError(f"User {user_id} not found")
+    return {
+        "id": user[0],
+        "name": user[1],
+        "email": user[2],
+        "created": user[3],
+    }
+
+def get_product_details(product_id: str) -> dict:
+    """Get product details."""
+    product = db.query("SELECT * FROM products WHERE id = ?", (product_id,))
+    if not product:  # SIMILAR PATTERN
+        raise ValueError(f"Product {product_id} not found")  # SIMILAR PATTERN
+    return {  # SIMILAR PATTERN
+        "id": product[0],
+        "name": product[1],
+        "price": product[2],
+        "stock": product[3],
+    }
+
+def get_order_info(order_id: str) -> dict:
+    """Get order info."""
+    order = db.query("SELECT * FROM orders WHERE id = ?", (order_id,))
+    if not order:  # SIMILAR PATTERN
+        raise ValueError(f"Order {order_id} not found")  # SIMILAR PATTERN
+    return {  # SIMILAR PATTERN
+        "id": order[0],
+        "customer_id": order[1],
+        "total": order[2],
+        "status": order[3],
+    }
+```
+
+**After** (using generic repository pattern):
+```python
+from typing import TypeVar, Generic, Callable
+
+T = TypeVar('T')
+
+class Repository(Generic[T]):
+    """Generic repository for database entities."""
+
+    def __init__(self, table_name: str, entity_name: str, row_mapper: Callable):
+        """Initialize repository.
+
+        Args:
+            table_name: Database table name
+            entity_name: Entity name for error messages
+            row_mapper: Function to map database row to dictionary
+        """
+        self.table_name = table_name
+        self.entity_name = entity_name
+        self.row_mapper = row_mapper
+
+    def get_by_id(self, entity_id: str) -> dict:
+        """Get entity by ID.
+
+        Args:
+            entity_id: Entity ID
+
+        Returns:
+            Entity dictionary
+
+        Raises:
+            ValueError: If entity not found
+        """
+        query = f"SELECT * FROM {self.table_name} WHERE id = ?"
+        result = db.query(query, (entity_id,))
+
+        if not result:
+            raise ValueError(f"{self.entity_name} {entity_id} not found")
+
+        return self.row_mapper(result)
+
+# Define row mappers
+def map_user_row(row) -> dict:
+    """Map user database row to dictionary."""
+    return {"id": row[0], "name": row[1], "email": row[2], "created": row[3]}
+
+def map_product_row(row) -> dict:
+    """Map product database row to dictionary."""
+    return {"id": row[0], "name": row[1], "price": row[2], "stock": row[3]}
+
+def map_order_row(row) -> dict:
+    """Map order database row to dictionary."""
+    return {"id": row[0], "customer_id": row[1], "total": row[2], "status": row[3]}
+
+# Use repositories
+user_repo = Repository("users", "User", map_user_row)
+product_repo = Repository("products", "Product", map_product_row)
+order_repo = Repository("orders", "Order", map_order_row)
+
+def get_user_profile(user_id: str) -> dict:
+    """Get user profile."""
+    return user_repo.get_by_id(user_id)
+
+def get_product_details(product_id: str) -> dict:
+    """Get product details."""
+    return product_repo.get_by_id(product_id)
+
+def get_order_info(order_id: str) -> dict:
+    """Get order info."""
+    return order_repo.get_by_id(order_id)
+
+# ✅ DRY: Query and error handling logic in ONE place
+# ✅ Extensible: Easy to add new entity types
+# ✅ Type-safe: Generic[T] provides type safety
+```
+
+#### Category 3: Violation Builders / Message Formatters
+
+**Pattern**: Repeated violation or error message construction
+
+**Before**:
+```python
+# src/linters/srp/violation_builder.py
+def build_method_count_violation(class_info):
+    """Build method count violation."""
+    return {
+        "rule_id": "srp.too-many-methods",
+        "file_path": class_info.file_path,
+        "line": class_info.line,
+        "column": 1,
+        "message": f"Class has {class_info.method_count} methods (max: 8)",
+        "severity": "ERROR"
+    }
+
+# src/linters/nesting/violation_builder.py
+def build_nesting_violation(function_info):
+    """Build nesting violation."""
+    return {  # DUPLICATE STRUCTURE
+        "rule_id": "nesting.too-deep",  # Different rule_id
+        "file_path": function_info.file_path,  # SAME
+        "line": function_info.line,  # SAME
+        "column": 1,  # SAME
+        "message": f"Nesting depth {function_info.depth} exceeds max (3)",  # Different message
+        "severity": "ERROR"  # SAME
+    }
+
+# src/linters/file_placement/violation_factory.py
+def build_placement_violation(file_info):
+    """Build placement violation."""
+    return {  # DUPLICATE STRUCTURE
+        "rule_id": "file-placement.wrong-directory",  # Different rule_id
+        "file_path": file_info.file_path,  # SAME
+        "line": 1,  # Different default
+        "column": 1,  # SAME
+        "message": f"File {file_info.name} should be in {file_info.expected_dir}",  # Different message
+        "severity": "ERROR"  # SAME
+    }
+```
+
+**After**:
+```python
+# src/core/violation_builder.py
+from dataclasses import dataclass
+from typing import Literal
+
+@dataclass
+class ViolationInfo:
+    """Information for building a violation."""
+    rule_id: str
+    file_path: str
+    line: int
+    message: str
+    column: int = 1
+    severity: Literal["ERROR", "WARNING", "INFO"] = "ERROR"
+
+class BaseViolationBuilder:
+    """Base class for building linter violations."""
+
+    def build(self, info: ViolationInfo) -> dict:
+        """Build violation dictionary.
+
+        Args:
+            info: Violation information
+
+        Returns:
+            Violation dictionary
+        """
+        return {
+            "rule_id": info.rule_id,
+            "file_path": info.file_path,
+            "line": info.line,
+            "column": info.column,
+            "message": info.message,
+            "severity": info.severity,
+        }
+
+# src/linters/srp/violation_builder.py
+from src.core.violation_builder import BaseViolationBuilder, ViolationInfo
+
+class SRPViolationBuilder(BaseViolationBuilder):
+    """Build SRP linter violations."""
+
+    def build_method_count_violation(self, class_info) -> dict:
+        """Build method count violation.
+
+        Args:
+            class_info: Class information
+
+        Returns:
+            Violation dictionary
+        """
+        info = ViolationInfo(
+            rule_id="srp.too-many-methods",
+            file_path=class_info.file_path,
+            line=class_info.line,
+            message=f"Class has {class_info.method_count} methods (max: 8)"
+        )
+        return self.build(info)
+
+# src/linters/nesting/violation_builder.py
+from src.core.violation_builder import BaseViolationBuilder, ViolationInfo
+
+class NestingViolationBuilder(BaseViolationBuilder):
+    """Build nesting linter violations."""
+
+    def build_nesting_violation(self, function_info) -> dict:
+        """Build nesting depth violation.
+
+        Args:
+            function_info: Function information
+
+        Returns:
+            Violation dictionary
+        """
+        info = ViolationInfo(
+            rule_id="nesting.too-deep",
+            file_path=function_info.file_path,
+            line=function_info.line,
+            message=f"Nesting depth {function_info.depth} exceeds max (3)"
+        )
+        return self.build(info)
+
+# src/linters/file_placement/violation_factory.py
+from src.core.violation_builder import BaseViolationBuilder, ViolationInfo
+
+class FilePlacementViolationFactory(BaseViolationBuilder):
+    """Build file placement linter violations."""
+
+    def build_placement_violation(self, file_info) -> dict:
+        """Build placement violation.
+
+        Args:
+            file_info: File information
+
+        Returns:
+            Violation dictionary
+        """
+        info = ViolationInfo(
+            rule_id="file-placement.wrong-directory",
+            file_path=file_info.file_path,
+            line=1,
+            message=f"File {file_info.name} should be in {file_info.expected_dir}"
+        )
+        return self.build(info)
+
+# ✅ DRY: Violation structure defined ONCE in base class
+# ✅ Consistent: All violations have same structure
+# ✅ Extensible: Easy to add new violation types
+# ✅ Type-safe: ViolationInfo provides compile-time checking
+```
+
+#### Category 4: CLI Command Patterns
+
+**Pattern**: Repeated Click command boilerplate
+
+**Before**:
+```python
+# src/cli.py
+@click.command()
+@click.argument("paths", nargs=-1, type=click.Path(exists=True))
+@click.option("--config", type=click.Path(exists=True), help="Config file")
+@click.option("--format", type=click.Choice(["text", "json"]), default="text")
+def srp(paths, config, format):
+    """Run SRP linter."""
+    # Parse config
+    if config:
+        config_data = load_config(config)
+    else:
+        config_data = {}
+
+    # Run linter
+    violations = run_srp_linter(paths, config_data)
+
+    # Format output
+    if format == "json":
+        print(json.dumps(violations))
+    else:
+        for v in violations:
+            print(f"{v['file_path']}:{v['line']} {v['message']}")
+
+@click.command()
+@click.argument("paths", nargs=-1, type=click.Path(exists=True))  # DUPLICATE
+@click.option("--config", type=click.Path(exists=True), help="Config file")  # DUPLICATE
+@click.option("--format", type=click.Choice(["text", "json"]), default="text")  # DUPLICATE
+def nesting(paths, config, format):  # DUPLICATE SIGNATURE
+    """Run nesting linter."""
+    # Parse config (DUPLICATE)
+    if config:  # DUPLICATE
+        config_data = load_config(config)  # DUPLICATE
+    else:  # DUPLICATE
+        config_data = {}  # DUPLICATE
+
+    # Run linter
+    violations = run_nesting_linter(paths, config_data)
+
+    # Format output (DUPLICATE)
+    if format == "json":  # DUPLICATE
+        print(json.dumps(violations))  # DUPLICATE
+    else:  # DUPLICATE
+        for v in violations:  # DUPLICATE
+            print(f"{v['file_path']}:{v['line']} {v['message']}")  # DUPLICATE
+
+@click.command()
+@click.argument("paths", nargs=-1, type=click.Path(exists=True))  # DUPLICATE
+@click.option("--config", type=click.Path(exists=True), help="Config file")  # DUPLICATE
+@click.option("--format", type=click.Choice(["text", "json"]), default="text")  # DUPLICATE
+def dry(paths, config, format):  # DUPLICATE SIGNATURE
+    """Run DRY linter."""
+    # Same duplicate pattern...
+```
+
+**After**:
+```python
+# src/cli_utils.py
+from typing import Callable
+import click
+
+# Common CLI options as decorators
+def common_linter_options(func: Callable) -> Callable:
+    """Add common linter CLI options.
+
+    Args:
+        func: Click command function
+
+    Returns:
+        Decorated function with common options
+    """
+    func = click.argument("paths", nargs=-1, type=click.Path(exists=True))(func)
+    func = click.option(
+        "--config",
+        type=click.Path(exists=True),
+        help="Config file path"
+    )(func)
+    func = click.option(
+        "--format",
+        type=click.Choice(["text", "json"]),
+        default="text",
+        help="Output format"
+    )(func)
+    return func
+
+def load_linter_config(config_path: str | None) -> dict:
+    """Load linter configuration.
+
+    Args:
+        config_path: Path to config file (optional)
+
+    Returns:
+        Configuration dictionary
+    """
+    if config_path:
+        return load_config(config_path)
+    return {}
+
+def format_violations(violations: list[dict], output_format: str) -> None:
+    """Format and print violations.
+
+    Args:
+        violations: List of violation dictionaries
+        output_format: Output format ("text" or "json")
+    """
+    if output_format == "json":
+        print(json.dumps(violations, indent=2))
+    else:
+        for violation in violations:
+            print(f"{violation['file_path']}:{violation['line']} {violation['message']}")
+
+# src/cli.py
+from src.cli_utils import common_linter_options, load_linter_config, format_violations
+
+@click.command()
+@common_linter_options
+def srp(paths, config, format):
+    """Run SRP linter."""
+    config_data = load_linter_config(config)
+    violations = run_srp_linter(paths, config_data)
+    format_violations(violations, format)
+
+@click.command()
+@common_linter_options
+def nesting(paths, config, format):
+    """Run nesting linter."""
+    config_data = load_linter_config(config)
+    violations = run_nesting_linter(paths, config_data)
+    format_violations(violations, format)
+
+@click.command()
+@common_linter_options
+def dry(paths, config, format):
+    """Run DRY linter."""
+    config_data = load_linter_config(config)
+    violations = run_dry_linter(paths, config_data)
+    format_violations(violations, format)
+
+# ✅ DRY: CLI pattern defined ONCE
+# ✅ Consistent: All commands have same interface
+# ✅ Maintainable: Change option in ONE place affects all commands
+# ✅ Extensible: Easy to add new linter commands
+```
+
+### DRY Refactoring Decision Tree
+
+```
+Found duplicate code?
+├─ Is it identical code? (exact duplicate)
+│  ├─ Is it < 5 lines?
+│  │  ├─ YES: Consider leaving it (too small to abstract)
+│  │  └─ NO: Extract to shared utility/helper function
+│  │
+│  └─ Does it belong to one class/module?
+│     ├─ YES: Extract private helper method in same class
+│     └─ NO: Extract to shared utility module
+│
+├─ Is it similar code with minor variations? (parametric duplication)
+│  ├─ Can differences be parameterized?
+│  │  ├─ YES: Extract function with parameters for differences
+│  │  └─ NO: Consider template method pattern or strategy pattern
+│  │
+│  └─ Are variations based on type/category?
+│     ├─ YES: Use dictionary/mapping or generic class
+│     └─ NO: Keep separate (variation is significant)
+│
+└─ Is it conceptual duplication? (same idea, different implementation)
+   ├─ Should implementations be unified?
+   │  ├─ YES: Create common abstraction (base class/interface)
+   │  └─ NO: Document why implementations differ
+   │
+   └─ Is it acceptable duplication?
+      ├─ Test fixtures: YES (test isolation is more important)
+      ├─ Constants/configs: YES (local clarity over DRY)
+      ├─ __init__ methods: YES (explicit initialization preferred)
+      └─ Otherwise: NO (refactor to eliminate duplication)
+```
+
+### Acceptable Duplication
+
+Not all duplication should be eliminated. Some cases are better left duplicated:
+
+**1. Test Code**:
+```python
+# tests/test_user.py
+def test_create_user():
+    """Test user creation."""
+    user_data = {"email": "test@example.com", "name": "Test"}  # Test data
+    result = create_user(user_data)
+    assert result["email"] == "test@example.com"
+
+# tests/test_admin.py
+def test_create_admin():
+    """Test admin creation."""
+    admin_data = {"email": "admin@example.com", "name": "Admin"}  # Similar data
+    result = create_admin(admin_data)
+    assert result["email"] == "admin@example.com"
+
+# ✅ Keep duplicated: Test isolation is more important than DRY
+# Each test should be independently understandable
+```
+
+**2. Constants and Configuration**:
+```python
+# src/services/user_service.py
+MAX_NAME_LENGTH = 255  # User-specific constant
+
+# src/services/product_service.py
+MAX_NAME_LENGTH = 255  # Product-specific constant
+
+# ✅ Keep duplicated: Local clarity over global constant
+# These might diverge in the future (users vs products)
+```
+
+**3. Import Statements**:
+```python
+# Multiple files importing the same modules
+from pathlib import Path
+import json
+
+# ✅ Keep duplicated: Each file should explicitly import what it needs
+```
+
+**4. Initialization Boilerplate**:
+```python
+class UserRepository:
+    """User data repository."""
+    def __init__(self, db_connection):
+        """Initialize with database connection."""
+        self.db = db_connection
+
+class ProductRepository:
+    """Product data repository."""
+    def __init__(self, db_connection):
+        """Initialize with database connection."""
+        self.db = db_connection
+
+# ✅ Keep duplicated: Explicit initialization is clearer than magical base class
+# Unless you have 10+ repositories, then consider base class
+```
+
+### When to Ignore DRY Violations
+
+Configure `.thailint.yaml` to ignore acceptable duplications:
+
+```yaml
+dry:
+  enabled: true
+  min_duplicate_lines: 3
+  min_duplicate_tokens: 30
+
+  # Ignore patterns
+  ignore:
+    - "tests/"              # Test code often has acceptable duplication
+    - "__init__.py"         # Import-only files
+    - "conftest.py"         # Test fixtures
+    - "**/fixtures/**"      # Test fixture files
+    - "**/*_test_data.py"   # Test data files
+```
+
+Alternatively, use inline comments to suppress false positives:
+
+```python
+# This pattern is intentionally duplicated for clarity
+# dry: disable-next
+def calculate_user_discount(user):
+    if user.is_vip:
+        return 0.20
+    return 0.10
+```
+
+---
+
 ## Anti-Patterns to Avoid
 
 ### Anti-Pattern 1: Over-Splitting
@@ -1221,6 +1961,8 @@ Before committing:
 - [ ] Radon average complexity is **< 5.0 per file**
 - [ ] `make lint-solid` exits with code 0
 - [ ] No SRP violations flagged
+- [ ] `make lint-dry` exits with code 0
+- [ ] No duplicate code violations
 - [ ] `make test` exits with code 0
 - [ ] All tests still pass
 
