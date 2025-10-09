@@ -442,14 +442,14 @@ repos:
       # Auto-format code
       - id: format
         name: Auto-fix formatting
-        entry: make format
+        entry: just format
         language: system
         pass_filenames: false
 
       # Run thailint on changed files
       - id: lint-changed
         name: Lint changed files
-        entry: make lint-full FILES=changed
+        entry: just lint-full FILES=changed
         language: system
         pass_filenames: false
 ```

@@ -15,7 +15,7 @@
 
 **Total Violations**: 6
 **Date Discovered**: 2025-10-08
-**Command Used**: `make lint-srp`
+**Command Used**: `just lint-srp`
 
 ### Violation Distribution by Severity
 
@@ -266,9 +266,9 @@ Just slightly over the threshold. Handles:
 ## Success Criteria for PR5
 
 - [ ] All 6 violations resolved
-- [ ] `make lint-srp` exits with code 0 (zero violations)
-- [ ] `make test` exits with code 0 (no broken functionality)
-- [ ] `make lint-full` exits with code 0 (all quality gates pass)
+- [ ] `just lint-srp` exits with code 0 (zero violations)
+- [ ] `just test` exits with code 0 (no broken functionality)
+- [ ] `just lint-full` exits with code 0 (all quality gates pass)
 - [ ] Test coverage maintained or improved (>85%)
 - [ ] No new complexity violations introduced
 

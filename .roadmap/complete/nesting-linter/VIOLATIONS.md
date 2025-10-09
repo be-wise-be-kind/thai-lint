@@ -466,14 +466,14 @@ try:
 
 ### PR5 Completion Criteria
 - ✅ 9 functions refactored from depth 4 → depth 3
-- ✅ All tests pass (make test exits with code 0)
-- ✅ make lint-full exits with code 0
-- ✅ make lint-nesting shows 9 violations (down from 18)
+- ✅ All tests pass (just test exits with code 0)
+- ✅ just lint-full exits with code 0
+- ✅ just lint-nesting shows 9 violations (down from 18)
 - ✅ No functionality broken (integration tests pass)
 
 ### PR6 Completion Criteria
 - ✅ All 18 functions at depth ≤ 3
-- ✅ make lint-nesting exits with code 0 (zero violations)
+- ✅ just lint-nesting exits with code 0 (zero violations)
 - ✅ All tests pass
 - ✅ Documentation complete (README.md, docs/nesting-linter.md)
 - ✅ Refactoring patterns documented

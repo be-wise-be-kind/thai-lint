@@ -135,9 +135,9 @@ roadmaps:
 
 commands:
   # Will be added as tooling is installed
-  # test: make test
-  # lint: make lint
-  # format: make format
+  # test: just test
+  # lint: just lint
+  # format: just format
   # cli: python -m src.cli
 
 key_files:

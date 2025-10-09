@@ -187,7 +187,7 @@ Optional:
 
 Start the development server:
 ```bash
-make dev
+just dev
 ```
 
 Access the application:
@@ -219,12 +219,12 @@ curl -X PATCH http://localhost:8000/api/v1/tasks/1 \
 ### Common Commands
 
 ```bash
-make dev              # Start development environment
-make test             # Run all tests
-make lint             # Run linting
-make format           # Format code
-make migrate          # Run database migrations
-make seed             # Seed database with sample data
+just dev              # Start development environment
+just test             # Run all tests
+just lint             # Run linting
+just format           # Format code
+just migrate          # Run database migrations
+just seed             # Seed database with sample data
 ```
 
 
@@ -291,10 +291,10 @@ project/
 
 ```bash
 # Run all tests
-make test
+just test
 
 # Run with coverage
-make test-coverage
+just test-coverage
 
 # Run specific test file
 poetry run pytest tests/unit/test_tasks.py
@@ -313,16 +313,16 @@ This project follows:
 
 ```bash
 # Linting
-make lint
+just lint
 
 # Auto-fix issues
-make lint-fix
+just lint-fix
 
 # Type checking
-make typecheck
+just typecheck
 
 # Security scanning
-make security-scan
+just security-scan
 ```
 
 ### Git Workflow
@@ -766,9 +766,9 @@ taskflow/
 ## Development
 
 ```bash
-make dev          # Start dev environment
-make test         # Run tests
-make lint         # Lint code
+just dev          # Start dev environment
+just test         # Run tests
+just lint         # Lint code
 ```
 
 See [Development Guide](docs/DEVELOPMENT.md) for details.

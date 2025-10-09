@@ -10,7 +10,7 @@
     linting passes with exit code 0 and Pylint reaches exactly 10.00/10. Does not cover complexity or
     SRP violations - see how-to-refactor-for-quality.md for architectural refactoring.
 
-**Dependencies**: make lint-full, poetry, ruff, flake8, pylint, mypy, bandit, pip-audit
+**Dependencies**: just lint-full, poetry, ruff, flake8, pylint, mypy, bandit, pip-audit
 
 **Exports**: Clean code passing all basic linting checks, ready for architectural refactoring if needed
 
@@ -25,16 +25,16 @@
 Basic linting fixes are **objective and mechanical** - they have clear right/wrong answers and don't require architectural decisions. Fix these first before tackling complexity or SRP violations.
 
 **The Process**:
-1. Run `make lint-full` to see all violations
+1. Run `just lint-full` to see all violations
 2. Fix violations in priority order (style → security → types → pylint)
-3. Run `make lint-full` again to verify
-4. Run `make test` to ensure nothing broke
+3. Run `just lint-full` again to verify
+4. Run `just test` to ensure nothing broke
 5. Repeat until clean
 
 **Success Criteria**:
-- `make lint-full` exits with code 0
+- `just lint-full` exits with code 0
 - Pylint score is exactly 10.00/10
-- All tests pass (`make test` exits with code 0)
+- All tests pass (`just test` exits with code 0)
 
 ---
 
@@ -44,7 +44,7 @@ Basic linting fixes are **objective and mechanical** - they have clear right/wro
 
 ```bash
 # Run full linting to see all violations
-make lint-full
+just lint-full
 
 # Check exit code
 echo $?
@@ -62,8 +62,8 @@ Follow the priority order below. Don't skip ahead - each phase builds on the pre
 
 ```bash
 # After fixing each priority level, validate
-make lint-full
-make test
+just lint-full
+just test
 
 # Both must exit with code 0
 ```
@@ -71,7 +71,7 @@ make test
 ### Step 4: Repeat Until Clean
 
 Continue the cycle until:
-- `make lint-full` shows no violations
+- `just lint-full` shows no violations
 - Exit code is 0
 - Pylint shows 10.00/10
 - Tests all pass
@@ -88,7 +88,7 @@ Continue the cycle until:
 
 ```bash
 # Auto-fix most style issues
-make format
+just format
 
 # This runs:
 # - ruff format (fixes formatting)
@@ -234,7 +234,7 @@ poetry run flake8 src/ tests/
 
 ```bash
 # Run security linting
-make lint-security
+just lint-security
 
 # This runs:
 # - Bandit (code security issues)
@@ -765,7 +765,7 @@ poetry run pylint src/
 | Line too long | Ruff E501 | Break into multiple lines |
 | Unused import | Ruff F401 | Remove import |
 | Missing import | Ruff F821 | Add import |
-| Import order | Ruff I001 | Run `make format` |
+| Import order | Ruff I001 | Run `just format` |
 | Hardcoded password | Bandit B105 | Use environment variables |
 | SQL injection | Bandit B608 | Use parameterized queries |
 | Shell injection | Bandit B601 | Use subprocess with list args |
@@ -785,7 +785,7 @@ poetry run pylint src/
 
 ```bash
 # See all violations
-make lint-full > lint-output.txt 2>&1
+just lint-full > lint-output.txt 2>&1
 
 # Check output and note:
 # - How many Ruff/Flake8 violations?
@@ -798,36 +798,36 @@ make lint-full > lint-output.txt 2>&1
 
 ```bash
 # Phase 1: Style
-make format
+just format
 poetry run ruff check src/ tests/
 poetry run flake8 src/ tests/
-make test  # Ensure nothing broke
+just test  # Ensure nothing broke
 
 # Phase 2: Security
 poetry run bandit -r src/
 # Fix violations
-make test  # Ensure nothing broke
+just test  # Ensure nothing broke
 
 # Phase 3: Types
 poetry run mypy src/
 # Fix violations
-make test  # Ensure nothing broke
+just test  # Ensure nothing broke
 
 # Phase 4: Pylint
 poetry run pylint src/
 # Fix violations until 10.00/10
-make test  # Ensure nothing broke
+just test  # Ensure nothing broke
 ```
 
 ### Final Validation
 
 ```bash
 # Run everything
-make lint-full
+just lint-full
 echo "Exit code: $?"  # Must be 0
 
 # Run tests
-make test
+just test
 echo "Exit code: $?"  # Must be 0
 
 # Check Pylint score
@@ -837,9 +837,9 @@ echo "Exit code: $?"  # Must be 0
 ### Commit
 
 Only commit when:
-- `make lint-full` exits with code 0
+- `just lint-full` exits with code 0
 - Pylint shows exactly 10.00/10
-- `make test` exits with code 0
+- `just test` exits with code 0
 
 ```bash
 git add .
@@ -857,7 +857,7 @@ This guide covers **objective, mechanical linting fixes**. It does NOT cover:
 - **DRY violations** (duplicate code) - See `how-to-refactor-for-quality.md`
 - **Architectural refactoring** - See `how-to-refactor-for-quality.md`
 
-If `make lint-complexity`, `make lint-solid`, or `make lint-dry` show violations, complete this guide first, then proceed to architectural refactoring.
+If `just lint-complexity`, `just lint-solid`, or `just lint-dry` show violations, complete this guide first, then proceed to architectural refactoring.
 
 ---
 
@@ -1289,7 +1289,7 @@ Before committing refactored code, verify:
 - [ ] Did I refactor ALL instances, not just some?
 - [ ] Did I create any new parallel structures?
 - [ ] Can my extracted code be parameterized further?
-- [ ] Run `make lint-dry` - did violations decrease or increase?
+- [ ] Run `just lint-dry` - did violations decrease or increase?
 - [ ] Review the NEW code for potential duplication patterns
 
 ### Success Metrics
@@ -1336,7 +1336,7 @@ When tests fail, you own them. Period. The excuses below are NOT acceptable:
 - ❌ "This was broken by someone else"
 - ❌ "These failures are in a different area of the codebase"
 
-**The Rule**: If `make test` fails, you fix the tests until it passes. You leave the codebase in a better state than you found it.
+**The Rule**: If `just test` fails, you fix the tests until it passes. You leave the codebase in a better state than you found it.
 
 **Steps to fix broken tests:**
 
@@ -1349,11 +1349,11 @@ When tests fail, you own them. Period. The excuses below are NOT acceptable:
    - Update test expectations to match correct behavior
    - Fix any bugs your changes revealed
    - If the linting fix was wrong, revert and find a better approach
-4. Verify: `make test` must exit with code 0
+4. Verify: `just test` must exit with code 0
 
 ### "Auto-fix made things worse!"
 
-Sometimes `make format` introduces issues:
+Sometimes `just format` introduces issues:
 
 1. Review changes: `git diff`
 2. If bad, revert: `git checkout -- src/file.py`
@@ -1365,9 +1365,9 @@ Sometimes `make format` introduces issues:
 
 Before moving to architectural refactoring:
 
-- [ ] `make lint-full` exits with code 0
+- [ ] `just lint-full` exits with code 0
 - [ ] Pylint score is exactly 10.00/10
-- [ ] `make test` exits with code 0
+- [ ] `just test` exits with code 0
 - [ ] No Ruff violations
 - [ ] No Flake8 violations
 - [ ] No Bandit security issues
@@ -1382,7 +1382,7 @@ Before moving to architectural refactoring:
 
 After completing basic linting:
 
-1. **If `make lint-complexity` passes**, **`make lint-solid` passes**, and **`make lint-dry` passes**:
+1. **If `just lint-complexity` passes**, **`just lint-solid` passes**, and **`just lint-dry` passes**:
    - You're done! Commit your changes.
 
 2. **If complexity, SRP, or DRY violations remain**:
@@ -1390,7 +1390,7 @@ After completing basic linting:
    - Follow the architectural refactoring guide
 
 3. **Before committing**:
-   - Run `make lint-full && make test`
+   - Run `just lint-full && just test`
    - Both must exit with code 0
    - See `AGENTS.md` Quality Gates section
 

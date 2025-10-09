@@ -538,17 +538,17 @@ poetry run pytest -v && echo "✅ Tests pass" || echo "❌ Tests fail"
    ## Quick Start
 
    1. **Install dependencies**: `make install`
-   2. **Run linter**: `make lint`
-   3. **Run tests**: `make test`
-   4. **Format code**: `make format`
+   2. **Run linter**: `just lint`
+   3. **Run tests**: `just test`
+   4. **Format code**: `just format`
 
    ## Development Workflow
 
    1. Create feature branch: `git checkout -b feature/your-feature`
    2. Make changes to source code in `src/`
    3. Add tests in `tests/`
-   4. Run quality checks: `make lint-full`
-   5. Run tests: `make test-coverage`
+   4. Run quality checks: `just lint-full`
+   5. Run tests: `just test-coverage`
    6. Commit changes (pre-commit hooks will run)
    7. Create PR for review
 
@@ -562,14 +562,14 @@ poetry run pytest -v && echo "✅ Tests pass" || echo "❌ Tests fail"
 
    ## Make Targets
 
-   - `make lint` - Fast linting (Ruff - for development)
-   - `make lint-all` - Comprehensive linting (all linters + type checking)
-   - `make lint-security` - Security scanning (Bandit, Safety, pip-audit)
-   - `make lint-complexity` - Complexity analysis (Radon, Xenon)
-   - `make lint-full` - ALL quality checks
-   - `make format` - Auto-fix formatting issues
-   - `make test` - Run tests
-   - `make test-coverage` - Run tests with coverage
+   - `just lint` - Fast linting (Ruff - for development)
+   - `just lint-all` - Comprehensive linting (all linters + type checking)
+   - `just lint-security` - Security scanning (Bandit, Safety, pip-audit)
+   - `just lint-complexity` - Complexity analysis (Radon, Xenon)
+   - `just lint-full` - ALL quality checks
+   - `just format` - Auto-fix formatting issues
+   - `just test` - Run tests
+   - `just test-coverage` - Run tests with coverage
 
    ## Adding New Features
 
@@ -584,7 +584,7 @@ poetry run pytest -v && echo "✅ Tests pass" || echo "❌ Tests fail"
    2. **All operations in Poetry venv** - Keeps dependencies isolated
    3. **Pre-commit hooks required** - Quality gates before commits
    4. **Tests required** - All features need test coverage
-   5. **Security scanning** - Run `make lint-security` before PRs
+   5. **Security scanning** - Run `just lint-security` before PRs
 
    ## Next Development Steps
 
@@ -618,10 +618,10 @@ poetry run pytest -v && echo "✅ Tests pass" || echo "❌ Tests fail"
 4. **Final validation**:
    ```bash
    # Run all quality checks
-   make lint-full
+   just lint-full
 
    # Run tests
-   make test-coverage
+   just test-coverage
 
    # Build Docker container
    docker compose build
@@ -648,8 +648,8 @@ test -f AGENTS.md && echo "✅ AGENTS.md" || echo "❌ Missing AGENTS.md"
 
 # Verify all make targets work
 make help && echo "✅ Makefile help" || echo "❌ Makefile help failed"
-make lint && echo "✅ lint target" || echo "❌ lint failed"
-make test && echo "✅ test target" || echo "❌ test failed"
+just lint && echo "✅ lint target" || echo "❌ lint failed"
+just test && echo "✅ test target" || echo "❌ test failed"
 
 # Verify Docker
 docker compose build && echo "✅ Docker build" || echo "❌ Docker build failed"
@@ -742,7 +742,7 @@ After completing each PR:
 
 **Dependency Scanning**:
 - Safety and pip-audit scan for CVEs
-- Run before releases: `make lint-security`
+- Run before releases: `just lint-security`
 - Update vulnerable dependencies immediately
 
 **Container Security**:

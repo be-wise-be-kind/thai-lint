@@ -39,5 +39,8 @@ jobs:
       - name: Install project
         run: poetry install --no-interaction
 
-      - name: Run all linters (make lint-full)
-        run: make lint-full
+      - name: Install just
+        uses: extractions/setup-just@v2
+
+      - name: Run all linters (just lint-full)
+        run: just lint-full

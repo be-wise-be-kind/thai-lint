@@ -183,7 +183,7 @@ class UserAccountDataManager:  # Keyword violation ("Manager")
 
 #### Developer Workflow
 1. Write code (or AI generates code)
-2. Run `thai-lint srp .` or `make lint-srp`
+2. Run `thai-lint srp .` or `just lint-srp`
 3. See violations with specific metrics:
    ```
    src/services/user_manager.py:15:0
@@ -200,7 +200,7 @@ class UserAccountDataManager:  # Keyword violation ("Manager")
 ```yaml
 # .github/workflows/quality.yml
 - name: Run SRP Linter
-  run: make lint-srp
+  run: just lint-srp
   # Fails build if violations found
 ```
 
@@ -364,7 +364,7 @@ violations = rule.check(context)
 - Catches large classes (200+ LOC)
 - Catches keyword violations ("Manager", "Handler")
 - Provides actionable refactoring suggestions
-- Integrated into make lint-full
+- Integrated into just lint-full
 
 ### Quality Metrics
 - thai-lint codebase has zero SRP violations
@@ -405,7 +405,7 @@ violations = rule.check(context)
 3. Use tree-sitter for TypeScript classes
 4. Keep heuristics simple and fast
 5. Provide helpful violation messages with suggestions
-6. Ensure make lint-full passes (Pylint 10.00/10, Xenon A-grade)
+6. Ensure just lint-full passes (Pylint 10.00/10, Xenon A-grade)
 
 ### When Integrating (PR3)
 1. Follow CLI pattern from nesting linter

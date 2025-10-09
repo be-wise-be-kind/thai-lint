@@ -169,10 +169,10 @@ See `.ai/docs/FILE_HEADER_STANDARDS.md` for complete templates and examples.
 ### Development
 ```bash
 # Install dependencies
-make install
+just install
 
 # Run linter (fast - for development)
-make lint
+just lint
 
 # Run CLI help
 python -m src.cli --help
@@ -181,34 +181,34 @@ python -m src.cli --help
 ### Testing
 ```bash
 # Run tests
-make test
+just test
 
 # Run tests with coverage
-make test-coverage
+just test-coverage
 ```
 
 ### Linting
 ```bash
 # Fast linting (Ruff only)
-make lint
+just lint
 
 # Comprehensive linting (all linters + type checking)
-make lint-all
+just lint-all
 
 # Security scanning
-make lint-security
+just lint-security
 
 # Complexity analysis
-make lint-complexity
+just lint-complexity
 
 # ALL quality checks
-make lint-full
+just lint-full
 ```
 
 ### Formatting
 ```bash
 # Auto-fix formatting and linting issues
-make format
+just format
 ```
 
 ### Building
@@ -242,8 +242,8 @@ Types: `feat`, `fix`, `docs`, `style`, `refactor`, `test`, `chore`
 - `fix/*` - Bug fixes
 
 ### Before Committing
-- [ ] All tests pass (`make test` exits with code 0)
-- [ ] Code is linted (`make lint-full` exits with code 0)
+- [ ] All tests pass (`just test` exits with code 0)
+- [ ] Code is linted (`just lint-full` exits with code 0)
 - [ ] **All files have proper headers per `.ai/docs/FILE_HEADER_STANDARDS.md`**
 - [ ] Documentation updated
 - [ ] No secrets committed (pre-commit hooks check this)
@@ -256,7 +256,7 @@ Types: `feat`, `fix`, `docs`, `style`, `refactor`, `test`, `chore`
 
 **NEVER claim linting is clean unless ALL of these are true:**
 
-1. ✅ `make lint-full` exits with **code 0** - not 1, not 2, exactly 0
+1. ✅ `just lint-full` exits with **code 0** - not 1, not 2, exactly 0
 2. ✅ Pylint score is **exactly 10.00/10** - not 9.98, not "close enough", exactly 10.00
 3. ✅ **ALL Xenon complexity checks pass** - EVERY block must be A-grade (not B, not "acceptable complexity")
 4. ✅ **ZERO test failures** - failing tests mean the feature is broken
@@ -287,12 +287,12 @@ Types: `feat`, `fix`, `docs`, `style`, `refactor`, `test`, `chore`
 5. ❌ **"The exit code is non-zero but the output looks okay"**
    - Exit code 0 is the ONLY acceptable result
    - Visual inspection of output is NOT a substitute for checking exit codes
-   - Use `make lint-full && echo "SUCCESS" || echo "FAILED"` to verify
+   - Use `just lint-full && echo "SUCCESS" || echo "FAILED"` to verify
 
 **Correct Validation Process:**
 ```bash
 # Step 1: Run full linting (must exit with code 0)
-make lint-full
+just lint-full
 if [ $? -ne 0 ]; then
     echo "FAILED - must fix all issues"
     exit 1
@@ -307,7 +307,7 @@ fi
 # NOT: "only B-grade" or "acceptable complexity"
 
 # Step 4: Run tests (must exit with code 0)
-make test
+just test
 if [ $? -ne 0 ]; then
     echo "FAILED - must fix all tests"
     exit 1
@@ -416,7 +416,7 @@ You MUST:
 5. Wait for approval
 
 **The Bottom Line:**
-If `make lint-full` exits with non-zero code, if Pylint shows < 10.00/10, if Xenon shows ANY errors, or if tests fail - **your code is not ready to commit**. Period. No excuses, no rationalizations, no "but this was pre-existing" - fix it before committing.
+If `just lint-full` exits with non-zero code, if Pylint shows < 10.00/10, if Xenon shows ANY errors, or if tests fail - **your code is not ready to commit**. Period. No excuses, no rationalizations, no "but this was pre-existing" - fix it before committing.
 
 ---
 
@@ -426,7 +426,7 @@ If `make lint-full` exits with non-zero code, if Pylint shows < 10.00/10, if Xen
 
 Enter systematic linting mode when:
 
-1. **`make lint-full` shows violations** - Any non-zero exit code requires fixing
+1. **`just lint-full` shows violations** - Any non-zero exit code requires fixing
 2. **Pre-commit hooks fail** - Hooks are your first quality gate
 3. **PR checks fail** - CI/CD caught issues you missed locally
 4. **Working on existing code with issues** - You touched it, you own it
@@ -450,8 +450,8 @@ Enter systematic linting mode when:
 - Pylint violations (docstrings, naming, etc.)
 
 **Success Criteria**:
-- `make lint` exits with code 0
-- `make lint-security` exits with code 0
+- `just lint` exits with code 0
+- `just lint-security` exits with code 0
 - MyPy shows no errors
 - Pylint score is exactly 10.00/10
 - All tests pass
@@ -459,14 +459,14 @@ Enter systematic linting mode when:
 **Process**:
 ```bash
 # Run basic linting
-make lint
-make lint-security
+just lint
+just lint-security
 poetry run mypy src/
 poetry run pylint src/
 
 # Fix violations following the howto guide
 # Validate after each fix
-make test  # Ensure nothing broke
+just test  # Ensure nothing broke
 ```
 
 #### Phase 2: Architectural Refactoring (Design Decisions)
@@ -482,30 +482,30 @@ make test  # Ensure nothing broke
 - Architectural improvements
 
 **Success Criteria**:
-- `make lint-complexity` exits with code 0
+- `just lint-complexity` exits with code 0
 - ALL code is A-grade (Xenon shows no errors)
-- `make lint-solid` exits with code 0
+- `just lint-solid` exits with code 0
 - No SRP violations
 - All tests pass
 
 **Process**:
 ```bash
 # Run architectural linting
-make lint-complexity
-make lint-solid
+just lint-complexity
+just lint-solid
 
 # Analyze violations together (don't fix sequentially)
 # Follow decision tree in howto guide
 # Refactor with both constraints in mind
-make test  # Ensure nothing broke
+just test  # Ensure nothing broke
 ```
 
 ### Critical Rule: Never Commit Until BOTH Phases Pass
 
 ```bash
 # Final validation before commit
-make lint-full   # Must exit with code 0
-make test        # Must exit with code 0
+just lint-full   # Must exit with code 0
+just test        # Must exit with code 0
 
 # Look for:
 # - Pylint: "Your code has been rated at 10.00/10"
@@ -522,25 +522,25 @@ git commit -m "fix: Resolve all quality issues"
 
 ```bash
 # 1. Run full linting to assess
-make lint-full > lint-output.txt 2>&1
+just lint-full > lint-output.txt 2>&1
 less lint-output.txt
 
 # 2. Phase 1: Fix basic linting
 # Follow: .ai/howtos/how-to-fix-linting-errors.md
-make format  # Auto-fix style
+just format  # Auto-fix style
 # Fix remaining issues manually
-make lint
-make test
+just lint
+just test
 
 # 3. Phase 2: Fix architecture (if needed)
 # Follow: .ai/howtos/how-to-refactor-for-quality.md
-make lint-complexity
-make lint-solid
+just lint-complexity
+just lint-solid
 # Refactor holistically
-make test
+just test
 
 # 4. Final validation
-make lint-full && make test
+just lint-full && just test
 # Both must exit with code 0
 
 # 5. Commit
@@ -571,7 +571,7 @@ See `.ai/howtos/how-to-refactor-for-quality.md` for decision trees and examples.
 
 This systematic linting approach supports the Quality Gates requirements:
 
-- **Quality Gate 1**: `make lint-full` exits with code 0
+- **Quality Gate 1**: `just lint-full` exits with code 0
   - Achieved through Phase 1 + Phase 2 completion
 - **Quality Gate 2**: Pylint score exactly 10.00/10
   - Achieved through Phase 1 (basic linting)
@@ -586,13 +586,13 @@ This systematic linting approach supports the Quality Gates requirements:
 
 | Violation Type | Phase | Howto Guide | Command |
 |---------------|-------|-------------|---------|
-| Style, imports, formatting | Phase 1 | how-to-fix-linting-errors.md | `make lint` |
-| Security issues | Phase 1 | how-to-fix-linting-errors.md | `make lint-security` |
+| Style, imports, formatting | Phase 1 | how-to-fix-linting-errors.md | `just lint` |
+| Security issues | Phase 1 | how-to-fix-linting-errors.md | `just lint-security` |
 | Type errors | Phase 1 | how-to-fix-linting-errors.md | `poetry run mypy src/` |
 | Pylint violations | Phase 1 | how-to-fix-linting-errors.md | `poetry run pylint src/` |
-| Complexity (Xenon) | Phase 2 | how-to-refactor-for-quality.md | `make lint-complexity` |
-| SRP violations | Phase 2 | how-to-refactor-for-quality.md | `make lint-solid` |
-| Nesting depth | Phase 2 | how-to-refactor-for-quality.md | `make lint-complexity` |
+| Complexity (Xenon) | Phase 2 | how-to-refactor-for-quality.md | `just lint-complexity` |
+| SRP violations | Phase 2 | how-to-refactor-for-quality.md | `just lint-solid` |
+| Nesting depth | Phase 2 | how-to-refactor-for-quality.md | `just lint-complexity` |
 
 ---
 
@@ -602,7 +602,7 @@ This systematic linting approach supports the Quality Gates requirements:
 - Secrets should be in `.env` (gitignored)
 - Validate user input
 - Security scanning runs automatically (Bandit, Safety, Gitleaks)
-- Run `make lint-security` before PRs
+- Run `just lint-security` before PRs
 
 ## Common Tasks
 
@@ -612,7 +612,7 @@ This systematic linting approach supports the Quality Gates requirements:
 3. Implement feature following code style guidelines
 4. Add tests in `tests/`
 5. Update documentation
-6. Run quality checks: `make lint-full`
+6. Run quality checks: `just lint-full`
 7. Submit PR
 
 ### Adding a New CLI Command

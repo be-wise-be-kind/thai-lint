@@ -407,7 +407,7 @@ class SRPRule(BaseLintRule):
 - [ ] Python SRP detection accurate
 - [ ] TypeScript SRP detection accurate
 - [ ] Configurable thresholds working
-- [ ] make lint-full exits code 0
+- [ ] just lint-full exits code 0
 
 ### Files Created
 ```
@@ -472,7 +472,7 @@ Test all three deployment modes work end-to-end.
 - [ ] CLI command works
 - [ ] Library API works
 - [ ] Docker deployment works
-- [ ] make lint-full exits code 0
+- [ ] just lint-full exits code 0
 
 ---
 
@@ -485,7 +485,7 @@ Test all three deployment modes work end-to-end.
 ### Implementation Steps
 
 1. Update `.thailint.yaml` with SRP config
-2. Create `make lint-srp` target
+2. Create `just lint-srp` target
 3. Run linter and catalog all violations
 4. Categorize by difficulty
 5. Plan refactoring approach
@@ -493,8 +493,8 @@ Test all three deployment modes work end-to-end.
 ### Success Criteria
 - [ ] All violations cataloged in VIOLATIONS.md
 - [ ] Refactoring plan created
-- [ ] make test exits code 0
-- [ ] make lint-srp finds violations (expected)
+- [ ] just test exits code 0
+- [ ] just lint-srp finds violations (expected)
 
 ---
 
@@ -511,9 +511,9 @@ Test all three deployment modes work end-to-end.
 4. Apply Composition
 
 ### Success Criteria
-- [ ] **make lint-srp exits code 0 (ZERO violations) ← CRITICAL**
-- [ ] make test exits code 0 (no broken functionality)
-- [ ] make lint-full exits code 0
+- [ ] **just lint-srp exits code 0 (ZERO violations) ← CRITICAL**
+- [ ] just test exits code 0 (no broken functionality)
+- [ ] just lint-full exits code 0
 
 ---
 

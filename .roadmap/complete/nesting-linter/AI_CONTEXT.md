@@ -718,7 +718,7 @@ thai lint nesting src/ > violations.txt
 **Verification**:
 ```bash
 # After each fix
-make test           # Must pass
+just test           # Must pass
 thai lint nesting   # Should show progress
 ```
 

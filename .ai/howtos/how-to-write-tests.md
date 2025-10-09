@@ -48,10 +48,10 @@ tests/
 
 ```bash
 # Run all tests
-make test
+just test
 
 # Run tests with coverage
-make test-coverage
+just test-coverage
 
 # Run specific test file
 pytest tests/unit/utils/test_project_root.py
@@ -79,7 +79,7 @@ pytest -k "project_root"
 
 - Minimum 80% code coverage
 - New code should have 100% coverage
-- Check coverage report: `make test-coverage`
+- Check coverage report: `just test-coverage`
 
 ## Writing Tests
 
@@ -527,7 +527,7 @@ def test_python_file_parsing():
 
 ```bash
 # Tests must exit with code 0
-make test
+just test
 if [ $? -ne 0 ]; then
     echo "FAILED - fix all tests before committing"
     exit 1
@@ -543,7 +543,7 @@ Test code follows the same quality standards as production code:
 
 ```bash
 # Lint tests
-make lint-full
+just lint-full
 ```
 
 ### Coverage Requirements
@@ -554,7 +554,7 @@ make lint-full
 
 ```bash
 # Check coverage
-make test-coverage
+just test-coverage
 
 # View HTML coverage report
 open htmlcov/index.html

@@ -8,7 +8,7 @@
 # Interfaces: Triggered automatically on git commit and git push, can be run manually with pre-commit run
 # Environment: Development, requires Poetry virtualenv with all dev dependencies installed
 # Related: Makefile (format, lint-full with FILES=changed, test targets)
-# Implementation: Branch protection, format, then make lint-full FILES=changed (pre-commit) or make lint-full + test (pre-push)
+# Implementation: Branch protection, format, then just lint-full FILES=changed (pre-commit) or just lint-full + test (pre-push)
 
 repos:
   - repo: local
@@ -29,14 +29,14 @@ repos:
       # ============================================================================
       - id: format
         name: Auto-fix formatting issues
-        entry: make format
+        entry: just format
         language: system
         pass_filenames: false
         stages: [pre-commit]
 
       - id: lint-full-changed
         name: Run all linting checks (changed files only)
-        entry: make lint-full FILES=changed
+        entry: just lint-full changed
         language: system
         pass_filenames: false
         stages: [pre-commit]
@@ -46,7 +46,7 @@ repos:
       # ============================================================================
       - id: pre-push-lint-full
         name: Run all linting checks (entire codebase)
-        entry: make lint-full
+        entry: just lint-full
         language: system
         pass_filenames: false
         stages: [pre-push]
@@ -54,7 +54,7 @@ repos:
 
       - id: pre-push-test
         name: Run all tests
-        entry: make test
+        entry: just test
         language: system
         pass_filenames: false
         stages: [pre-push]

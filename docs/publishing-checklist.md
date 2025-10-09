@@ -10,7 +10,7 @@
 
 ## Pre-Publication Checklist
 
-Before running `make publish`, ensure:
+Before running `just publish`, ensure:
 
 ### Version Management
 - [ ] Version bumped in `pyproject.toml`
@@ -20,8 +20,8 @@ Before running `make publish`, ensure:
 - [ ] Working directory is clean (`git status`)
 
 ### Quality Gates
-- [ ] All tests pass: `make test` exits with code 0
-- [ ] All linting passes: `make lint-full` exits with code 0
+- [ ] All tests pass: `just test` exits with code 0
+- [ ] All linting passes: `just lint-full` exits with code 0
 - [ ] No uncommitted changes that should be included
 - [ ] Branch is up to date with remote
 
@@ -40,21 +40,21 @@ Before running `make publish`, ensure:
 
 ```bash
 # Publishes to both registries with full quality gates
-make publish
+just publish
 ```
 
 ### Option 2: Publish to PyPI Only
 
 ```bash
 # Publishes only to PyPI
-make publish-pypi
+just publish-pypi
 ```
 
 ### Option 3: Publish to Docker Hub Only
 
 ```bash
 # Publishes only to Docker Hub
-make publish-docker
+just publish-docker
 ```
 
 ---
@@ -688,7 +688,7 @@ vim pyproject.toml  # Update version
 vim CHANGELOG.md
 
 # 4. Publish hotfix
-make publish
+just publish
 ```
 
 ---

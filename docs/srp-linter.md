@@ -879,7 +879,7 @@ class LegacyAdapter:
 Use SRP linter alongside nesting and complexity linters:
 
 ```bash
-make lint-full  # Includes SRP, nesting, complexity, security
+just lint-full  # Includes SRP, nesting, complexity, security
 ```
 
 ### 5. Regular Refactoring

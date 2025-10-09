@@ -114,7 +114,7 @@ tests/
 **Developer contributing to thai-lint**:
 1. Clone repository
 2. Run `make install` (Poetry installs deps in isolated venv)
-3. Develop features using `make test`, `make lint`, `make format`
+3. Develop features using `just test`, `just lint`, `just format`
 4. Pre-commit hooks ensure quality before commits
 5. CI/CD runs comprehensive checks on PR
 6. Release automation publishes to PyPI + Docker Hub
@@ -133,14 +133,14 @@ tests/
 - **Xenon**: Complexity threshold enforcement
 
 **Make Targets** (composite for clean namespace):
-- `make lint` - Fast linting (Ruff only - for development)
-- `make lint-all` - Comprehensive (Ruff + Pylint + Flake8 + MyPy)
-- `make lint-security` - Security scans (Bandit + Safety + pip-audit)
-- `make lint-complexity` - Complexity analysis (Radon + Xenon)
-- `make lint-full` - All quality checks combined
-- `make format` - Auto-fix formatting and linting issues
-- `make test` - Run pytest tests
-- `make test-coverage` - Tests with coverage reporting
+- `just lint` - Fast linting (Ruff only - for development)
+- `just lint-all` - Comprehensive (Ruff + Pylint + Flake8 + MyPy)
+- `just lint-security` - Security scans (Bandit + Safety + pip-audit)
+- `just lint-complexity` - Complexity analysis (Radon + Xenon)
+- `just lint-full` - All quality checks combined
+- `just format` - Auto-fix formatting and linting issues
+- `just test` - Run pytest tests
+- `just test-coverage` - Tests with coverage reporting
 
 ## Key Decisions Made
 
@@ -161,9 +161,9 @@ tests/
 **Why**: Python has many linting tools. Grouping under `lint-*` prefix provides clean organization and progressive complexity (fast → comprehensive → full).
 
 **Impact**: Developers can choose appropriate linting level:
-- Development: `make lint` (fast, Ruff only)
-- Pre-commit: `make lint-all` (comprehensive linters)
-- CI/CD: `make lint-full` (everything including security + complexity)
+- Development: `just lint` (fast, Ruff only)
+- Pre-commit: `just lint-all` (comprehensive linters)
+- CI/CD: `just lint-full` (everything including security + complexity)
 
 ### Decision 4: Click Over Typer/Argparse
 
@@ -234,9 +234,9 @@ tests/
 - [ ] CI/CD workflows execute without errors
 
 **Development Readiness**:
-- [ ] `make lint` runs successfully
-- [ ] `make test` runs successfully
-- [ ] `make format` auto-fixes issues
+- [ ] `just lint` runs successfully
+- [ ] `just test` runs successfully
+- [ ] `just format` auto-fixes issues
 - [ ] `poetry install` creates isolated venv
 - [ ] Pre-commit hooks installed and working
 - [ ] Documentation structure in place
