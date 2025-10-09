@@ -7,7 +7,7 @@
 #   make lint-full         - Full linting on all files
 #   make lint-full FILES=changed  - Full linting on changed files only (for pre-commit)
 
-.PHONY: help init install activate venv-info lint lint-all lint-security lint-complexity lint-placement lint-solid lint-nesting lint-full format test test-coverage clean get-changed-files publish-pypi publish-docker publish update-version-badges bump-version show-version
+.PHONY: help init install activate venv-info lint lint-all lint-security lint-complexity lint-placement lint-solid lint-nesting lint-dry clean-cache lint-full format test test-coverage clean get-changed-files publish-pypi publish-docker publish update-version-badges bump-version show-version
 
 help: ## Show available targets
 	@echo "Available targets:"
@@ -31,7 +31,9 @@ help: ## Show available targets
 	@echo "  make lint-placement FILES=...  - File placement linting on specific files"
 	@echo "  make lint-solid        - SOLID principle linting (SRP)"
 	@echo "  make lint-solid FILES=...      - SOLID principle linting on specific files"
-	@echo "  make lint-full         - ALL quality checks"
+	@echo "  make lint-dry          - DRY principle linting (duplicate code detection)"
+	@echo "  make clean-cache       - Clear DRY linter cache"
+	@echo "  make lint-full         - ALL quality checks (excludes lint-dry for performance)"
 	@echo "  make lint-full FILES=changed   - ALL quality checks on changed files (pre-commit)"
 	@echo "  make format            - Auto-fix formatting and linting issues"
 	@echo ""
@@ -175,8 +177,25 @@ lint-solid: ## SOLID principle linting (SRP)
 	fi
 	@echo "✅ SOLID principle checks complete!"
 
-lint-full: lint-all lint-security lint-complexity lint-placement lint-solid ## ALL quality checks
+lint-dry: ## DRY principle linting (duplicate code detection) - opt-in for performance
+	@echo ""
+	@echo "=== Running DRY linter (duplicate code detection) ==="
+	@echo "Note: This may take several minutes on large codebases (first run)"
+	@if [ -n "$(SRC_TARGETS)" ]; then \
+		poetry run thai-lint dry $(SRC_TARGETS) --config .thailint.yaml; \
+		echo "✓ DRY checks passed"; \
+	fi
+	@echo "✅ DRY principle checks complete!"
+
+clean-cache: ## Clear DRY linter cache
+	@echo "Clearing DRY linter cache..."
+	@rm -rf .thailint-cache/
+	@echo "✓ Cache cleared"
+
+lint-full: lint-all lint-security lint-complexity lint-placement lint-solid ## ALL quality checks (excludes lint-dry for performance)
 	@echo "✅ All linting checks complete!"
+	@echo ""
+	@echo "Note: lint-dry excluded for performance (run separately with 'make lint-dry')"
 
 format: ## Auto-fix formatting and linting issues
 	@poetry run ruff format src/ tests/

@@ -11,7 +11,7 @@ Overview: Provides the main CLI application using Click decorators for command d
 
 Dependencies: click for CLI framework, logging for structured output, pathlib for file paths
 
-Exports: cli (main command group), hello command, config command group, file_placement command
+Exports: cli (main command group), hello command, config command group, file_placement command, dry command
 
 Interfaces: Click CLI commands, configuration context via Click ctx, logging integration
 
@@ -61,6 +61,10 @@ def cli(ctx, verbose: bool, config: str | None):
     Identifies common mistakes, anti-patterns, and security issues.
 
     Examples:
+
+        \b
+        # Check for duplicate code (DRY violations)
+        thai-lint dry .
 
         \b
         # Lint current directory for file placement issues
@@ -843,6 +847,190 @@ def _execute_srp_lint(  # pylint: disable=too-many-arguments,too-many-positional
 
     _output_violations(srp_violations, format)
     sys.exit(1 if srp_violations else 0)
+
+
+@cli.command("dry")
+@click.argument("path", type=click.Path(exists=True), default=".")
+@click.option("--config", "-c", "config_file", type=click.Path(), help="Path to config file")
+@click.option(
+    "--format", "-f", type=click.Choice(["text", "json"]), default="text", help="Output format"
+)
+@click.option("--min-lines", type=int, help="Override min duplicate lines threshold")
+@click.option("--no-cache", is_flag=True, help="Disable SQLite cache (force rehash)")
+@click.option("--clear-cache", is_flag=True, help="Clear cache before running")
+@click.option("--recursive/--no-recursive", default=True, help="Scan directories recursively")
+@click.pass_context
+def dry(  # pylint: disable=too-many-arguments,too-many-positional-arguments
+    ctx,
+    path: str,
+    config_file: str | None,
+    format: str,
+    min_lines: int | None,
+    no_cache: bool,
+    clear_cache: bool,
+    recursive: bool,
+):
+    # Justification for Pylint disables:
+    # - too-many-arguments/positional: CLI requires 1 ctx + 1 arg + 6 options = 8 params
+    # All parameters are necessary for flexible DRY linter CLI usage.
+    """
+    Check for duplicate code (DRY principle violations).
+
+    Detects duplicate code blocks across your project using token-based hashing
+    with SQLite caching for fast incremental scans.
+
+    PATH: File or directory to lint (defaults to current directory)
+
+    Examples:
+
+        \b
+        # Check current directory
+        thai-lint dry
+
+        \b
+        # Check specific directory
+        thai-lint dry src/
+
+        \b
+        # Use custom config file
+        thai-lint dry --config .thailint.yaml src/
+
+        \b
+        # Override minimum duplicate lines threshold
+        thai-lint dry --min-lines 5 .
+
+        \b
+        # Disable cache (force re-analysis)
+        thai-lint dry --no-cache .
+
+        \b
+        # Clear cache before running
+        thai-lint dry --clear-cache .
+
+        \b
+        # Get JSON output
+        thai-lint dry --format json .
+    """
+    verbose = ctx.obj.get("verbose", False)
+    path_obj = Path(path)
+
+    try:
+        _execute_dry_lint(
+            path_obj, config_file, format, min_lines, no_cache, clear_cache, recursive, verbose
+        )
+    except Exception as e:
+        _handle_linting_error(e, verbose)
+
+
+def _execute_dry_lint(  # pylint: disable=too-many-arguments,too-many-positional-arguments
+    path_obj, config_file, format, min_lines, no_cache, clear_cache, recursive, verbose
+):
+    """Execute DRY linting."""
+    orchestrator = _setup_dry_orchestrator(path_obj, config_file, verbose)
+    _apply_dry_config_override(orchestrator, min_lines, no_cache, verbose)
+
+    if clear_cache:
+        _clear_dry_cache(orchestrator, verbose)
+
+    dry_violations = _run_dry_lint(orchestrator, path_obj, recursive)
+
+    if verbose:
+        logger.info(f"Found {len(dry_violations)} DRY violation(s)")
+
+    _output_violations(dry_violations, format)
+    sys.exit(1 if dry_violations else 0)
+
+
+def _setup_dry_orchestrator(path_obj, config_file, verbose):
+    """Set up orchestrator for DRY linting."""
+    from src.orchestrator.core import Orchestrator
+    from src.utils.project_root import get_project_root
+
+    search_start = path_obj if path_obj.is_dir() else path_obj.parent
+    project_root = get_project_root(search_start)
+
+    orchestrator = Orchestrator(project_root=project_root)
+
+    if config_file:
+        _load_dry_config_file(orchestrator, config_file, verbose)
+
+    return orchestrator
+
+
+def _load_dry_config_file(orchestrator, config_file, verbose):
+    """Load DRY configuration from file."""
+    import yaml
+
+    config_path = Path(config_file)
+    if not config_path.exists():
+        click.echo(f"Error: Config file not found: {config_file}", err=True)
+        sys.exit(2)
+
+    with config_path.open("r", encoding="utf-8") as f:
+        config = yaml.safe_load(f)
+
+    if "dry" in config:
+        orchestrator.config.update({"dry": config["dry"]})
+
+        if verbose:
+            logger.info(f"Loaded DRY config from {config_file}")
+
+
+def _apply_dry_config_override(orchestrator, min_lines, no_cache, verbose):
+    """Apply CLI option overrides to DRY config."""
+    _ensure_dry_config_exists(orchestrator)
+    _apply_min_lines_override(orchestrator, min_lines, verbose)
+    _apply_cache_override(orchestrator, no_cache, verbose)
+
+
+def _ensure_dry_config_exists(orchestrator):
+    """Ensure dry config section exists."""
+    if "dry" not in orchestrator.config:
+        orchestrator.config["dry"] = {}
+
+
+def _apply_min_lines_override(orchestrator, min_lines, verbose):
+    """Apply min_lines override if provided."""
+    if min_lines is None:
+        return
+
+    orchestrator.config["dry"]["min_duplicate_lines"] = min_lines
+    if verbose:
+        logger.info(f"Override: min_duplicate_lines = {min_lines}")
+
+
+def _apply_cache_override(orchestrator, no_cache, verbose):
+    """Apply cache override if requested."""
+    if not no_cache:
+        return
+
+    orchestrator.config["dry"]["cache_enabled"] = False
+    if verbose:
+        logger.info("Override: cache_enabled = False")
+
+
+def _clear_dry_cache(orchestrator, verbose):
+    """Clear DRY cache before running."""
+    cache_path_str = orchestrator.config.get("dry", {}).get("cache_path", ".thailint-cache/dry.db")
+    cache_path = orchestrator.project_root / cache_path_str
+
+    if cache_path.exists():
+        cache_path.unlink()
+        if verbose:
+            logger.info(f"Cleared cache: {cache_path}")
+    else:
+        if verbose:
+            logger.info("Cache file does not exist, nothing to clear")
+
+
+def _run_dry_lint(orchestrator, path_obj, recursive):
+    """Run DRY linting and return violations."""
+    all_violations = _execute_linting(orchestrator, path_obj, recursive)
+
+    # Filter to only DRY violations
+    dry_violations = [v for v in all_violations if v.rule_id.startswith("dry.")]
+
+    return dry_violations
 
 
 if __name__ == "__main__":

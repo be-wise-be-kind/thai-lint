@@ -1,41 +1,40 @@
 """
-Purpose: TypeScript/JavaScript source code analysis stub for duplicate detection
+Purpose: TypeScript/JavaScript source code tokenization and duplicate block analysis
 
-Scope: TypeScript and JavaScript file analysis placeholder
+Scope: TypeScript and JavaScript file analysis for duplicate detection
 
-Overview: Stub implementation for TypeScript and JavaScript duplicate code analysis. Returns empty
-    list in PR2, deferring full implementation to PR3 when tree-sitter integration will be added.
-    Allows DRY linter to handle TypeScript files gracefully without errors while Python duplicate
-    detection is validated. Full tokenization and AST-based analysis to be implemented in PR3.
+Overview: Analyzes TypeScript and JavaScript source files to extract code blocks for duplicate
+    detection. Uses token-based hashing approach to normalize code and generate rolling hash windows.
+    Integrates TokenHasher for normalization and CodeBlock creation. Returns list of code blocks with
+    hash values that can be stored in cache and queried for duplicates across the project. Implementation
+    mirrors PythonDuplicateAnalyzer using TokenHasher which handles both Python (#) and TS/JS (//) comments.
 
-Dependencies: CodeBlock, DRYConfig, pathlib.Path
+Dependencies: TokenHasher, CodeBlock, DRYConfig, pathlib.Path
 
 Exports: TypeScriptDuplicateAnalyzer class
 
 Interfaces: TypeScriptDuplicateAnalyzer.analyze(file_path: Path, content: str, config: DRYConfig)
     -> list[CodeBlock]
 
-Implementation: Stub returning empty list, TODO marker for PR3 tree-sitter implementation
+Implementation: Token-based analysis using TokenHasher, rolling hash windows, CodeBlock creation
 """
 
 from pathlib import Path
 
 from .cache import CodeBlock
 from .config import DRYConfig
+from .token_hasher import TokenHasher
 
 
 class TypeScriptDuplicateAnalyzer:
     """Analyzes TypeScript/JavaScript code for duplicate blocks."""
 
     def __init__(self) -> None:
-        """Initialize analyzer."""
-        pass
+        """Initialize analyzer with token hasher."""
+        self._hasher = TokenHasher()
 
     def analyze(self, file_path: Path, content: str, config: DRYConfig) -> list[CodeBlock]:
         """Analyze TypeScript/JavaScript file for code blocks.
-
-        TODO PR3: Implement tree-sitter based TypeScript tokenization
-        Currently returns empty list as stub implementation.
 
         Args:
             file_path: Path to TypeScript/JavaScript file
@@ -43,8 +42,24 @@ class TypeScriptDuplicateAnalyzer:
             config: DRY configuration
 
         Returns:
-            Empty list (stub implementation for PR2)
+            List of CodeBlock instances with hash values
         """
-        # Stub implementation - returns no blocks
-        # Full implementation in PR3 will use tree-sitter for tokenization
-        return []
+        # Tokenize code
+        lines = self._hasher.tokenize(content)
+
+        # Generate rolling hash windows
+        windows = self._hasher.rolling_hash(lines, config.min_duplicate_lines)
+
+        # Create CodeBlock instances
+        blocks = []
+        for hash_val, start_line, end_line, snippet in windows:
+            block = CodeBlock(
+                file_path=file_path,
+                start_line=start_line,
+                end_line=end_line,
+                snippet=snippet,
+                hash_value=hash_val,
+            )
+            blocks.append(block)
+
+        return blocks

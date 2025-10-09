@@ -50,6 +50,7 @@ dmypy.json
 
 # Linting
 .ruff_cache/
+.thailint-cache/  # DRY linter SQLite cache
 
 # IDEs
 .vscode/
