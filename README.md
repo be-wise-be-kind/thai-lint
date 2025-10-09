@@ -83,7 +83,10 @@ docker run --rm washad/thailint:latest --help
 # Check file placement
 thailint file-placement .
 
-# Check nesting depth
+# Check multiple files
+thailint nesting file1.py file2.py file3.py
+
+# Check specific directory
 thailint nesting src/
 
 # Check for duplicate code
@@ -115,8 +118,6 @@ if violations:
 
 ### Docker Mode
 
-**Note:** Pass one path at a time (file or directory). For multiple files, use their parent directory.
-
 ```bash
 # Lint directory (recommended - lints all files inside)
 docker run --rm -v $(pwd):/data \
@@ -125,6 +126,10 @@ docker run --rm -v $(pwd):/data \
 # Lint single file
 docker run --rm -v $(pwd):/data \
   washad/thailint:latest file-placement /data/src/app.py
+
+# Lint multiple specific files
+docker run --rm -v $(pwd):/data \
+  washad/thailint:latest nesting /data/src/file1.py /data/src/file2.py
 
 # Check nesting depth in subdirectory
 docker run --rm -v $(pwd):/data \
@@ -637,7 +642,7 @@ pre-commit run --all-files
 **On every commit:**
 - Prevents commits to main/master branch
 - Auto-fixes formatting issues
-- Runs thailint on changed files (fast)
+- Runs thailint on changed files (fast, uses pass_filenames: true)
 
 **On every push:**
 - Full linting on entire codebase
@@ -665,12 +670,13 @@ repos:
         language: system
         pass_filenames: false
 
-      # Run thailint on changed files
-      - id: lint-changed
+      # Run thailint on changed files (passes filenames directly)
+      - id: thailint-changed
         name: Lint changed files
-        entry: just lint-full FILES=changed
+        entry: thailint nesting
         language: system
-        pass_filenames: false
+        files: \.(py|ts|tsx|js|jsx)$
+        pass_filenames: true
 ```
 
 See **[Pre-commit Hooks Guide](docs/pre-commit-hooks.md)** for complete documentation, troubleshooting, and advanced configuration.
@@ -771,8 +777,6 @@ docker build -t washad/thailint:latest .
 
 ## Docker Usage
 
-**Note:** thailint accepts **one path at a time** (file or directory), not multiple files. To lint multiple files, pass their parent directory.
-
 ```bash
 # Pull published image
 docker pull washad/thailint:latest
@@ -780,11 +784,14 @@ docker pull washad/thailint:latest
 # Run CLI help
 docker run --rm washad/thailint:latest --help
 
-# Lint entire directory (recommended for multiple files)
+# Lint entire directory (recommended)
 docker run --rm -v $(pwd):/data washad/thailint:latest file-placement /data
 
 # Lint single file
 docker run --rm -v $(pwd):/data washad/thailint:latest file-placement /data/src/app.py
+
+# Lint multiple specific files
+docker run --rm -v $(pwd):/data washad/thailint:latest nesting /data/src/file1.py /data/src/file2.py
 
 # Lint specific subdirectory
 docker run --rm -v $(pwd):/data washad/thailint:latest nesting /data/src

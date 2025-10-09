@@ -137,24 +137,27 @@ repos:
       # PRE-COMMIT - Format and lint changed files
       # ========================================
       - id: thailint-file-placement
-        name: Check file placement
+        name: Check file placement (changed files)
         entry: poetry run thailint file-placement
         language: system
-        pass_filenames: false
+        files: \.(py|ts|tsx|js|jsx)$
+        pass_filenames: true
         stages: [pre-commit]
 
       - id: thailint-nesting
-        name: Check nesting depth
+        name: Check nesting depth (changed files)
         entry: poetry run thailint nesting --max-depth 3
         language: system
-        pass_filenames: false
+        files: \.(py|ts|tsx|js|jsx)$
+        pass_filenames: true
         stages: [pre-commit]
 
       - id: thailint-srp
-        name: Check SRP violations
+        name: Check SRP violations (changed files)
         entry: poetry run thailint srp
         language: system
-        pass_filenames: false
+        files: \.(py|ts|tsx|js|jsx)$
+        pass_filenames: true
         stages: [pre-commit]
 
       # ========================================
@@ -190,24 +193,27 @@ repos:
       # PRE-COMMIT - Format and lint changed files
       # ========================================
       - id: thailint-docker-file-placement
-        name: Check file placement (Docker)
-        entry: docker run --rm -v $(pwd):/workspace washad/thailint:latest file-placement /workspace
+        name: Check file placement (Docker, changed files)
+        entry: bash -c 'docker run --rm -v $(pwd):/workspace washad/thailint:latest file-placement "$@"' --
         language: system
-        pass_filenames: false
+        files: \.(py|ts|tsx|js|jsx)$
+        pass_filenames: true
         stages: [pre-commit]
 
       - id: thailint-docker-nesting
-        name: Check nesting depth (Docker)
-        entry: docker run --rm -v $(pwd):/workspace washad/thailint:latest nesting --max-depth 3 /workspace
+        name: Check nesting depth (Docker, changed files)
+        entry: bash -c 'docker run --rm -v $(pwd):/workspace washad/thailint:latest nesting --max-depth 3 "$@"' --
         language: system
-        pass_filenames: false
+        files: \.(py|ts|tsx|js|jsx)$
+        pass_filenames: true
         stages: [pre-commit]
 
       - id: thailint-docker-srp
-        name: Check SRP violations (Docker)
-        entry: docker run --rm -v $(pwd):/workspace washad/thailint:latest srp /workspace
+        name: Check SRP violations (Docker, changed files)
+        entry: bash -c 'docker run --rm -v $(pwd):/workspace washad/thailint:latest srp "$@"' --
         language: system
-        pass_filenames: false
+        files: \.(py|ts|tsx|js|jsx)$
+        pass_filenames: true
         stages: [pre-commit]
 
       # ========================================
@@ -314,19 +320,34 @@ Add thai-lint to your `.pre-commit-config.yaml`:
 repos:
   - repo: local
     hooks:
+      # Pass changed files to thailint (fast, recommended)
       - id: thailint-file-placement
-        name: Check file placement
+        name: Check file placement (changed files)
         entry: thailint file-placement
         language: system
-        pass_filenames: false
+        files: \.(py|ts|tsx|js|jsx)$
+        pass_filenames: true
 
       - id: thailint-nesting
-        name: Check nesting depth
+        name: Check nesting depth (changed files)
         entry: thailint nesting
         language: system
-        files: \.py$
+        files: \.(py|ts|tsx|js|jsx)$
         pass_filenames: true
+
+      # Or lint entire project (slower but comprehensive)
+      - id: thailint-full
+        name: Check all files
+        entry: thailint file-placement .
+        language: system
+        pass_filenames: false
+        always_run: true
 ```
+
+**Key Configuration:**
+- `pass_filenames: true` - Pre-commit will pass the list of changed files directly to thailint
+- `files: \.(py|ts|tsx|js|jsx)$` - Only run on relevant file types
+- This approach is much faster than linting the entire project on every commit
 
 ### thai-lint with Config File
 
@@ -335,25 +356,36 @@ repos:
   - repo: local
     hooks:
       - id: thailint-nesting
-        name: Check nesting depth with config
+        name: Check nesting depth with config (changed files)
         entry: thailint nesting --config .thailint.yaml
         language: system
-        files: \.py$
+        files: \.(py|ts|tsx|js|jsx)$
+        pass_filenames: true
 ```
 
 ### thai-lint in Docker
 
-If you're using thai-lint via Docker:
+If you're using thai-lint via Docker, you can pass changed files:
 
 ```yaml
 repos:
   - repo: local
     hooks:
-      - id: thailint-docker
-        name: Run thailint in Docker
-        entry: docker run --rm -v $(pwd):/workspace thailint/thailint nesting
+      # Pass changed files to Docker container
+      - id: thailint-docker-changed
+        name: Run thailint in Docker (changed files)
+        entry: bash -c 'docker run --rm -v $(pwd):/workspace washad/thailint:latest nesting "$@"' --
+        language: system
+        files: \.(py|ts|tsx|js|jsx)$
+        pass_filenames: true
+
+      # Or lint entire project
+      - id: thailint-docker-full
+        name: Run thailint in Docker (full project)
+        entry: docker run --rm -v $(pwd):/workspace washad/thailint:latest nesting /workspace
         language: system
         pass_filenames: false
+        always_run: true
 ```
 
 ---
