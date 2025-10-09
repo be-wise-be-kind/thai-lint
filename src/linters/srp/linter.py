@@ -19,6 +19,7 @@ Implementation: Composition pattern with helper classes, heuristic-based SRP ana
 """
 
 from src.core.base import BaseLintContext, BaseLintRule
+from src.core.linter_utils import has_file_content, load_linter_config
 from src.core.types import Violation
 from src.linter_config.ignore import IgnoreDirectiveParser
 
@@ -61,10 +62,10 @@ class SRPRule(BaseLintRule):
         Returns:
             List of violations found
         """
-        if not context.file_content:
+        if not has_file_content(context):
             return []
 
-        config = self._load_config(context)
+        config = load_linter_config(context, "srp", SRPConfig)
         if not config.enabled or self._is_file_ignored(context, config):
             return []
 
@@ -93,27 +94,6 @@ class SRPRule(BaseLintRule):
             if pattern in file_path:
                 return True
         return False
-
-    def _load_config(self, context: BaseLintContext) -> SRPConfig:
-        """Load configuration from context metadata with language-specific overrides.
-
-        Args:
-            context: Lint context containing metadata
-
-        Returns:
-            SRPConfig instance with configuration values for the specific language
-        """
-        metadata = getattr(context, "metadata", None)
-        if metadata is None or not isinstance(metadata, dict):
-            return SRPConfig()
-
-        config_dict = metadata.get("srp", {})
-        if not isinstance(config_dict, dict):
-            return SRPConfig()
-
-        # Pass language to get language-specific thresholds
-        language = getattr(context, "language", None)
-        return SRPConfig.from_dict(config_dict, language=language)
 
     def _check_python(self, context: BaseLintContext, config: SRPConfig) -> list[Violation]:
         """Check Python code for SRP violations.

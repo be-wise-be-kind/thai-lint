@@ -25,6 +25,8 @@ from typing import Any
 
 import yaml
 
+from src.core.config_parser import ConfigParseError, parse_config_file
+
 logger = logging.getLogger(__name__)
 
 
@@ -134,23 +136,6 @@ def load_config(config_path: Path | None = None) -> dict[str, Any]:
     return _load_from_default_locations()
 
 
-def _parse_yaml_file(f, path: Path) -> dict[str, Any]:
-    """Parse YAML file and return data."""
-    try:
-        data = yaml.safe_load(f)
-        return data if data is not None else {}
-    except yaml.YAMLError as e:
-        raise ConfigError(f"Invalid YAML in {path}: {e}") from e
-
-
-def _parse_json_file(f, path: Path) -> dict[str, Any]:
-    """Parse JSON file and return data."""
-    try:
-        return json.load(f)
-    except json.JSONDecodeError as e:
-        raise ConfigError(f"Invalid JSON in {path}: {e}") from e
-
-
 def _load_config_file(path: Path) -> dict[str, Any]:
     """
     Load config from YAML or JSON file based on extension.
@@ -165,21 +150,11 @@ def _load_config_file(path: Path) -> dict[str, Any]:
         ConfigError: If file cannot be parsed.
     """
     try:
-        return _parse_config_by_extension(path)
-    except ConfigError:
-        raise
+        return parse_config_file(path)
+    except ConfigParseError as e:
+        raise ConfigError(str(e)) from e
     except Exception as e:
         raise ConfigError(f"Failed to load config from {path}: {e}") from e
-
-
-def _parse_config_by_extension(path: Path) -> dict[str, Any]:
-    """Parse config file based on its extension."""
-    with path.open() as f:
-        if path.suffix in [".yaml", ".yml"]:
-            return _parse_yaml_file(f, path)
-        if path.suffix == ".json":
-            return _parse_json_file(f, path)
-        raise ConfigError(f"Unsupported config format: {path.suffix}")
 
 
 def _validate_before_save(config: dict[str, Any]) -> None:

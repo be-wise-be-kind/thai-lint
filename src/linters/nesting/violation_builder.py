@@ -9,13 +9,14 @@ Overview: Provides violation building functionality for the nesting depth linter
     (early returns, guard clauses, extract method). Handles syntax errors gracefully. Isolates
     violation construction from analysis and checking logic.
 
-Dependencies: ast, BaseLintContext, Violation, Severity, NestingConfig
+Dependencies: ast, BaseLintContext, Violation, Severity, NestingConfig, src.core.violation_builder
 
 Exports: NestingViolationBuilder
 
 Interfaces: create_nesting_violation, create_typescript_nesting_violation, create_syntax_error_violation
 
-Implementation: Formats messages with depth information, provides targeted refactoring suggestions
+Implementation: Formats messages with depth information, provides targeted refactoring suggestions,
+    extends BaseViolationBuilder for consistent violation construction
 """
 
 import ast
@@ -23,11 +24,12 @@ from typing import Any
 
 from src.core.base import BaseLintContext
 from src.core.types import Severity, Violation
+from src.core.violation_builder import BaseViolationBuilder
 
 from .config import NestingConfig
 
 
-class NestingViolationBuilder:
+class NestingViolationBuilder(BaseViolationBuilder):
     """Builds violations for nesting depth issues."""
 
     def __init__(self, rule_id: str):
@@ -50,7 +52,7 @@ class NestingViolationBuilder:
         Returns:
             Syntax error violation
         """
-        return Violation(
+        return self.build_from_params(
             rule_id=self.rule_id,
             file_path=str(context.file_path or ""),
             line=error.lineno or 0,
@@ -78,7 +80,7 @@ class NestingViolationBuilder:
         Returns:
             Nesting depth violation
         """
-        return Violation(
+        return self.build_from_params(
             rule_id=self.rule_id,
             file_path=str(context.file_path or ""),
             line=func.lineno,
@@ -110,7 +112,7 @@ class NestingViolationBuilder:
         line = func_node.start_point[0] + 1  # Convert to 1-indexed
         column = func_node.start_point[1]
 
-        return Violation(
+        return self.build_from_params(
             rule_id=self.rule_id,
             file_path=str(context.file_path or ""),
             line=line,

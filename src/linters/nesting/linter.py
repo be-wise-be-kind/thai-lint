@@ -22,6 +22,7 @@ import ast
 from typing import Any
 
 from src.core.base import BaseLintContext, BaseLintRule
+from src.core.linter_utils import has_file_content, load_linter_config
 from src.core.types import Violation
 from src.linter_config.ignore import IgnoreDirectiveParser
 
@@ -63,10 +64,10 @@ class NestingDepthRule(BaseLintRule):
         Returns:
             List of violations found
         """
-        if context.file_content is None:
+        if not has_file_content(context):
             return []
 
-        config = self._load_config(context)
+        config = load_linter_config(context, "nesting", NestingConfig)
         if not config.enabled:
             return []
 
@@ -75,27 +76,6 @@ class NestingDepthRule(BaseLintRule):
         if context.language in ("typescript", "javascript"):
             return self._check_typescript(context, config)
         return []
-
-    def _load_config(self, context: BaseLintContext) -> NestingConfig:
-        """Load configuration from context metadata with language-specific overrides.
-
-        Args:
-            context: Lint context containing metadata
-
-        Returns:
-            NestingConfig instance with configuration values for the specific language
-        """
-        metadata = getattr(context, "metadata", None)
-        if metadata is None or not isinstance(metadata, dict):
-            return NestingConfig()
-
-        config_dict = metadata.get("nesting", {})
-        if not isinstance(config_dict, dict):
-            return NestingConfig()
-
-        # Pass language to get language-specific thresholds
-        language = getattr(context, "language", None)
-        return NestingConfig.from_dict(config_dict, language=language)
 
     def _process_python_functions(
         self, functions: list, analyzer: Any, config: NestingConfig, context: BaseLintContext

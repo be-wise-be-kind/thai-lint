@@ -9,15 +9,17 @@ Overview: Provides core rule checking functionality for the file placement linte
     factory for creating violations. Implements deny-takes-precedence logic. Isolates rule
     execution logic from configuration, validation, and violation creation.
 
-Dependencies: pathlib, typing, PatternMatcher, DirectoryMatcher, ViolationFactory, src.core.types
+Dependencies: pathlib, typing, dataclasses, PatternMatcher, DirectoryMatcher, ViolationFactory, src.core.types
 
 Exports: RuleChecker
 
 Interfaces: check_all_rules(path_str, rel_path, fp_config) -> list[Violation]
 
-Implementation: Checks deny before allow, delegates directory matching to DirectoryMatcher
+Implementation: Checks deny before allow, delegates directory matching to DirectoryMatcher,
+    uses RuleCheckContext dataclass to reduce parameter duplication
 """
 
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
@@ -26,6 +28,23 @@ from src.core.types import Violation
 from .directory_matcher import DirectoryMatcher
 from .pattern_matcher import PatternMatcher
 from .violation_factory import ViolationFactory
+
+
+@dataclass
+class RuleCheckContext:
+    """Context information for rule checking.
+
+    Attributes:
+        path_str: Normalized path string
+        rel_path: Relative path object
+        dir_rule: Directory rule configuration
+        matched_path: Matched directory path
+    """
+
+    path_str: str
+    rel_path: Path
+    dir_rule: dict[str, Any]
+    matched_path: str
 
 
 class RuleChecker:
@@ -75,49 +94,42 @@ class RuleChecker:
 
         return violations
 
-    def _check_directory_deny_rules(
-        self, path_str: str, rel_path: Path, dir_rule: dict[str, Any], matched_path: str
-    ) -> Violation | None:
+    def _check_directory_deny_rules(self, ctx: RuleCheckContext) -> Violation | None:
         """Check directory deny rules.
 
         Args:
-            path_str: Normalized path string
-            rel_path: Relative path object
-            dir_rule: Directory rule config
-            matched_path: Matched directory path
+            ctx: Rule check context with file and rule information
 
         Returns:
             Violation if denied, None otherwise
         """
-        if "deny" not in dir_rule:
+        if "deny" not in ctx.dir_rule:
             return None
 
-        is_denied, reason = self.pattern_matcher.match_deny_patterns(path_str, dir_rule["deny"])
+        is_denied, reason = self.pattern_matcher.match_deny_patterns(
+            ctx.path_str, ctx.dir_rule["deny"]
+        )
         if is_denied:
             return self.violation_factory.create_deny_violation(
-                rel_path, matched_path, reason or "Pattern denied"
+                ctx.rel_path, ctx.matched_path, reason or "Pattern denied"
             )
         return None
 
-    def _check_directory_allow_rules(
-        self, path_str: str, rel_path: Path, dir_rule: dict[str, Any], matched_path: str
-    ) -> Violation | None:
+    def _check_directory_allow_rules(self, ctx: RuleCheckContext) -> Violation | None:
         """Check directory allow rules.
 
         Args:
-            path_str: Normalized path string
-            rel_path: Relative path object
-            dir_rule: Directory rule config
-            matched_path: Matched directory path
+            ctx: Rule check context with file and rule information
 
         Returns:
             Violation if not allowed, None otherwise
         """
-        if "allow" not in dir_rule:
+        if "allow" not in ctx.dir_rule:
             return None
 
-        if not self.pattern_matcher.match_allow_patterns(path_str, dir_rule["allow"]):
-            return self.violation_factory.create_allow_violation(rel_path, matched_path)
+        is_allowed = self.pattern_matcher.match_allow_patterns(ctx.path_str, ctx.dir_rule["allow"])
+        if not is_allowed:
+            return self.violation_factory.create_allow_violation(ctx.rel_path, ctx.matched_path)
         return None
 
     def _check_directory_rules(
@@ -137,21 +149,32 @@ class RuleChecker:
         if not dir_rule or not matched_path:
             return []
 
-        # Check deny patterns first (takes precedence)
-        deny_violation = self._check_directory_deny_rules(
-            path_str, rel_path, dir_rule, matched_path
+        ctx = RuleCheckContext(
+            path_str=path_str,
+            rel_path=rel_path,
+            dir_rule=dir_rule,
+            matched_path=matched_path,
         )
+
+        # Check deny patterns first (takes precedence)
+        deny_violation = self._check_directory_deny_rules(ctx)
         if deny_violation:
-            return [deny_violation]
+            return self._wrap_violation(deny_violation)
 
         # Check allow patterns
-        allow_violation = self._check_directory_allow_rules(
-            path_str, rel_path, dir_rule, matched_path
-        )
-        if allow_violation:
-            return [allow_violation]
+        allow_violation = self._check_directory_allow_rules(ctx)
+        return self._wrap_violation(allow_violation)
 
-        return []
+    def _wrap_violation(self, violation: Violation | None) -> list[Violation]:
+        """Wrap single violation in list, or return empty list if None.
+
+        Args:
+            violation: Violation to wrap, or None
+
+        Returns:
+            List containing violation, or empty list
+        """
+        return [violation] if violation else []
 
     def _check_global_deny(
         self, path_str: str, rel_path: Path, global_deny: list[dict[str, str]]
@@ -169,7 +192,7 @@ class RuleChecker:
         is_denied, reason = self.pattern_matcher.match_deny_patterns(path_str, global_deny)
         if is_denied:
             violation = self.violation_factory.create_global_deny_violation(rel_path, reason)
-            return [violation]
+            return self._wrap_violation(violation)
         return []
 
     def _check_global_patterns(
@@ -192,12 +215,15 @@ class RuleChecker:
             )
             if is_denied:
                 violation = self.violation_factory.create_global_deny_violation(rel_path, reason)
-                return [violation]
+                return self._wrap_violation(violation)
 
         # Check allow patterns
         if "allow" in global_patterns:
-            if not self.pattern_matcher.match_allow_patterns(path_str, global_patterns["allow"]):
+            is_allowed = self.pattern_matcher.match_allow_patterns(
+                path_str, global_patterns["allow"]
+            )
+            if not is_allowed:
                 violation = self.violation_factory.create_global_allow_violation(rel_path)
-                return [violation]
+                return self._wrap_violation(violation)
 
         return []

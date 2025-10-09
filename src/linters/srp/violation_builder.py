@@ -9,22 +9,24 @@ Overview: Provides violation building functionality for the SRP linter. Creates 
     Isolates violation construction and suggestion generation from metrics evaluation and
     class analysis to maintain single responsibility.
 
-Dependencies: BaseLintContext, Violation, Severity, typing
+Dependencies: BaseLintContext, Violation, Severity, typing, src.core.violation_builder
 
 Exports: ViolationBuilder
 
 Interfaces: build_violation(metrics, issues, rule_id, context) -> Violation
 
-Implementation: Formats messages from metrics, generates targeted suggestions per issue type
+Implementation: Formats messages from metrics, generates targeted suggestions per issue type,
+    extends BaseViolationBuilder for consistent violation construction
 """
 
 from typing import Any
 
 from src.core.base import BaseLintContext
 from src.core.types import Severity, Violation
+from src.core.violation_builder import BaseViolationBuilder, ViolationInfo
 
 
-class ViolationBuilder:
+class ViolationBuilder(BaseViolationBuilder):
     """Builds SRP violations with messages and suggestions."""
 
     def build_violation(
@@ -48,7 +50,7 @@ class ViolationBuilder:
         message = f"Class '{metrics['class_name']}' may violate SRP: {', '.join(issues)}"
         suggestion = self._generate_suggestion(issues)
 
-        return Violation(
+        info = ViolationInfo(
             rule_id=rule_id,
             file_path=str(context.file_path or ""),
             line=metrics["line"],
@@ -57,6 +59,7 @@ class ViolationBuilder:
             severity=Severity.ERROR,
             suggestion=suggestion,
         )
+        return self.build(info)
 
     def _generate_suggestion(self, issues: list[str]) -> str:
         """Generate refactoring suggestion based on issues.

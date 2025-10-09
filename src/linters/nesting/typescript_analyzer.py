@@ -3,38 +3,37 @@ Purpose: TypeScript AST-based nesting depth calculator
 
 Scope: TypeScript code nesting depth analysis using tree-sitter parser
 
-Overview: Analyzes TypeScript code to calculate maximum nesting depth using AST traversal with
-    tree-sitter parser. Delegates function extraction to TypeScriptFunctionExtractor. Implements
-    visitor pattern to walk TypeScript AST, tracking current depth and maximum depth found.
-    Increments depth for control flow statements. Returns maximum depth and location.
+Overview: Analyzes TypeScript code to calculate maximum nesting depth using AST traversal.
+    Extends TypeScriptBaseAnalyzer to reuse common tree-sitter initialization and parsing.
+    Delegates function extraction to TypeScriptFunctionExtractor. Implements visitor pattern
+    to walk TypeScript AST, tracking current depth and maximum depth found. Increments depth
+    for control flow statements. Returns maximum depth and location.
 
-Dependencies: tree-sitter, tree-sitter-typescript, TypeScriptFunctionExtractor
+Dependencies: TypeScriptBaseAnalyzer, TypeScriptFunctionExtractor
 
-Exports: TypeScriptNestingAnalyzer class with calculate_max_depth and parse_typescript methods
+Exports: TypeScriptNestingAnalyzer class with calculate_max_depth methods
 
-Interfaces: calculate_max_depth(func_node) -> tuple[int, int], parse_typescript(code: str)
+Interfaces: calculate_max_depth(func_node) -> tuple[int, int], find_all_functions(root_node)
 
-Implementation: tree-sitter AST visitor pattern with depth tracking, composition with extractor
+Implementation: Inherits tree-sitter parsing from base, visitor pattern with depth tracking
 """
 
 from typing import Any
 
-try:
-    import tree_sitter_typescript as tstypescript
-    from tree_sitter import Language, Node, Parser
+from src.analyzers.typescript_base import TypeScriptBaseAnalyzer
 
-    TS_LANGUAGE = Language(tstypescript.language_typescript())
-    TS_PARSER = Parser(TS_LANGUAGE)
+try:
+    from tree_sitter import Node
+
     TREE_SITTER_AVAILABLE = True
 except ImportError:
     TREE_SITTER_AVAILABLE = False
-    TS_PARSER = None  # type: ignore
     Node = Any  # type: ignore
 
 from .typescript_function_extractor import TypeScriptFunctionExtractor
 
 
-class TypeScriptNestingAnalyzer:
+class TypeScriptNestingAnalyzer(TypeScriptBaseAnalyzer):
     """Calculates maximum nesting depth in TypeScript functions."""
 
     # Tree-sitter node types that increase nesting depth
@@ -51,22 +50,8 @@ class TypeScriptNestingAnalyzer:
 
     def __init__(self) -> None:
         """Initialize analyzer with function extractor."""
+        super().__init__()
         self.function_extractor = TypeScriptFunctionExtractor()
-
-    def parse_typescript(self, code: str) -> Node | None:
-        """Parse TypeScript code to AST using tree-sitter.
-
-        Args:
-            code: TypeScript source code to parse
-
-        Returns:
-            Tree-sitter AST root node, or None if parsing fails
-        """
-        if not TREE_SITTER_AVAILABLE or TS_PARSER is None:
-            return None
-
-        tree = TS_PARSER.parse(bytes(code, "utf8"))
-        return tree.root_node
 
     def calculate_max_depth(self, func_node: Node) -> tuple[int, int]:
         """Calculate maximum nesting depth in a TypeScript function.

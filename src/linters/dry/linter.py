@@ -25,6 +25,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 from src.core.base import BaseLintContext, BaseLintRule
+from src.core.linter_utils import should_process_file
 from src.core.types import Violation
 
 from .config import DRYConfig
@@ -40,8 +41,8 @@ if TYPE_CHECKING:
 
 
 @dataclass
-class DRYRuleHelpers:
-    """Helper components for DRY rule."""
+class DRYComponents:
+    """Component dependencies for DRY linter."""
 
     config_loader: ConfigLoader
     storage_initializer: StorageInitializer
@@ -60,7 +61,7 @@ class DRYRule(BaseLintRule):
         self._config: DRYConfig | None = None
 
         # Helper components grouped to reduce instance attributes
-        self._helpers = DRYRuleHelpers(
+        self._helpers = DRYComponents(
             config_loader=ConfigLoader(),
             storage_initializer=StorageInitializer(),
             file_analyzer=FileAnalyzer(),
@@ -92,7 +93,7 @@ class DRYRule(BaseLintRule):
         Returns:
             Empty list (violations returned in finalize())
         """
-        if not self._should_process_file(context):
+        if not should_process_file(context):
             return []
 
         config = self._helpers.config_loader.load_config(context)
@@ -112,10 +113,6 @@ class DRYRule(BaseLintRule):
 
         return []
 
-    def _should_process_file(self, context: BaseLintContext) -> bool:
-        """Check if file should be processed."""
-        return context.file_content is not None and context.file_path is not None
-
     def _ensure_storage_initialized(self, context: BaseLintContext, config: DRYConfig) -> None:
         """Initialize storage on first call."""
         if not self._initialized:
@@ -125,8 +122,8 @@ class DRYRule(BaseLintRule):
     def _analyze_and_store(self, context: BaseLintContext, config: DRYConfig) -> None:
         """Analyze file and store blocks."""
         # Guaranteed by _should_process_file check
-        assert context.file_path is not None
-        assert context.file_content is not None
+        if context.file_path is None or context.file_content is None:
+            return  # Should never happen due to should_process_file check
 
         file_path = Path(context.file_path)
         cache = self._get_cache()

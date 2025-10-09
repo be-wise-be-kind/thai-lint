@@ -28,9 +28,18 @@ import click
 
 from src import __version__
 from src.config import ConfigError, load_config, save_config, validate_config
+from src.core.cli_utils import format_violations
 
 # Configure module logger
 logger = logging.getLogger(__name__)
+
+
+# Shared Click option decorators for common CLI options
+def format_option(func):
+    """Add --format option to a command for output format selection."""
+    return click.option(
+        "--format", "-f", type=click.Choice(["text", "json"]), default="text", help="Output format"
+    )(func)
 
 
 def setup_logging(verbose: bool = False):
@@ -357,9 +366,7 @@ def config_reset(ctx, yes: bool):
 @click.argument("path", type=click.Path(exists=True), default=".")
 @click.option("--config", "-c", "config_file", type=click.Path(), help="Path to config file")
 @click.option("--rules", "-r", help="Inline JSON rules configuration")
-@click.option(
-    "--format", "-f", type=click.Choice(["text", "json"]), default="text", help="Output format"
-)
+@format_option
 @click.option("--recursive/--no-recursive", default=True, help="Scan directories recursively")
 @click.pass_context
 def file_placement(  # pylint: disable=too-many-arguments,too-many-positional-arguments,too-many-locals,too-many-statements
@@ -417,7 +424,7 @@ def _execute_file_placement_lint(  # pylint: disable=too-many-arguments,too-many
     if verbose:
         logger.info(f"Found {len(violations)} violation(s)")
 
-    _output_violations(violations, format)
+    format_violations(violations, format)
     sys.exit(1 if violations else 0)
 
 
@@ -573,56 +580,6 @@ def _execute_linting(orchestrator, path_obj, recursive):
     return orchestrator.lint_directory(path_obj, recursive=recursive)
 
 
-def _output_violations(violations, format):
-    """Format and output violations."""
-    if format == "json":
-        _output_json(violations)
-    else:
-        _output_text(violations)
-
-
-def _output_json(violations):
-    """Output violations in JSON format."""
-    import json
-
-    output = {
-        "violations": [
-            {
-                "rule_id": v.rule_id,
-                "file_path": str(v.file_path),
-                "line": v.line,
-                "column": v.column,
-                "message": v.message,
-                "severity": v.severity.name,
-            }
-            for v in violations
-        ],
-        "total": len(violations),
-    }
-    click.echo(json.dumps(output, indent=2))
-
-
-def _output_text(violations):
-    """Output violations in text format."""
-    if not violations:
-        click.echo("✓ No violations found")
-        return
-
-    click.echo(f"Found {len(violations)} violation(s):\n")
-    for v in violations:
-        _print_violation(v)
-
-
-def _print_violation(v) -> None:
-    """Print a single violation in text format."""
-    location = f"{v.file_path}:{v.line}" if v.line else str(v.file_path)
-    if v.column:
-        location += f":{v.column}"
-    click.echo(f"  {location}")
-    click.echo(f"    [{v.severity.name}] {v.rule_id}: {v.message}")
-    click.echo()
-
-
 def _setup_nesting_orchestrator(path_obj: Path, config_file: str | None, verbose: bool):
     """Set up orchestrator for nesting command."""
     project_root = path_obj if path_obj.is_dir() else path_obj.parent
@@ -662,9 +619,7 @@ def _run_nesting_lint(orchestrator, path_obj: Path, recursive: bool):
 @cli.command("nesting")
 @click.argument("path", type=click.Path(exists=True), default=".")
 @click.option("--config", "-c", "config_file", type=click.Path(), help="Path to config file")
-@click.option(
-    "--format", "-f", type=click.Choice(["text", "json"]), default="text", help="Output format"
-)
+@format_option
 @click.option("--max-depth", type=int, help="Override max nesting depth (default: 4)")
 @click.option("--recursive/--no-recursive", default=True, help="Scan directories recursively")
 @click.pass_context
@@ -720,7 +675,7 @@ def _execute_nesting_lint(  # pylint: disable=too-many-arguments,too-many-positi
     if verbose:
         logger.info(f"Found {len(nesting_violations)} nesting violation(s)")
 
-    _output_violations(nesting_violations, format)
+    format_violations(nesting_violations, format)
     sys.exit(1 if nesting_violations else 0)
 
 
@@ -780,9 +735,7 @@ def _run_srp_lint(orchestrator, path_obj: Path, recursive: bool):
 @cli.command("srp")
 @click.argument("path", type=click.Path(exists=True), default=".")
 @click.option("--config", "-c", "config_file", type=click.Path(), help="Path to config file")
-@click.option(
-    "--format", "-f", type=click.Choice(["text", "json"]), default="text", help="Output format"
-)
+@format_option
 @click.option("--max-methods", type=int, help="Override max methods per class (default: 7)")
 @click.option("--max-loc", type=int, help="Override max lines of code per class (default: 200)")
 @click.option("--recursive/--no-recursive", default=True, help="Scan directories recursively")
@@ -847,16 +800,14 @@ def _execute_srp_lint(  # pylint: disable=too-many-arguments,too-many-positional
     if verbose:
         logger.info(f"Found {len(srp_violations)} SRP violation(s)")
 
-    _output_violations(srp_violations, format)
+    format_violations(srp_violations, format)
     sys.exit(1 if srp_violations else 0)
 
 
 @cli.command("dry")
 @click.argument("path", type=click.Path(exists=True), default=".")
 @click.option("--config", "-c", "config_file", type=click.Path(), help="Path to config file")
-@click.option(
-    "--format", "-f", type=click.Choice(["text", "json"]), default="text", help="Output format"
-)
+@format_option
 @click.option("--min-lines", type=int, help="Override min duplicate lines threshold")
 @click.option("--no-cache", is_flag=True, help="Disable SQLite cache (force rehash)")
 @click.option("--clear-cache", is_flag=True, help="Clear cache before running")
@@ -939,7 +890,7 @@ def _execute_dry_lint(  # pylint: disable=too-many-arguments,too-many-positional
     if verbose:
         logger.info(f"Found {len(dry_violations)} DRY violation(s)")
 
-    _output_violations(dry_violations, format)
+    format_violations(dry_violations, format)
     sys.exit(1 if dry_violations else 0)
 
 
