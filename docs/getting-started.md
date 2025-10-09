@@ -91,11 +91,20 @@ Found 2 violations:
   config.py: Python files should be in src/ directory
 ```
 
-### 2. Lint a Specific Directory
+### 2. Lint Specific Files or Directories
 
 ```bash
 # Lint only the src/ directory
 thai-lint file-placement src/
+
+# Lint multiple specific files
+thai-lint nesting file1.py file2.py file3.py
+
+# Lint multiple directories
+thai-lint dry src/ tests/
+
+# Mix files and directories
+thai-lint nesting src/ main.py utils.py
 
 # Lint recursively (default)
 thai-lint file-placement --recursive src/
@@ -386,9 +395,18 @@ Add to `.pre-commit-config.yaml`:
 repos:
   - repo: local
     hooks:
-      - id: thailint
-        name: thailint file placement
-        entry: thai-lint file-placement
+      # Option 1: Lint changed files only (fast, recommended)
+      - id: thailint-nesting
+        name: Check nesting depth (changed files)
+        entry: thailint nesting
+        language: python
+        files: \.(py|ts|tsx|js|jsx)$
+        pass_filenames: true
+
+      # Option 2: Lint entire project (comprehensive)
+      - id: thailint-full
+        name: thailint full project check
+        entry: thailint file-placement
         language: python
         pass_filenames: false
         always_run: true
@@ -525,11 +543,13 @@ thai-lint file-placement --format json .
 
 # Nesting depth check
 thai-lint nesting src/
+thai-lint nesting file1.py file2.py file3.py  # Multiple files
 thai-lint nesting --max-depth 3 src/
 thai-lint nesting --format json src/
 
 # Duplicate code detection
 thai-lint dry src/
+thai-lint dry src/ tests/  # Multiple directories
 thai-lint dry --min-lines 3 src/
 thai-lint dry --clear-cache src/
 thai-lint dry --format json src/

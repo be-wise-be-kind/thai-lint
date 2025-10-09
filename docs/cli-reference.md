@@ -42,10 +42,15 @@ thailint --version
 ## Command Structure
 
 ```
-thai-lint [GLOBAL_OPTIONS] COMMAND [COMMAND_OPTIONS] [ARGS]
+thai-lint [GLOBAL_OPTIONS] COMMAND [COMMAND_OPTIONS] [PATH...]
 ```
 
-**Important:** All linting commands accept **one path at a time** (file or directory), not multiple files. To lint multiple files, pass their parent directory and files will be scanned recursively.
+**Important:** All linting commands now accept **multiple paths** (files or directories). You can pass:
+- A single file: `thailint nesting src/main.py`
+- Multiple files: `thailint nesting file1.py file2.py file3.py`
+- Directories: `thailint nesting src/ tests/`
+- Mixed: `thailint nesting src/ main.py utils.py`
+- No paths (defaults to current directory): `thailint nesting`
 
 ## Global Options
 
@@ -123,22 +128,24 @@ thai-lint lint [OPTIONS] COMMAND [ARGS]
 Lint files for proper file placement according to configuration rules.
 
 ```bash
-thai-lint file-placement [OPTIONS] [PATH]
+thai-lint file-placement [OPTIONS] [PATH...]
 ```
+
+**Note:** Accepts multiple paths (files and/or directories).
 
 #### lint nesting
 
 Check for excessive nesting depth in code.
 
 ```bash
-thai-lint nesting [OPTIONS] [PATH]
+thai-lint nesting [OPTIONS] [PATH...]
 ```
 
 **Arguments:**
 
 | Argument | Required | Default | Description |
 |----------|----------|---------|-------------|
-| `PATH` | No | `.` (current directory) | Single file or directory to lint (one path only) |
+| `PATH...` | No | `.` (current directory) | One or more files/directories to lint |
 
 **Options:**
 
@@ -162,6 +169,15 @@ thai-lint file-placement src/
 
 # Lint specific file
 thai-lint file-placement src/main.py
+
+# Lint multiple files
+thai-lint file-placement src/main.py src/utils.py tests/test_main.py
+
+# Lint multiple directories
+thai-lint file-placement src/ tests/
+
+# Mix files and directories
+thai-lint file-placement src/ main.py
 ```
 
 **With configuration file:**
@@ -255,14 +271,14 @@ Exit code: 0
 Check for excessive nesting depth in Python and TypeScript code.
 
 ```bash
-thai-lint nesting [OPTIONS] [PATH]
+thai-lint nesting [OPTIONS] [PATH...]
 ```
 
 **Arguments:**
 
 | Argument | Required | Default | Description |
 |----------|----------|---------|-------------|
-| `PATH` | No | `.` (current directory) | Single file or directory to check (one path only) |
+| `PATH...` | No | `.` (current directory) | One or more files/directories to check |
 
 **Options:**
 
@@ -284,6 +300,15 @@ thai-lint nesting src/
 
 # Check specific file
 thai-lint nesting src/main.py
+
+# Check multiple files
+thai-lint nesting src/main.py src/utils.py src/handler.py
+
+# Check multiple directories
+thai-lint nesting src/ tests/
+
+# Mix files and directories
+thai-lint nesting src/ main.py helpers/
 ```
 
 **With custom max depth:**
@@ -402,14 +427,14 @@ thai-lint --verbose nesting src/
 Detect duplicate code using token-based hash analysis with SQLite caching.
 
 ```bash
-thai-lint dry [OPTIONS] [PATH]
+thai-lint dry [OPTIONS] [PATH...]
 ```
 
 **Arguments:**
 
 | Argument | Required | Default | Description |
 |----------|----------|---------|-------------|
-| `PATH` | No | `.` (current directory) | Single file or directory to check (one path only) |
+| `PATH...` | No | `.` (current directory) | One or more files/directories to check |
 
 **Options:**
 
@@ -434,6 +459,15 @@ thai-lint dry src/
 
 # Check specific file
 thai-lint dry src/main.py
+
+# Check multiple files
+thai-lint dry src/api.py src/handler.py src/processor.py
+
+# Check multiple directories
+thai-lint dry src/ lib/
+
+# Mix files and directories
+thai-lint dry src/ utils.py helpers/
 ```
 
 **With custom thresholds:**
@@ -578,6 +612,9 @@ thai-lint dry --min-lines 3 .
 
 # Check only source code
 thai-lint dry src/
+
+# Check multiple specific files (useful for pre-commit hooks)
+thai-lint dry file1.py file2.py file3.py
 
 # CI/CD integration with fresh cache
 thai-lint dry --clear-cache --format json src/ > dry-report.json
