@@ -801,10 +801,10 @@ This guide covers **objective, mechanical linting fixes**. It does NOT cover:
 
 - **Complexity violations** (Radon, Xenon) - See `how-to-refactor-for-quality.md`
 - **SRP violations** - See `how-to-refactor-for-quality.md`
-- **DRY violations** - See `how-to-refactor-for-quality.md`
+- **DRY violations** (duplicate code) - See `how-to-refactor-for-quality.md`
 - **Architectural refactoring** - See `how-to-refactor-for-quality.md`
 
-If `make lint-complexity` or `make lint-solid` show violations, complete this guide first, then proceed to architectural refactoring.
+If `make lint-complexity`, `make lint-solid`, or `make lint-dry` show violations, complete this guide first, then proceed to architectural refactoring.
 
 ---
 
@@ -865,10 +865,10 @@ Before moving to architectural refactoring:
 
 After completing basic linting:
 
-1. **If `make lint-complexity` passes** and **`make lint-solid` passes**:
+1. **If `make lint-complexity` passes**, **`make lint-solid` passes**, and **`make lint-dry` passes**:
    - You're done! Commit your changes.
 
-2. **If complexity or SRP violations remain**:
+2. **If complexity, SRP, or DRY violations remain**:
    - Proceed to `.ai/howtos/how-to-refactor-for-quality.md`
    - Follow the architectural refactoring guide
 
