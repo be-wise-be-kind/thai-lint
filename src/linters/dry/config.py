@@ -20,6 +20,10 @@ Implementation: Dataclass with field defaults, __post_init__ validation, and dic
 from dataclasses import dataclass, field
 from typing import Any
 
+# Default configuration constants
+DEFAULT_MIN_DUPLICATE_LINES = 3
+DEFAULT_MIN_DUPLICATE_TOKENS = 30
+
 
 @dataclass
 class DRYConfig:  # pylint: disable=too-many-instance-attributes
@@ -33,8 +37,8 @@ class DRYConfig:  # pylint: disable=too-many-instance-attributes
     """
 
     enabled: bool = False  # Must be explicitly enabled
-    min_duplicate_lines: int = 3
-    min_duplicate_tokens: int = 30
+    min_duplicate_lines: int = DEFAULT_MIN_DUPLICATE_LINES
+    min_duplicate_tokens: int = DEFAULT_MIN_DUPLICATE_TOKENS
     min_occurrences: int = 2  # Minimum occurrences to report (default: 2)
 
     # Language-specific overrides
@@ -118,8 +122,8 @@ class DRYConfig:  # pylint: disable=too-many-instance-attributes
 
         return cls(
             enabled=config.get("enabled", False),
-            min_duplicate_lines=config.get("min_duplicate_lines", 3),
-            min_duplicate_tokens=config.get("min_duplicate_tokens", 30),
+            min_duplicate_lines=config.get("min_duplicate_lines", DEFAULT_MIN_DUPLICATE_LINES),
+            min_duplicate_tokens=config.get("min_duplicate_tokens", DEFAULT_MIN_DUPLICATE_TOKENS),
             min_occurrences=config.get("min_occurrences", 2),
             python_min_occurrences=python_config.get("min_occurrences"),
             typescript_min_occurrences=typescript_config.get("min_occurrences"),

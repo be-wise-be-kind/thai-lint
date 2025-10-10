@@ -22,7 +22,7 @@ Implementation: Simple re-export pattern for package interface, convenience func
 from pathlib import Path
 from typing import Any
 
-from .config import NestingConfig
+from .config import DEFAULT_MAX_NESTING_DEPTH, NestingConfig
 from .linter import NestingDepthRule
 from .python_analyzer import PythonNestingAnalyzer
 from .typescript_analyzer import TypeScriptNestingAnalyzer
@@ -36,7 +36,11 @@ __all__ = [
 ]
 
 
-def lint(path: Path | str, config: dict[str, Any] | None = None, max_depth: int = 4) -> list:
+def lint(
+    path: Path | str,
+    config: dict[str, Any] | None = None,
+    max_depth: int = DEFAULT_MAX_NESTING_DEPTH,
+) -> list:
     """Lint a file or directory for nesting depth violations.
 
     Args:

@@ -23,13 +23,17 @@ Implementation: Dataclass with validation and defaults, heuristic-based SRP dete
 from dataclasses import dataclass, field
 from typing import Any
 
+# Default SRP threshold constants
+DEFAULT_MAX_METHODS_PER_CLASS = 7
+DEFAULT_MAX_LOC_PER_CLASS = 200
+
 
 @dataclass
 class SRPConfig:
     """Configuration for SRP linter."""
 
-    max_methods: int = 7  # Maximum methods per class
-    max_loc: int = 200  # Maximum lines of code per class
+    max_methods: int = DEFAULT_MAX_METHODS_PER_CLASS  # Maximum methods per class
+    max_loc: int = DEFAULT_MAX_LOC_PER_CLASS  # Maximum lines of code per class
     enabled: bool = True
     check_keywords: bool = True
     keywords: list[str] = field(
@@ -58,11 +62,13 @@ class SRPConfig:
         # Get language-specific config if available
         if language and language in config:
             lang_config = config[language]
-            max_methods = lang_config.get("max_methods", config.get("max_methods", 7))
-            max_loc = lang_config.get("max_loc", config.get("max_loc", 200))
+            max_methods = lang_config.get(
+                "max_methods", config.get("max_methods", DEFAULT_MAX_METHODS_PER_CLASS)
+            )
+            max_loc = lang_config.get("max_loc", config.get("max_loc", DEFAULT_MAX_LOC_PER_CLASS))
         else:
-            max_methods = config.get("max_methods", 7)
-            max_loc = config.get("max_loc", 200)
+            max_methods = config.get("max_methods", DEFAULT_MAX_METHODS_PER_CLASS)
+            max_loc = config.get("max_loc", DEFAULT_MAX_LOC_PER_CLASS)
 
         return cls(
             max_methods=max_methods,

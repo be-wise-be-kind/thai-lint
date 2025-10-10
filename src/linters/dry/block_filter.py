@@ -23,6 +23,9 @@ from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import Protocol
 
+# Default filter threshold constants
+DEFAULT_KEYWORD_ARG_THRESHOLD = 0.8
+
 
 class CodeBlock(Protocol):
     """Protocol for code blocks (matches cache.CodeBlock)."""
@@ -67,7 +70,7 @@ class KeywordArgumentFilter(BaseBlockFilter):
     These are common in builder patterns and API calls.
     """
 
-    def __init__(self, threshold: float = 0.8):
+    def __init__(self, threshold: float = DEFAULT_KEYWORD_ARG_THRESHOLD):
         """Initialize filter.
 
         Args:
@@ -256,7 +259,7 @@ def create_default_registry() -> BlockFilterRegistry:
     registry = BlockFilterRegistry()
 
     # Register built-in filters
-    registry.register(KeywordArgumentFilter(threshold=0.8))
+    registry.register(KeywordArgumentFilter(threshold=DEFAULT_KEYWORD_ARG_THRESHOLD))
     registry.register(ImportGroupFilter())
 
     return registry

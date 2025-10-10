@@ -48,19 +48,33 @@ class ContextAnalyzer:  # thailint: ignore[srp]
         Returns:
             True if the context is acceptable and should not be flagged
         """
-        if self.is_test_file(file_path):
+        # File-level and definition checks
+        if self.is_test_file(file_path) or self.is_constant_definition(node, parent):
             return True
 
-        if self.is_constant_definition(node, parent):
-            return True
+        # Usage pattern checks
+        return self._is_acceptable_usage_pattern(node, parent, config)
 
+    def _is_acceptable_usage_pattern(
+        self, node: ast.Constant, parent: ast.AST | None, config: dict
+    ) -> bool:
+        """Check if numeric literal is in acceptable usage pattern.
+
+        Args:
+            node: The numeric constant node
+            parent: The parent node in the AST
+            config: Configuration with max_small_integer threshold
+
+        Returns:
+            True if usage pattern is acceptable
+        """
         if self.is_small_integer_in_range(node, parent, config):
             return True
 
         if self.is_small_integer_in_enumerate(node, parent, config):
             return True
 
-        return False
+        return self.is_string_repetition(node, parent)
 
     def is_test_file(self, file_path: Path | None) -> bool:
         """Check if the file is a test file.
@@ -187,3 +201,47 @@ class ContextAnalyzer:  # thailint: ignore[srp]
             and isinstance(parent.func, ast.Name)
             and parent.func.id == "enumerate"
         )
+
+    def is_string_repetition(self, node: ast.Constant, parent: ast.AST | None) -> bool:
+        """Check if this number is used in string repetition (e.g., "-" * 40).
+
+        Args:
+            node: The numeric constant node
+            parent: The parent node in the AST
+
+        Returns:
+            True if this is a string repetition pattern
+        """
+        if not isinstance(node.value, int):
+            return False
+
+        if not isinstance(parent, ast.BinOp):
+            return False
+
+        if not isinstance(parent.op, ast.Mult):
+            return False
+
+        # Check if either operand is a string constant
+        return self._has_string_operand(parent)
+
+    def _has_string_operand(self, binop: ast.BinOp) -> bool:
+        """Check if binary operation has a string operand.
+
+        Args:
+            binop: Binary operation node
+
+        Returns:
+            True if either left or right operand is a string constant
+        """
+        return self._is_string_constant(binop.left) or self._is_string_constant(binop.right)
+
+    def _is_string_constant(self, node: ast.AST) -> bool:
+        """Check if a node is a string constant.
+
+        Args:
+            node: AST node to check
+
+        Returns:
+            True if node is a Constant with string value
+        """
+        return isinstance(node, ast.Constant) and isinstance(node.value, str)

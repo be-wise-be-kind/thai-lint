@@ -14,7 +14,7 @@ Dependencies: pytest for testing framework, pathlib for Path handling, unittest.
     context mocking, src.linters.magic_numbers.linter for MagicNumberRule
 
 Exports: TestNegativeNumbers (3 tests), TestLargeNumbers (3 tests), TestScientificNotation
-    (2 tests), TestSpecialContexts (5 tests) - total 13 test cases
+    (2 tests), TestSpecialContexts (3 tests) - total 11 test cases
 
 Interfaces: Tests MagicNumberRule edge case handling through check() method
 
@@ -77,6 +77,26 @@ def process():
         violations = rule.check(context)
         # Should detect all magic numbers in function call
         assert len(violations) >= 3, "Should detect magic numbers as function arguments"
+
+    def test_ignores_integers_in_string_repetition(self):
+        """Should not flag integers used in string repetition (idiomatic formatting)."""
+        code = """
+def print_separator():
+    print("-" * 40)
+    print("=" * 80)
+    print("*" * 120)
+"""
+        from src.linters.magic_numbers.linter import MagicNumberRule
+
+        rule = MagicNumberRule()
+        context = Mock()
+        context.file_path = Path("test.py")
+        context.file_content = code
+        context.language = "python"
+
+        violations = rule.check(context)
+        # String repetition is idiomatic and should not be flagged
+        assert len(violations) == 0, "Should allow integers in string repetition pattern"
 
 
 class TestBoundaryConditions:
