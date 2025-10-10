@@ -82,6 +82,23 @@ srp:
     - Utility
     - Helper
 
+# Magic numbers linter - detects unnamed numeric literals
+magic-numbers:
+  enabled: true
+
+  # Numbers that are acceptable without constants (self-explanatory)
+  allowed_numbers:
+    - -1   # Common error/not-found indicator
+    - 0    # Zero/false/empty
+    - 1    # One/true/first
+    - 2    # Two/second
+    - 10   # Decimal base
+    - 100  # Percentage base
+    - 1000 # Thousand
+
+  # Maximum integer allowed in range() or enumerate() without constant
+  max_small_integer: 10
+
 # Future linters will be added as separate top-level sections:
 #
 # code-quality:

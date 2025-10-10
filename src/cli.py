@@ -1077,5 +1077,106 @@ def _run_dry_lint(orchestrator, path_objs, recursive):
     return dry_violations
 
 
+def _setup_magic_numbers_orchestrator(
+    path_objs: list[Path], config_file: str | None, verbose: bool
+):
+    """Set up orchestrator for magic-numbers command."""
+    first_path = path_objs[0] if path_objs else Path.cwd()
+    project_root = first_path if first_path.is_dir() else first_path.parent
+
+    from src.orchestrator.core import Orchestrator
+
+    orchestrator = Orchestrator(project_root=project_root)
+
+    if config_file:
+        _load_config_file(orchestrator, config_file, verbose)
+
+    return orchestrator
+
+
+def _run_magic_numbers_lint(orchestrator, path_objs: list[Path], recursive: bool):
+    """Execute magic-numbers lint on files or directories."""
+    all_violations = _execute_linting_on_paths(orchestrator, path_objs, recursive)
+    return [v for v in all_violations if "magic-number" in v.rule_id]
+
+
+@cli.command("magic-numbers")
+@click.argument("paths", nargs=-1, type=click.Path())
+@click.option("--config", "-c", "config_file", type=click.Path(), help="Path to config file")
+@format_option
+@click.option("--recursive/--no-recursive", default=True, help="Scan directories recursively")
+@click.pass_context
+def magic_numbers(  # pylint: disable=too-many-arguments,too-many-positional-arguments
+    ctx,
+    paths: tuple[str, ...],
+    config_file: str | None,
+    format: str,
+    recursive: bool,
+):
+    """Check for magic numbers in code.
+
+    Detects unnamed numeric literals in Python and TypeScript/JavaScript code
+    that should be extracted as named constants for better readability.
+
+    PATHS: Files or directories to lint (defaults to current directory if none provided)
+
+    Examples:
+
+        \b
+        # Check current directory (all files recursively)
+        thai-lint magic-numbers
+
+        \b
+        # Check specific directory
+        thai-lint magic-numbers src/
+
+        \b
+        # Check single file
+        thai-lint magic-numbers src/app.py
+
+        \b
+        # Check multiple files
+        thai-lint magic-numbers src/app.py src/utils.py tests/test_app.py
+
+        \b
+        # Check mix of files and directories
+        thai-lint magic-numbers src/app.py tests/
+
+        \b
+        # Get JSON output
+        thai-lint magic-numbers --format json .
+
+        \b
+        # Use custom config file
+        thai-lint magic-numbers --config .thailint.yaml src/
+    """
+    verbose = ctx.obj.get("verbose", False)
+
+    if not paths:
+        paths = (".",)
+
+    path_objs = [Path(p) for p in paths]
+
+    try:
+        _execute_magic_numbers_lint(path_objs, config_file, format, recursive, verbose)
+    except Exception as e:
+        _handle_linting_error(e, verbose)
+
+
+def _execute_magic_numbers_lint(  # pylint: disable=too-many-arguments,too-many-positional-arguments
+    path_objs, config_file, format, recursive, verbose
+):
+    """Execute magic-numbers lint."""
+    _validate_paths_exist(path_objs)
+    orchestrator = _setup_magic_numbers_orchestrator(path_objs, config_file, verbose)
+    magic_numbers_violations = _run_magic_numbers_lint(orchestrator, path_objs, recursive)
+
+    if verbose:
+        logger.info(f"Found {len(magic_numbers_violations)} magic number violation(s)")
+
+    format_violations(magic_numbers_violations, format)
+    sys.exit(1 if magic_numbers_violations else 0)
+
+
 if __name__ == "__main__":
     cli()

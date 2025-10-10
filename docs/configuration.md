@@ -129,6 +129,7 @@ file-placement:
 | `nesting` | object | No | Nesting depth linter configuration |
 | `srp` | object | No | Single Responsibility Principle linter configuration |
 | `dry` | object | No | DRY (Don't Repeat Yourself) linter configuration |
+| `magic-numbers` | object | No | Magic numbers linter configuration |
 | `code-quality` | object | No | Code quality linter configuration (future) |
 
 ### File Placement Linter Options
@@ -320,6 +321,99 @@ Filters reduce false positives:
 
 - **keyword_argument_filter**: Ignores function calls with only keyword arguments (common pattern in configs)
 - **import_group_filter**: Ignores import statement groups (naturally similar structure)
+
+### Magic Numbers Linter Options
+
+Under the `magic-numbers` key:
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `enabled` | boolean | `true` | Enable/disable magic numbers linter |
+| `allowed_numbers` | array | `[-1, 0, 1, 2, 10, 100, 1000]` | Numbers that are acceptable without named constants |
+| `max_small_integer` | integer | `10` | Maximum value allowed in `range()` or `enumerate()` without being flagged |
+
+**Example:**
+
+```yaml
+magic-numbers:
+  enabled: true
+  allowed_numbers: [-1, 0, 1, 2, 10, 100, 1000]
+  max_small_integer: 10
+```
+
+```json
+{
+  "magic-numbers": {
+    "enabled": true,
+    "allowed_numbers": [-1, 0, 1, 2, 10, 100, 1000],
+    "max_small_integer": 10
+  }
+}
+```
+
+**Configuration Behavior:**
+
+- **allowed_numbers**: Numbers in this list will not be flagged as magic numbers. Common values like `-1`, `0`, `1`, `2` are often self-explanatory and don't need constants.
+- **max_small_integer**: Small integers used in `range()` or `enumerate()` below this threshold are considered acceptable (e.g., `range(5)` is clear, but `range(100)` should use a constant).
+
+**Acceptable Contexts** (always allowed regardless of config):
+
+- **Constant definitions**: Numbers assigned to UPPERCASE variable names (e.g., `MAX_SIZE = 100`)
+- **Small integers in `range()`**: Integers ≤ `max_small_integer` in `range()` calls
+- **Small integers in `enumerate()`**: Integers ≤ `max_small_integer` as start value in `enumerate()`
+- **Test files**: Numbers in files matching `test_*.py`, `*_test.py`, `*.test.ts`, `*.spec.ts` patterns
+- **String repetition**: Integers used for string multiplication (e.g., `"-" * 40`)
+
+**Complete YAML Example:**
+
+```yaml
+magic-numbers:
+  enabled: true
+
+  # Numbers that don't need constants (self-explanatory)
+  allowed_numbers:
+    - -1   # Common error/not-found indicator
+    - 0    # Zero/false/empty
+    - 1    # One/true/first
+    - 2    # Two/second
+    - 10   # Decimal base
+    - 100  # Percentage base
+    - 1000 # Thousand
+
+  # Maximum integer allowed in range() without constant
+  max_small_integer: 10
+```
+
+**Complete JSON Example:**
+
+```json
+{
+  "magic-numbers": {
+    "enabled": true,
+    "allowed_numbers": [-1, 0, 1, 2, 10, 100, 1000],
+    "max_small_integer": 10
+  }
+}
+```
+
+**Customization Examples:**
+
+```yaml
+# Strict - only very common values allowed
+magic-numbers:
+  allowed_numbers: [-1, 0, 1]
+  max_small_integer: 3
+
+# Standard - recommended (default)
+magic-numbers:
+  allowed_numbers: [-1, 0, 1, 2, 10, 100, 1000]
+  max_small_integer: 10
+
+# Lenient - includes time units
+magic-numbers:
+  allowed_numbers: [-1, 0, 1, 2, 10, 24, 60, 100, 1000, 3600]
+  max_small_integer: 20
+```
 
 ### Global Patterns
 
