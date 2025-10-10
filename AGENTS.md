@@ -270,7 +270,7 @@ Types: `feat`, `fix`, `docs`, `style`, `refactor`, `test`, `chore`
    - Don't rationalize "someone else wrote this" - you're committing it now
 
 2. ❌ **"B-grade complexity is still good"**
-   - The Makefile says `--max-absolute A` which means EVERY block must be A
+   - The justfile enforces `--max-absolute A` which means EVERY block must be A
    - B is NOT acceptable even if "it's just one function" or "it's a helper"
    - Don't make excuses - refactor until it's A-grade
 
