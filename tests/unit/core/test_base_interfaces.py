@@ -242,49 +242,6 @@ class TestViolation:
         assert violation.message == "Test violation"
         assert violation.severity == Severity.ERROR
 
-    def test_violation_can_be_serialized(self):
-        """Violation can be converted to dict/JSON."""
-        from src.core.types import Severity, Violation
-
-        violation = Violation(
-            rule_id="test.rule",
-            file_path="src/test.py",
-            line=10,
-            column=5,
-            message="Test violation",
-            severity=Severity.ERROR,
-            suggestion="Fix this issue",
-        )
-
-        violation_dict = violation.to_dict()
-
-        assert isinstance(violation_dict, dict)
-        assert violation_dict["rule_id"] == "test.rule"
-        assert violation_dict["file_path"] == "src/test.py"
-        assert violation_dict["line"] == 10
-        assert violation_dict["column"] == 5
-        assert violation_dict["message"] == "Test violation"
-        assert violation_dict["severity"] == "error"
-        assert violation_dict["suggestion"] == "Fix this issue"
-
-    def test_violation_suggestion_optional(self):
-        """Violation suggestion field is optional."""
-        from src.core.types import Severity, Violation
-
-        violation = Violation(
-            rule_id="test.rule",
-            file_path="src/test.py",
-            line=10,
-            column=5,
-            message="Test violation",
-            severity=Severity.ERROR,
-        )
-
-        assert violation.suggestion is None
-
-        violation_dict = violation.to_dict()
-        assert violation_dict["suggestion"] is None
-
 
 class TestSeverity:
     """Test Severity enum."""

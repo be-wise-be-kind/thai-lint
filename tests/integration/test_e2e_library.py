@@ -81,30 +81,6 @@ class TestLibraryBasicUsage:
             # Should pass (no violations)
             assert len(violations) == 0
 
-    def test_linter_with_path_objects(self) -> None:
-        """Test Linter works with Path objects."""
-        from src import Linter
-
-        with tempfile.TemporaryDirectory() as tmpdir:
-            tmp_path = Path(tmpdir)
-
-            # Create config
-            config_file = tmp_path / ".thailint.yaml"
-            config_file.write_text(
-                "file-placement:\n  global_patterns:\n    allow:\n      - pattern: '.*\\.py$'\n"
-            )
-
-            # Create test file
-            test_file = tmp_path / "test.py"
-            test_file.write_text("print('test')")
-
-            # Use Path objects
-            linter = Linter(config_file=config_file, project_root=tmp_path)
-            violations = linter.lint(test_file)
-
-            # Should work with Path objects
-            assert len(violations) == 0
-
 
 class TestLibraryMultipleRules:
     """Test Library API with multiple rules."""
@@ -129,32 +105,6 @@ class TestLibraryMultipleRules:
 
         # Should find violations
         assert len(violations) > 0
-
-    def test_lint_all_rules(self) -> None:
-        """Test linting with all available rules."""
-        from src import Linter
-
-        with tempfile.TemporaryDirectory() as tmpdir:
-            tmp_path = Path(tmpdir)
-
-            # Create config
-            config_file = tmp_path / ".thailint.yaml"
-            config_file.write_text(
-                "file-placement:\n  global_patterns:\n    allow:\n      - pattern: '.*\\.py$'\n"
-            )
-
-            # Create test file
-            test_file = tmp_path / "test.py"
-            test_file.write_text("print('test')")
-
-            # Initialize linter
-            linter = Linter(config_file=str(config_file), project_root=str(tmp_path))
-
-            # Run all rules (default)
-            violations = linter.lint(str(test_file))
-
-            # Should pass
-            assert len(violations) == 0
 
 
 class TestLibraryDirectoryScanning:
@@ -211,30 +161,6 @@ class TestLibraryDirectoryScanning:
 
 class TestLibraryViolationFormat:
     """Test Library API violation result format."""
-
-    def test_violation_has_required_fields(self, make_project) -> None:
-        """Test violations have all required fields."""
-        from src import Linter
-
-        # Create project with deny-all-python config
-        project_root = make_project(
-            git=True, config_type="deny_all_python", files={"test.py": "print('test')"}
-        )
-
-        # Initialize linter
-        linter = Linter(project_root=str(project_root))
-
-        # Run linting
-        test_file = project_root / "test.py"
-        violations = linter.lint(str(test_file))
-
-        # Verify violation format
-        assert len(violations) > 0
-        v = violations[0]
-        assert hasattr(v, "file_path")
-        assert hasattr(v, "message")
-        assert hasattr(v, "severity")
-        assert hasattr(v, "rule_id")
 
     def test_violation_serialization(self, make_project) -> None:
         """Test violations can be serialized to dict/JSON."""

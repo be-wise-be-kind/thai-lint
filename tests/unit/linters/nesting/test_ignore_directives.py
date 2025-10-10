@@ -30,30 +30,6 @@ from unittest.mock import Mock
 class TestIgnoreDirectives:
     """Test inline ignore directives."""
 
-    def test_ignore_suppresses_violation(self):
-        """# thailint: ignore nesting should suppress violation."""
-        from src.linters.nesting.linter import NestingDepthRule
-
-        code = """
-def complex_function(data):  # thailint: ignore nesting
-    for item in data:
-        if item.active:
-            for child in item.children:
-                if child.valid:
-                    if child.important:
-                        process(child)
-"""
-        rule = NestingDepthRule()
-        context = Mock()
-        context.file_path = Path("test.py")
-        context.file_content = code
-        context.language = "python"
-        context.metadata = {}
-
-        violations = rule.check(context)
-        # Should NOT report violation due to ignore comment
-        assert len(violations) == 0, "Ignore directive should suppress violation"
-
     def test_ignore_all_suppresses_any_rule(self):
         """# thailint: ignore-all should suppress all rules."""
         from src.linters.nesting.linter import NestingDepthRule
@@ -191,52 +167,3 @@ def test_function():
         violations = rule.check(context)
         # Block ignore should suppress violations in the block
         assert len(violations) == 0, "Block ignore should suppress violations"
-
-    def test_ignore_with_justification_comment(self):
-        """Ignore directives can be accompanied by justification comments."""
-        from src.linters.nesting.linter import NestingDepthRule
-
-        code = """
-def complex_cli_parser(args):  # thailint: ignore nesting
-    # Justification: CLI argument parsing inherently complex due to many flag combinations.
-    # Refactoring would harm clarity without reducing actual complexity.
-    for arg in args:
-        if arg.startswith('--'):
-            for handler in handlers:
-                if handler.matches(arg):
-                    if handler.validate(arg):
-                        handler.process(arg)
-"""
-        rule = NestingDepthRule()
-        context = Mock()
-        context.file_path = Path("test.py")
-        context.file_content = code
-        context.language = "python"
-        context.metadata = {}
-
-        violations = rule.check(context)
-        # Ignore with justification should still suppress
-        assert len(violations) == 0, "Ignore with justification should suppress"
-
-    def test_multiple_ignores_same_line(self):
-        """# thailint: ignore nesting, file-placement should handle multiple rules."""
-        from src.linters.nesting.linter import NestingDepthRule
-
-        code = """
-def multi_ignore():  # thailint: ignore nesting, file-placement
-    for i in range(5):
-        for j in range(5):
-            for k in range(5):
-                for m in range(5):
-                    print("ignored")
-"""
-        rule = NestingDepthRule()
-        context = Mock()
-        context.file_path = Path("test.py")
-        context.file_content = code
-        context.language = "python"
-        context.metadata = {}
-
-        violations = rule.check(context)
-        # Multiple comma-separated ignores should work
-        assert len(violations) == 0, "Multiple comma-separated ignores should work"

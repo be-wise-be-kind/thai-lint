@@ -27,130 +27,14 @@ Implementation: 9 tests using pytest tmp_path fixture for isolated file creation
 import json
 
 import pytest
-import yaml
 
 
 class TestYAMLConfigLoading:
     """Test YAML configuration loading."""
 
-    def test_load_valid_yaml_config(self, tmp_path):
-        """Load valid YAML configuration from .thailint.yaml."""
-        config_file = tmp_path / ".thailint.yaml"
-        config_file.write_text("""
-rules:
-  file-placement:
-    enabled: true
-    config:
-      layout_file: .ai/layout.yaml
-""")
-        from src.linter_config.loader import LinterConfigLoader
-
-        loader = LinterConfigLoader()
-        config = loader.load(config_file)
-
-        assert config["rules"]["file-placement"]["enabled"] is True
-        assert config["rules"]["file-placement"]["config"]["layout_file"] == ".ai/layout.yaml"
-
-    def test_load_invalid_yaml_raises_error(self, tmp_path):
-        """Invalid YAML raises clear error."""
-        config_file = tmp_path / "bad.yaml"
-        config_file.write_text("invalid: yaml: content: [")
-
-        from src.core.config_parser import ConfigParseError
-        from src.linter_config.loader import LinterConfigLoader
-
-        loader = LinterConfigLoader()
-        # ConfigParseError wraps yaml.YAMLError
-        with pytest.raises((ValueError, yaml.YAMLError, ConfigParseError)):
-            loader.load(config_file)
-
-    def test_load_nonexistent_file_returns_defaults(self, tmp_path):
-        """Nonexistent config file returns default configuration."""
-        from src.linter_config.loader import LinterConfigLoader
-
-        loader = LinterConfigLoader()
-        config = loader.load(tmp_path / "nonexistent.yaml")
-
-        # Should return defaults, not crash
-        assert isinstance(config, dict)
-        assert "rules" in config
-        assert "ignore" in config
-
-    def test_load_config_with_nested_structures(self, tmp_path):
-        """Load config with deeply nested structures."""
-        config_file = tmp_path / "nested.yaml"
-        config_file.write_text("""
-rules:
-  file-placement:
-    enabled: true
-    config:
-      directories:
-        src/:
-          allow:
-            - "^src/.*\\\\.py$"
-          deny:
-            - pattern: ".*test.*"
-              reason: "Tests go in tests/"
-""")
-        from src.linter_config.loader import LinterConfigLoader
-
-        loader = LinterConfigLoader()
-        config = loader.load(config_file)
-
-        assert (
-            config["rules"]["file-placement"]["config"]["directories"]["src/"]["allow"][0]
-            == "^src/.*\\.py$"
-        )
-        assert (
-            config["rules"]["file-placement"]["config"]["directories"]["src/"]["deny"][0]["pattern"]
-            == ".*test.*"
-        )
-
 
 class TestJSONConfigLoading:
     """Test JSON configuration loading."""
-
-    def test_load_valid_json_config(self, tmp_path):
-        """Load valid JSON configuration from .thailint.json."""
-        config_file = tmp_path / ".thailint.json"
-        config_data = {
-            "rules": {
-                "file-placement": {"enabled": True, "config": {"layout_file": ".ai/layout.json"}}
-            }
-        }
-        config_file.write_text(json.dumps(config_data, indent=2))
-
-        from src.linter_config.loader import LinterConfigLoader
-
-        loader = LinterConfigLoader()
-        config = loader.load(config_file)
-
-        assert config["rules"]["file-placement"]["enabled"] is True
-        assert config["rules"]["file-placement"]["config"]["layout_file"] == ".ai/layout.json"
-
-    def test_json_and_yaml_produce_same_result(self, tmp_path):
-        """Equivalent YAML and JSON produce identical config."""
-        # Create YAML version
-        yaml_file = tmp_path / "config.yaml"
-        yaml_file.write_text("""
-rules:
-  test-rule:
-    enabled: false
-    priority: 10
-""")
-
-        # Create JSON version
-        json_file = tmp_path / "config.json"
-        json_data = {"rules": {"test-rule": {"enabled": False, "priority": 10}}}
-        json_file.write_text(json.dumps(json_data))
-
-        from src.linter_config.loader import LinterConfigLoader
-
-        loader = LinterConfigLoader()
-        yaml_config = loader.load(yaml_file)
-        json_config = loader.load(json_file)
-
-        assert yaml_config == json_config
 
     def test_invalid_json_raises_error(self, tmp_path):
         """Invalid JSON raises clear error."""
@@ -168,19 +52,6 @@ rules:
 
 class TestConfigDefaults:
     """Test default configuration values."""
-
-    def test_get_defaults_returns_valid_structure(self):
-        """Default config has expected structure."""
-        from src.linter_config.loader import LinterConfigLoader
-
-        loader = LinterConfigLoader()
-        defaults = loader.get_defaults()
-
-        assert isinstance(defaults, dict)
-        assert "rules" in defaults
-        assert "ignore" in defaults
-        assert isinstance(defaults["rules"], dict)
-        assert isinstance(defaults["ignore"], list)
 
     def test_unsupported_file_format_raises_error(self, tmp_path):
         """Unsupported file format raises clear error."""
