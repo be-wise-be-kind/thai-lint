@@ -27,8 +27,8 @@ class DRYConfig:  # pylint: disable=too-many-instance-attributes
 
     Note: Pylint too-many-instance-attributes disabled. This is a configuration
     dataclass serving as a data container for related DRY linter settings.
-    All 12 attributes are cohesively related (detection thresholds, language
-    overrides, caching, filtering). Splitting would reduce cohesion and make
+    All attributes are cohesively related (detection thresholds, language
+    overrides, storage mode, filtering). Splitting would reduce cohesion and make
     configuration loading more complex without meaningful benefit.
     """
 
@@ -42,10 +42,8 @@ class DRYConfig:  # pylint: disable=too-many-instance-attributes
     typescript_min_occurrences: int | None = None
     javascript_min_occurrences: int | None = None
 
-    # Cache settings
-    cache_enabled: bool = True  # ON by default for performance
-    cache_path: str = ".thailint-cache/dry.db"
-    cache_max_age_days: int = 30
+    # Storage settings
+    storage_mode: str = "memory"  # Options: "memory" (default) or "tempfile"
 
     # Ignore patterns
     ignore_patterns: list[str] = field(default_factory=lambda: ["tests/", "__init__.py"])
@@ -70,6 +68,10 @@ class DRYConfig:  # pylint: disable=too-many-instance-attributes
             )
         if self.min_occurrences <= 0:
             raise ValueError(f"min_occurrences must be positive, got {self.min_occurrences}")
+        if self.storage_mode not in ("memory", "tempfile"):
+            raise ValueError(
+                f"storage_mode must be 'memory' or 'tempfile', got '{self.storage_mode}'"
+            )
 
     def get_min_occurrences_for_language(self, language: str) -> int:
         """Get minimum occurrences threshold for a specific language.
@@ -122,9 +124,7 @@ class DRYConfig:  # pylint: disable=too-many-instance-attributes
             python_min_occurrences=python_config.get("min_occurrences"),
             typescript_min_occurrences=typescript_config.get("min_occurrences"),
             javascript_min_occurrences=javascript_config.get("min_occurrences"),
-            cache_enabled=config.get("cache_enabled", True),
-            cache_path=config.get("cache_path", ".thailint-cache/dry.db"),
-            cache_max_age_days=config.get("cache_max_age_days", 30),
+            storage_mode=config.get("storage_mode", "memory"),
             ignore_patterns=config.get("ignore", []),
             filters=filters,
         )
