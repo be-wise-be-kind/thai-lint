@@ -284,6 +284,26 @@ def initialize():
         # 0 and 1 are in default allowed_numbers
         assert len(violations) == 0, "Should allow 0 and 1 by default"
 
+    def test_ignores_integers_in_string_repetition(self):
+        """Should not flag integers used in string repetition (idiomatic formatting)."""
+        code = """
+def print_separator():
+    print("-" * 40)
+    print("=" * 80)
+    print("*" * 120)
+"""
+        from src.linters.magic_numbers.linter import MagicNumberRule
+
+        rule = MagicNumberRule()
+        context = Mock()
+        context.file_path = Path("test.py")
+        context.file_content = code
+        context.language = "python"
+
+        violations = rule.check(context)
+        # String repetition is idiomatic and should not be flagged
+        assert len(violations) == 0, "Should allow integers in string repetition pattern"
+
 
 class TestBoundaryConditions:
     """Test boundary conditions and special cases."""

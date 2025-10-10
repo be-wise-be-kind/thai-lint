@@ -34,6 +34,10 @@ class ConfigError(Exception):
     """Configuration-related errors."""
 
 
+# Default configuration constants
+DEFAULT_MAX_RETRIES = 3
+DEFAULT_TIMEOUT_SECONDS = 30
+
 # Default configuration values
 DEFAULT_CONFIG: dict[str, Any] = {
     "app_name": "{{PROJECT_NAME}}",
@@ -41,8 +45,8 @@ DEFAULT_CONFIG: dict[str, Any] = {
     "log_level": "INFO",
     "output_format": "text",
     "greeting": "Hello",
-    "max_retries": 3,
-    "timeout": 30,
+    "max_retries": DEFAULT_MAX_RETRIES,
+    "timeout": DEFAULT_TIMEOUT_SECONDS,
 }
 
 # Configuration file search paths (in priority order)

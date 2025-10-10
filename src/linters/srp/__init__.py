@@ -22,7 +22,7 @@ Implementation: Simple re-export pattern for package interface, convenience func
 from pathlib import Path
 from typing import Any
 
-from .config import SRPConfig
+from .config import DEFAULT_MAX_LOC_PER_CLASS, DEFAULT_MAX_METHODS_PER_CLASS, SRPConfig
 from .linter import SRPRule
 from .python_analyzer import PythonSRPAnalyzer
 from .typescript_analyzer import TypeScriptSRPAnalyzer
@@ -39,8 +39,8 @@ __all__ = [
 def lint(
     path: Path | str,
     config: dict[str, Any] | None = None,
-    max_methods: int = 7,
-    max_loc: int = 200,
+    max_methods: int = DEFAULT_MAX_METHODS_PER_CLASS,
+    max_loc: int = DEFAULT_MAX_LOC_PER_CLASS,
 ) -> list:
     """Lint a file or directory for SRP violations.
 
