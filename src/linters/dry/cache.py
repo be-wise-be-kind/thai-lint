@@ -1,26 +1,27 @@
 """
-Purpose: SQLite cache manager for DRY linter with mtime-based invalidation
+Purpose: SQLite storage manager for DRY linter duplicate detection
 
-Scope: Code block storage, cache operations, and duplicate detection queries
+Scope: Code block storage and duplicate detection queries
 
-Overview: Implements persistent caching layer for duplicate code detection using SQLite database.
-    Stores code blocks with hash values, file locations, and metadata. Provides mtime-based cache
-    invalidation to detect stale entries. Serves dual purpose as both cache (avoid re-hashing) and
-    hash table (query duplicates across project). Includes indexes for fast hash lookups enabling
-    cross-file duplicate detection with minimal overhead.
+Overview: Implements in-memory or temporary-file SQLite storage for duplicate code detection.
+    Stores code blocks with hash values, file locations, and metadata during a single linter run.
+    Supports both :memory: mode (fast, RAM-only) and tempfile mode (disk-backed for large projects).
+    No persistence between runs - storage is cleared when linter completes. Includes indexes for
+    fast hash lookups enabling cross-file duplicate detection with minimal overhead.
 
-Dependencies: Python sqlite3 module (stdlib), pathlib.Path, dataclasses
+Dependencies: Python sqlite3 module (stdlib), tempfile module (stdlib), pathlib.Path, dataclasses
 
 Exports: CodeBlock dataclass, DRYCache class
 
-Interfaces: DRYCache.__init__, is_fresh, load, save, find_duplicates_by_hash, get_blocks_for_file,
-    add_blocks, cleanup_stale, close
+Interfaces: DRYCache.__init__(storage_mode), add_blocks(file_path, blocks),
+    find_duplicates_by_hash(hash_value), get_duplicate_hashes(), close()
 
 Implementation: SQLite with two tables (files, code_blocks), indexed on hash_value for performance,
-    ACID transactions for reliability, foreign key constraints for data integrity
+    storage_mode determines :memory: vs tempfile location, ACID transactions for reliability
 """
 
 import sqlite3
+import tempfile
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -39,20 +40,32 @@ class CodeBlock:
 
 
 class DRYCache:
-    """SQLite-backed cache for duplicate detection."""
+    """SQLite-backed storage for duplicate detection."""
 
     SCHEMA_VERSION = 1
 
-    def __init__(self, cache_path: Path) -> None:
-        """Initialize cache with SQLite database.
+    def __init__(self, storage_mode: str = "memory") -> None:
+        """Initialize storage with SQLite database.
 
         Args:
-            cache_path: Path to SQLite database file
+            storage_mode: Storage mode - "memory" (default) or "tempfile"
         """
-        # Ensure parent directory exists
-        cache_path.parent.mkdir(parents=True, exist_ok=True)
+        self._storage_mode = storage_mode
+        self._tempfile = None
 
-        self.db = sqlite3.connect(str(cache_path))
+        # Create SQLite connection based on storage mode
+        if storage_mode == "memory":
+            self.db = sqlite3.connect(":memory:")
+        elif storage_mode == "tempfile":
+            # Create temporary file that auto-deletes on close
+            # pylint: disable=consider-using-with
+            # Justification: tempfile must remain open for SQLite connection lifetime.
+            # It is explicitly closed in close() method when cache is finalized.
+            self._tempfile = tempfile.NamedTemporaryFile(suffix=".db", delete=True)
+            self.db = sqlite3.connect(self._tempfile.name)
+        else:
+            raise ValueError(f"Invalid storage_mode: {storage_mode}")
+
         self._query_service = CacheQueryService()
 
         # Create schema
@@ -82,68 +95,24 @@ class DRYCache:
 
         self.db.commit()
 
-    def is_fresh(self, file_path: Path, current_mtime: float) -> bool:
-        """Check if cached data is fresh (mtime matches).
+    def add_blocks(self, file_path: Path, blocks: list[CodeBlock]) -> None:
+        """Add code blocks to storage.
 
         Args:
-            file_path: Path to file
-            current_mtime: Current modification time
-
-        Returns:
-            True if cache is fresh, False if stale or missing
+            file_path: Path to source file
+            blocks: List of CodeBlock instances to store
         """
-        cursor = self.db.execute("SELECT mtime FROM files WHERE file_path = ?", (str(file_path),))
-        row = cursor.fetchone()
-
-        if not row:
-            return False  # Not in cache
-
-        cached_mtime = row[0]
-        return cached_mtime == current_mtime
-
-    def load(self, file_path: Path) -> list[CodeBlock]:
-        """Load cached code blocks for file.
-
-        Args:
-            file_path: Path to file
-
-        Returns:
-            List of CodeBlock instances from cache
-        """
-        cursor = self.db.execute(
-            """SELECT hash_value, start_line, end_line, snippet
-               FROM code_blocks
-               WHERE file_path = ?""",
-            (str(file_path),),
-        )
-
-        blocks = []
-        for hash_val, start, end, snippet in cursor:
-            block = CodeBlock(
-                file_path=file_path,
-                start_line=start,
-                end_line=end,
-                snippet=snippet,
-                hash_value=hash_val,
-            )
-            blocks.append(block)
-
-        return blocks
-
-    def save(self, file_path: Path, mtime: float, blocks: list[CodeBlock]) -> None:
-        """Save code blocks to cache.
-
-        Args:
-            file_path: Path to file
-            mtime: File modification time
-            blocks: List of CodeBlock instances to cache
-        """
-        # Delete old data for this file
-        self.db.execute("DELETE FROM files WHERE file_path = ?", (str(file_path),))
+        if not blocks:
+            return
 
         # Insert file metadata
+        try:
+            mtime = file_path.stat().st_mtime
+        except OSError:
+            mtime = 0.0  # File doesn't exist, use placeholder
+
         self.db.execute(
-            "INSERT INTO files (file_path, mtime, hash_count) VALUES (?, ?, ?)",
+            "INSERT OR REPLACE INTO files (file_path, mtime, hash_count) VALUES (?, ?, ?)",
             (str(file_path), mtime, len(blocks)),
         )
 
@@ -162,23 +131,6 @@ class DRYCache:
                 ),
             )
 
-        self.db.commit()
-
-    def cleanup_stale(self, max_age_days: int) -> None:
-        """Remove cache entries older than max_age_days.
-
-        Args:
-            max_age_days: Maximum age in days for cache entries
-        """
-        # Use parameterized query to prevent SQL injection
-        self.db.execute(
-            """DELETE FROM files
-               WHERE last_scanned < datetime('now', ? || ' days')""",
-            (f"-{max_age_days}",),
-        )
-
-        # Vacuum to reclaim space
-        self.db.execute("VACUUM")
         self.db.commit()
 
     def find_duplicates_by_hash(self, hash_value: int) -> list[CodeBlock]:
@@ -214,5 +166,7 @@ class DRYCache:
         return self._query_service.get_duplicate_hashes(self.db)
 
     def close(self) -> None:
-        """Close database connection."""
+        """Close database connection and cleanup tempfile if used."""
         self.db.close()
+        if self._tempfile:
+            self._tempfile.close()

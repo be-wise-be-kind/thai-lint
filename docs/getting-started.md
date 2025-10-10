@@ -178,8 +178,8 @@ thai-lint dry src/
 # Strict detection (3+ lines)
 thai-lint dry --min-lines 3 src/
 
-# Clear cache before run
-thai-lint dry --clear-cache src/
+# Use tempfile storage for large projects
+thai-lint dry --storage-mode tempfile src/
 ```
 
 **Expected output:**
@@ -551,7 +551,7 @@ thai-lint nesting --format json src/
 thai-lint dry src/
 thai-lint dry src/ tests/  # Multiple directories
 thai-lint dry --min-lines 3 src/
-thai-lint dry --clear-cache src/
+thai-lint dry --storage-mode tempfile src/  # For large projects
 thai-lint dry --format json src/
 
 # With config file

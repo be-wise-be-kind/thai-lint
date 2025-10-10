@@ -203,9 +203,7 @@ Under the `dry` key:
 | `min_duplicate_lines` | integer | `4` | Minimum lines for duplicate detection |
 | `min_duplicate_tokens` | integer | `30` | Minimum tokens for duplicate detection |
 | `min_occurrences` | integer | `2` | Report duplicates appearing N+ times |
-| `cache_enabled` | boolean | `true` | Enable SQLite caching for performance |
-| `cache_path` | string | `.thailint-cache/dry.db` | SQLite cache file location |
-| `cache_max_age_days` | integer | `30` | Cache entries older than N days are invalidated |
+| `storage_mode` | string | `"memory"` | SQLite storage mode: `"memory"` (RAM) or `"tempfile"` (disk) |
 | `ignore` | array | `[]` | Files/directories to exclude from DRY analysis |
 | `filters` | object | See below | False positive filtering configuration |
 | `python` | object | `{}` | Python-specific threshold overrides |
@@ -240,10 +238,8 @@ dry:
   min_duplicate_tokens: 30
   min_occurrences: 2
 
-  # Cache configuration (SQLite)
-  cache_enabled: true
-  cache_path: ".thailint-cache/dry.db"
-  cache_max_age_days: 30
+  # Storage configuration
+  storage_mode: "memory"  # Options: "memory" (default, fast) or "tempfile" (for large projects)
 
   # Language-specific thresholds
   python:
@@ -278,9 +274,7 @@ dry:
     "min_duplicate_lines": 4,
     "min_duplicate_tokens": 30,
     "min_occurrences": 2,
-    "cache_enabled": true,
-    "cache_path": ".thailint-cache/dry.db",
-    "cache_max_age_days": 30,
+    "storage_mode": "memory",
     "python": {
       "min_occurrences": 3,
       "min_duplicate_lines": 5
@@ -312,13 +306,13 @@ Language-specific settings override global settings:
 1. **Language-specific** (highest priority): `dry.python.min_occurrences`
 2. **Global defaults** (fallback): `dry.min_occurrences`
 
-**Cache Behavior:**
+**Storage Behavior:**
 
-- Cache entries are invalidated when file mtime changes
-- Cache is stored in SQLite database for fast lookups
-- Provides 10-50x speedup on incremental scans
-- Can be disabled with `cache_enabled: false`
-- Clear cache: `thailint dry --clear-cache`
+- SQLite storage used for fast duplicate detection during each run
+- `storage_mode: "memory"` (default): Stores in RAM for best performance
+- `storage_mode: "tempfile"`: Stores in temporary disk file for large projects
+- Storage is automatically cleared after each run
+- Every run analyzes files fresh (no persistence between runs)
 
 **Filter Behavior:**
 

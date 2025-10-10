@@ -24,8 +24,8 @@ thailint is a modern, enterprise-ready multi-language linter designed specifical
   - Language-specific thresholds (Python, TypeScript, JavaScript)
   - Refactoring patterns from real-world examples
 - **DRY Linting** - Detect duplicate code across projects
-  - Token-based hash detection with SQLite caching
-  - Fast incremental scans (10-50x speedup with cache)
+  - Token-based hash detection with SQLite storage
+  - Fast duplicate detection (in-memory or disk-backed)
   - Configurable thresholds (lines, tokens, occurrences)
   - Language-specific detection (Python, TypeScript, JavaScript)
   - False positive filtering (keyword args, imports)
@@ -195,9 +195,8 @@ dry:
   python:
     min_occurrences: 3           # Python: require 3+ occurrences
 
-  # Cache settings (SQLite)
-  cache_enabled: true
-  cache_path: ".thailint-cache/dry.db"
+  # Storage settings (SQLite)
+  storage_mode: "memory"         # Options: "memory" (default) or "tempfile"
 
   # Ignore patterns
   ignore:
@@ -235,8 +234,7 @@ dry:
     "python": {
       "min_occurrences": 3
     },
-    "cache_enabled": true,
-    "cache_path": ".thailint-cache/dry.db",
+    "storage_mode": "memory",
     "ignore": ["tests/", "__init__.py"]
   }
 }
@@ -451,7 +449,7 @@ See [SRP Linter Guide](docs/srp-linter.md) for comprehensive documentation and r
 
 ### Overview
 
-The DRY linter detects duplicate code blocks across your entire project using token-based hashing with SQLite caching. It identifies identical or near-identical code that violates the Don't Repeat Yourself (DRY) principle, helping maintain code quality at scale.
+The DRY linter detects duplicate code blocks across your entire project using token-based hashing with SQLite storage. It identifies identical or near-identical code that violates the Don't Repeat Yourself (DRY) principle, helping maintain code quality at scale.
 
 ### Quick Start
 
@@ -462,8 +460,8 @@ thailint dry .
 # Use custom thresholds
 thailint dry --min-lines 5 src/
 
-# Clear cache and re-scan
-thailint dry --clear-cache src/
+# Use tempfile storage for large projects
+thailint dry --storage-mode tempfile src/
 
 # Get JSON output
 thailint dry --format json src/
@@ -486,10 +484,8 @@ dry:
   typescript:
     min_occurrences: 3           # TypeScript: require 3+ occurrences
 
-  # Cache settings (SQLite for fast incremental scans)
-  cache_enabled: true
-  cache_path: ".thailint-cache/dry.db"
-  cache_max_age_days: 30
+  # Storage settings
+  storage_mode: "memory"         # Options: "memory" (default) or "tempfile"
 
   # Ignore patterns
   ignore:
@@ -510,11 +506,11 @@ dry:
 3. Store hashes in SQLite database with file locations
 4. Query for hashes appearing 2+ times across project
 
-**SQLite Caching:**
-- First scan: Hash all files (~1-3s for 1000 files)
-- Subsequent scans: Load cached hashes for unchanged files (~0.1-0.5s)
-- 10-50x speedup for incremental scans
-- Mtime-based cache invalidation (automatic and safe)
+**SQLite Storage:**
+- In-memory mode (default): Stores in RAM for best performance
+- Tempfile mode: Stores in temporary disk file for large projects
+- Fresh analysis on every run (no persistence between runs)
+- Fast duplicate detection using B-tree indexes
 
 ### Example Violation
 
@@ -572,31 +568,14 @@ def validate_admin(admin_data):
     return validate_credentials(admin_data)
 ```
 
-### Cache Management
-
-```bash
-# Normal cached run (default)
-thailint dry src/
-
-# Force re-analysis (ignore cache)
-thailint dry --no-cache src/
-
-# Clear cache before running
-thailint dry --clear-cache src/
-
-# Manual cache cleanup
-rm -rf .thailint-cache/dry.db
-```
-
 ### Performance
 
-| Operation | Performance | Cache Status |
+| Operation | Performance | Storage Mode |
 |-----------|-------------|--------------|
-| First scan (1000 files) | 1-3s | Cache write |
-| Unchanged files | 0.1-0.5s | Cache hit |
-| 50 changed files | 0.5-1s | Partial cache |
+| Scan (1000 files) | 1-3s | Memory (default) |
+| Large project (5000+ files) | Use tempfile mode | Tempfile |
 
-**Speedup**: 3-10x for incremental scans with cache
+**Note**: Every run analyzes files fresh - no persistence between runs ensures accurate results
 
 ### Language Support
 
@@ -617,7 +596,7 @@ Built-in filters automatically exclude common non-duplication patterns:
 3. **Extract Utility Module**: Move helper functions to shared utilities
 4. **Template Method**: Use function parameters for variations
 
-See [DRY Linter Guide](docs/dry-linter.md) for comprehensive documentation, cache management, and refactoring patterns.
+See [DRY Linter Guide](docs/dry-linter.md) for comprehensive documentation, storage modes, and refactoring patterns.
 
 ## Pre-commit Hooks
 

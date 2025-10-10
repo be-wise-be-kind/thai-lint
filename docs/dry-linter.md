@@ -2,17 +2,17 @@
 
 **Purpose**: Complete guide to using the DRY linter for detecting and eliminating duplicate code
 
-**Scope**: Configuration, usage, cache management, refactoring patterns, and best practices for duplicate code detection
+**Scope**: Configuration, usage, storage modes, refactoring patterns, and best practices for duplicate code detection
 
-**Overview**: Comprehensive documentation for the DRY linter that detects duplicate code across projects using token-based hashing with SQLite caching. Covers how the linter works, configuration options, CLI and library usage, cache management, performance characteristics, language support, and integration with CI/CD pipelines. Helps teams maintain DRY principles by identifying and eliminating code duplication at scale.
+**Overview**: Comprehensive documentation for the DRY linter that detects duplicate code across projects using token-based hashing with SQLite storage. Covers how the linter works, configuration options, CLI and library usage, storage modes, performance characteristics, language support, and integration with CI/CD pipelines. Helps teams maintain DRY principles by identifying and eliminating code duplication at scale.
 
-**Dependencies**: Python ast module, tree-sitter-typescript, sqlite3 (Python stdlib)
+**Dependencies**: Python ast module, tree-sitter-typescript, sqlite3 (Python stdlib), tempfile (Python stdlib)
 
-**Exports**: Usage documentation, configuration examples, cache management guide, refactoring patterns
+**Exports**: Usage documentation, configuration examples, storage mode guide, refactoring patterns
 
 **Related**: cli-reference.md for CLI commands, configuration.md for config format, api-reference.md for programmatic usage
 
-**Implementation**: Token-based hash detection with SQLite caching, mtime-based invalidation, and extensible false-positive filtering
+**Implementation**: Token-based hash detection with SQLite storage (in-memory or tempfile), extensible false-positive filtering
 
 ---
 
@@ -33,11 +33,12 @@ Duplicate code leads to:
 
 - **Automated detection**: Find duplicates across thousands of files in seconds
 - **Cross-file detection**: Identifies duplicates spanning multiple files and directories
-- **Fast incremental scans**: SQLite cache enables sub-second re-scans
+- **Fast duplicate detection**: SQLite indexes enable efficient hash lookups
 - **Configurable thresholds**: Adjust sensitivity per language and project needs
 - **False positive filtering**: Automatically excludes common non-duplication patterns
 - **Language-specific tuning**: Different thresholds for Python, TypeScript, JavaScript
 - **CI/CD integration**: JSON output and proper exit codes
+- **Memory efficient**: In-memory mode (default) or tempfile for large projects
 
 ## How It Works
 
@@ -55,8 +56,8 @@ The DRY linter uses token-based hashing (Rabin-Karp algorithm) to identify dupli
 
 **Two-Phase Processing**:
 1. **Collection Phase** (`check()` per file):
-   - Check if file is fresh in cache (mtime comparison)
-   - If stale/new: analyze file, compute hashes, insert into database
+   - Analyze file and compute hashes for all code blocks
+   - Store hash → location mappings in SQLite database
    - Return [] (no violations yet)
 
 2. **Finalization Phase** (`finalize()` after all files):
@@ -64,13 +65,16 @@ The DRY linter uses token-based hashing (Rabin-Karp algorithm) to identify dupli
    - For each duplicate hash, create violations for all locations
    - Return all violations
 
-### SQLite Caching
+### SQLite Storage
 
-**Performance Optimization**:
-- First scan: Hash all files, populate cache (~1-3s for 1000 files)
-- Subsequent scans: Load cached hashes for unchanged files (~0.1-0.5s)
-- File changes detected via mtime comparison
-- Cache invalidation automatic and safe
+**Storage Modes**:
+- **In-memory** (default): Fast, RAM-only SQLite database (`:memory:`)
+- **Tempfile**: Disk-backed temporary file for large projects, auto-deleted on completion
+
+**Performance**:
+- Fast hash indexing: O(log n) lookups via SQLite B-tree indexes
+- Efficient duplicate detection: Single query returns all matching hashes
+- Scales to large projects: Handles thousands of files efficiently
 
 **Schema**:
 ```sql
@@ -115,9 +119,7 @@ dry:
 | `min_duplicate_lines` | integer | `3` | Minimum consecutive lines for duplicate detection |
 | `min_duplicate_tokens` | integer | `30` | Minimum token count for duplicate detection |
 | `min_occurrences` | integer | `2` | Minimum occurrences to report (2 = report pairs) |
-| `cache_enabled` | boolean | `true` | Enable SQLite cache for fast incremental scans |
-| `cache_path` | string | `.thailint-cache/dry.db` | Path to SQLite cache database |
-| `cache_max_age_days` | integer | `30` | Remove cache entries older than N days |
+| `storage_mode` | string | `"memory"` | SQLite storage mode: "memory" (fast) or "tempfile" (large projects) |
 | `ignore` | array | `["tests/", "__init__.py"]` | Files/directories to skip |
 | `filters` | object | See below | False positive filters |
 
@@ -143,18 +145,21 @@ dry:
 
 **Rationale**: Higher thresholds for verbose languages reduce false positives from boilerplate.
 
-### Cache Configuration
+### Storage Configuration
 
 ```yaml
 dry:
-  cache_enabled: true                        # ON by default
-  cache_path: ".thailint-cache/dry.db"       # SQLite database location
-  cache_max_age_days: 30                     # Auto-cleanup old entries
+  storage_mode: "memory"  # Options: "memory" (default) or "tempfile"
 ```
 
-**Cache Behavior**:
-- **Enabled (default)**: Fast incremental scans, persistent across runs
-- **Disabled**: In-memory storage only, no persistence (slower for large projects)
+**Storage Modes**:
+- **memory** (default): In-memory SQLite database (`:memory:`), fast, no disk I/O
+- **tempfile**: Temporary file SQLite database, for memory-constrained environments, auto-deleted after run
+
+**When to use tempfile**:
+- Large projects (10,000+ files) where memory is constrained
+- Environments with limited RAM
+- Projects with very large files (lots of code blocks to hash)
 
 ### False Positive Filters
 
@@ -195,8 +200,7 @@ dry:
     "python": {
       "min_occurrences": 3
     },
-    "cache_enabled": true,
-    "cache_path": ".thailint-cache/dry.db",
+    "storage_mode": "memory",
     "ignore": ["tests/", "__init__.py"],
     "filters": {
       "keyword_argument_filter": true,
@@ -243,17 +247,14 @@ thailint dry --min-lines 5 src/
 thailint dry --min-lines 3 src/
 ```
 
-#### Cache Management
+#### Storage Mode
 
 ```bash
-# Disable cache (force re-analysis)
-thailint dry --no-cache src/
-
-# Clear cache before running
-thailint dry --clear-cache src/
-
-# Normal cached run (default)
+# Use memory mode (default - fast)
 thailint dry src/
+
+# Use tempfile mode (for large projects)
+thailint dry --storage-mode tempfile src/
 ```
 
 #### Output Formats
@@ -319,7 +320,7 @@ orchestrator = Orchestrator(
             "enabled": True,
             "min_duplicate_lines": 5,
             "min_occurrences": 3,
-            "cache_enabled": True
+            "storage_mode": "memory"
         }
     }
 )
@@ -340,9 +341,9 @@ docker run --rm \
   -v $(pwd)/.thailint.yaml:/config/.thailint.yaml:ro \
   thailint/thailint dry --config /config/.thailint.yaml /workspace/src/
 
-# Clear cache
+# With tempfile mode for large projects
 docker run --rm -v $(pwd):/workspace \
-  thailint/thailint dry --clear-cache /workspace/src/
+  thailint/thailint dry --storage-mode tempfile /workspace/src/
 
 # JSON output
 docker run --rm -v $(pwd):/workspace \
@@ -465,64 +466,25 @@ export function formatAdminError(error: Error): string {
 }
 ```
 
-## Cache Management
+## Performance
 
-### Cache Location
+The DRY linter analyzes files fresh every run (no persistence between runs):
 
-Default: `.thailint-cache/dry.db` (SQLite database)
+| Project Size | Performance | Storage Mode |
+|--------------|-------------|--------------|
+| 100 files | 0.3-0.5s | Memory |
+| 1000 files | 1-3s | Memory |
+| 10000 files | 10-30s | Memory or Tempfile |
 
-**What's Cached:**
-- File paths and modification times (mtime)
-- Code block hashes (integer values)
-- Line ranges for each hash
-- Code snippets for violation messages
+**Optimizations:**
+- SQLite indexed hash lookups (O(log n))
+- Token-based hashing (faster than AST comparison)
+- In-memory storage (default, fastest)
+- Tempfile mode for memory-constrained environments
 
-**What's NOT Cached:**
-- Actual file contents
-- Violation results (computed fresh each run)
-
-### Cache Commands
-
-```bash
-# Normal cached run
-thailint dry src/
-
-# Force re-analysis (ignore cache)
-thailint dry --no-cache src/
-
-# Clear cache before running
-thailint dry --clear-cache src/
-
-# Manual cache cleanup
-rm -rf .thailint-cache/dry.db
-```
-
-### Cache Invalidation
-
-**Automatic Invalidation**:
-- File mtime changed → rehash file
-- File deleted → remove from cache
-- Cache older than `cache_max_age_days` → purge entry
-
-**Manual Invalidation**:
-```bash
-# Clear entire cache
-thailint dry --clear-cache .
-
-# Or delete cache file
-rm .thailint-cache/dry.db
-```
-
-### Cache Performance
-
-| Scenario | Performance | Cache Status |
-|----------|-------------|--------------|
-| First scan (1000 files) | 1-3s | Cache write |
-| Unchanged files | 0.1-0.5s | Cache hit |
-| 50 changed files (950 cached) | 0.5-1s | Partial hit |
-| --no-cache flag | 1-3s | No cache |
-
-**Speedup**: 3-10x for incremental scans with cache enabled
+**Memory Usage:**
+- **Memory mode**: 50-200MB for 1000 files, 200-500MB for 10000 files
+- **Tempfile mode**: Lower RAM usage, slightly slower due to disk I/O
 
 ## Refactoring Patterns
 
@@ -817,34 +779,7 @@ lint-dry:
 
 lint-all: lint-dry
 	@echo "All quality checks passed"
-
-clean-cache:
-	@echo "=== Cleaning DRY cache ==="
-	@rm -rf .thailint-cache/dry.db
 ```
-
-## Performance
-
-The DRY linter is optimized for large codebases:
-
-| Operation | Performance | Notes |
-|-----------|-------------|-------|
-| First scan (100 files) | 0.3-0.5s | Cache write |
-| First scan (1000 files) | 1-3s | Cache write |
-| First scan (10000 files) | 10-30s | Cache write |
-| Cached scan (unchanged) | 0.1-0.5s | Cache hit |
-| Incremental (50 changed) | 0.5-1s | Partial cache |
-
-**Optimizations:**
-- SQLite caching with indexed hash lookups
-- Mtime-based cache invalidation (no content comparison)
-- Token-based hashing (faster than AST comparison)
-- Parallel file processing via orchestrator
-- In-memory hash table for fast duplicate detection
-
-**Memory Usage:**
-- Typical: 50-200MB for 1000 files
-- Large projects: 200-500MB for 10000 files
 
 ## Best Practices
 
@@ -883,11 +818,11 @@ dry:
     - "*/generated/*"   # Generated code
 ```
 
-### 4. Enable Cache for Large Projects
+### 4. Use Tempfile Mode for Very Large Projects
 
 ```yaml
 dry:
-  cache_enabled: true  # Essential for projects > 100 files
+  storage_mode: "tempfile"  # For projects > 10000 files or memory-constrained environments
 ```
 
 ### 5. Review Violations Incrementally
@@ -929,10 +864,8 @@ class DRYConfig:
     typescript_min_occurrences: int | None = None
     javascript_min_occurrences: int | None = None
 
-    # Cache settings
-    cache_enabled: bool = True
-    cache_path: str = ".thailint-cache/dry.db"
-    cache_max_age_days: int = 30
+    # Storage settings
+    storage_mode: str = "memory"  # Options: "memory" or "tempfile"
 
     # Ignore patterns
     ignore_patterns: list[str] = field(default_factory=lambda: ["tests/", "__init__.py"])
@@ -972,27 +905,6 @@ dry:
     keyword_argument_filter: true  # Enable filter
 ```
 
-### Issue: Cache Not Working
-
-**Symptoms**: Every run takes same time
-
-**Solutions**:
-1. Check cache enabled:
-   ```yaml
-   dry:
-     cache_enabled: true
-   ```
-
-2. Verify cache file exists:
-   ```bash
-   ls -la .thailint-cache/dry.db
-   ```
-
-3. Check for cache corruption:
-   ```bash
-   thailint dry --clear-cache .
-   ```
-
 ### Issue: Missing Duplicates
 
 **Symptoms**: Known duplicates not reported
@@ -1012,13 +924,13 @@ dry:
        - "tests/"  # Remove if you want to check tests
    ```
 
-### Issue: Slow Performance
+### Issue: Slow Performance or High Memory Usage
 
 **Solutions**:
-1. Enable cache:
+1. Use tempfile mode for large projects:
    ```yaml
    dry:
-     cache_enabled: true
+     storage_mode: "tempfile"  # Reduces memory usage
    ```
 
 2. Exclude large directories:
@@ -1027,11 +939,14 @@ dry:
      ignore:
        - "vendor/"
        - "node_modules/"
+       - "build/"
+       - "dist/"
    ```
 
-3. Clear old cache:
-   ```bash
-   thailint dry --clear-cache .
+3. Increase thresholds to reduce processing:
+   ```yaml
+   dry:
+     min_duplicate_lines: 5  # Higher threshold = fewer blocks to hash
    ```
 
 ## Resources

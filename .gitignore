@@ -36,6 +36,7 @@ poetry.lock
 # Testing
 .pytest_cache/
 .coverage
+.coverage.*
 htmlcov/
 .tox/
 .nox/
@@ -50,7 +51,6 @@ dmypy.json
 
 # Linting
 .ruff_cache/
-.thailint-cache/  # DRY linter SQLite cache
 
 # IDEs
 .vscode/

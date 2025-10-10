@@ -1,22 +1,20 @@
 """
 Purpose: Storage initialization for DRY linter
 
-Scope: Initializes DuplicateStorage with cache or in-memory fallback
+Scope: Initializes DuplicateStorage with SQLite storage
 
-Overview: Handles storage initialization based on DRY configuration. Creates SQLite cache when
-    cache_enabled is true, or triggers in-memory fallback when false (Decision 6). Separates
-    initialization logic from main linter rule to maintain SRP compliance.
+Overview: Handles storage initialization based on DRY configuration. Creates SQLite storage in
+    either memory or tempfile mode based on config.storage_mode. Separates initialization logic
+    from main linter rule to maintain SRP compliance.
 
-Dependencies: BaseLintContext, DRYConfig, DRYCache, DuplicateStorage, Path
+Dependencies: BaseLintContext, DRYConfig, DRYCache, DuplicateStorage
 
 Exports: StorageInitializer class
 
 Interfaces: StorageInitializer.initialize(context, config) -> DuplicateStorage
 
-Implementation: Creates cache if enabled, delegates to DuplicateStorage for storage management
+Implementation: Creates DRYCache with storage_mode, delegates to DuplicateStorage for management
 """
-
-from pathlib import Path
 
 from src.core.base import BaseLintContext
 
@@ -36,16 +34,9 @@ class StorageInitializer:
             config: DRY configuration
 
         Returns:
-            DuplicateStorage instance
+            DuplicateStorage instance with SQLite storage
         """
-        cache = None
-        if config.cache_enabled:
-            # Use SQLite cache
-            metadata = getattr(context, "metadata", {})
-            project_root = metadata.get("_project_root", Path.cwd())
-            cache_path = project_root / config.cache_path
-            cache_path.parent.mkdir(parents=True, exist_ok=True)
-            cache = DRYCache(cache_path)
-        # else: cache = None triggers in-memory fallback in DuplicateStorage
+        # Create SQLite storage (in-memory or tempfile based on config)
+        cache = DRYCache(storage_mode=config.storage_mode)
 
         return DuplicateStorage(cache)

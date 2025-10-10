@@ -149,10 +149,8 @@ dry:
   javascript:
     min_occurrences: 3
 
-  # Cache settings (SQLite-based)
-  cache_enabled: true  # Enable SQLite cache for fast incremental scans
-  cache_path: ".thailint-cache/dry.db"  # SQLite database path
-  cache_max_age_days: 30  # Remove cache entries older than this
+  # Storage mode (SQLite-based for duplicate detection within a run)
+  storage_mode: "memory"  # Options: "memory" (default, fast) or "tempfile" (for large projects)
 
   # Ignore patterns
   ignore:

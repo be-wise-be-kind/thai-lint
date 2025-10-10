@@ -37,7 +37,7 @@ from .storage_initializer import StorageInitializer
 from .violation_generator import ViolationGenerator
 
 if TYPE_CHECKING:
-    from .cache import CodeBlock, DRYCache
+    from .cache import CodeBlock
 
 
 @dataclass
@@ -132,24 +132,17 @@ class DRYRule(BaseLintRule):
             return  # Should never happen after initialization
 
         file_path = Path(context.file_path)
-        cache = self._get_cache()
-        blocks = self._file_analyzer.analyze_or_load(
-            file_path, context.file_content, context.language, config, cache
+        blocks = self._file_analyzer.analyze(
+            file_path, context.file_content, context.language, config
         )
 
         if blocks:
             self._store_blocks(file_path, blocks)
 
-    def _get_cache(self) -> DRYCache | None:
-        """Get cache from storage if available."""
-        if not self._storage:
-            return None
-        return self._storage._cache  # pylint: disable=protected-access
-
     def _store_blocks(self, file_path: Path, blocks: list[CodeBlock]) -> None:
-        """Store blocks in memory if storage available."""
+        """Store blocks in SQLite if storage available."""
         if self._storage:
-            self._storage.add_blocks_to_memory(file_path, blocks)
+            self._storage.add_blocks(file_path, blocks)
 
     def finalize(self) -> list[Violation]:
         """Generate violations after all files processed.
