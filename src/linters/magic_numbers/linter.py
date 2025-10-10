@@ -25,8 +25,8 @@ Implementation: Composition pattern with helper classes, AST-based analysis with
 
 import ast
 
-from src.core.base import BaseLintContext, BaseLintRule
-from src.core.linter_utils import has_file_content, load_linter_config
+from src.core.base import BaseLintContext, MultiLanguageLintRule
+from src.core.linter_utils import load_linter_config
 from src.core.types import Violation
 from src.linter_config.ignore import IgnoreDirectiveParser
 
@@ -37,7 +37,7 @@ from .typescript_analyzer import TypeScriptMagicNumberAnalyzer
 from .violation_builder import ViolationBuilder
 
 
-class MagicNumberRule(BaseLintRule):  # thailint: ignore[srp]
+class MagicNumberRule(MultiLanguageLintRule):  # thailint: ignore[srp]
     """Detects magic numbers that should be replaced with named constants."""
 
     def __init__(self) -> None:
@@ -60,30 +60,6 @@ class MagicNumberRule(BaseLintRule):  # thailint: ignore[srp]
     def description(self) -> str:
         """Description of what this rule checks."""
         return "Numeric literals should be replaced with named constants for better maintainability"
-
-    def check(self, context: BaseLintContext) -> list[Violation]:
-        """Check for magic number violations.
-
-        Args:
-            context: Lint context with file information
-
-        Returns:
-            List of violations found
-        """
-        if not has_file_content(context):
-            return []
-
-        config = self._load_config(context)
-        if not config.enabled:
-            return []
-
-        if context.language == "python":
-            return self._check_python(context, config)
-
-        if context.language in ("typescript", "javascript"):
-            return self._check_typescript(context, config)
-
-        return []
 
     def _load_config(self, context: BaseLintContext) -> MagicNumberConfig:
         """Load configuration from context.
