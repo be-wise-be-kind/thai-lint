@@ -101,6 +101,7 @@ xenon = "^0.9.3"
 safety = "^3.2.11"
 pip-audit = "^2.8.0"
 loguru = "^0.7.3"
+pytest-xdist = "^3.8.0"
 
 [tool.poetry.scripts]
 thailint = "src.cli:cli"
