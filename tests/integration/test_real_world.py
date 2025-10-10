@@ -68,25 +68,33 @@ class TestRealProjectStructures:
 class TestConfigDiscovery:
     """Test configuration discovery in real projects."""
 
-    def test_finds_thailint_yaml(self) -> None:
+    def test_finds_thailint_yaml(self, tmp_path) -> None:
         """Test autodiscovery of .thailint.yaml in project root."""
         from src import Linter
 
-        project_root = Path(__file__).parent.parent.parent
+        # Create minimal test project instead of scanning entire real project
+        test_project = tmp_path / "test_project"
+        test_project.mkdir()
 
-        # Check if config exists
-        config_file = project_root / ".thailint.yaml"
-        if not config_file.exists():
-            pytest.skip("No .thailint.yaml in project root")
+        # Create .thailint.yaml config
+        config_file = test_project / ".thailint.yaml"
+        config_file.write_text("""
+file-placement:
+  global_patterns:
+    allow:
+      - '.*\\.py$'
+""")
+
+        # Create test file
+        test_file = test_project / "example.py"
+        test_file.write_text("# test file\n")
 
         # Initialize without explicit config (should autodiscover)
-        linter = Linter(project_root=str(project_root))
+        linter = Linter(project_root=str(test_project))
 
         # Should work without explicit config
-        test_file = project_root / "src" / "cli.py"
-        if test_file.exists():
-            violations = linter.lint(str(test_file))
-            assert isinstance(violations, list)
+        violations = linter.lint(str(test_file))
+        assert isinstance(violations, list)
 
 
 class TestIgnorePatterns:

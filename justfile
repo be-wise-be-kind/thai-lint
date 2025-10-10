@@ -42,8 +42,8 @@ help:
     @echo "  just format                    - Auto-fix formatting and linting issues"
     @echo ""
     @echo "Testing:"
-    @echo "  just test              - Run tests"
-    @echo "  just test-coverage     - Run tests with coverage"
+    @echo "  just test              - Run tests in parallel (use --serial for single-threaded)"
+    @echo "  just test-coverage     - Run tests with coverage (serial mode - coverage doesn't support parallel)"
     @echo ""
     @echo "Maintenance:"
     @echo "  just clean             - Clean cache and artifacts"
@@ -401,12 +401,20 @@ format:
     @poetry run ruff format src/ tests/
     @poetry run ruff check --fix src/ tests/
 
-# Run tests
-test:
-    @poetry run pytest -v
+# Run tests (parallel by default, use --serial for single-threaded)
+test *ARGS="":
+    #!/usr/bin/env bash
+    if [[ " {{ARGS}} " =~ " --serial " ]]; then
+        echo -e "{{YELLOW}}Running tests in serial mode...{{NC}}"
+        poetry run pytest -v --no-cov
+    else
+        echo -e "{{BLUE}}{{BOLD}}⚡ Running tests in parallel...{{NC}}"
+        poetry run pytest -v -n auto --no-cov
+    fi
 
-# Run tests with coverage
+# Run tests with coverage (runs in serial mode since coverage doesn't support parallel)
 test-coverage:
+    @echo "{{BLUE}}{{BOLD}}📊 Running tests with coverage (serial mode)...{{NC}}"
     @poetry run pytest --cov=src --cov-report=term --cov-report=html --cov-report=xml -v
 
 # Initial setup (install dependencies and show activation instructions)

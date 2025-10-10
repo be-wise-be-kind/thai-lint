@@ -53,7 +53,7 @@ repos:
         always_run: true
 
       - id: pre-push-test
-        name: Run all tests
+        name: Run all tests (parallel)
         entry: just test
         language: system
         pass_filenames: false

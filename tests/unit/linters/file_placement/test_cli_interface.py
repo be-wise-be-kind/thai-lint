@@ -23,29 +23,46 @@ Implementation: 4 tests covering basic command structure, inline JSON config, ex
 class TestCLIInterface:
     """Test command-line interface."""
 
-    def test_cli_command_structure(self):
+    def test_cli_command_structure(self, tmp_path):
         """thai file-placement <path> command works."""
         from click.testing import CliRunner
 
         from src.cli import cli
 
+        # Create minimal test directory instead of scanning entire project
+        test_dir = tmp_path / "test_project"
+        test_dir.mkdir()
+        (test_dir / "example.py").write_text("# test file\n")
+
         runner = CliRunner()
-        result = runner.invoke(cli, ["file-placement", "."])
+        result = runner.invoke(cli, ["file-placement", str(test_dir)])
 
         assert result.exit_code in [0, 1]  # 0 = pass, 1 = violations
 
-    def test_accept_json_object_via_flag(self):
+    def test_accept_json_object_via_flag(self, tmp_path):
         """Accept JSON object via --rules flag."""
         from click.testing import CliRunner
 
         from src.cli import cli
 
+        # Create minimal test directory instead of scanning entire project
+        test_dir = tmp_path / "test_project"
+        test_dir.mkdir()
+        (test_dir / "example.py").write_text("# test file\n")
+
         runner = CliRunner()
-        result = runner.invoke(cli, ["file-placement", "--rules", '{"allow": [".*\\\\.py$"]}', "."])
+        result = runner.invoke(
+            cli, ["file-placement", "--rules", '{"allow": [".*\\\\.py$"]}', str(test_dir)]
+        )
         assert result.exit_code in [0, 1]
 
     def test_accept_json_file_via_config_flag(self, tmp_path):
         """Accept JSON file via --config flag."""
+        # Create minimal test directory instead of scanning entire project
+        test_dir = tmp_path / "test_project"
+        test_dir.mkdir()
+        (test_dir / "example.py").write_text("# test file\n")
+
         config_file = tmp_path / "rules.json"
         config_file.write_text('{"allow": [".*\\\\.py$"]}')
 
@@ -54,7 +71,7 @@ class TestCLIInterface:
         from src.cli import cli
 
         runner = CliRunner()
-        result = runner.invoke(cli, ["file-placement", "--config", str(config_file), "."])
+        result = runner.invoke(cli, ["file-placement", "--config", str(config_file), str(test_dir)])
         assert result.exit_code in [0, 1]
 
     def test_exit_codes(self, tmp_path):
