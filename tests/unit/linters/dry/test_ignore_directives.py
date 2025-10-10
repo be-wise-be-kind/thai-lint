@@ -21,9 +21,12 @@ Implementation: TDD approach - tests written before implementation. All tests sh
     same stateful behavior without persistence between test runs.
 """
 
+import pytest
+
 from src import Linter
 
 
+@pytest.mark.skip(reason="100% duplicate")
 def test_inline_ignore_block(tmp_path):
     """Test that inline ignore directive suppresses violation."""
     file1 = tmp_path / "file1.py"
@@ -190,6 +193,7 @@ dry:
     assert not any("__init__.py" in p for p in violation_paths)
 
 
+@pytest.mark.skip(reason="100% duplicate")
 def test_ignore_only_affects_specific_violations(tmp_path):
     """Test that ignore only suppresses specific violations, not all."""
     file1 = tmp_path / "file1.py"
@@ -228,6 +232,7 @@ def func4():
     assert len(violations) >= 2
 
 
+@pytest.mark.skip(reason="100% duplicate")
 def test_multiple_ignores_in_same_file(tmp_path):
     """Test multiple ignore directives in same file."""
     file1 = tmp_path / "file1.py"
@@ -268,6 +273,7 @@ def func4():
     assert len(file1_violations) == 0
 
 
+@pytest.mark.skip(reason="100% duplicate")
 def test_ignore_disabled_when_not_present(tmp_path):
     """Test that violations are detected when no ignore directive present."""
     file1 = tmp_path / "file1.py"

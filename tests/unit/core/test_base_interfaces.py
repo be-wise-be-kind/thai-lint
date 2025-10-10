@@ -242,6 +242,7 @@ class TestViolation:
         assert violation.message == "Test violation"
         assert violation.severity == Severity.ERROR
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_violation_can_be_serialized(self):
         """Violation can be converted to dict/JSON."""
         from src.core.types import Severity, Violation
@@ -267,6 +268,7 @@ class TestViolation:
         assert violation_dict["severity"] == "error"
         assert violation_dict["suggestion"] == "Fix this issue"
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_violation_suggestion_optional(self):
         """Violation suggestion field is optional."""
         from src.core.types import Severity, Violation

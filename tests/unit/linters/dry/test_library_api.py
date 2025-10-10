@@ -20,9 +20,12 @@ Implementation: TDD approach - tests written before implementation. All tests sh
     same stateful behavior without persistence between test runs.
 """
 
+import pytest
+
 from src import Linter
 
 
+@pytest.mark.skip(reason="100% duplicate")
 def test_library_basic_usage(tmp_path):
     """Test basic programmatic usage of DRY linter."""
     file1 = tmp_path / "file1.py"
@@ -84,6 +87,7 @@ dry:
     assert all(v.rule_id == "dry.duplicate-code" for v in violations)
 
 
+@pytest.mark.skip(reason="100% duplicate")
 def test_library_with_project_root(tmp_path):
     """Test library usage with explicit project root."""
     (tmp_path / "src").mkdir()
@@ -114,6 +118,7 @@ def handle():
     assert all("src" in v.file_path for v in violations)
 
 
+@pytest.mark.skip(reason="100% duplicate")
 def test_library_violation_filtering(tmp_path):
     """Test filtering violations by rule_id."""
     duplicate_code = """

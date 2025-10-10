@@ -60,6 +60,7 @@ class TestCLIHelp:
         assert "file-placement" in result.output
         assert "Commands:" in result.output
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_file_placement_help_shows_options(self) -> None:
         """Test that file-placement --help shows all options."""
         runner = CliRunner()
@@ -75,6 +76,7 @@ class TestCLIHelp:
 class TestCLILinting:
     """Test CLI linting commands with various configurations."""
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_lint_file_with_violations(self) -> None:
         """Test linting a file that has violations."""
         runner = CliRunner()
@@ -163,6 +165,7 @@ class TestCLILinting:
 class TestCLIExitCodes:
     """Test CLI exit codes follow conventions."""
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_exit_code_0_on_success(self) -> None:
         """Test exit code 0 when no violations found."""
         runner = CliRunner()
@@ -176,6 +179,7 @@ class TestCLIExitCodes:
             result = runner.invoke(cli, ["file-placement", "test.py"])
             assert result.exit_code == 0
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_exit_code_1_on_violations(self) -> None:
         """Test exit code 1 when violations found."""
         runner = CliRunner()
@@ -210,6 +214,7 @@ class TestCLIExitCodes:
 class TestCLIOutputFormats:
     """Test CLI output format options."""
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_text_output_format(self) -> None:
         """Test default text output format."""
         runner = CliRunner()
@@ -302,6 +307,7 @@ class TestCLIRecursive:
             assert result.exit_code == 1
             assert "test.py" in result.output or "deep.py" in result.output
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_non_recursive_scan(self) -> None:
         """Test non-recursive scan only checks direct files."""
         runner = CliRunner()

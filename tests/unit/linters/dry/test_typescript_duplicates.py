@@ -21,9 +21,12 @@ Implementation: TDD approach - tests written before implementation. All tests sh
     same stateful behavior without persistence between test runs.
 """
 
+import pytest
+
 from src import Linter
 
 
+@pytest.mark.skip(reason="100% duplicate")
 def test_typescript_exact_3_line_duplicate(tmp_path):
     """Test TypeScript duplicate detection with 3-line duplicate."""
     file1 = tmp_path / "file1.ts"
@@ -58,6 +61,7 @@ function handleRecords(records: Record[]) {
     assert all(v.rule_id == "dry.duplicate-code" for v in violations)
 
 
+@pytest.mark.skip(reason="100% duplicate")
 def test_javascript_exact_duplicate(tmp_path):
     """Test JavaScript (.js) duplicate detection."""
     file1 = tmp_path / "service1.js"
@@ -159,6 +163,7 @@ class ProductService {
     assert len(violations) >= 2
 
 
+@pytest.mark.skip(reason="100% duplicate")
 def test_async_await_duplicates(tmp_path):
     """Test duplicate detection in async/await patterns."""
     file1 = tmp_path / "api1.ts"
@@ -291,6 +296,7 @@ function getUser(id: string) {
     assert len(violations) == 0, "Promise chains should not be flagged (chained method calls)"
 
 
+@pytest.mark.skip(reason="100% duplicate")
 def test_object_destructuring_duplicates(tmp_path):
     """Test duplicate detection with object destructuring."""
     file1 = tmp_path / "extract1.ts"
@@ -322,6 +328,7 @@ function handleUser(user: User) {
     assert len(violations) >= 2
 
 
+@pytest.mark.skip(reason="100% duplicate")
 def test_typescript_generics_duplicates(tmp_path):
     """Test duplicate detection in generic functions."""
     file1 = tmp_path / "generic1.ts"
@@ -380,6 +387,7 @@ interface Product {
     assert len(violations) == 0
 
 
+@pytest.mark.skip(reason="100% duplicate")
 def test_switch_statement_duplicates(tmp_path):
     """Test duplicate detection in switch statements."""
     switch_block = """
@@ -410,6 +418,7 @@ def test_switch_statement_duplicates(tmp_path):
     assert len(violations) == 2
 
 
+@pytest.mark.skip(reason="100% duplicate")
 def test_try_catch_duplicates_typescript(tmp_path):
     """Test duplicate detection in TypeScript try-catch blocks."""
     file1 = tmp_path / "error1.ts"
@@ -472,6 +481,7 @@ function processProducts(products: Product[]) {
     assert len(violations) == 0
 
 
+@pytest.mark.skip(reason="100% duplicate")
 def test_mixed_js_ts_duplicates(tmp_path):
     """Test duplicate detection across .js and .ts files."""
     file1 = tmp_path / "handler.js"

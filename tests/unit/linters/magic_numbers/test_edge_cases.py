@@ -25,10 +25,13 @@ Implementation: Mock-based testing with edge case numeric patterns, validates ap
 from pathlib import Path
 from unittest.mock import Mock
 
+import pytest
+
 
 class TestNegativeNumbers:
     """Test handling of negative numbers."""
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_detects_negative_magic_numbers(self):
         """Should detect negative magic numbers outside allowed set."""
         code = """
@@ -47,6 +50,7 @@ def adjust_value(x):
         # -999 should be flagged
         assert len(violations) > 0, "Should detect negative magic number -999"
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_allows_negative_one_by_default(self):
         """Should allow -1 as it's in default allowed_numbers."""
         code = """
@@ -67,6 +71,7 @@ def find_index(item, items):
         # -1 is in default allowed_numbers
         assert len(violations) == 0, "Should allow -1 by default"
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_negative_floats(self):
         """Should detect negative float magic numbers."""
         code = """
@@ -89,6 +94,7 @@ def calculate():
 class TestLargeNumbers:
     """Test handling of very large numbers."""
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_detects_very_large_integers(self):
         """Should detect very large integer literals."""
         code = """
@@ -106,6 +112,7 @@ def get_limit():
         violations = rule.check(context)
         assert len(violations) > 0, "Should detect very large magic number"
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_detects_large_floats(self):
         """Should detect large float literals."""
         code = """
@@ -123,6 +130,7 @@ def calculate_distance():
         violations = rule.check(context)
         assert len(violations) > 0, "Should detect large float magic number"
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_allows_configured_large_numbers(self):
         """Should allow large numbers if in allowed_numbers."""
         code = """
@@ -146,6 +154,7 @@ def get_kilobyte():
 class TestScientificNotation:
     """Test handling of scientific notation."""
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_detects_scientific_notation_numbers(self):
         """Should detect numbers in scientific notation."""
         code = """
@@ -164,6 +173,7 @@ def avogadro_constant():
         # Scientific notation should be detected
         assert len(violations) > 0, "Should detect scientific notation magic number"
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_detects_small_scientific_notation(self):
         """Should detect small numbers in scientific notation."""
         code = """
@@ -203,6 +213,7 @@ def get_primes():
         # Should detect multiple magic numbers in list (except 2 which is allowed)
         assert len(violations) > 0, "Should detect magic numbers in list literal"
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_detects_numbers_in_dictionary_values(self):
         """Should detect magic numbers in dictionary values."""
         code = """

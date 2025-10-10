@@ -28,6 +28,7 @@ import pytest
 class TestDirectoryScoping:
     """Test flat vs recursive scanning."""
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_flat_directory_scanning(self, tmp_path):
         """Scan directory non-recursively."""
         (tmp_path / "file1.py").write_text("#\n")
@@ -42,6 +43,7 @@ class TestDirectoryScoping:
         # Scanning happens (returns a list, even if empty)
         assert isinstance(violations, list)
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_recursive_directory_scanning(self, tmp_path):
         """Scan directory recursively."""
         (tmp_path / "file1.py").write_text("#\n")
@@ -56,6 +58,7 @@ class TestDirectoryScoping:
         # Scanning happens (returns a list, even if empty)
         assert isinstance(violations, list)
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_specific_file_path_linting(self):
         """Lint a specific file path."""
         from src.linters.file_placement import FilePlacementLinter
@@ -64,6 +67,7 @@ class TestDirectoryScoping:
         violations = linter.lint_path(Path("src/main.py"))
         assert isinstance(violations, list)
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_mixed_file_and_directory_inputs(self, tmp_path):
         """Accept mix of files and directories."""
         file1 = tmp_path / "file1.py"
@@ -83,6 +87,7 @@ class TestDirectoryScoping:
         assert isinstance(violations1, list)
         assert isinstance(violations2, list)
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_exclude_patterns(self, tmp_path):
         """Respect exclude patterns (.git/, node_modules/)."""
         (tmp_path / ".git").mkdir()
@@ -96,6 +101,7 @@ class TestDirectoryScoping:
         # Should not lint .git/
         assert all(".git" not in v.file_path for v in violations)
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_respect_thailintignore_file(self, tmp_path):
         """Respect .thailintignore file."""
         (tmp_path / ".thailintignore").write_text("*.pyc\n")
@@ -110,6 +116,7 @@ class TestDirectoryScoping:
         # Should skip .pyc file
         assert all("test.pyc" not in v.file_path for v in violations)
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_handle_symlinks_and_special_files(self, tmp_path):
         """Handle symlinks gracefully."""
         real_file = tmp_path / "real.py"

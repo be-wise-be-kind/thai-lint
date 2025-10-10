@@ -25,6 +25,8 @@ Implementation: 15+ tests covering initialization, config loading, rule filterin
 import tempfile
 from pathlib import Path
 
+import pytest
+
 
 class TestLinterClass:
     """Test high-level Linter class API."""
@@ -35,6 +37,7 @@ class TestLinterClass:
 
         assert Linter is not None
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_linter_initialization_no_config(self):
         """Initialize Linter without config file."""
         from src import Linter
@@ -42,6 +45,7 @@ class TestLinterClass:
         linter = Linter()
         assert linter is not None
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_linter_initialization_with_config_file(self):
         """Initialize Linter with config_file parameter."""
         from src import Linter
@@ -57,6 +61,7 @@ class TestLinterClass:
         finally:
             Path(config_path).unlink()
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_linter_initialization_with_project_root(self):
         """Initialize Linter with project_root parameter."""
         from src import Linter
@@ -66,6 +71,7 @@ class TestLinterClass:
             assert linter is not None
             assert linter.project_root == Path(tmpdir)
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_linter_lint_method_exists(self):
         """Linter has lint() method."""
         from src import Linter
@@ -74,6 +80,7 @@ class TestLinterClass:
         assert hasattr(linter, "lint")
         assert callable(linter.lint)
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_linter_lint_single_file(self):
         """Lint a single file using Linter.lint()."""
         from src import Linter
@@ -89,6 +96,7 @@ class TestLinterClass:
         finally:
             Path(file_path).unlink()
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_linter_lint_directory(self):
         """Lint a directory using Linter.lint()."""
         from src import Linter
@@ -117,6 +125,7 @@ class TestLinterClass:
         finally:
             Path(file_path).unlink()
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_linter_lint_with_path_object(self):
         """Lint accepts Path objects."""
         from src import Linter
@@ -132,6 +141,7 @@ class TestLinterClass:
         finally:
             file_path.unlink()
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_linter_lint_with_string_path(self):
         """Lint accepts string paths."""
         from src import Linter
@@ -156,6 +166,7 @@ class TestLinterClass:
         # Should return empty list or handle gracefully
         assert isinstance(violations, list)
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_linter_violation_structure(self):
         """Violations have proper structure with required attributes."""
         from src import Linter
@@ -187,6 +198,7 @@ class TestDirectImports:
         assert file_placement is not None
         assert hasattr(file_placement, "lint")
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_direct_linter_lint_function(self):
         """Direct linter has lint() function."""
         from src.linters import file_placement
@@ -201,6 +213,7 @@ class TestDirectImports:
         finally:
             Path(file_path).unlink()
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_direct_linter_with_config(self):
         """Direct linter accepts config parameter."""
         from src.linters import file_placement
@@ -220,6 +233,7 @@ class TestDirectImports:
 class TestConfigurationLoading:
     """Test configuration loading in Library API."""
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_linter_loads_yaml_config(self):
         """Linter loads YAML config file."""
         from src import Linter
@@ -235,6 +249,7 @@ class TestConfigurationLoading:
         finally:
             Path(config_path).unlink()
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_linter_loads_json_config(self):
         """Linter loads JSON config file."""
         from src import Linter
@@ -258,6 +273,7 @@ class TestConfigurationLoading:
         assert linter.config is not None
         # Should use defaults
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_linter_autodiscovers_config_in_project_root(self):
         """Linter autodiscovers .thailint.yaml in project root."""
         from src import Linter

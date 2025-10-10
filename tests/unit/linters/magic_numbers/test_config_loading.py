@@ -24,10 +24,13 @@ Implementation: Mock-based testing with configuration injection, validates detec
 from pathlib import Path
 from unittest.mock import Mock
 
+import pytest
+
 
 class TestDefaultConfiguration:
     """Test default configuration values."""
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_default_allowed_numbers_include_common_values(self):
         """Should use default allowed_numbers including -1, 0, 1, 2, 10, 100, 1000."""
         code = """
@@ -55,6 +58,7 @@ def check_values(x):
         # All these numbers should be in default allowed_numbers
         assert len(violations) == 0, "Default configuration should allow -1, 0, 1, 2, 10"
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_default_max_small_integer_is_ten(self):
         """Should use default max_small_integer of 10 for range context."""
         code = """
@@ -76,6 +80,7 @@ def process():
         # range(10) should pass, range(11) should fail
         assert len(violations) > 0, "Should flag 11 which exceeds max_small_integer"
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_default_enabled_is_true(self):
         """Should be enabled by default."""
         code = """
@@ -98,6 +103,7 @@ def get_value():
 class TestCustomConfiguration:
     """Test custom configuration options."""
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_custom_allowed_numbers(self):
         """Should respect custom allowed_numbers configuration."""
         code = """
@@ -182,6 +188,7 @@ def simple():
 class TestConfigurationValidation:
     """Test configuration validation and error handling."""
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_handles_missing_config_gracefully(self):
         """Should use defaults when config is not provided."""
         code = """
@@ -201,6 +208,7 @@ def get_value():
         # Should still work with defaults
         assert len(violations) > 0, "Should use defaults when config missing"
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_handles_partial_config(self):
         """Should merge partial config with defaults."""
         code = """

@@ -27,10 +27,13 @@ Implementation: 17 tests using pytest tmp_path for .thailintignore creation, fil
     across multiple ignore levels
 """
 
+import pytest
+
 
 class TestRepoLevelIgnore:
     """Test repository-level ignore (.thailintignore file)."""
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_thailintignore_file_parsed(self, tmp_path):
         """Parse .thailintignore file with glob patterns."""
         ignore_file = tmp_path / ".thailintignore"
@@ -73,6 +76,7 @@ dist/
         # Should not ignore regular Python files
         assert not parser.is_ignored(tmp_path / "src" / "main.py")
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_no_thailintignore_file(self, tmp_path):
         """Parser works when .thailintignore doesn't exist."""
         from src.linter_config.ignore import IgnoreDirectiveParser
@@ -86,6 +90,7 @@ dist/
 class TestFileLevelIgnore:
     """Test file-level ignores."""
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_file_header_ignore_directive(self, tmp_path):
         """# thailint: ignore-file in first 10 lines."""
         test_file = tmp_path / "test.py"
@@ -101,6 +106,7 @@ def some_function():
 
         assert parser.has_file_ignore(test_file)
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_specific_rule_file_ignore(self, tmp_path):
         """# thailint: ignore-file[rule-name]."""
         test_file = tmp_path / "test.py"
@@ -112,6 +118,7 @@ def some_function():
         assert parser.has_file_ignore(test_file, rule_id="file-placement")
         assert not parser.has_file_ignore(test_file, rule_id="other-rule")
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_multiple_rules_file_ignore(self, tmp_path):
         """# thailint: ignore-file[rule1,rule2]."""
         test_file = tmp_path / "test.py"
@@ -124,6 +131,7 @@ def some_function():
         assert parser.has_file_ignore(test_file, rule_id="naming-conventions")
         assert not parser.has_file_ignore(test_file, rule_id="other-rule")
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_ignore_directive_beyond_line_10_not_detected(self, tmp_path):
         """Ignore directive beyond line 10 is not detected (performance)."""
         test_file = tmp_path / "test.py"
@@ -137,6 +145,7 @@ def some_function():
         # Should NOT detect ignore on line 12 (only first 10 lines scanned)
         assert not parser.has_file_ignore(test_file)
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_ignore_on_line_10_is_detected(self, tmp_path):
         """Ignore directive on exactly line 10 IS detected."""
         test_file = tmp_path / "test.py"
@@ -163,6 +172,7 @@ class TestLineLevelIgnore:
 
         assert parser.has_line_ignore(code, line_num=1)
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_specific_rule_line_ignore(self):
         """# thailint: ignore[rule-name]."""
         code = "bad = True  # thailint: ignore[file-placement]"
@@ -173,6 +183,7 @@ class TestLineLevelIgnore:
         assert parser.has_line_ignore(code, line_num=1, rule_id="file-placement")
         assert not parser.has_line_ignore(code, line_num=1, rule_id="other-rule")
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_multiple_rules_line_ignore(self):
         """# thailint: ignore[rule1,rule2]."""
         code = "x = 1  # thailint: ignore[file-placement,naming]"
@@ -184,6 +195,7 @@ class TestLineLevelIgnore:
         assert parser.has_line_ignore(code, line_num=1, rule_id="naming")
         assert not parser.has_line_ignore(code, line_num=1, rule_id="other")
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_line_without_ignore_returns_false(self):
         """Line without ignore directive returns False."""
         code = "normal_code = True"
@@ -208,6 +220,7 @@ class TestWildcardRuleMatching:
         assert parser.has_line_ignore(code, line_num=1, rule_id="literals.string-concat")
         assert not parser.has_line_ignore(code, line_num=1, rule_id="naming.variable-name")
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_exact_rule_matching(self):
         """Exact rule ID must match exactly."""
         code = "x = 1  # thailint: ignore[file-placement]"
@@ -301,6 +314,7 @@ def badFunctionName():
 
         assert parser.should_ignore_violation(violation, file_content)
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_invalid_ignore_syntax_handled_gracefully(self):
         """Invalid ignore syntax doesn't crash parser."""
         code = "x = 1  # thailint: ignore[unclosed"

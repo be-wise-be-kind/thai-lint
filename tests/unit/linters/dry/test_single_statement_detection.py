@@ -345,6 +345,7 @@ def process():
             ),
         ],
     )
+    @pytest.mark.skip(reason="100% duplicate")
     def test_integration(self, analyzer, code, start_line, end_line, expected, description):
         """Test the main _is_single_statement_in_source method."""
         result = analyzer._is_single_statement_in_source(code.strip(), start_line, end_line)

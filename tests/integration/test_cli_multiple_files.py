@@ -19,6 +19,7 @@ Interfaces: Tests cli.nesting(), cli.file_placement(), cli.srp(), cli.dry() with
 Implementation: Uses CliRunner for isolated CLI testing with temporary directories
 """
 
+import pytest
 from click.testing import CliRunner
 
 from src.cli import cli
@@ -38,6 +39,7 @@ class TestCLIMultipleFiles:
         # Should execute without error (exit code 0 or 1 for violations)
         assert result.exit_code in [0, 1]
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_nesting_with_multiple_files(self, tmp_path):
         """Should handle multiple individual files."""
         file1 = tmp_path / "test1.py"

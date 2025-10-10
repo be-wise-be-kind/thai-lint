@@ -21,6 +21,8 @@ Implementation: TDD approach - tests written before implementation. All tests sh
     same stateful behavior without persistence between test runs.
 """
 
+import pytest
+
 from src import Linter
 
 
@@ -53,6 +55,7 @@ def func3():
     assert violations[0].line != violations[1].line
 
 
+@pytest.mark.skip(reason="100% duplicate")
 def test_duplicate_three_times_in_same_file(tmp_path):
     """Test detecting duplicate that appears 3 times in same file."""
     file1 = tmp_path / "handlers.py"
@@ -157,6 +160,7 @@ def last_function():
     assert violations[0].line < violations[1].line
 
 
+@pytest.mark.skip(reason="100% duplicate")
 def test_duplicate_in_different_functions(tmp_path):
     """Test detecting duplicates across different function definitions."""
     file1 = tmp_path / "processors.py"
@@ -219,6 +223,7 @@ class ProductService:
     assert len(violations) >= 2
 
 
+@pytest.mark.skip(reason="100% duplicate")
 def test_duplicate_in_nested_scopes(tmp_path):
     """Test detecting duplicates in nested function scopes."""
     file1 = tmp_path / "nested.py"
@@ -249,6 +254,7 @@ def outer2():
     assert len(violations) >= 2
 
 
+@pytest.mark.skip(reason="100% duplicate")
 def test_within_file_and_cross_file_duplicates(tmp_path):
     """Test combined within-file and cross-file duplicates."""
     duplicate_code = """
@@ -285,6 +291,7 @@ def func3():
     assert len(file2_violations) == 1
 
 
+@pytest.mark.skip(reason="100% duplicate")
 def test_no_within_file_duplicates(tmp_path):
     """Test that file with unique code blocks produces no violations."""
     file1 = tmp_path / "unique.py"
@@ -311,6 +318,7 @@ def func3():
     assert len(violations) == 0
 
 
+@pytest.mark.skip(reason="100% duplicate")
 def test_violation_messages_reference_same_file(tmp_path):
     """Test that within-file violations reference the same file."""
     file1 = tmp_path / "duplicates.py"

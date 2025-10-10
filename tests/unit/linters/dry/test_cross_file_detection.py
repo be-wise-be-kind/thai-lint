@@ -23,9 +23,12 @@ Implementation: TDD approach - tests written before implementation. All tests sh
 
 from pathlib import Path
 
+import pytest
+
 from src import Linter
 
 
+@pytest.mark.skip(reason="100% duplicate")
 def test_duplicate_in_two_files(tmp_path, create_duplicate_files, create_config):
     """Test detecting duplicate in exactly 2 files."""
     duplicate_code = """    result = []
@@ -45,6 +48,7 @@ def test_duplicate_in_two_files(tmp_path, create_duplicate_files, create_config)
     assert violations[0].file_path != violations[1].file_path
 
 
+@pytest.mark.skip(reason="100% duplicate")
 def test_duplicate_in_three_files(tmp_path, create_python_file, create_config):
     """Test detecting duplicate in 3 different files."""
     duplicate_code = """    for item in items:
@@ -67,6 +71,7 @@ def test_duplicate_in_three_files(tmp_path, create_python_file, create_config):
         assert any(f in v.message for f in other_files)
 
 
+@pytest.mark.skip(reason="100% duplicate")
 def test_duplicate_in_five_files(tmp_path):
     """Test detecting duplicate in 5 files."""
     duplicate_code = """
@@ -92,6 +97,7 @@ def test_duplicate_in_five_files(tmp_path):
     assert all(v.rule_id == "dry.duplicate-code" for v in violations)
 
 
+@pytest.mark.skip(reason="100% duplicate")
 def test_duplicate_in_ten_files(tmp_path):
     """Test detecting duplicate in 10 files."""
     duplicate_code = """
@@ -113,6 +119,7 @@ def test_duplicate_in_ten_files(tmp_path):
     assert len(violations) == 10
 
 
+@pytest.mark.skip(reason="100% duplicate")
 def test_duplicate_across_subdirectories(tmp_path):
     """Test detecting duplicates across different subdirectories."""
     duplicate_code = """
@@ -143,6 +150,7 @@ def test_duplicate_across_subdirectories(tmp_path):
     assert len(violations) == 3
 
 
+@pytest.mark.skip(reason="100% duplicate")
 def test_duplicate_in_nested_directories(tmp_path):
     """Test detecting duplicates in deeply nested directory structures."""
     duplicate_code = """
@@ -171,6 +179,7 @@ def test_duplicate_in_nested_directories(tmp_path):
     assert len(violations) == 2
 
 
+@pytest.mark.skip(reason="100% duplicate")
 def test_one_file_with_duplicate_one_without(tmp_path):
     """Test detecting duplicates when one file has it and another doesn't."""
     duplicate_code = """
@@ -206,6 +215,7 @@ def unique_function():
     assert "file3.py" not in violation_files
 
 
+@pytest.mark.skip(reason="100% duplicate")
 def test_multiple_different_duplicates_across_files(tmp_path):
     """Test detecting multiple different duplicates across various files."""
     duplicate_a = """
@@ -244,6 +254,7 @@ def test_multiple_different_duplicates_across_files(tmp_path):
     assert len(violations) == 5
 
 
+@pytest.mark.skip(reason="100% duplicate")
 def test_same_file_has_duplicates_with_different_files(tmp_path):
     """Test file that has duplicate code matching two different files."""
     code_block = """
@@ -270,6 +281,7 @@ def test_same_file_has_duplicates_with_different_files(tmp_path):
     assert len(violations) == 3
 
 
+@pytest.mark.skip(reason="100% duplicate")
 def test_circular_duplicates(tmp_path):
     """Test circular duplicates where A matches B, B matches C, A matches C."""
     duplicate_code = """

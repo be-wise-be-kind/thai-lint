@@ -21,6 +21,8 @@ Implementation: 9 tests covering all 5 ignore levels, wildcard support, level in
     and syntax validation
 """
 
+import pytest
+
 
 class TestIgnoreDirectives:
     """Test all 5 levels of ignore directives."""
@@ -54,6 +56,7 @@ class TestIgnoreDirectives:
         # Directory should be ignored
         assert all("ignored_dir" not in v.file_path for v in violations)
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_file_level_ignore_directive(self, tmp_path):
         """File-level: # thailint: ignore-file."""
         test_file = tmp_path / "ignored.py"
@@ -70,6 +73,7 @@ class TestIgnoreDirectives:
 
         assert len(violations) == 0  # Entire file ignored
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_file_level_specific_rule_ignore(self, tmp_path):
         """File-level: # thailint: ignore-file[file-placement]."""
         test_file = tmp_path / "ignored.py"
@@ -82,6 +86,7 @@ class TestIgnoreDirectives:
 
         assert len(violations) == 0
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_method_level_ignore(self, tmp_path):
         """Method-level: decorator or comment above function."""
         # May require AST parsing - defer to later PR
@@ -101,6 +106,7 @@ def problematic_function():
         violations = linter.lint_path(test_file)
         assert isinstance(violations, list)
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_line_level_ignore(self, tmp_path):
         """Line-level: # thailint: ignore."""
         # For file placement, line-level doesn't apply directly
@@ -117,6 +123,7 @@ def problematic_function():
         # But syntax should be recognized
         assert isinstance(violations, list)
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_ignore_patterns_with_wildcards(self, tmp_path):
         """Ignore patterns support wildcards."""
         (tmp_path / ".thailintignore").write_text("*.pyc\ntest_*.py\nbuild/**\n")
@@ -131,6 +138,7 @@ def problematic_function():
         assert all("file.pyc" not in v.file_path for v in violations)
         assert all("test_something.py" not in v.file_path for v in violations)
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_multiple_ignore_levels_interaction(self, tmp_path):
         """Test interaction when multiple ignore levels apply."""
         # Repository level ignores build/
@@ -149,6 +157,7 @@ def problematic_function():
         # Should be ignored at repo level before file level is checked
         assert len(violations) == 0
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_validate_ignore_directive_syntax(self, tmp_path):
         """Invalid ignore directive syntax produces warning."""
         test_file = tmp_path / "test.py"

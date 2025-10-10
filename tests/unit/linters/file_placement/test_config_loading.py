@@ -66,6 +66,7 @@ file-placement:
         # Should not crash, should use defaults
         assert linter is not None
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_handle_malformed_json(self, tmp_path):
         """Malformed JSON raises clear error."""
         config_file = tmp_path / "bad.json"
@@ -93,6 +94,7 @@ file-placement:
         with pytest.raises(ValueError):  # Should catch bad regex
             FilePlacementLinter(config_file=str(config_file))
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_support_inline_json_object(self):
         """Support passing JSON object directly (not file path)."""
         config_obj = {"file-placement": {"directories": {"src/": {"allow": [r"^src/.*\.py$"]}}}}

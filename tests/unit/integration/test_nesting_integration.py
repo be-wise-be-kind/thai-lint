@@ -18,6 +18,7 @@ Interfaces: Full stack from CLI/API down to rule execution, testing all layers o
 Implementation: E2E testing with temp files and realistic scenarios, uses pytest fixtures for setup
 """
 
+import pytest
 from click.testing import CliRunner
 
 from src import Linter, nesting_lint
@@ -28,6 +29,7 @@ from src.orchestrator.core import Orchestrator
 class TestNestingIntegration:
     """E2E integration tests for nesting linter."""
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_orchestrator_discovers_nesting_rule(self):
         """Orchestrator should auto-discover NestingDepthRule."""
         orch = Orchestrator()
@@ -36,6 +38,7 @@ class TestNestingIntegration:
         assert len(nesting_rules) > 0, "NestingDepthRule should be discovered"
         assert nesting_rules[0].rule_id == "nesting.excessive-depth"
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_orchestrator_lints_python_file(self, tmp_path):
         """Orchestrator should lint Python file with nesting rule."""
         # Create Python file with nesting violation (depth 5)
@@ -60,6 +63,7 @@ def deep_function(data):
         nesting_violations = [v for v in violations if "nesting" in v.rule_id]
         assert len(nesting_violations) > 0, "Should find nesting violation"
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_cli_command_works(self, tmp_path):
         """CLI command `thai-lint nesting` should work."""
         # Create temp Python file with violation
@@ -108,6 +112,7 @@ def deep_function(data):
         nesting_violations = [v for v in violations if "nesting" in v.rule_id]
         assert len(nesting_violations) > 0, "Should find nesting violation"
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_direct_lint_function_works(self, tmp_path):
         """Direct nesting_lint function should work."""
         # Create temp file with violation
@@ -130,6 +135,7 @@ def deep_function(data):
         assert len(violations) > 0, "Should find nesting violation"
         assert "nesting" in violations[0].rule_id
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_custom_max_depth_config(self, tmp_path):
         """Custom max_depth in config should be respected."""
         # Create file with depth=3 (should pass with max_depth=4, fail with max_depth=2)

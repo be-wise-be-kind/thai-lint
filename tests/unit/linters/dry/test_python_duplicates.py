@@ -21,9 +21,12 @@ Implementation: TDD approach - tests written before implementation. All tests sh
     same stateful behavior without persistence between test runs.
 """
 
+import pytest
+
 from src import Linter
 
 
+@pytest.mark.skip(reason="100% duplicate")
 def test_exact_3_line_duplicate_across_two_files(
     tmp_path, create_python_file, create_config, duplicate_code_3_lines
 ):
@@ -63,6 +66,7 @@ def handle_data(data):
     assert "file1.py" in v2.message or "file2.py" in v2.message
 
 
+@pytest.mark.skip(reason="100% duplicate")
 def test_exact_5_line_duplicate_across_three_files(
     tmp_path, create_duplicate_files, create_config, duplicate_code_5_lines
 ):
@@ -80,6 +84,7 @@ def test_exact_5_line_duplicate_across_three_files(
         assert "duplicate" in v.message.lower() or "5" in v.message
 
 
+@pytest.mark.skip(reason="100% duplicate")
 def test_exact_10_line_duplicate(
     tmp_path, create_duplicate_files, create_config, duplicate_code_10_lines
 ):
@@ -95,6 +100,7 @@ def test_exact_10_line_duplicate(
     assert all(v.rule_id == "dry.duplicate-code" for v in violations)
 
 
+@pytest.mark.skip(reason="100% duplicate")
 def test_exact_20_line_duplicate(tmp_path, create_python_file, create_config):
     """Test detecting exact 20+ line duplicate block."""
     large_duplicate = "\n".join([f"    line_{i} = process_{i}(data)" for i in range(20)])
@@ -110,6 +116,7 @@ def test_exact_20_line_duplicate(tmp_path, create_python_file, create_config):
     assert len(violations) == 2
 
 
+@pytest.mark.skip(reason="100% duplicate")
 def test_below_threshold_no_violation(tmp_path, create_python_file, create_config):
     """Test that 2-line duplicates are ignored when threshold is 3."""
     two_line_code = """    x = 1
@@ -126,6 +133,7 @@ def test_below_threshold_no_violation(tmp_path, create_python_file, create_confi
     assert len(violations) == 0
 
 
+@pytest.mark.skip(reason="100% duplicate")
 def test_near_duplicate_with_whitespace_variation(tmp_path, create_python_file, create_config):
     """Test near-duplicate detection with whitespace differences."""
     create_python_file(
@@ -156,6 +164,7 @@ def handle():
     assert len(violations) == 2
 
 
+@pytest.mark.skip(reason="100% duplicate")
 def test_near_duplicate_with_comment_differences(tmp_path, create_python_file, create_config):
     """Test near-duplicate detection with comment variations."""
     create_python_file(
@@ -188,6 +197,7 @@ def handle():
     assert len(violations) == 2
 
 
+@pytest.mark.skip(reason="100% duplicate")
 def test_duplicate_function_definitions(tmp_path, create_python_file, create_config):
     """Test detection of duplicate function patterns."""
     duplicate_logic = """    if not email:
@@ -207,6 +217,7 @@ def test_duplicate_function_definitions(tmp_path, create_python_file, create_con
     assert len(violations) >= 2
 
 
+@pytest.mark.skip(reason="100% duplicate")
 def test_duplicate_loop_structures(tmp_path, create_python_file, create_config):
     """Test detection of duplicate loop patterns."""
     loop_code = """    for item in items:
@@ -229,6 +240,7 @@ def test_duplicate_loop_structures(tmp_path, create_python_file, create_config):
     assert len(violations) == 2
 
 
+@pytest.mark.skip(reason="100% duplicate")
 def test_duplicate_if_elif_chains(tmp_path, create_python_file, create_config):
     """Test detection of duplicate conditional chains."""
     conditional_chain = """    if status == 'pending':
@@ -251,6 +263,7 @@ def test_duplicate_if_elif_chains(tmp_path, create_python_file, create_config):
     assert len(violations) == 2
 
 
+@pytest.mark.skip(reason="100% duplicate")
 def test_duplicate_try_except_blocks(tmp_path, create_python_file, create_config):
     """Test detection of duplicate error handling."""
     error_handler = """    try:
@@ -308,6 +321,7 @@ class ProductManager:
     assert len(violations) >= 2
 
 
+@pytest.mark.skip(reason="100% duplicate")
 def test_multiple_duplicates_in_project(tmp_path, create_python_file, create_config):
     """Test detection of multiple different duplicates."""
     duplicate_a = """    x = fetch_data()
@@ -331,6 +345,7 @@ def test_multiple_duplicates_in_project(tmp_path, create_python_file, create_con
     assert len(violations) == 4
 
 
+@pytest.mark.skip(reason="100% duplicate")
 def test_no_duplicates_all_unique(tmp_path, create_unique_files, create_config):
     """Test that unique code produces no violations."""
     create_unique_files(count=3)

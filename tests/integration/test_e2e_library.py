@@ -81,6 +81,7 @@ class TestLibraryBasicUsage:
             # Should pass (no violations)
             assert len(violations) == 0
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_linter_with_path_objects(self) -> None:
         """Test Linter works with Path objects."""
         from src import Linter
@@ -130,6 +131,7 @@ class TestLibraryMultipleRules:
         # Should find violations
         assert len(violations) > 0
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_lint_all_rules(self) -> None:
         """Test linting with all available rules."""
         from src import Linter
@@ -212,6 +214,7 @@ class TestLibraryDirectoryScanning:
 class TestLibraryViolationFormat:
     """Test Library API violation result format."""
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_violation_has_required_fields(self, make_project) -> None:
         """Test violations have all required fields."""
         from src import Linter

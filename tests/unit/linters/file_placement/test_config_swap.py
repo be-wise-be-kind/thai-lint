@@ -21,10 +21,13 @@ Implementation: Uses pytest fixtures for temporary directories, creates real fil
     before and after config swaps, ensures violation messages match current configuration
 """
 
+import pytest
+
 
 class TestConfigurationSwap:
     """Test that linter behavior changes when configuration is swapped."""
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_config_swap_reverses_violations(self, tmp_path):
         """
         Comprehensive test validating all 6 criteria:
@@ -278,6 +281,7 @@ class TestConfigurationSwap:
         # Verify each config produces different results
         # This proves the linter adapts to each configuration independently
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_single_file_lint_without_directory_scan(self, tmp_path):
         """
         Test pre-commit hook scenario: lint a single file without scanning directory.

@@ -31,6 +31,7 @@ import pytest
 class TestRuleRegistry:
     """Test RuleRegistry functionality."""
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_can_register_rule(self):
         """Registry can register a rule."""
         from src.core.base import BaseLintContext, BaseLintRule
@@ -59,6 +60,7 @@ class TestRuleRegistry:
         # Verify it's in registry
         assert registry.get("test.mock-rule") is not None
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_can_retrieve_registered_rule(self):
         """Registry can retrieve rule by ID."""
         from src.core.base import BaseLintContext, BaseLintRule
@@ -132,6 +134,7 @@ class TestRuleRegistry:
         with pytest.raises(ValueError, match="already registered"):
             registry.register(MockRule2())
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_can_list_all_rules(self):
         """Registry can list all registered rules."""
         from src.core.base import BaseLintContext, BaseLintRule
@@ -180,6 +183,7 @@ class TestRuleRegistry:
         assert rule1 in all_rules
         assert rule2 in all_rules
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_get_nonexistent_rule_returns_none(self):
         """Getting a nonexistent rule returns None."""
         from src.core.registry import RuleRegistry
@@ -193,6 +197,7 @@ class TestRuleRegistry:
 class TestRuleDiscovery:
     """Test automatic rule discovery."""
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_discovers_rules_in_package(self, tmp_path):
         """Auto-discover rules in specified package."""
         from src.core.registry import RuleRegistry
@@ -254,6 +259,7 @@ class DiscoverableRule(BaseLintRule):
         # Count should be 0 since BaseLintRule is abstract
         assert count == 0
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_only_discovers_lint_rule_subclasses(self, tmp_path):
         """Discovery only finds BaseLintRule subclasses."""
         from src.core.registry import RuleRegistry

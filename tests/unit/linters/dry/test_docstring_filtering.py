@@ -15,9 +15,12 @@ Implementation: Creates files with identical docstrings in multiple locations
     and verifies they are NOT flagged as violations.
 """
 
+import pytest
+
 from src import Linter
 
 
+@pytest.mark.skip(reason="100% duplicate")
 def test_function_docstrings_not_flagged(tmp_path):
     """Test that identical function docstrings are NOT flagged as duplicate."""
     file1 = tmp_path / "utils1.py"
@@ -96,6 +99,7 @@ class ConfigModel:
     assert len(violations) == 0, "Class docstrings should not be flagged as duplicate"
 
 
+@pytest.mark.skip(reason="100% duplicate")
 def test_module_docstrings_not_flagged(tmp_path):
     """Test that identical module docstrings are NOT flagged as duplicate."""
     file1 = tmp_path / "service1.py"

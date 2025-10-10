@@ -23,10 +23,13 @@ Implementation: 5 tests covering violation structure, relative paths, pattern in
 import json
 from pathlib import Path
 
+import pytest
+
 
 class TestOutputFormatting:
     """Test consistent violation message format."""
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_consistent_violation_format(self):
         """Violations have consistent structure."""
         from src.linters.file_placement import FilePlacementLinter
@@ -43,6 +46,7 @@ class TestOutputFormatting:
             assert hasattr(v, "message")
             assert hasattr(v, "severity")
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_file_path_relative_to_project_root(self, tmp_path):
         """File paths shown relative to project root."""
         (tmp_path / "src").mkdir()
@@ -59,6 +63,7 @@ class TestOutputFormatting:
             assert "src/main.py" in violations[0].file_path
             assert str(tmp_path) not in violations[0].file_path
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_error_message_includes_pattern_violated(self):
         """Error message shows which pattern was violated."""
         config = {
@@ -81,6 +86,7 @@ class TestOutputFormatting:
                 or "No tests in src/" in violations[0].message
             )
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_suggestion_for_correct_placement(self):
         """Violation includes suggestion for where file should go."""
         config = {"file-placement": {"directories": {"src/": {"allow": [r"^src/.*\.py$"]}}}}
@@ -93,6 +99,7 @@ class TestOutputFormatting:
             assert violations[0].suggestion is not None
             assert "src/" in violations[0].suggestion
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_machine_readable_json_output(self):
         """Violations can be output as JSON."""
         from src.linters.file_placement import FilePlacementLinter

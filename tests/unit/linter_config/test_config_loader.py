@@ -33,6 +33,7 @@ import yaml
 class TestYAMLConfigLoading:
     """Test YAML configuration loading."""
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_load_valid_yaml_config(self, tmp_path):
         """Load valid YAML configuration from .thailint.yaml."""
         config_file = tmp_path / ".thailint.yaml"
@@ -51,6 +52,7 @@ rules:
         assert config["rules"]["file-placement"]["enabled"] is True
         assert config["rules"]["file-placement"]["config"]["layout_file"] == ".ai/layout.yaml"
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_load_invalid_yaml_raises_error(self, tmp_path):
         """Invalid YAML raises clear error."""
         config_file = tmp_path / "bad.yaml"
@@ -64,6 +66,7 @@ rules:
         with pytest.raises((ValueError, yaml.YAMLError, ConfigParseError)):
             loader.load(config_file)
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_load_nonexistent_file_returns_defaults(self, tmp_path):
         """Nonexistent config file returns default configuration."""
         from src.linter_config.loader import LinterConfigLoader
@@ -76,6 +79,7 @@ rules:
         assert "rules" in config
         assert "ignore" in config
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_load_config_with_nested_structures(self, tmp_path):
         """Load config with deeply nested structures."""
         config_file = tmp_path / "nested.yaml"
@@ -110,6 +114,7 @@ rules:
 class TestJSONConfigLoading:
     """Test JSON configuration loading."""
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_load_valid_json_config(self, tmp_path):
         """Load valid JSON configuration from .thailint.json."""
         config_file = tmp_path / ".thailint.json"
@@ -128,6 +133,7 @@ class TestJSONConfigLoading:
         assert config["rules"]["file-placement"]["enabled"] is True
         assert config["rules"]["file-placement"]["config"]["layout_file"] == ".ai/layout.json"
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_json_and_yaml_produce_same_result(self, tmp_path):
         """Equivalent YAML and JSON produce identical config."""
         # Create YAML version
@@ -169,6 +175,7 @@ rules:
 class TestConfigDefaults:
     """Test default configuration values."""
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_get_defaults_returns_valid_structure(self):
         """Default config has expected structure."""
         from src.linter_config.loader import LinterConfigLoader

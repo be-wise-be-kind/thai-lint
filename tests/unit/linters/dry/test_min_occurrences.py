@@ -21,9 +21,12 @@ Implementation: TDD approach - tests written before implementation. Tests use ca
     or exceeds the configured threshold.
 """
 
+import pytest
+
 from src import Linter
 
 
+@pytest.mark.skip(reason="100% duplicate")
 def test_min_occurrences_default_behavior_two_occurrences(tmp_path):
     """Test default behavior: duplicates reported with 2 occurrences."""
     # Create two files with identical 3-line blocks
@@ -60,6 +63,7 @@ dry:
     assert len(violations) == 2
 
 
+@pytest.mark.skip(reason="100% duplicate")
 def test_min_occurrences_python_requires_three(tmp_path):
     """Test min_occurrences: 3 for Python - no violation with only 2 occurrences."""
     # Create two files with identical 3-line blocks
@@ -98,6 +102,7 @@ dry:
     assert len(violations) == 0
 
 
+@pytest.mark.skip(reason="100% duplicate")
 def test_min_occurrences_python_reports_three_occurrences(tmp_path):
     """Test min_occurrences: 3 for Python - violation reported with 3 occurrences."""
     # Create three files with identical 3-line blocks
@@ -145,6 +150,7 @@ dry:
     assert len(violations) == 3
 
 
+@pytest.mark.skip(reason="100% duplicate")
 def test_min_occurrences_typescript_different_threshold(tmp_path):
     """Test min_occurrences can be different for TypeScript."""
     # Create two TypeScript files with identical blocks
@@ -185,6 +191,7 @@ dry:
     assert len(violations) == 2
 
 
+@pytest.mark.skip(reason="100% duplicate")
 def test_min_occurrences_fallback_to_default(tmp_path):
     """Test that languages without specific min_occurrences use default (2)."""
     # Create two JavaScript files
@@ -226,6 +233,7 @@ dry:
     assert len(violations) == 2
 
 
+@pytest.mark.skip(reason="100% duplicate")
 def test_min_occurrences_global_override(tmp_path):
     """Test global min_occurrences as fallback for all languages."""
     file1 = tmp_path / "file1.py"

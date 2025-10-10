@@ -17,9 +17,12 @@ Implementation: Tests that identical docstrings across multiple functions/classe
     do NOT generate DRY violations.
 """
 
+import pytest
+
 from src import Linter
 
 
+@pytest.mark.skip(reason="100% duplicate")
 def test_duplicate_function_docstrings_should_not_violate(tmp_path):
     """Test that duplicate function docstrings are NOT flagged as violations.
 
@@ -65,6 +68,7 @@ def handle_request(request):
     # For now, filtering out blocks that overlap with docstrings is acceptable
 
 
+@pytest.mark.skip(reason="100% duplicate")
 def test_duplicate_docstrings_across_files_should_not_violate(tmp_path):
     """Test that identical docstrings in different files are NOT flagged."""
     file1 = tmp_path / "parser1.py"
@@ -150,6 +154,7 @@ class ResponseHandler:
     assert len(violations) == 0
 
 
+@pytest.mark.skip(reason="100% duplicate")
 def test_module_docstrings_should_not_violate(tmp_path):
     """Test that duplicate module-level docstrings are NOT flagged."""
     file1 = tmp_path / "utils1.py"

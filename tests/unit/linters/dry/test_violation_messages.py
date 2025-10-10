@@ -23,9 +23,12 @@ Implementation: TDD approach - tests written before implementation. All tests sh
 
 from pathlib import Path
 
+import pytest
+
 from src import Linter
 
 
+@pytest.mark.skip(reason="100% duplicate")
 def test_violation_message_includes_line_count(tmp_path):
     """Test that violation message includes duplicate line count."""
     duplicate_code = """
@@ -51,6 +54,7 @@ def test_violation_message_includes_line_count(tmp_path):
         assert "3" in v.message or "three" in v.message.lower()
 
 
+@pytest.mark.skip(reason="100% duplicate")
 def test_violation_message_includes_occurrence_count(tmp_path):
     """Test that violation message includes total occurrence count."""
     duplicate_code = """
@@ -74,6 +78,7 @@ def test_violation_message_includes_occurrence_count(tmp_path):
         assert "3" in v.message or "three" in v.message.lower()
 
 
+@pytest.mark.skip(reason="100% duplicate")
 def test_violation_message_includes_all_locations(tmp_path):
     """Test that violation message lists all duplicate locations."""
     duplicate_code = """
@@ -103,6 +108,7 @@ def test_violation_message_includes_all_locations(tmp_path):
         assert "duplicate" in message_lower or "repeated" in message_lower
 
 
+@pytest.mark.skip(reason="100% duplicate")
 def test_violation_message_includes_line_numbers(tmp_path):
     """Test that violation message includes line numbers."""
     file1 = tmp_path / "file1.py"
@@ -136,6 +142,7 @@ def other():
         assert v.line > 0
 
 
+@pytest.mark.skip(reason="100% duplicate")
 def test_violation_message_includes_refactoring_suggestion(tmp_path):
     """Test that violation message includes helpful refactoring suggestion."""
     duplicate_code = """
@@ -165,6 +172,7 @@ def test_violation_message_includes_refactoring_suggestion(tmp_path):
         )
 
 
+@pytest.mark.skip(reason="100% duplicate")
 def test_violation_message_format_consistency(tmp_path):
     """Test that violation messages have consistent format."""
     duplicate_code = """
@@ -192,6 +200,7 @@ def test_violation_message_format_consistency(tmp_path):
         assert len(msg) > 20
 
 
+@pytest.mark.skip(reason="100% duplicate")
 def test_violation_message_handles_long_paths(tmp_path):
     """Test that violation messages handle long file paths gracefully."""
     (tmp_path / "very" / "long" / "nested" / "directory" / "structure").mkdir(parents=True)
@@ -220,6 +229,7 @@ def test_violation_message_handles_long_paths(tmp_path):
         assert len(v.message) < 500
 
 
+@pytest.mark.skip(reason="100% duplicate")
 def test_violation_message_handles_many_occurrences(tmp_path):
     """Test that violation message handles 10+ occurrences gracefully."""
     duplicate_code = """

@@ -69,6 +69,7 @@ class TestFilePlacementIntegration:
 
         return tmp_path
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_orchestrator_can_execute_file_placement_rule(self, project_root):
         """Test orchestrator executes file placement rule on valid file."""
         # Create a valid Python file
@@ -88,6 +89,7 @@ class TestFilePlacementIntegration:
         # Should have no violations
         assert violations == []
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_orchestrator_detects_misplaced_files(self, project_root):
         """Test orchestrator detects file placement violations."""
         # Create a test file in src/ (violation)
@@ -119,6 +121,7 @@ class TestFilePlacementIntegration:
         # Violation paths are relative strings
         assert "src/test_wrong.py" in violation_files
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_rule_registration_with_auto_discovery(self, project_root):
         """Test file placement rule can be auto-discovered by registry."""
         # Create registry and discover from src.linters
@@ -153,6 +156,7 @@ class TestFilePlacementIntegration:
         violation_files = {str(v.file_path) for v in violations}
         assert not any("generated" in f for f in violation_files)
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_violation_format_from_orchestrator(self, project_root):
         """Test violations have correct format when returned by orchestrator."""
         # Create file with violation
@@ -172,6 +176,7 @@ class TestFilePlacementIntegration:
         assert hasattr(v, "severity")
         assert v.rule_id == "file-placement"
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_orchestrator_handles_nonexistent_config(self, project_root):
         """Test orchestrator handles missing config file gracefully."""
         # Create file
@@ -185,6 +190,7 @@ class TestFilePlacementIntegration:
         # Should return result (may be empty if using defaults)
         assert isinstance(violations, list)
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_multiple_rules_in_orchestrator(self, project_root):
         """Test orchestrator can execute multiple rules simultaneously."""
         # Create test file

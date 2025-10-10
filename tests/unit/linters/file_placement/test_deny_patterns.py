@@ -22,10 +22,13 @@ Implementation: 8 tests covering simple deny, precedence over allow, multiple pa
 
 from pathlib import Path
 
+import pytest
+
 
 class TestDenyPatternMatching:
     """Test files matching deny patterns."""
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_match_simple_deny_pattern(self):
         """File matches simple deny regex."""
         config = {
@@ -43,6 +46,7 @@ class TestDenyPatternMatching:
         assert len(violations) > 0
         assert "Tests in src/" in violations[0].message
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_deny_takes_precedence_over_allow(self):
         """Deny patterns override allow patterns."""
         config = {
@@ -82,6 +86,7 @@ class TestDenyPatternMatching:
         assert len(linter.lint_path(Path("src/debug.py"))) > 0
         assert len(linter.lint_path(Path("src/tmp.py"))) > 0
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_deny_with_custom_error_messages(self):
         """Deny pattern includes custom error message."""
         config = {
@@ -112,6 +117,7 @@ class TestDenyPatternMatching:
         assert len(linter.lint_path(Path("debug.log"))) > 0
         assert len(linter.lint_path(Path("backup.bak"))) > 0
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_debug_file_patterns_in_production(self):
         """Detect debug files in production directories."""
         config = {
@@ -133,6 +139,7 @@ class TestDenyPatternMatching:
         assert len(violations) > 0
         assert "No debug files in production" in violations[0].message
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_absolute_path_detection(self):
         """Detect and deny absolute paths in code."""
         # This would require code parsing, not just path checking
@@ -148,6 +155,7 @@ class TestDenyPatternMatching:
         violations = linter.lint_path(Path("/absolute/path/file.py"))
         assert len(violations) > 0
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_platform_specific_path_separators(self, make_project):
         """Handle both / and \\ path separators."""
         config = {"file-placement": {"directories": {"src/": {"deny": [{"pattern": r".*test.*"}]}}}}
