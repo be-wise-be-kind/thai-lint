@@ -22,9 +22,6 @@ Implementation: Tests library imports, function invocations, and result parsing
 
 import tempfile
 from pathlib import Path
-from unittest.mock import Mock
-
-import pytest
 
 
 class TestLibraryAPI:
@@ -96,71 +93,3 @@ class UserManager:
             assert isinstance(violations, list), "Should return list"
         finally:
             Path(temp_path).unlink()
-
-    @pytest.mark.skip(reason="100% duplicate")
-    def test_direct_rule_instantiation(self):
-        """Should be able to instantiate SRPRule directly."""
-        from src.linters.srp.linter import SRPRule
-
-        rule = SRPRule()
-        assert rule is not None, "Should create SRPRule instance"
-        assert rule.rule_id == "srp.violation", "Should have correct rule_id"
-
-    @pytest.mark.skip(reason="100% duplicate")
-    def test_direct_rule_check_method(self):
-        """Should be able to call check() method directly."""
-        from src.linters.srp.linter import SRPRule
-
-        code = """
-class DataHandler:
-    def m1(self): pass
-    def m2(self): pass
-    def m3(self): pass
-    def m4(self): pass
-    def m5(self): pass
-    def m6(self): pass
-    def m7(self): pass
-    def m8(self): pass
-"""
-        rule = SRPRule()
-        context = Mock()
-        context.file_path = Path("test.py")
-        context.file_content = code
-        context.language = "python"
-        context.metadata = {}
-
-        violations = rule.check(context)
-        assert isinstance(violations, list), "Should return list"
-        assert len(violations) > 0, "Should detect violations"
-
-    @pytest.mark.skip(reason="100% duplicate")
-    def test_programmatic_result_parsing(self):
-        """Should be able to parse violation results programmatically."""
-        from src.linters.srp.linter import SRPRule
-
-        code = """
-class SystemProcessor:
-    def m1(self): pass
-    def m2(self): pass
-    def m3(self): pass
-    def m4(self): pass
-    def m5(self): pass
-    def m6(self): pass
-    def m7(self): pass
-    def m8(self): pass
-"""
-        rule = SRPRule()
-        context = Mock()
-        context.file_path = Path("test.py")
-        context.file_content = code
-        context.language = "python"
-        context.metadata = {}
-
-        violations = rule.check(context)
-        if len(violations) > 0:
-            v = violations[0]
-            assert hasattr(v, "rule_id"), "Violation should have rule_id"
-            assert hasattr(v, "message"), "Violation should have message"
-            assert hasattr(v, "file_path"), "Violation should have file_path"
-            assert hasattr(v, "line"), "Violation should have line number"
-            assert hasattr(v, "suggestion"), "Violation should have suggestion"

@@ -66,19 +66,6 @@ file-placement:
         # Should not crash, should use defaults
         assert linter is not None
 
-    @pytest.mark.skip(reason="100% duplicate")
-    def test_handle_malformed_json(self, tmp_path):
-        """Malformed JSON raises clear error."""
-        config_file = tmp_path / "bad.json"
-        config_file.write_text("{invalid json}")
-
-        import json
-
-        from src.linters.file_placement import FilePlacementLinter
-
-        with pytest.raises(json.JSONDecodeError):  # Should raise parse error
-            FilePlacementLinter(config_file=str(config_file))
-
     def test_validate_regex_patterns_on_load(self, tmp_path):
         """Invalid regex patterns caught on load."""
         config_file = tmp_path / "layout.yaml"
@@ -93,14 +80,3 @@ file-placement:
 
         with pytest.raises(ValueError):  # Should catch bad regex
             FilePlacementLinter(config_file=str(config_file))
-
-    @pytest.mark.skip(reason="100% duplicate")
-    def test_support_inline_json_object(self):
-        """Support passing JSON object directly (not file path)."""
-        config_obj = {"file-placement": {"directories": {"src/": {"allow": [r"^src/.*\.py$"]}}}}
-        from src.linters.file_placement import FilePlacementLinter
-
-        linter = FilePlacementLinter(config_obj=config_obj)
-        # FilePlacementLinter now unwraps "file-placement" wrapper automatically
-        expected_config = {"directories": {"src/": {"allow": [r"^src/.*\.py$"]}}}
-        assert linter.config == expected_config

@@ -27,26 +27,9 @@ Implementation: 17 tests using pytest tmp_path for .thailintignore creation, fil
     across multiple ignore levels
 """
 
-import pytest
-
 
 class TestRepoLevelIgnore:
     """Test repository-level ignore (.thailintignore file)."""
-
-    @pytest.mark.skip(reason="100% duplicate")
-    def test_thailintignore_file_parsed(self, tmp_path):
-        """Parse .thailintignore file with glob patterns."""
-        ignore_file = tmp_path / ".thailintignore"
-        ignore_file.write_text("*.pyc\n.git/\nnode_modules/\n")
-
-        from src.linter_config.ignore import IgnoreDirectiveParser
-
-        parser = IgnoreDirectiveParser(tmp_path)
-
-        assert parser.is_ignored(tmp_path / "test.pyc")
-        assert parser.is_ignored(tmp_path / ".git" / "config")
-        assert parser.is_ignored(tmp_path / "node_modules" / "package.json")
-        assert not parser.is_ignored(tmp_path / "src" / "main.py")
 
     def test_gitignore_style_patterns(self, tmp_path):
         """Support gitignore-style patterns with wildcards."""
@@ -76,87 +59,9 @@ dist/
         # Should not ignore regular Python files
         assert not parser.is_ignored(tmp_path / "src" / "main.py")
 
-    @pytest.mark.skip(reason="100% duplicate")
-    def test_no_thailintignore_file(self, tmp_path):
-        """Parser works when .thailintignore doesn't exist."""
-        from src.linter_config.ignore import IgnoreDirectiveParser
-
-        parser = IgnoreDirectiveParser(tmp_path)
-
-        # Should not ignore anything
-        assert not parser.is_ignored(tmp_path / "any_file.py")
-
 
 class TestFileLevelIgnore:
     """Test file-level ignores."""
-
-    @pytest.mark.skip(reason="100% duplicate")
-    def test_file_header_ignore_directive(self, tmp_path):
-        """# thailint: ignore-file in first 10 lines."""
-        test_file = tmp_path / "test.py"
-        test_file.write_text("""#!/usr/bin/env python3
-# thailint: ignore-file
-
-def some_function():
-    pass
-""")
-        from src.linter_config.ignore import IgnoreDirectiveParser
-
-        parser = IgnoreDirectiveParser()
-
-        assert parser.has_file_ignore(test_file)
-
-    @pytest.mark.skip(reason="100% duplicate")
-    def test_specific_rule_file_ignore(self, tmp_path):
-        """# thailint: ignore-file[rule-name]."""
-        test_file = tmp_path / "test.py"
-        test_file.write_text("# thailint: ignore-file[file-placement]\n")
-
-        from src.linter_config.ignore import IgnoreDirectiveParser
-
-        parser = IgnoreDirectiveParser()
-        assert parser.has_file_ignore(test_file, rule_id="file-placement")
-        assert not parser.has_file_ignore(test_file, rule_id="other-rule")
-
-    @pytest.mark.skip(reason="100% duplicate")
-    def test_multiple_rules_file_ignore(self, tmp_path):
-        """# thailint: ignore-file[rule1,rule2]."""
-        test_file = tmp_path / "test.py"
-        test_file.write_text("# thailint: ignore-file[file-placement,naming-conventions]\n")
-
-        from src.linter_config.ignore import IgnoreDirectiveParser
-
-        parser = IgnoreDirectiveParser()
-        assert parser.has_file_ignore(test_file, rule_id="file-placement")
-        assert parser.has_file_ignore(test_file, rule_id="naming-conventions")
-        assert not parser.has_file_ignore(test_file, rule_id="other-rule")
-
-    @pytest.mark.skip(reason="100% duplicate")
-    def test_ignore_directive_beyond_line_10_not_detected(self, tmp_path):
-        """Ignore directive beyond line 10 is not detected (performance)."""
-        test_file = tmp_path / "test.py"
-        lines = [f"# Line {i}\n" for i in range(1, 12)]
-        lines.append("# thailint: ignore-file\n")  # Line 12
-        test_file.write_text("".join(lines))
-
-        from src.linter_config.ignore import IgnoreDirectiveParser
-
-        parser = IgnoreDirectiveParser()
-        # Should NOT detect ignore on line 12 (only first 10 lines scanned)
-        assert not parser.has_file_ignore(test_file)
-
-    @pytest.mark.skip(reason="100% duplicate")
-    def test_ignore_on_line_10_is_detected(self, tmp_path):
-        """Ignore directive on exactly line 10 IS detected."""
-        test_file = tmp_path / "test.py"
-        lines = [f"# Line {i}\n" for i in range(1, 10)]
-        lines.append("# thailint: ignore-file\n")  # Line 10
-        test_file.write_text("".join(lines))
-
-        from src.linter_config.ignore import IgnoreDirectiveParser
-
-        parser = IgnoreDirectiveParser()
-        assert parser.has_file_ignore(test_file)
 
 
 class TestLineLevelIgnore:
@@ -172,39 +77,6 @@ class TestLineLevelIgnore:
 
         assert parser.has_line_ignore(code, line_num=1)
 
-    @pytest.mark.skip(reason="100% duplicate")
-    def test_specific_rule_line_ignore(self):
-        """# thailint: ignore[rule-name]."""
-        code = "bad = True  # thailint: ignore[file-placement]"
-
-        from src.linter_config.ignore import IgnoreDirectiveParser
-
-        parser = IgnoreDirectiveParser()
-        assert parser.has_line_ignore(code, line_num=1, rule_id="file-placement")
-        assert not parser.has_line_ignore(code, line_num=1, rule_id="other-rule")
-
-    @pytest.mark.skip(reason="100% duplicate")
-    def test_multiple_rules_line_ignore(self):
-        """# thailint: ignore[rule1,rule2]."""
-        code = "x = 1  # thailint: ignore[file-placement,naming]"
-
-        from src.linter_config.ignore import IgnoreDirectiveParser
-
-        parser = IgnoreDirectiveParser()
-        assert parser.has_line_ignore(code, line_num=1, rule_id="file-placement")
-        assert parser.has_line_ignore(code, line_num=1, rule_id="naming")
-        assert not parser.has_line_ignore(code, line_num=1, rule_id="other")
-
-    @pytest.mark.skip(reason="100% duplicate")
-    def test_line_without_ignore_returns_false(self):
-        """Line without ignore directive returns False."""
-        code = "normal_code = True"
-
-        from src.linter_config.ignore import IgnoreDirectiveParser
-
-        parser = IgnoreDirectiveParser()
-        assert not parser.has_line_ignore(code, line_num=1)
-
 
 class TestWildcardRuleMatching:
     """Test wildcard pattern matching for rules."""
@@ -219,17 +91,6 @@ class TestWildcardRuleMatching:
         assert parser.has_line_ignore(code, line_num=1, rule_id="literals.magic-number")
         assert parser.has_line_ignore(code, line_num=1, rule_id="literals.string-concat")
         assert not parser.has_line_ignore(code, line_num=1, rule_id="naming.variable-name")
-
-    @pytest.mark.skip(reason="100% duplicate")
-    def test_exact_rule_matching(self):
-        """Exact rule ID must match exactly."""
-        code = "x = 1  # thailint: ignore[file-placement]"
-
-        from src.linter_config.ignore import IgnoreDirectiveParser
-
-        parser = IgnoreDirectiveParser()
-        assert parser.has_line_ignore(code, line_num=1, rule_id="file-placement")
-        assert not parser.has_line_ignore(code, line_num=1, rule_id="file-placement-extra")
 
 
 class TestIntegration:
@@ -313,15 +174,3 @@ def badFunctionName():
         )
 
         assert parser.should_ignore_violation(violation, file_content)
-
-    @pytest.mark.skip(reason="100% duplicate")
-    def test_invalid_ignore_syntax_handled_gracefully(self):
-        """Invalid ignore syntax doesn't crash parser."""
-        code = "x = 1  # thailint: ignore[unclosed"
-
-        from src.linter_config.ignore import IgnoreDirectiveParser
-
-        parser = IgnoreDirectiveParser()
-        # Should not crash, just return False
-        result = parser.has_line_ignore(code, line_num=1, rule_id="any-rule")
-        assert result is False or result is True  # Either is fine, just don't crash

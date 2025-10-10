@@ -60,47 +60,9 @@ class TestCLIHelp:
         assert "file-placement" in result.output
         assert "Commands:" in result.output
 
-    @pytest.mark.skip(reason="100% duplicate")
-    def test_file_placement_help_shows_options(self) -> None:
-        """Test that file-placement --help shows all options."""
-        runner = CliRunner()
-        result = runner.invoke(cli, ["file-placement", "--help"])
-
-        assert result.exit_code == 0
-        assert "--config" in result.output
-        assert "--rules" in result.output
-        assert "--format" in result.output
-        assert "--recursive" in result.output
-
 
 class TestCLILinting:
     """Test CLI linting commands with various configurations."""
-
-    @pytest.mark.skip(reason="100% duplicate")
-    def test_lint_file_with_violations(self) -> None:
-        """Test linting a file that has violations."""
-        runner = CliRunner()
-
-        with runner.isolated_filesystem():
-            # Create test file
-            Path("test.py").write_text("print('test')")
-
-            # Create .git marker so project root detection works
-            Path(".git").mkdir()
-
-            # Create .thailint.yaml config
-            # Config will be created at .thailint.yaml by fixture
-            Path(".thailint.yaml").write_text(
-                "file-placement:\n  global_deny:\n    - pattern: '.*\\.py$'\n      reason: 'No Python files'\n"
-            )
-
-            # Run linter
-            result = runner.invoke(cli, ["file-placement", "test.py"])
-
-            # Should exit with code 1 (violations found)
-            assert result.exit_code == 1
-            assert "test.py" in result.output
-            assert "violation" in result.output.lower() or "not allowed" in result.output.lower()
 
     def test_lint_file_without_violations(self) -> None:
         """Test linting a file that passes all rules."""
@@ -165,40 +127,6 @@ class TestCLILinting:
 class TestCLIExitCodes:
     """Test CLI exit codes follow conventions."""
 
-    @pytest.mark.skip(reason="100% duplicate")
-    def test_exit_code_0_on_success(self) -> None:
-        """Test exit code 0 when no violations found."""
-        runner = CliRunner()
-
-        with runner.isolated_filesystem():
-            Path("test.py").write_text("print('test')")
-            Path(".thailint.yaml").write_text(
-                "rules:\n  file-placement:\n    allow:\n      - '.*\\.py$'\n"
-            )
-
-            result = runner.invoke(cli, ["file-placement", "test.py"])
-            assert result.exit_code == 0
-
-    @pytest.mark.skip(reason="100% duplicate")
-    def test_exit_code_1_on_violations(self) -> None:
-        """Test exit code 1 when violations found."""
-        runner = CliRunner()
-
-        with runner.isolated_filesystem():
-            Path("test.py").write_text("print('test')")
-
-            # Create .git marker so project root detection works
-            Path(".git").mkdir()
-
-            # Create .thailint.yaml config
-            # Config will be created at .thailint.yaml by fixture
-            Path(".thailint.yaml").write_text(
-                "file-placement:\n  global_deny:\n    - pattern: '.*\\.py$'\n      reason: 'No Python files'\n"
-            )
-
-            result = runner.invoke(cli, ["file-placement", "test.py"])
-            assert result.exit_code == 1
-
     def test_exit_code_2_on_error(self) -> None:
         """Test exit code 2 on configuration or runtime errors."""
         runner = CliRunner()
@@ -213,29 +141,6 @@ class TestCLIExitCodes:
 
 class TestCLIOutputFormats:
     """Test CLI output format options."""
-
-    @pytest.mark.skip(reason="100% duplicate")
-    def test_text_output_format(self) -> None:
-        """Test default text output format."""
-        runner = CliRunner()
-
-        with runner.isolated_filesystem():
-            Path("test.py").write_text("print('test')")
-
-            # Create .git marker so project root detection works
-            Path(".git").mkdir()
-
-            # Create .thailint.yaml config
-            # Config will be created at .thailint.yaml by fixture
-            Path(".thailint.yaml").write_text(
-                "file-placement:\n  global_deny:\n    - pattern: '.*\\.py$'\n      reason: 'No Python files'\n"
-            )
-
-            result = runner.invoke(cli, ["file-placement", "test.py"])
-
-            # Text format should be human-readable
-            assert result.exit_code == 1
-            assert "test.py" in result.output
 
     def _setup_json_test_files(self):
         """Set up test files for JSON output test."""
@@ -306,25 +211,3 @@ class TestCLIRecursive:
             # Should find violations in nested files
             assert result.exit_code == 1
             assert "test.py" in result.output or "deep.py" in result.output
-
-    @pytest.mark.skip(reason="100% duplicate")
-    def test_non_recursive_scan(self) -> None:
-        """Test non-recursive scan only checks direct files."""
-        runner = CliRunner()
-
-        with runner.isolated_filesystem():
-            # Create nested structure
-            Path("src").mkdir()
-            Path("src/test.py").write_text("print('test')")
-            Path("src/nested").mkdir()
-            Path("src/nested/deep.py").write_text("print('deep')")
-
-            Path(".thailint.yaml").write_text(
-                "rules:\n  file-placement:\n    allow:\n      - '.*\\.py$'\n"
-            )
-
-            # Run non-recursive scan
-            result = runner.invoke(cli, ["file-placement", "src/test.py"])
-
-            # Should only check specified file
-            assert result.exit_code == 0

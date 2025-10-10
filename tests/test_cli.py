@@ -81,74 +81,9 @@ class TestCLIBasics:
 class TestHelloCommand:
     """Test hello command."""
 
-    @pytest.mark.skip(reason="100% duplicate")
-    def test_hello_default(self, runner):
-        """Test hello command with default name."""
-        result = runner.invoke(cli, ["hello"])
-        assert result.exit_code == 0
-        assert "Hello, World!" in result.output
-
-    @pytest.mark.skip(reason="100% duplicate")
-    def test_hello_with_name(self, runner):
-        """Test hello command with custom name."""
-        result = runner.invoke(cli, ["hello", "--name", "Alice"])
-        assert result.exit_code == 0
-        assert "Hello, Alice!" in result.output
-
-    @pytest.mark.skip(reason="100% duplicate")
-    def test_hello_with_short_name_option(self, runner):
-        """Test hello command with short option."""
-        result = runner.invoke(cli, ["hello", "-n", "Bob"])
-        assert result.exit_code == 0
-        assert "Hello, Bob!" in result.output
-
-    @pytest.mark.skip(reason="100% duplicate")
-    def test_hello_uppercase(self, runner):
-        """Test hello command with uppercase flag."""
-        result = runner.invoke(cli, ["hello", "--name", "Charlie", "--uppercase"])
-        assert result.exit_code == 0
-        assert "HELLO, CHARLIE!" in result.output
-
-    @pytest.mark.skip(reason="100% duplicate")
-    def test_hello_short_uppercase(self, runner):
-        """Test hello command with short uppercase flag."""
-        result = runner.invoke(cli, ["hello", "-n", "Dave", "-u"])
-        assert result.exit_code == 0
-        assert "HELLO, DAVE!" in result.output
-
-    @pytest.mark.skip(reason="100% duplicate")
-    def test_hello_with_custom_config(self, runner, temp_config_yaml):
-        """Test hello command with custom greeting from config."""
-        result = runner.invoke(cli, ["--config", str(temp_config_yaml), "hello", "--name", "Eve"])
-        assert result.exit_code == 0
-        assert "Hi, Eve!" in result.output
-
-    @pytest.mark.skip(reason="100% duplicate")
-    def test_hello_help(self, runner):
-        """Test hello command help text."""
-        result = runner.invoke(cli, ["hello", "--help"])
-        assert result.exit_code == 0
-        assert "Print a greeting message" in result.output
-        assert "--name" in result.output
-
 
 class TestConfigShow:
     """Test config show command."""
-
-    @pytest.mark.skip(reason="100% duplicate")
-    def test_config_show_default(self, runner):
-        """Test showing default configuration."""
-        result = runner.invoke(cli, ["config", "show"])
-        assert result.exit_code == 0
-        assert "log_level" in result.output
-        assert "INFO" in result.output
-
-    @pytest.mark.skip(reason="100% duplicate")
-    def test_config_show_text_format(self, runner):
-        """Test showing config in text format."""
-        result = runner.invoke(cli, ["config", "show", "--format", "text"])
-        assert result.exit_code == 0
-        assert ":" in result.output  # Text format uses key : value
 
     def test_config_show_json_format(self, runner):
         """Test showing config in JSON format."""
@@ -164,13 +99,6 @@ class TestConfigShow:
         assert result.exit_code == 0
         # YAML format
         assert ":" in result.output
-
-    @pytest.mark.skip(reason="100% duplicate")
-    def test_config_show_with_custom_config(self, runner, temp_config_yaml):
-        """Test showing custom configuration."""
-        result = runner.invoke(cli, ["--config", str(temp_config_yaml), "config", "show"])
-        assert result.exit_code == 0
-        assert "DEBUG" in result.output
 
 
 class TestConfigGet:
@@ -188,33 +116,9 @@ class TestConfigGet:
         assert result.exit_code != 0
         assert "not found" in result.output.lower()
 
-    @pytest.mark.skip(reason="100% duplicate")
-    def test_config_get_with_custom_config(self, runner, temp_config_yaml):
-        """Test getting value from custom config."""
-        result = runner.invoke(
-            cli, ["--config", str(temp_config_yaml), "config", "get", "greeting"]
-        )
-        assert result.exit_code == 0
-        assert "Hi" in result.output
-
 
 class TestConfigSet:
     """Test config set command."""
-
-    @pytest.mark.skip(reason="100% duplicate")
-    def test_config_set_string_value(self, runner, tmp_path):
-        """Test setting string config value."""
-        config_file = tmp_path / "config.yaml"
-
-        result = runner.invoke(
-            cli, ["--config", str(config_file), "config", "set", "greeting", "Howdy"]
-        )
-        assert result.exit_code == 0
-        assert "Set greeting = Howdy" in result.output
-
-        # Verify value was saved
-        result = runner.invoke(cli, ["--config", str(config_file), "config", "get", "greeting"])
-        assert "Howdy" in result.output
 
     def test_config_set_integer_value(self, runner, tmp_path):
         """Test setting integer config value."""
@@ -282,18 +186,7 @@ class TestConfigReset:
 class TestVerboseOutput:
     """Test verbose output option."""
 
-    @pytest.mark.skip(reason="100% duplicate")
-    def test_verbose_flag(self, runner):
-        """Test CLI with verbose flag."""
-        result = runner.invoke(cli, ["--verbose", "hello"])
-        assert result.exit_code == 0
-        # Verbose logging should be present (timestamps, etc.)
-
-    @pytest.mark.skip(reason="100% duplicate")
-    def test_short_verbose_flag(self, runner):
-        """Test CLI with short verbose flag."""
-        result = runner.invoke(cli, ["-v", "hello"])
-        assert result.exit_code == 0
+    # Verbose logging should be present (timestamps, etc.)
 
 
 class TestErrorHandling:
@@ -307,15 +200,6 @@ class TestErrorHandling:
         result = runner.invoke(cli, ["--config", str(invalid_config), "hello"])
         assert result.exit_code != 0
         assert "Error" in result.output or "error" in result.output
-
-    @pytest.mark.skip(reason="100% duplicate")
-    def test_nonexistent_config_file(self, runner, tmp_path):
-        """Test with nonexistent config file (should use defaults)."""
-        nonexistent = tmp_path / "does-not-exist.yaml"
-
-        result = runner.invoke(cli, ["--config", str(nonexistent), "hello"])
-        # Should still work with defaults
-        assert result.exit_code == 0
 
 
 class TestIntegration:

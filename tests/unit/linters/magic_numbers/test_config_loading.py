@@ -24,105 +24,13 @@ Implementation: Mock-based testing with configuration injection, validates detec
 from pathlib import Path
 from unittest.mock import Mock
 
-import pytest
-
 
 class TestDefaultConfiguration:
     """Test default configuration values."""
 
-    @pytest.mark.skip(reason="100% duplicate")
-    def test_default_allowed_numbers_include_common_values(self):
-        """Should use default allowed_numbers including -1, 0, 1, 2, 10, 100, 1000."""
-        code = """
-def check_values(x):
-    if x == -1:
-        return "negative one"
-    if x == 0:
-        return "zero"
-    if x == 1:
-        return "one"
-    if x == 2:
-        return "two"
-    if x == 10:
-        return "ten"
-"""
-        from src.linters.magic_numbers.linter import MagicNumberRule
-
-        rule = MagicNumberRule()
-        context = Mock()
-        context.file_path = Path("test.py")
-        context.file_content = code
-        context.language = "python"
-
-        violations = rule.check(context)
-        # All these numbers should be in default allowed_numbers
-        assert len(violations) == 0, "Default configuration should allow -1, 0, 1, 2, 10"
-
-    @pytest.mark.skip(reason="100% duplicate")
-    def test_default_max_small_integer_is_ten(self):
-        """Should use default max_small_integer of 10 for range context."""
-        code = """
-def process():
-    for i in range(10):  # Should be allowed
-        process(i)
-    for j in range(11):  # Should violate
-        process(j)
-"""
-        from src.linters.magic_numbers.linter import MagicNumberRule
-
-        rule = MagicNumberRule()
-        context = Mock()
-        context.file_path = Path("test.py")
-        context.file_content = code
-        context.language = "python"
-
-        violations = rule.check(context)
-        # range(10) should pass, range(11) should fail
-        assert len(violations) > 0, "Should flag 11 which exceeds max_small_integer"
-
-    @pytest.mark.skip(reason="100% duplicate")
-    def test_default_enabled_is_true(self):
-        """Should be enabled by default."""
-        code = """
-def get_value():
-    return 42
-"""
-        from src.linters.magic_numbers.linter import MagicNumberRule
-
-        rule = MagicNumberRule()
-        context = Mock()
-        context.file_path = Path("test.py")
-        context.file_content = code
-        context.language = "python"
-
-        violations = rule.check(context)
-        # Should detect violations when enabled (default)
-        assert len(violations) > 0, "Rule should be enabled by default"
-
 
 class TestCustomConfiguration:
     """Test custom configuration options."""
-
-    @pytest.mark.skip(reason="100% duplicate")
-    def test_custom_allowed_numbers(self):
-        """Should respect custom allowed_numbers configuration."""
-        code = """
-def calculate():
-    return 60  # Adding 60 to allowed list
-"""
-        from src.linters.magic_numbers.linter import MagicNumberRule
-
-        rule = MagicNumberRule()
-        # Mock configuration with custom allowed_numbers
-        context = Mock()
-        context.file_path = Path("test.py")
-        context.file_content = code
-        context.language = "python"
-        context.config = {"allowed_numbers": {-1, 0, 1, 2, 10, 60, 100, 1000}}
-
-        violations = rule.check(context)
-        # 60 is in allowed list, should not violate
-        assert len(violations) == 0, "Should allow custom configured numbers"
 
     def test_custom_max_small_integer(self):
         """Should respect custom max_small_integer configuration."""
@@ -187,44 +95,3 @@ def simple():
 
 class TestConfigurationValidation:
     """Test configuration validation and error handling."""
-
-    @pytest.mark.skip(reason="100% duplicate")
-    def test_handles_missing_config_gracefully(self):
-        """Should use defaults when config is not provided."""
-        code = """
-def get_value():
-    return 42
-"""
-        from src.linters.magic_numbers.linter import MagicNumberRule
-
-        rule = MagicNumberRule()
-        context = Mock()
-        context.file_path = Path("test.py")
-        context.file_content = code
-        context.language = "python"
-        context.config = None  # No config provided
-
-        violations = rule.check(context)
-        # Should still work with defaults
-        assert len(violations) > 0, "Should use defaults when config missing"
-
-    @pytest.mark.skip(reason="100% duplicate")
-    def test_handles_partial_config(self):
-        """Should merge partial config with defaults."""
-        code = """
-def get_value():
-    return 42  # Not in default allowed
-"""
-        from src.linters.magic_numbers.linter import MagicNumberRule
-
-        rule = MagicNumberRule()
-        context = Mock()
-        context.file_path = Path("test.py")
-        context.file_content = code
-        context.language = "python"
-        # Only specify allowed_numbers, other settings should use defaults
-        context.config = {"allowed_numbers": {42}}
-
-        violations = rule.check(context)
-        # 42 is now allowed, should not violate
-        assert len(violations) == 0, "Should merge partial config with defaults"

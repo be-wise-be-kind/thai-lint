@@ -26,45 +26,6 @@ import pytest
 from src import Linter
 
 
-@pytest.mark.skip(reason="100% duplicate")
-def test_empty_file(tmp_path):
-    """Test handling of completely empty file."""
-    file1 = tmp_path / "empty.py"
-    file1.write_text("")
-
-    file2 = tmp_path / "normal.py"
-    file2.write_text("""
-def process():
-    return "hello"
-""")
-
-    config = tmp_path / ".thailint.yaml"
-    config.write_text("dry:\n  enabled: true\n  min_duplicate_lines: 3\n  cache_enabled: false")
-
-    linter = Linter(config_file=config, project_root=tmp_path)
-    violations = linter.lint(tmp_path, rules=["dry.duplicate-code"])
-
-    assert len(violations) == 0
-
-
-@pytest.mark.skip(reason="100% duplicate")
-def test_single_line_file(tmp_path):
-    """Test handling of single-line file."""
-    file1 = tmp_path / "single1.py"
-    file1.write_text("x = 1\n")
-
-    file2 = tmp_path / "single2.py"
-    file2.write_text("x = 1\n")
-
-    config = tmp_path / ".thailint.yaml"
-    config.write_text("dry:\n  enabled: true\n  min_duplicate_lines: 3\n  cache_enabled: false")
-
-    linter = Linter(config_file=config, project_root=tmp_path)
-    violations = linter.lint(tmp_path, rules=["dry.duplicate-code"])
-
-    assert len(violations) == 0
-
-
 def test_all_comments_no_code(tmp_path):
     """Test file with only comments and no actual code."""
     file1 = tmp_path / "comments1.py"
@@ -81,82 +42,6 @@ def test_all_comments_no_code(tmp_path):
 # Another comment
 # Yet another comment
 # Final comment
-""")
-
-    config = tmp_path / ".thailint.yaml"
-    config.write_text("dry:\n  enabled: true\n  min_duplicate_lines: 3\n  cache_enabled: false")
-
-    linter = Linter(config_file=config, project_root=tmp_path)
-    violations = linter.lint(tmp_path, rules=["dry.duplicate-code"])
-
-    assert len(violations) == 0
-
-
-@pytest.mark.skip(reason="100% duplicate")
-def test_all_unique_code_no_duplicates(tmp_path):
-    """Test project where all code is unique."""
-    for i in range(1, 6):
-        file = tmp_path / f"unique_{i}.py"
-        file.write_text(f"""
-def function_{i}():
-    value_{i} = compute_{i}()
-    result_{i} = process_{i}(value_{i})
-    output_{i} = validate_{i}(result_{i})
-    return store_{i}(output_{i})
-""")
-
-    config = tmp_path / ".thailint.yaml"
-    config.write_text("dry:\n  enabled: true\n  min_duplicate_lines: 3\n  cache_enabled: false")
-
-    linter = Linter(config_file=config, project_root=tmp_path)
-    violations = linter.lint(tmp_path, rules=["dry.duplicate-code"])
-
-    assert len(violations) == 0
-
-
-@pytest.mark.skip(reason="100% duplicate")
-def test_exact_match_at_threshold(tmp_path):
-    """Test duplicate exactly at min_duplicate_lines threshold."""
-    file1 = tmp_path / "file1.py"
-    file1.write_text("""
-def process():
-    x = 1
-    y = 2
-    z = 3
-""")
-
-    file2 = tmp_path / "file2.py"
-    file2.write_text("""
-def handle():
-    x = 1
-    y = 2
-    z = 3
-""")
-
-    config = tmp_path / ".thailint.yaml"
-    config.write_text("dry:\n  enabled: true\n  min_duplicate_lines: 3\n  cache_enabled: false")
-
-    linter = Linter(config_file=config, project_root=tmp_path)
-    violations = linter.lint(tmp_path, rules=["dry.duplicate-code"])
-
-    assert len(violations) == 2
-
-
-@pytest.mark.skip(reason="100% duplicate")
-def test_one_line_below_threshold(tmp_path):
-    """Test duplicate one line below threshold (should not trigger)."""
-    file1 = tmp_path / "file1.py"
-    file1.write_text("""
-def process():
-    x = 1
-    y = 2
-""")
-
-    file2 = tmp_path / "file2.py"
-    file2.write_text("""
-def handle():
-    x = 1
-    y = 2
 """)
 
     config = tmp_path / ".thailint.yaml"

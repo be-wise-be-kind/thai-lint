@@ -16,8 +16,6 @@ Implementation: Creates files with identical multi-line single statements and ve
     they are NOT flagged as violations.
 """
 
-import pytest
-
 from src import Linter
 
 
@@ -102,41 +100,6 @@ result_two = some_function(
 
     # Single function call should NOT be flagged as duplicate
     assert len(violations) == 0, "Single function call statement should not be flagged"
-
-
-@pytest.mark.skip(reason="100% duplicate")
-def test_multiple_statements_multiline_should_still_flag(tmp_path):
-    """Test that actual duplicate code (multiple statements) IS still flagged."""
-    file1 = tmp_path / "logic1.py"
-    file1.write_text("""
-def process_one():
-    x = validate(data)
-    y = transform(x)
-    z = save(y)
-    return z
-""")
-
-    file2 = tmp_path / "logic2.py"
-    file2.write_text("""
-def process_two():
-    x = validate(data)
-    y = transform(x)
-    z = save(y)
-    return z
-""")
-
-    config = tmp_path / ".thailint.yaml"
-    config.write_text("""dry:
-  enabled: true
-  min_duplicate_lines: 3
-  cache_enabled: false
-""")
-
-    linter = Linter(config_file=config, project_root=tmp_path)
-    violations = linter.lint(tmp_path, rules=["dry.duplicate-code"])
-
-    # This SHOULD be flagged - it's 4 separate statements
-    assert len(violations) > 0, "Should detect multiple statements as duplicate"
 
 
 def test_constructor_arguments_not_duplicate(tmp_path):

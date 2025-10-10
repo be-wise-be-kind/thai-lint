@@ -23,8 +23,6 @@ Implementation: Uses subprocess or click.testing.CliRunner for CLI invocation te
 
 from pathlib import Path
 
-import pytest
-
 
 class TestCLIInterface:
     """Test SRP linter CLI command interface."""
@@ -40,25 +38,7 @@ class TestCLIInterface:
         assert result.exit_code == 0, "CLI should run"
         # Help output should mention srp command
 
-    @pytest.mark.skip(reason="100% duplicate")
-    def test_srp_command_accepts_path_argument(self):
-        """SRP command should accept path argument."""
-        from click.testing import CliRunner
-
-        from src.cli import cli
-
-        runner = CliRunner()
-        with runner.isolated_filesystem():
-            # Create test file
-            Path("test.py").write_text(
-                """
-class Simple:
-    def test(self): pass
-"""
-            )
-
-            runner.invoke(cli, ["srp", "test.py"])
-            # Should execute without error (may have violations or not)
+        # Should execute without error (may have violations or not)
 
     def test_max_methods_flag_works(self):
         """CLI should support --max-methods flag."""
