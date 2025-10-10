@@ -110,8 +110,8 @@ function complexCalculation(x: number): number {
     def test_detects_magic_number_in_array_access(self):
         """Should detect magic numbers in array access."""
         code = """
-function getThirdElement(arr: number[]): number {
-    return arr[2];
+function getFifthElement(arr: number[]): number {
+    return arr[4];
 }
 """
         from src.linters.magic_numbers.linter import MagicNumberRule
@@ -123,7 +123,7 @@ function getThirdElement(arr: number[]): number {
         context.language = "typescript"
 
         violations = rule.check(context)
-        assert len(violations) > 0, "Should detect magic number 2 in array access"
+        assert len(violations) > 0, "Should detect magic number 4 in array access"
 
 
 class TestTypeScriptAcceptableContexts:
@@ -328,7 +328,7 @@ class Calculator {
         """Should detect magic numbers in ternary expressions."""
         code = """
 function getStatus(x: number): string {
-    return x > 100 ? 'high' : 'low';
+    return x > 500 ? 'high' : 'low';
 }
 """
         from src.linters.magic_numbers.linter import MagicNumberRule
@@ -340,7 +340,7 @@ function getStatus(x: number): string {
         context.language = "typescript"
 
         violations = rule.check(context)
-        assert len(violations) > 0, "Should detect magic number 100 in ternary"
+        assert len(violations) > 0, "Should detect magic number 500 in ternary"
 
     def test_detects_magic_numbers_in_object_literals(self):
         """Should detect magic numbers in object literals."""

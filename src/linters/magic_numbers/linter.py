@@ -33,6 +33,7 @@ from src.linter_config.ignore import IgnoreDirectiveParser
 from .config import MagicNumberConfig
 from .context_analyzer import ContextAnalyzer
 from .python_analyzer import PythonMagicNumberAnalyzer
+from .typescript_analyzer import TypeScriptMagicNumberAnalyzer
 from .violation_builder import ViolationBuilder
 
 
@@ -78,6 +79,9 @@ class MagicNumberRule(BaseLintRule):  # thailint: ignore[srp]
 
         if context.language == "python":
             return self._check_python(context, config)
+
+        if context.language in ("typescript", "javascript"):
+            return self._check_typescript(context, config)
 
         return []
 
@@ -274,3 +278,199 @@ class MagicNumberRule(BaseLintRule):  # thailint: ignore[srp]
     def _has_noqa_directive(self, line_text: str) -> bool:
         """Check for noqa-style comments."""
         return "# noqa" in line_text
+
+    def _check_typescript(
+        self, context: BaseLintContext, config: MagicNumberConfig
+    ) -> list[Violation]:
+        """Check TypeScript/JavaScript code for magic number violations.
+
+        Args:
+            context: Lint context with TypeScript/JavaScript file information
+            config: Magic numbers configuration
+
+        Returns:
+            List of violations found in TypeScript/JavaScript code
+        """
+        analyzer = TypeScriptMagicNumberAnalyzer()
+        root_node = analyzer.parse_typescript(context.file_content or "")
+        if root_node is None:
+            return []
+
+        numeric_literals = analyzer.find_numeric_literals(root_node)
+        return self._collect_typescript_violations(numeric_literals, context, config, analyzer)
+
+    def _collect_typescript_violations(
+        self,
+        numeric_literals: list,
+        context: BaseLintContext,
+        config: MagicNumberConfig,
+        analyzer: TypeScriptMagicNumberAnalyzer,
+    ) -> list[Violation]:
+        """Collect violations from TypeScript numeric literals.
+
+        Args:
+            numeric_literals: List of (node, value, line_number) tuples
+            context: Lint context
+            config: Configuration
+            analyzer: TypeScript analyzer instance
+
+        Returns:
+            List of violations
+        """
+        violations = []
+        for node, value, line_number in numeric_literals:
+            violation = self._try_create_typescript_violation(
+                node, value, line_number, context, config, analyzer
+            )
+            if violation is not None:
+                violations.append(violation)
+        return violations
+
+    def _try_create_typescript_violation(  # pylint: disable=too-many-arguments,too-many-positional-arguments
+        self,
+        node: object,
+        value: float | int,
+        line_number: int,
+        context: BaseLintContext,
+        config: MagicNumberConfig,
+        analyzer: TypeScriptMagicNumberAnalyzer,
+    ) -> Violation | None:
+        """Try to create a violation for a TypeScript numeric literal.
+
+        Args:
+            node: Tree-sitter node
+            value: Numeric value
+            line_number: Line number of literal
+            context: Lint context
+            config: Configuration
+            analyzer: TypeScript analyzer
+
+        Returns:
+            Violation or None if should not flag
+        """
+        if not self._should_flag_typescript_number(node, value, context, config, analyzer):
+            return None
+
+        violation = self._violation_builder.create_typescript_violation(
+            value, line_number, context.file_path
+        )
+        if self._should_ignore_typescript(violation, context):
+            return None
+
+        return violation
+
+    def _should_flag_typescript_number(  # pylint: disable=too-many-arguments,too-many-positional-arguments
+        self,
+        node: object,
+        value: float | int,
+        context: BaseLintContext,
+        config: MagicNumberConfig,
+        analyzer: TypeScriptMagicNumberAnalyzer,
+    ) -> bool:
+        """Determine if a TypeScript number should be flagged.
+
+        Args:
+            node: Tree-sitter node
+            value: Numeric value
+            context: Lint context
+            config: Configuration
+            analyzer: TypeScript analyzer
+
+        Returns:
+            True if should flag as magic number
+        """
+        # Early return for allowed contexts
+        if self._is_typescript_allowed_context(value, context, config):
+            return False
+
+        # Check TypeScript-specific contexts
+        return not self._is_typescript_special_context(node, analyzer, context)
+
+    def _is_typescript_allowed_context(
+        self, value: float | int, context: BaseLintContext, config: MagicNumberConfig
+    ) -> bool:
+        """Check if number is in allowed context."""
+        return value in config.allowed_numbers or self._is_test_file(context.file_path)
+
+    def _is_typescript_special_context(
+        self, node: object, analyzer: TypeScriptMagicNumberAnalyzer, context: BaseLintContext
+    ) -> bool:
+        """Check if in TypeScript-specific special context."""
+        # Calls require type: ignore because node is typed as object but analyzer expects Node
+        in_enum = analyzer.is_enum_context(node)  # type: ignore[arg-type]
+        in_const_def = analyzer.is_constant_definition(node, context.file_content or "")  # type: ignore[arg-type]
+        return in_enum or in_const_def
+
+    def _is_test_file(self, file_path: object) -> bool:
+        """Check if file is a test file.
+
+        Args:
+            file_path: Path to check
+
+        Returns:
+            True if test file
+        """
+        path_str = str(file_path)
+        return any(
+            pattern in path_str
+            for pattern in [".test.", ".spec.", "test_", "_test.", "/tests/", "/test/"]
+        )
+
+    def _should_ignore_typescript(self, violation: Violation, context: BaseLintContext) -> bool:
+        """Check if TypeScript violation should be ignored.
+
+        Args:
+            violation: Violation to check
+            context: Lint context
+
+        Returns:
+            True if should ignore
+        """
+        # Check standard ignore directives
+        if self._ignore_parser.should_ignore_violation(violation, context.file_content or ""):
+            return True
+
+        # Check TypeScript-style comments
+        return self._check_typescript_ignore(violation, context)
+
+    def _check_typescript_ignore(self, violation: Violation, context: BaseLintContext) -> bool:
+        """Check for TypeScript-style ignore directives.
+
+        Args:
+            violation: Violation to check
+            context: Lint context
+
+        Returns:
+            True if line has ignore directive
+        """
+        line_text = self._get_violation_line(violation, context)
+        if line_text is None:
+            return False
+
+        # Check for // thailint: ignore or // noqa
+        return self._has_typescript_ignore_directive(line_text)
+
+    def _has_typescript_ignore_directive(self, line_text: str) -> bool:
+        """Check if line has TypeScript-style ignore directive.
+
+        Args:
+            line_text: Line text to check
+
+        Returns:
+            True if has ignore directive
+        """
+        # Check for // thailint: ignore[magic-numbers]
+        if "// thailint: ignore[magic-numbers]" in line_text:
+            return True
+
+        # Check for // thailint: ignore (generic)
+        if "// thailint: ignore" in line_text:
+            after_ignore = line_text.split("// thailint: ignore")[1].split("//")[0]
+            if "[" not in after_ignore:
+                return True
+
+        # Check for // noqa
+        if "// noqa" in line_text:
+            return True
+
+        return False
