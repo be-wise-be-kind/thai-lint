@@ -21,8 +21,8 @@ Implementation: Composition pattern with helper classes, AST-based analysis with
 import ast
 from typing import Any
 
-from src.core.base import BaseLintContext, BaseLintRule
-from src.core.linter_utils import has_file_content, load_linter_config
+from src.core.base import BaseLintContext, MultiLanguageLintRule
+from src.core.linter_utils import load_linter_config
 from src.core.types import Violation
 from src.linter_config.ignore import IgnoreDirectiveParser
 
@@ -32,7 +32,7 @@ from .typescript_analyzer import TypeScriptNestingAnalyzer
 from .violation_builder import NestingViolationBuilder
 
 
-class NestingDepthRule(BaseLintRule):
+class NestingDepthRule(MultiLanguageLintRule):
     """Detects excessive nesting depth in functions."""
 
     def __init__(self) -> None:
@@ -55,27 +55,16 @@ class NestingDepthRule(BaseLintRule):
         """Description of what this rule checks."""
         return "Functions should not have excessive nesting depth for better readability"
 
-    def check(self, context: BaseLintContext) -> list[Violation]:
-        """Check for excessive nesting depth violations.
+    def _load_config(self, context: BaseLintContext) -> NestingConfig:
+        """Load configuration from context.
 
         Args:
-            context: Lint context with file information
+            context: Lint context
 
         Returns:
-            List of violations found
+            NestingConfig instance
         """
-        if not has_file_content(context):
-            return []
-
-        config = load_linter_config(context, "nesting", NestingConfig)
-        if not config.enabled:
-            return []
-
-        if context.language == "python":
-            return self._check_python(context, config)
-        if context.language in ("typescript", "javascript"):
-            return self._check_typescript(context, config)
-        return []
+        return load_linter_config(context, "nesting", NestingConfig)
 
     def _process_python_functions(
         self, functions: list, analyzer: Any, config: NestingConfig, context: BaseLintContext
