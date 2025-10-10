@@ -424,7 +424,7 @@ thai-lint --verbose nesting src/
 
 ### dry
 
-Detect duplicate code using token-based hash analysis with SQLite caching.
+Detect duplicate code using token-based hash analysis with SQLite storage.
 
 ```bash
 thai-lint dry [OPTIONS] [PATH...]
@@ -443,8 +443,7 @@ thai-lint dry [OPTIONS] [PATH...]
 | `--config` | `-c` | PATH | Auto-discover | Path to config file |
 | `--min-lines` | `-l` | INTEGER | `4` | Minimum duplicate lines |
 | `--format` | `-f` | CHOICE | `text` | Output format: `text` or `json` |
-| `--no-cache` | | FLAG | `False` | Disable SQLite caching |
-| `--clear-cache` | | FLAG | `False` | Clear cache before running |
+| `--storage-mode` | | CHOICE | `memory` | Storage mode: `memory` or `tempfile` |
 | `--recursive` | | FLAG | `True` | Scan directories recursively |
 
 **Examples:**
@@ -479,16 +478,13 @@ thai-lint dry --min-lines 3 src/
 thai-lint dry --min-lines 6 src/
 ```
 
-**Cache management:**
+**Storage mode:**
 ```bash
-# Run without cache
-thai-lint dry --no-cache src/
+# Use in-memory storage (default, fastest)
+thai-lint dry src/
 
-# Clear cache before run
-thai-lint dry --clear-cache src/
-
-# Clear cache only
-thai-lint dry --clear-cache .
+# Use tempfile storage (for very large projects)
+thai-lint dry --storage-mode tempfile src/
 ```
 
 **With configuration file:**
@@ -567,12 +563,7 @@ Exit code: 0
       "severity": "WARNING"
     }
   ],
-  "total": 1,
-  "cache_stats": {
-    "cache_hits": 45,
-    "cache_misses": 12,
-    "hit_rate": 0.79
-  }
+  "total": 1
 }
 ```
 
@@ -583,25 +574,13 @@ Exit code: 0
 
 **Performance:**
 ```bash
-# First run (no cache)
+# Standard run with in-memory storage (default)
 thai-lint dry src/
 # ~2-3 seconds for 100 files
 
-# Subsequent runs (with cache)
-thai-lint dry src/
-# ~200-300ms for 100 files (10-50x speedup)
-```
-
-**Cache Location:**
-```bash
-# Default cache location
-.thailint-cache/dry.db
-
-# Check cache stats
-sqlite3 .thailint-cache/dry.db "SELECT COUNT(*) FROM blocks;"
-
-# Clear cache manually
-rm -rf .thailint-cache/
+# Large project with tempfile storage
+thai-lint dry --storage-mode tempfile src/
+# Handles 5000+ files efficiently
 ```
 
 **Common Patterns:**
@@ -616,11 +595,11 @@ thai-lint dry src/
 # Check multiple specific files (useful for pre-commit hooks)
 thai-lint dry file1.py file2.py file3.py
 
-# CI/CD integration with fresh cache
-thai-lint dry --clear-cache --format json src/ > dry-report.json
+# CI/CD integration
+thai-lint dry --format json src/ > dry-report.json
 
-# Quick check without cache (for testing config)
-thai-lint dry --no-cache --min-lines 5 src/
+# Large project optimization
+thai-lint dry --storage-mode tempfile --min-lines 5 src/
 
 # With verbose output
 thai-lint --verbose dry src/
@@ -653,10 +632,8 @@ dry:
   typescript:
     min_duplicate_tokens: 35
 
-  # Cache settings
-  cache_enabled: true
-  cache_path: ".thailint-cache/dry.db"
-  cache_max_age_days: 30
+  # Storage settings
+  storage_mode: "memory"    # Options: "memory" (default) or "tempfile"
 
   # Ignore patterns
   ignore:
@@ -672,16 +649,13 @@ dry:
 
 **Troubleshooting:**
 
-**Cache issues:**
+**Slow performance or high memory usage:**
 ```bash
-# Clear and rebuild cache
-thai-lint dry --clear-cache src/
+# Use tempfile storage for large projects
+thai-lint dry --storage-mode tempfile src/
 
-# Disable cache temporarily
-thai-lint dry --no-cache src/
-
-# Remove cache directory
-rm -rf .thailint-cache/
+# Check verbose output
+thai-lint --verbose dry src/
 ```
 
 **No duplicates found:**
@@ -693,7 +667,7 @@ thai-lint dry --min-lines 3 src/
 thai-lint --verbose dry src/
 
 # Verify files are being scanned
-thai-lint --verbose dry --no-cache src/ 2>&1 | grep "Analyzing"
+thai-lint --verbose dry src/ 2>&1 | grep "Analyzing"
 ```
 
 **False positives:**
@@ -715,7 +689,7 @@ dry:
 - `docs/dry-linter.md` - Comprehensive DRY linter guide
 - Token-based detection algorithm
 - Refactoring patterns for duplicates
-- Cache management and performance
+- Storage modes and performance
 
 ---
 
