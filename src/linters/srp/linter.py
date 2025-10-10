@@ -18,8 +18,8 @@ Interfaces: SRPRule.check(context) -> list[Violation], properties for rule metad
 Implementation: Composition pattern with helper classes, heuristic-based SRP analysis
 """
 
-from src.core.base import BaseLintContext, BaseLintRule
-from src.core.linter_utils import has_file_content, load_linter_config
+from src.core.base import BaseLintContext, MultiLanguageLintRule
+from src.core.linter_utils import load_linter_config
 from src.core.types import Violation
 from src.linter_config.ignore import IgnoreDirectiveParser
 
@@ -29,7 +29,7 @@ from .metrics_evaluator import evaluate_metrics
 from .violation_builder import ViolationBuilder
 
 
-class SRPRule(BaseLintRule):
+class SRPRule(MultiLanguageLintRule):
     """Detects Single Responsibility Principle violations in classes."""
 
     def __init__(self) -> None:
@@ -54,7 +54,9 @@ class SRPRule(BaseLintRule):
         return "Classes should have a single, well-defined responsibility"
 
     def check(self, context: BaseLintContext) -> list[Violation]:
-        """Check for SRP violations.
+        """Check for SRP violations with custom ignore pattern handling.
+
+        Overrides parent to add file-level ignore pattern checking before dispatch.
 
         Args:
             context: Lint context with file information
@@ -62,39 +64,33 @@ class SRPRule(BaseLintRule):
         Returns:
             List of violations found
         """
-        if not self._should_check_file(context):
+        from src.core.linter_utils import has_file_content
+
+        if not has_file_content(context):
             return []
 
-        config = load_linter_config(context, "srp", SRPConfig)
-        if not self._is_linter_enabled(context, config):
+        config = self._load_config(context)
+        if not self._should_process_file(context, config):
             return []
 
-        return self._check_by_language(context, config)
+        # Standard language dispatch
+        return self._dispatch_by_language(context, config)
 
-    def _should_check_file(self, context: BaseLintContext) -> bool:
-        """Check if file has content to analyze.
-
-        Args:
-            context: Lint context
-
-        Returns:
-            True if file should be checked
-        """
-        return has_file_content(context)
-
-    def _is_linter_enabled(self, context: BaseLintContext, config: SRPConfig) -> bool:
-        """Check if linter is enabled and file is not ignored.
+    def _should_process_file(self, context: BaseLintContext, config: SRPConfig) -> bool:
+        """Check if file should be processed.
 
         Args:
             context: Lint context
             config: SRP configuration
 
         Returns:
-            True if linter should run on this file
+            True if file should be processed
         """
-        return config.enabled and not self._is_file_ignored(context, config)
+        if not config.enabled:
+            return False
+        return not self._is_file_ignored(context, config)
 
-    def _check_by_language(self, context: BaseLintContext, config: SRPConfig) -> list[Violation]:
+    def _dispatch_by_language(self, context: BaseLintContext, config: SRPConfig) -> list[Violation]:
         """Dispatch to language-specific checker.
 
         Args:
@@ -106,9 +102,22 @@ class SRPRule(BaseLintRule):
         """
         if context.language == "python":
             return self._check_python(context, config)
+
         if context.language in ("typescript", "javascript"):
             return self._check_typescript(context, config)
+
         return []
+
+    def _load_config(self, context: BaseLintContext) -> SRPConfig:
+        """Load configuration from context.
+
+        Args:
+            context: Lint context
+
+        Returns:
+            SRPConfig instance
+        """
+        return load_linter_config(context, "srp", SRPConfig)
 
     def _is_file_ignored(self, context: BaseLintContext, config: SRPConfig) -> bool:
         """Check if file matches ignore patterns.

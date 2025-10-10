@@ -8,14 +8,17 @@ Overview: Establishes the contract that all linting plugins must follow through 
     Defines BaseLintRule which all concrete linting rules inherit from, specifying required
     properties (rule_id, rule_name, description) and the check() method for violation detection.
     Provides BaseLintContext as the interface for accessing file information during analysis,
-    exposing file_path, file_content, and language properties. These abstractions enable the
-    rule registry to discover and instantiate rules dynamically without tight coupling, supporting
-    the extensible plugin system where new rules can be added by simply placing them in the
-    appropriate directory structure.
+    exposing file_path, file_content, and language properties. Includes MultiLanguageLintRule
+    intermediate class implementing template method pattern for language dispatch, eliminating
+    code duplication across multi-language linters (nesting, srp, magic_numbers). These
+    abstractions enable the rule registry to discover and instantiate rules dynamically without
+    tight coupling, supporting the extensible plugin system where new rules can be added by
+    simply placing them in the appropriate directory structure.
 
 Dependencies: abc for abstract base class support, pathlib for Path types, Violation from types
 
-Exports: BaseLintRule (abstract rule interface), BaseLintContext (abstract context interface)
+Exports: BaseLintRule (abstract rule interface), BaseLintContext (abstract context interface),
+    MultiLanguageLintRule (template method base for multi-language linters)
 
 Interfaces: BaseLintRule.check(context) -> list[Violation], BaseLintContext properties
     (file_path, file_content, language), all abstract methods must be implemented by subclasses
@@ -26,6 +29,7 @@ Implementation: ABC-based interface definitions with @abstractmethod decorators,
 
 from abc import ABC, abstractmethod
 from pathlib import Path
+from typing import Any
 
 from .types import Violation
 
@@ -132,3 +136,84 @@ class BaseLintRule(ABC):
             List of violations found during finalization. Empty list by default.
         """
         return []
+
+
+class MultiLanguageLintRule(BaseLintRule):
+    """Base class for linting rules that support multiple programming languages.
+
+    Provides language dispatch pattern to eliminate code duplication across multi-language
+    linters. Subclasses implement language-specific checking methods rather than handling
+    dispatch logic themselves.
+
+    Subclasses must implement:
+    - _check_python(context, config) for Python language support
+    - _check_typescript(context, config) for TypeScript/JavaScript support
+    - _load_config(context) for configuration loading
+    """
+
+    def check(self, context: BaseLintContext) -> list[Violation]:
+        """Check for violations with automatic language dispatch.
+
+        Dispatches to language-specific checking methods based on context.language.
+        Handles common patterns like file content validation and config loading.
+
+        Args:
+            context: Lint context with file information
+
+        Returns:
+            List of violations found
+        """
+        from .linter_utils import has_file_content
+
+        if not has_file_content(context):
+            return []
+
+        config = self._load_config(context)
+        if not config.enabled:
+            return []
+
+        if context.language == "python":
+            return self._check_python(context, config)
+
+        if context.language in ("typescript", "javascript"):
+            return self._check_typescript(context, config)
+
+        return []
+
+    @abstractmethod
+    def _load_config(self, context: BaseLintContext) -> Any:
+        """Load configuration from context.
+
+        Args:
+            context: Lint context
+
+        Returns:
+            Configuration object with at minimum an 'enabled' attribute
+        """
+        raise NotImplementedError("Subclasses must implement _load_config")
+
+    @abstractmethod
+    def _check_python(self, context: BaseLintContext, config: Any) -> list[Violation]:
+        """Check Python code for violations.
+
+        Args:
+            context: Lint context with Python file information
+            config: Loaded configuration
+
+        Returns:
+            List of violations found in Python code
+        """
+        raise NotImplementedError("Subclasses must implement _check_python")
+
+    @abstractmethod
+    def _check_typescript(self, context: BaseLintContext, config: Any) -> list[Violation]:
+        """Check TypeScript/JavaScript code for violations.
+
+        Args:
+            context: Lint context with TypeScript/JavaScript file information
+            config: Loaded configuration
+
+        Returns:
+            List of violations found in TypeScript/JavaScript code
+        """
+        raise NotImplementedError("Subclasses must implement _check_typescript")
