@@ -153,6 +153,7 @@ omit = [
     "tests/*",
     "*/__init__.py",
 ]
+dynamic_context = "test_function"
 
 [tool.coverage.report]
 exclude_lines = [
@@ -163,6 +164,9 @@ exclude_lines = [
     "if __name__ == .__main__.:",
     "if TYPE_CHECKING:",
 ]
+
+[tool.coverage.html]
+show_contexts = true
 
 # mypy configuration
 [tool.mypy]
