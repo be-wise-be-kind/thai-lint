@@ -2,19 +2,35 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
-[![Tests](https://img.shields.io/badge/tests-317%2F317%20passing-brightgreen.svg)](tests/)
-[![Coverage](https://img.shields.io/badge/coverage-90%25-brightgreen.svg)](htmlcov/)
+[![Tests](https://img.shields.io/badge/tests-253%2F253%20passing-brightgreen.svg)](tests/)
+[![Coverage](https://img.shields.io/badge/coverage-88%25-brightgreen.svg)](htmlcov/)
 
 The AI Linter - Enterprise-ready linting and governance for AI-generated code across multiple languages.
 
 ## Overview
 
-thailint is a modern, enterprise-ready multi-language linter designed specifically for AI-generated code. It enforces project structure, file placement rules, and coding standards across Python, TypeScript, and other languages.
+thailint is a modern, enterprise-ready multi-language linter designed specifically for AI-generated code. It focuses on common mistakes and anti-patterns that AI coding assistants frequently introduce—issues that existing linters don't catch or don't handle consistently across languages.
+
+**Why thailint?**
+
+We're not trying to replace the wonderful existing linters like Pylint, ESLint, or Ruff. Instead, thailint fills critical gaps:
+
+- **AI-Specific Patterns**: AI assistants have predictable blind spots (excessive nesting, magic numbers, SRP violations) that traditional linters miss
+- **Cross-Language Consistency**: Detects the same anti-patterns across Python, TypeScript, and JavaScript with unified rules
+- **No Existing Solutions**: Issues like excessive nesting depth, file placement violations, and cross-project code duplication lack comprehensive multi-language detection
+- **Governance Layer**: Enforces project-wide structure and organization patterns that AI can't infer from local context
+
+thailint complements your existing linting stack by catching the patterns AI tools repeatedly miss.
 
 ## Features
 
 ### Core Capabilities
 - **File Placement Linting** - Enforce project structure and organization
+- **Magic Numbers Linting** - Detect unnamed numeric literals that should be constants
+  - Python and TypeScript support with AST analysis
+  - Context-aware detection (ignores constants, test files, range() usage)
+  - Configurable allowed numbers and thresholds
+  - Helpful suggestions for extracting to named constants
 - **Nesting Depth Linting** - Detect excessive code nesting with AST analysis
   - Python and TypeScript support with tree-sitter
   - Configurable max depth (default: 4, recommended: 3)
@@ -91,6 +107,9 @@ thailint nesting src/
 
 # Check for duplicate code
 thailint dry .
+
+# Check for magic numbers
+thailint magic-numbers src/
 
 # With config file
 thailint dry --config .thailint.yaml src/
@@ -202,6 +221,12 @@ dry:
   ignore:
     - "tests/"
     - "__init__.py"
+
+# Magic numbers linter configuration
+magic-numbers:
+  enabled: true
+  allowed_numbers: [-1, 0, 1, 2, 10, 100, 1000]  # Numbers allowed without constants
+  max_small_integer: 10  # Max value allowed in range() or enumerate()
 ```
 
 **JSON format also supported** (`.thailint.json`):
@@ -236,11 +261,18 @@ dry:
     },
     "storage_mode": "memory",
     "ignore": ["tests/", "__init__.py"]
+  },
+  "magic-numbers": {
+    "enabled": true,
+    "allowed_numbers": [-1, 0, 1, 2, 10, 100, 1000],
+    "max_small_integer": 10
   }
 }
 ```
 
 See [Configuration Guide](docs/configuration.md) for complete reference.
+
+**Need help with ignores?** See **[How to Ignore Violations](docs/how-to-ignore-violations.md)** for complete guide to all ignore levels (line, method, class, file, repository).
 
 ## Nesting Depth Linter
 
@@ -598,6 +630,158 @@ Built-in filters automatically exclude common non-duplication patterns:
 
 See [DRY Linter Guide](docs/dry-linter.md) for comprehensive documentation, storage modes, and refactoring patterns.
 
+## Magic Numbers Linter
+
+### Overview
+
+The magic numbers linter detects unnamed numeric literals (magic numbers) that should be extracted to named constants. It uses AST analysis to identify numeric literals that lack meaningful context.
+
+### What are Magic Numbers?
+
+**Magic numbers** are unnamed numeric literals in code without explanation:
+
+```python
+# Bad - Magic numbers
+timeout = 3600  # What is 3600?
+max_retries = 5  # Why 5?
+
+# Good - Named constants
+TIMEOUT_SECONDS = 3600
+MAX_RETRY_ATTEMPTS = 5
+```
+
+### Quick Start
+
+```bash
+# Check for magic numbers in current directory
+thailint magic-numbers .
+
+# Check specific directory
+thailint magic-numbers src/
+
+# Get JSON output
+thailint magic-numbers --format json src/
+```
+
+### Configuration
+
+Add to `.thailint.yaml`:
+
+```yaml
+magic-numbers:
+  enabled: true
+  allowed_numbers: [-1, 0, 1, 2, 10, 100, 1000]
+  max_small_integer: 10  # Max for range() to be acceptable
+```
+
+### Example Violation
+
+**Code with magic numbers:**
+```python
+def calculate_timeout():
+    return 3600  # Magic number - what is 3600?
+
+def process_items(items):
+    for i in range(100):  # Magic number - why 100?
+        items[i] *= 1.5  # Magic number - what is 1.5?
+```
+
+**Violation messages:**
+```
+src/example.py:2 - Magic number 3600 should be a named constant
+src/example.py:5 - Magic number 100 should be a named constant
+src/example.py:6 - Magic number 1.5 should be a named constant
+```
+
+**Refactored code:**
+```python
+TIMEOUT_SECONDS = 3600
+MAX_ITEMS = 100
+PRICE_MULTIPLIER = 1.5
+
+def calculate_timeout():
+    return TIMEOUT_SECONDS
+
+def process_items(items):
+    for i in range(MAX_ITEMS):
+        items[i] *= PRICE_MULTIPLIER
+```
+
+### Acceptable Contexts
+
+The linter **does not** flag numbers in these contexts:
+
+| Context | Example | Why Acceptable |
+|---------|---------|----------------|
+| Constants | `MAX_SIZE = 100` | UPPERCASE name provides context |
+| Small `range()` | `range(5)` | Small loop bounds are clear |
+| Test files | `test_*.py` | Test data can be literal |
+| Allowed numbers | `-1, 0, 1, 2, 10` | Common values are self-explanatory |
+
+### Refactoring Patterns
+
+**Pattern 1: Extract to Module Constants**
+```python
+# Before
+def connect():
+    timeout = 30
+    retries = 3
+
+# After
+DEFAULT_TIMEOUT_SECONDS = 30
+DEFAULT_MAX_RETRIES = 3
+
+def connect():
+    timeout = DEFAULT_TIMEOUT_SECONDS
+    retries = DEFAULT_MAX_RETRIES
+```
+
+**Pattern 2: Extract with Units in Name**
+```python
+# Before
+delay = 3600  # Is this seconds? Minutes?
+
+# After
+TASK_DELAY_SECONDS = 3600  # Clear unit
+
+delay = TASK_DELAY_SECONDS
+```
+
+**Pattern 3: Use Standard Library**
+```python
+# Before
+if status == 200:
+    return "success"
+
+# After
+from http import HTTPStatus
+
+if status == HTTPStatus.OK:
+    return "success"
+```
+
+### Language Support
+
+- **Python**: Full support (int, float, scientific notation)
+- **TypeScript**: Full support (int, float, scientific notation)
+- **JavaScript**: Supported via TypeScript parser
+
+### Ignoring Violations
+
+```python
+# Line-level ignore
+timeout = 3600  # thailint: ignore[magic-numbers] - Industry standard
+
+# Method-level ignore
+def get_ports():  # thailint: ignore[magic-numbers] - Standard ports
+    return {80: "HTTP", 443: "HTTPS"}
+
+# File-level ignore
+# thailint: ignore-file[magic-numbers]
+```
+
+See **[How to Ignore Violations](docs/how-to-ignore-violations.md)** and **[Magic Numbers Linter Guide](docs/magic-numbers-linter.md)** for complete documentation.
+
 ## Pre-commit Hooks
 
 Automate code quality checks before every commit and push with pre-commit hooks.
@@ -711,48 +895,95 @@ def test_no_violations():
 ### Setup Development Environment
 
 ```bash
-# Install development dependencies
-pip install -e ".[dev]"
+# Install dependencies and activate virtualenv
+just init
 
-# Install pre-commit hooks (if using)
-pre-commit install
+# Or manually:
+poetry install
+source $(poetry env info --path)/bin/activate
 ```
 
 ### Running Tests
 
 ```bash
-# Run all tests
-pytest
+# Run all tests (parallel mode - fast)
+just test
 
-# Run with coverage
-pytest --cov=src --cov-report=html
+# Run with coverage (serial mode)
+just test-coverage
 
 # Run specific test
-pytest tests/test_cli.py::test_hello_command
+poetry run pytest tests/test_cli.py::test_hello_command -v
 ```
 
 ### Code Quality
 
 ```bash
-# Lint code
-ruff check src tests
+# Fast linting (Ruff only - use during development)
+just lint
 
-# Format code
-ruff format src tests
+# Comprehensive linting (Ruff + Pylint + Flake8 + MyPy)
+just lint-all
 
-# Type checking
-mypy src/
+# Security scanning
+just lint-security
+
+# Complexity analysis (Radon + Xenon + Nesting)
+just lint-complexity
+
+# SOLID principles (SRP)
+just lint-solid
+
+# DRY principles (duplicate code detection)
+just lint-dry
+
+# ALL quality checks (runs everything)
+just lint-full
+
+# Auto-fix formatting issues
+just format
 ```
 
-### Building
+### Dogfooding (Lint Our Own Code)
+
+```bash
+# Lint file placement
+just lint-placement
+
+# Check nesting depth
+just lint-nesting
+
+# Check for magic numbers
+poetry run thai-lint magic-numbers src/
+```
+
+### Building and Publishing
 
 ```bash
 # Build Python package
 poetry build
 
-# Build Docker image locally (optional)
+# Build Docker image locally
 docker build -t washad/thailint:latest .
+
+# Publish to PyPI and Docker Hub (runs tests + linting + version bump)
+just publish
 ```
+
+### Quick Development Workflows
+
+```bash
+# Make changes, then run quality checks
+just lint-full
+
+# Share changes for collaboration (skips hooks)
+just share "WIP: feature description"
+
+# Clean up cache and artifacts
+just clean
+```
+
+See `just --list` or `just help` for all available commands.
 
 ## Docker Usage
 
@@ -790,10 +1021,12 @@ docker run --rm -v $(pwd):/data \
 
 - **[Getting Started](docs/getting-started.md)** - Installation, first lint, basic config
 - **[Configuration Reference](docs/configuration.md)** - Complete config options (YAML/JSON)
+- **[How to Ignore Violations](docs/how-to-ignore-violations.md)** - Complete guide to all ignore levels
 - **[API Reference](docs/api-reference.md)** - Library API documentation
 - **[CLI Reference](docs/cli-reference.md)** - All CLI commands and options
 - **[Deployment Modes](docs/deployment-modes.md)** - CLI, Library, and Docker usage
 - **[File Placement Linter](docs/file-placement-linter.md)** - Detailed linter guide
+- **[Magic Numbers Linter](docs/magic-numbers-linter.md)** - Magic numbers detection guide
 - **[Nesting Depth Linter](docs/nesting-linter.md)** - Nesting depth analysis guide
 - **[SRP Linter](docs/srp-linter.md)** - Single Responsibility Principle guide
 - **[DRY Linter](docs/dry-linter.md)** - Duplicate code detection guide

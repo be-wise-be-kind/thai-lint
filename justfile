@@ -573,6 +573,24 @@ update-version-badges:
     sed -i "s|!\[Version\](https://img.shields.io/badge/version-.*-blue)|![Version](https://img.shields.io/badge/version-$VERSION-blue)|g" README.md || true
     @echo "✓ Version badges updated"
 
+# Update test and coverage badges in README.md
+update-test-badges:
+    #!/usr/bin/env bash
+    echo "Updating test and coverage badges in README.md..."
+    if [ -f .coverage ]; then
+        COVERAGE=$(poetry run coverage report --precision=0 2>/dev/null | grep TOTAL | awk '{print $NF}' | sed 's/%//')
+        TEST_COUNT=$(poetry run pytest --collect-only -q 2>/dev/null | tail -n 1 | grep -oP '\d+' | head -n 1)
+        if [ -n "$COVERAGE" ] && [ -n "$TEST_COUNT" ]; then
+            sed -i "s|!\[Tests\](https://img.shields.io/badge/tests-.*passing-brightgreen\.svg)|![Tests](https://img.shields.io/badge/tests-${TEST_COUNT}%2F${TEST_COUNT}%20passing-brightgreen.svg)|g" README.md
+            sed -i "s|!\[Coverage\](https://img.shields.io/badge/coverage-.*-brightgreen\.svg)|![Coverage](https://img.shields.io/badge/coverage-${COVERAGE}%25-brightgreen.svg)|g" README.md
+            echo "✓ Test badges updated: $TEST_COUNT tests, $COVERAGE% coverage"
+        else
+            echo "⚠️  Could not extract test/coverage metrics (Coverage: $COVERAGE, Tests: $TEST_COUNT)"
+        fi
+    else
+        echo "⚠️  No coverage data found. Run 'just test-coverage' first."
+    fi
+
 # Publish to PyPI (runs tests, linting, and version bump first)
 publish-pypi:
     @echo "=========================================="
@@ -740,15 +758,18 @@ publish *ARGS="":
 
     # Run checks unless skipped
     if [ "$SKIP_CHECKS" = "false" ]; then
-        echo "Step 1: Running tests..."
-        just test
+        echo "Step 1: Running tests with coverage (for badge updates)..."
+        just test-coverage
         if [ $? -ne 0 ]; then
             echo "❌ Tests failed! Cannot publish."
             exit 1
         fi
-        echo "✓ Tests passed"
+        echo "✓ Tests passed (coverage reports generated)"
         echo ""
-        echo "Step 2: Running full linting..."
+        echo "Step 2: Updating test and coverage badges..."
+        just update-test-badges
+        echo ""
+        echo "Step 3: Running full linting..."
         just lint-full
         if [ $? -ne 0 ]; then
             echo "❌ Linting failed! Cannot publish."
@@ -762,7 +783,7 @@ publish *ARGS="":
     fi
 
     # Version bump always runs (even with --skip-checks)
-    echo "Step 3: Version bump..."
+    echo "Step 4: Version bump..."
     just bump-version
     if [ $? -ne 0 ]; then
         echo "❌ Version bump cancelled or failed!"
