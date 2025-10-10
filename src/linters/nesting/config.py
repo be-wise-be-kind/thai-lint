@@ -21,12 +21,15 @@ Implementation: Dataclass with validation and defaults, matches reference implem
 from dataclasses import dataclass
 from typing import Any
 
+# Default nesting threshold constant
+DEFAULT_MAX_NESTING_DEPTH = 4
+
 
 @dataclass
 class NestingConfig:
     """Configuration for nesting depth linter."""
 
-    max_nesting_depth: int = 4  # Default from reference implementation
+    max_nesting_depth: int = DEFAULT_MAX_NESTING_DEPTH  # Default from reference implementation
     enabled: bool = True
 
     def __post_init__(self) -> None:
@@ -49,10 +52,10 @@ class NestingConfig:
         if language and language in config:
             lang_config = config[language]
             max_nesting_depth = lang_config.get(
-                "max_nesting_depth", config.get("max_nesting_depth", 4)
+                "max_nesting_depth", config.get("max_nesting_depth", DEFAULT_MAX_NESTING_DEPTH)
             )
         else:
-            max_nesting_depth = config.get("max_nesting_depth", 4)
+            max_nesting_depth = config.get("max_nesting_depth", DEFAULT_MAX_NESTING_DEPTH)
 
         return cls(
             max_nesting_depth=max_nesting_depth,

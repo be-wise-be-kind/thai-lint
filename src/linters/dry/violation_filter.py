@@ -18,6 +18,9 @@ Implementation: Iterates through sorted violations, keeps first of each overlapp
 
 from src.core.types import Violation
 
+# Default fallback for line count when parsing fails
+DEFAULT_FALLBACK_LINE_COUNT = 5
+
 
 class ViolationFilter:
     """Filters overlapping violations."""
@@ -88,4 +91,4 @@ class ViolationFilter:
             end = message.index(" lines")
             return int(message[start:end])
         except (ValueError, IndexError):
-            return 5  # Default fallback
+            return DEFAULT_FALLBACK_LINE_COUNT  # Default fallback

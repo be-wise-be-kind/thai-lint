@@ -38,6 +38,10 @@ from .block_filter import BlockFilterRegistry, create_default_registry
 from .cache import CodeBlock
 from .config import DRYConfig
 
+# AST context checking constants
+AST_LOOKBACK_LINES = 10
+AST_LOOKFORWARD_LINES = 5
+
 # Type alias for AST nodes that have line number attributes
 # All stmt and expr nodes have lineno and end_lineno after parsing
 ASTWithLineNumbers = ast.stmt | ast.expr
@@ -514,4 +518,11 @@ class PythonDuplicateAnalyzer(BaseTokenAnalyzer):  # thailint: ignore[srp.violat
                     return True
             return False
 
-        return self._check_ast_context(lines, start_line, end_line, 10, 5, is_within_class_body)
+        return self._check_ast_context(
+            lines,
+            start_line,
+            end_line,
+            AST_LOOKBACK_LINES,
+            AST_LOOKFORWARD_LINES,
+            is_within_class_body,
+        )
