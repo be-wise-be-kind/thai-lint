@@ -2,7 +2,7 @@
 
 **Purpose**: Complete guide to using the DRY linter for detecting and eliminating duplicate code
 
-**Scope**: Configuration, usage, cache management, refactoring patterns, and best practices for duplicate code detection
+**Scope**: Configuration, usage, storage modes, refactoring patterns, and best practices for duplicate code detection
 
 **Overview**: Comprehensive documentation for the DRY linter that detects duplicate code across projects using token-based hashing with SQLite storage. Covers how the linter works, configuration options, CLI and library usage, storage modes, performance characteristics, language support, and integration with CI/CD pipelines. Helps teams maintain DRY principles by identifying and eliminating code duplication at scale.
 
@@ -779,34 +779,7 @@ lint-dry:
 
 lint-all: lint-dry
 	@echo "All quality checks passed"
-
-clean-cache:
-	@echo "=== Cleaning DRY cache ==="
-	@rm -rf .thailint-cache/dry.db
 ```
-
-## Performance
-
-The DRY linter is optimized for large codebases:
-
-| Operation | Performance | Notes |
-|-----------|-------------|-------|
-| First scan (100 files) | 0.3-0.5s | Cache write |
-| First scan (1000 files) | 1-3s | Cache write |
-| First scan (10000 files) | 10-30s | Cache write |
-| Cached scan (unchanged) | 0.1-0.5s | Cache hit |
-| Incremental (50 changed) | 0.5-1s | Partial cache |
-
-**Optimizations:**
-- SQLite caching with indexed hash lookups
-- Mtime-based cache invalidation (no content comparison)
-- Token-based hashing (faster than AST comparison)
-- Parallel file processing via orchestrator
-- In-memory hash table for fast duplicate detection
-
-**Memory Usage:**
-- Typical: 50-200MB for 1000 files
-- Large projects: 200-500MB for 10000 files
 
 ## Best Practices
 
@@ -845,11 +818,11 @@ dry:
     - "*/generated/*"   # Generated code
 ```
 
-### 4. Enable Cache for Large Projects
+### 4. Use Tempfile Mode for Very Large Projects
 
 ```yaml
 dry:
-  cache_enabled: true  # Essential for projects > 100 files
+  storage_mode: "tempfile"  # For projects > 10000 files or memory-constrained environments
 ```
 
 ### 5. Review Violations Incrementally
@@ -891,10 +864,8 @@ class DRYConfig:
     typescript_min_occurrences: int | None = None
     javascript_min_occurrences: int | None = None
 
-    # Cache settings
-    cache_enabled: bool = True
-    cache_path: str = ".thailint-cache/dry.db"
-    cache_max_age_days: int = 30
+    # Storage settings
+    storage_mode: str = "memory"  # Options: "memory" or "tempfile"
 
     # Ignore patterns
     ignore_patterns: list[str] = field(default_factory=lambda: ["tests/", "__init__.py"])
@@ -934,27 +905,6 @@ dry:
     keyword_argument_filter: true  # Enable filter
 ```
 
-### Issue: Cache Not Working
-
-**Symptoms**: Every run takes same time
-
-**Solutions**:
-1. Check cache enabled:
-   ```yaml
-   dry:
-     cache_enabled: true
-   ```
-
-2. Verify cache file exists:
-   ```bash
-   ls -la .thailint-cache/dry.db
-   ```
-
-3. Check for cache corruption:
-   ```bash
-   thailint dry --clear-cache .
-   ```
-
 ### Issue: Missing Duplicates
 
 **Symptoms**: Known duplicates not reported
@@ -974,13 +924,13 @@ dry:
        - "tests/"  # Remove if you want to check tests
    ```
 
-### Issue: Slow Performance
+### Issue: Slow Performance or High Memory Usage
 
 **Solutions**:
-1. Enable cache:
+1. Use tempfile mode for large projects:
    ```yaml
    dry:
-     cache_enabled: true
+     storage_mode: "tempfile"  # Reduces memory usage
    ```
 
 2. Exclude large directories:
@@ -989,11 +939,14 @@ dry:
      ignore:
        - "vendor/"
        - "node_modules/"
+       - "build/"
+       - "dist/"
    ```
 
-3. Clear old cache:
-   ```bash
-   thailint dry --clear-cache .
+3. Increase thresholds to reduce processing:
+   ```yaml
+   dry:
+     min_duplicate_lines: 5  # Higher threshold = fewer blocks to hash
    ```
 
 ## Resources
