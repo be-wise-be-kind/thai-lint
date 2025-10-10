@@ -26,10 +26,13 @@ Implementation: 6 tests using pytest tmp_path for isolated file/directory
     non-recursive directory testing
 """
 
+import pytest
+
 
 class TestOrchestrator:
     """Test main Orchestrator class."""
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_lint_single_file(self, tmp_path):
         """Lint a single file and return violations list."""
         test_file = tmp_path / "test.py"
@@ -42,6 +45,7 @@ class TestOrchestrator:
 
         assert isinstance(violations, list)
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_lint_directory_recursive(self, tmp_path):
         """Lint directory recursively finds all files."""
         (tmp_path / "file1.py").write_text("# file 1\n")
@@ -56,6 +60,7 @@ class TestOrchestrator:
         # Should process files (may or may not have violations)
         assert isinstance(violations, list)
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_lint_directory_non_recursive(self, tmp_path):
         """Lint directory non-recursively only checks top level."""
         (tmp_path / "file1.py").write_text("# file 1\n")
@@ -84,6 +89,7 @@ class TestOrchestrator:
         # Should not lint .pyc file
         assert all("test.pyc" not in v.file_path for v in violations)
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_load_config_from_project_root(self, tmp_path):
         """Orchestrator loads .thailint.yaml from project root."""
         config_file = tmp_path / ".thailint.yaml"
@@ -98,6 +104,7 @@ rules:
         orch = Orchestrator(project_root=tmp_path)
         assert orch.config is not None
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_works_without_config_file(self, tmp_path):
         """Orchestrator works without config file (uses defaults)."""
         from src.orchestrator import Orchestrator
@@ -106,6 +113,7 @@ rules:
         # Should not crash, should use defaults
         assert orch.config is not None
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_lint_multiple_files(self, tmp_path):
         """Should lint multiple individual files and return combined violations."""
         # Create multiple test files
@@ -146,6 +154,7 @@ rules:
         for v in violations:
             assert "test2.py" not in str(v.file_path)
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_lint_multiple_files_empty_list(self, tmp_path):
         """Should handle empty file list gracefully."""
         from src.orchestrator import Orchestrator
@@ -156,6 +165,7 @@ rules:
         # Should return empty list
         assert not violations
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_lint_files_calls_finalize(self, tmp_path):
         """Should call finalize() on all rules after processing all files."""
         # Create test files

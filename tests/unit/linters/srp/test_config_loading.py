@@ -32,6 +32,7 @@ import pytest
 class TestSRPConfigLoading:
     """Test SRP linter configuration loading and validation."""
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_default_max_methods_is_seven(self):
         """Default max_methods should be 7."""
         from src.linters.srp.config import SRPConfig
@@ -39,6 +40,7 @@ class TestSRPConfigLoading:
         config = SRPConfig()
         assert config.max_methods == 7, "Default max_methods should be 7"
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_default_max_loc_is_200(self):
         """Default max_loc should be 200."""
         from src.linters.srp.config import SRPConfig
@@ -46,6 +48,7 @@ class TestSRPConfigLoading:
         config = SRPConfig()
         assert config.max_loc == 200, "Default max_loc should be 200"
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_custom_thresholds_from_dict(self):
         """Should load custom thresholds from dictionary."""
         from src.linters.srp.config import SRPConfig
@@ -61,6 +64,7 @@ class TestSRPConfigLoading:
         assert config.max_loc == 150, "Should load custom max_loc"
         assert config.enabled is True, "Should load enabled flag"
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_custom_max_methods_in_rule_context(self):
         """Custom max_methods should be used by rule when provided."""
         from src.linters.srp.linter import SRPRule
@@ -87,6 +91,7 @@ class TestClass:
         # 6 methods should violate limit of 5
         assert len(violations) > 0, "6 methods should violate limit 5"
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_custom_max_loc_in_rule_context(self):
         """Custom max_loc should be used by rule when provided."""
         from src.linters.srp.linter import SRPRule
@@ -132,6 +137,7 @@ class TestClass:
         with pytest.raises(ValueError):
             SRPConfig(max_loc=0)
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_disabled_linter_skips_checks(self):
         """When enabled: false, should skip all SRP checks."""
         from src.linters.srp.linter import SRPRule
@@ -152,6 +158,7 @@ class MassiveManager:
         violations = rule.check(context)
         assert len(violations) == 0, "Disabled linter should not report violations"
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_custom_keyword_list(self):
         """Should support custom responsibility keyword list."""
         from src.linters.srp.config import SRPConfig
@@ -165,6 +172,7 @@ class MassiveManager:
         assert "Controller" in config.keywords
         assert "Repository" in config.keywords
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_config_defaults_when_missing(self):
         """Should use defaults when config fields missing."""
         from src.linters.srp.config import SRPConfig

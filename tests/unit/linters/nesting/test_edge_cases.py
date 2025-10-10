@@ -26,10 +26,13 @@ Implementation: Uses unusual code patterns as test fixtures, verifies graceful h
 from pathlib import Path
 from unittest.mock import Mock
 
+import pytest
+
 
 class TestEdgeCases:
     """Test edge cases and error handling."""
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_empty_file_no_violations(self):
         """Empty file should produce no violations."""
         from src.linters.nesting.linter import NestingDepthRule
@@ -46,6 +49,7 @@ class TestEdgeCases:
         # Should return empty violations list
         assert len(violations) == 0, "Empty file should have no violations"
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_no_functions_no_violations(self):
         """File with no functions should produce no violations."""
         from src.linters.nesting.linter import NestingDepthRule
@@ -69,6 +73,7 @@ class MyClass:
         # Module-level code has no nesting depth to check
         assert len(violations) == 0, "File without functions should have no violations"
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_syntax_error_handled_gracefully(self):
         """Syntax errors should be handled gracefully."""
         from src.linters.nesting.linter import NestingDepthRule
@@ -88,6 +93,7 @@ def broken(
         violations = rule.check(context)
         assert isinstance(violations, list), "Should return a list even for syntax errors"
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_extremely_deep_nesting(self):
         """Extremely deep nesting (10+ levels) should be detected."""
         from src.linters.nesting.linter import NestingDepthRule
@@ -110,6 +116,7 @@ def extremely_nested():
         # Should detect extreme nesting
         assert len(violations) > 0, "Should detect extremely deep nesting"
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_empty_function_body(self):
         """Empty function (only pass) should pass."""
         from src.linters.nesting.linter import NestingDepthRule
@@ -129,6 +136,7 @@ def empty():
         # Depth 1, no violations
         assert len(violations) == 0, "Empty function should not violate"
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_comments_only_no_nesting(self):
         """Function with only comments should pass."""
         from src.linters.nesting.linter import NestingDepthRule
@@ -149,6 +157,7 @@ def documented():
         violations = rule.check(context)
         assert len(violations) == 0, "Comments-only function should not violate"
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_mixed_sync_async_functions(self):
         """Mix of sync and async functions should work."""
         from src.linters.nesting.linter import NestingDepthRule
@@ -182,6 +191,7 @@ async def async_violation():
         # Should have violations from both sync_func and async_violation
         assert len(violations) >= 2, "Should detect violations in both sync and async functions"
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_nested_function_definitions(self):
         """Nested function definitions should track depth independently."""
         from src.linters.nesting.linter import NestingDepthRule

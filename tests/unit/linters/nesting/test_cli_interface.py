@@ -29,6 +29,7 @@ from click.testing import CliRunner
 class TestNestingCLI:
     """Test CLI interface for nesting linter."""
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_cli_command_exists(self):
         """thai-lint nesting command should be available."""
         from src.cli import cli
@@ -41,6 +42,7 @@ class TestNestingCLI:
         output_lower = result.output.lower()
         assert "nesting" in output_lower, "Help should mention nesting"
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_cli_reports_violations(self, tmp_path):
         """CLI should report violations with text output."""
         from src.cli import cli

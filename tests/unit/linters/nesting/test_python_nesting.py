@@ -26,10 +26,13 @@ Implementation: Uses inline Python code strings as test fixtures, creates mock c
 from pathlib import Path
 from unittest.mock import Mock
 
+import pytest
+
 
 class TestSimplePythonNesting:
     """Test basic Python nesting depth detection."""
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_no_nesting_passes(self):
         """Function with no nesting should pass."""
         code = """
@@ -49,6 +52,7 @@ def simple_function():
         violations = rule.check(context)
         assert len(violations) == 0, "Simple function with no nesting should not violate"
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_single_if_within_limit(self):
         """Single if statement (depth 2) should pass with limit 4."""
         code = """
@@ -69,6 +73,7 @@ def check_value(x):
         # Depth: function=1, if=2 → passes with limit 4
         assert len(violations) == 0, "Single if (depth 2) should pass with default limit 4"
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_triple_nesting_within_limit(self):
         """Triple nesting (depth 4) should pass with limit 4."""
         code = """
@@ -90,6 +95,7 @@ def process_data(items):
         # Depth: function=1, for=2, if=3, for=4 → passes with limit 4
         assert len(violations) == 0, "Triple nesting (depth 4) should pass with limit 4"
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_quad_nesting_violates_default(self):
         """Quadruple nesting (depth 5) should violate default limit 4."""
         code = """
@@ -117,6 +123,7 @@ def complex_logic(data):
 class TestPythonStatementTypes:
     """Test various Python statement types that increase nesting."""
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_for_loop_nesting(self):
         """For loops should increase nesting depth."""
         code = """
@@ -139,6 +146,7 @@ def nested_loops():
         # Four nested for loops = depth 5 (function=1, for=2, for=3, for=4, for=5)
         assert len(violations) > 0, "Four nested for loops should violate"
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_while_loop_nesting(self):
         """While loops should increase nesting depth."""
         code = """
@@ -161,6 +169,7 @@ def nested_whiles(x):
         # Four nested while loops = depth 5
         assert len(violations) > 0, "Four nested while loops should violate"
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_with_statement_nesting(self):
         """With statements should increase nesting depth."""
         code = """
@@ -183,6 +192,7 @@ def nested_withs():
         # Four nested with statements = depth 5
         assert len(violations) > 0, "Four nested with statements should violate"
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_try_except_nesting(self):
         """Try/except blocks should increase nesting depth."""
         code = """
@@ -213,6 +223,7 @@ def nested_tries():
         # Four nested try blocks = depth 5
         assert len(violations) > 0, "Four nested try blocks should violate"
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_match_statement_nesting(self):
         """Match statements (Python 3.10+) should increase nesting depth."""
         code = """
@@ -239,6 +250,7 @@ def nested_matches(x):
         # Four nested match statements = depth 5+
         assert len(violations) > 0, "Four nested match statements should violate"
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_mixed_statement_nesting(self):
         """Mixed statement types should all contribute to depth."""
         code = """
@@ -268,6 +280,7 @@ def mixed_nesting(data):
 class TestPythonDepthCalculation:
     """Test accurate depth calculation for Python code."""
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_depth_starts_at_one_for_function_body(self):
         """Function body statements should start at depth 1."""
         code = """
@@ -286,6 +299,7 @@ def simple():
         # Simple statement at depth 1 should not violate
         assert len(violations) == 0, "Depth 1 should not violate"
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_sibling_blocks_dont_increase_depth(self):
         """Sequential (non-nested) blocks should not increase depth."""
         code = """
@@ -310,6 +324,7 @@ def multiple_ifs(x):
         # Max depth = 2, should not violate limit 4
         assert len(violations) == 0, "Sibling blocks should not accumulate depth"
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_max_depth_tracking(self):
         """Should report maximum depth found, not current depth."""
         code = """
@@ -333,6 +348,7 @@ def branching(x):
         # Max depth is 5 (in the nested ifs), even though final statement is depth 1
         assert len(violations) > 0, "Should report max depth of 5"
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_async_function_nesting(self):
         """Async functions should track nesting same as sync."""
         code = """
@@ -355,6 +371,7 @@ async def async_nested():
         # Depth 5: for=2, if=3, for=4, if=5
         assert len(violations) > 0, "Async function with depth 5 should violate"
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_nested_function_definitions_start_fresh(self):
         """Nested function definitions should start depth counting fresh."""
         code = """

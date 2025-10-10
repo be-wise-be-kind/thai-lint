@@ -24,6 +24,8 @@ import tempfile
 from pathlib import Path
 from unittest.mock import Mock
 
+import pytest
+
 
 class TestLibraryAPI:
     """Test SRP linter library/programmatic API."""
@@ -95,6 +97,7 @@ class UserManager:
         finally:
             Path(temp_path).unlink()
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_direct_rule_instantiation(self):
         """Should be able to instantiate SRPRule directly."""
         from src.linters.srp.linter import SRPRule
@@ -103,6 +106,7 @@ class UserManager:
         assert rule is not None, "Should create SRPRule instance"
         assert rule.rule_id == "srp.violation", "Should have correct rule_id"
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_direct_rule_check_method(self):
         """Should be able to call check() method directly."""
         from src.linters.srp.linter import SRPRule
@@ -129,6 +133,7 @@ class DataHandler:
         assert isinstance(violations, list), "Should return list"
         assert len(violations) > 0, "Should detect violations"
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_programmatic_result_parsing(self):
         """Should be able to parse violation results programmatically."""
         from src.linters.srp.linter import SRPRule

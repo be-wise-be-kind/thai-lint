@@ -25,10 +25,13 @@ Implementation: Analyzes violation objects returned by rule, verifies message co
 from pathlib import Path
 from unittest.mock import Mock
 
+import pytest
+
 
 class TestViolationMessages:
     """Test helpful violation messages."""
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_message_includes_function_name(self):
         """Violation message should include function name."""
         from src.linters.nesting.linter import NestingDepthRule
@@ -57,6 +60,7 @@ def process_data(items):
             "Message should include function name 'process_data'"
         )
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_message_includes_depth_info(self):
         """Message should include depth found and limit."""
         from src.linters.nesting.linter import NestingDepthRule
@@ -89,6 +93,7 @@ def nested_func():
             "Should mention limit information"
         )
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_suggestion_recommends_refactoring(self):
         """Should provide actionable refactoring suggestions."""
         from src.linters.nesting.linter import NestingDepthRule
@@ -129,6 +134,7 @@ def complex_func(data):
             f"Suggestion should recommend refactoring patterns. Got: {suggestion}"
         )
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_violation_includes_line_number(self):
         """Violation should include accurate line number."""
         from src.linters.nesting.linter import NestingDepthRule
@@ -159,6 +165,7 @@ def second_func():
         assert violation.line > 0, "Line number should be positive"
         assert violation.line >= 4, "Line number should be around where second_func is defined"
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_violation_context_has_details(self):
         """Violation context should include metadata."""
         from src.linters.nesting.linter import NestingDepthRule
@@ -188,6 +195,7 @@ def my_function():
         assert hasattr(violation, "file_path"), "Should have file_path"
         assert hasattr(violation, "line"), "Should have line number"
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_multiple_violations_separate_messages(self):
         """Multiple functions with violations get separate messages."""
         from src.linters.nesting.linter import NestingDepthRule

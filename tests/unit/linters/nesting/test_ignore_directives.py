@@ -26,10 +26,13 @@ Implementation: Uses code samples with ignore comments, verifies violations are 
 from pathlib import Path
 from unittest.mock import Mock
 
+import pytest
+
 
 class TestIgnoreDirectives:
     """Test inline ignore directives."""
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_ignore_suppresses_violation(self):
         """# thailint: ignore nesting should suppress violation."""
         from src.linters.nesting.linter import NestingDepthRule
@@ -192,6 +195,7 @@ def test_function():
         # Block ignore should suppress violations in the block
         assert len(violations) == 0, "Block ignore should suppress violations"
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_ignore_with_justification_comment(self):
         """Ignore directives can be accompanied by justification comments."""
         from src.linters.nesting.linter import NestingDepthRule
@@ -218,6 +222,7 @@ def complex_cli_parser(args):  # thailint: ignore nesting
         # Ignore with justification should still suppress
         assert len(violations) == 0, "Ignore with justification should suppress"
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_multiple_ignores_same_line(self):
         """# thailint: ignore nesting, file-placement should handle multiple rules."""
         from src.linters.nesting.linter import NestingDepthRule

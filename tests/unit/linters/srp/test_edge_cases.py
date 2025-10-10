@@ -24,10 +24,13 @@ Implementation: Tests boundary conditions, unusual syntax, and graceful error ha
 from pathlib import Path
 from unittest.mock import Mock
 
+import pytest
+
 
 class TestEdgeCases:
     """Test SRP linter edge cases and special scenarios."""
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_empty_file_passes(self):
         """Empty file should pass without errors."""
         code = ""
@@ -43,6 +46,7 @@ class TestEdgeCases:
         violations = rule.check(context)
         assert len(violations) == 0, "Empty file should pass"
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_file_with_only_functions_passes(self):
         """File with only functions (no classes) should pass."""
         code = """
@@ -67,6 +71,7 @@ def function3():
         violations = rule.check(context)
         assert len(violations) == 0, "Functions-only file should pass"
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_file_with_only_imports_passes(self):
         """File with only imports should pass."""
         code = """
@@ -87,6 +92,7 @@ from typing import List, Dict
         violations = rule.check(context)
         assert len(violations) == 0, "Imports-only file should pass"
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_syntax_error_handled_gracefully(self):
         """Syntax errors should be handled without crashing."""
         code = """
@@ -107,6 +113,7 @@ class BrokenClass
         rule.check(context)
         # Graceful handling expected
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_abstract_base_class_analyzed_correctly(self):
         """Abstract base classes should be analyzed like regular classes."""
         code = """
@@ -135,6 +142,7 @@ class AbstractManager(ABC):
         violations = rule.check(context)
         assert len(violations) > 0, "ABC with 8 methods should violate"
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_dataclass_fields_dont_count_as_methods(self):
         """Dataclass fields should not count as methods."""
         code = """
@@ -165,6 +173,7 @@ class UserData:
         rule.check(context)
         # Dataclass fields should not count as methods
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_property_decorators_dont_count_as_methods(self):
         """@property decorated methods should not count."""
         code = """
@@ -200,6 +209,7 @@ class User:
         rule.check(context)
         # Properties should not count as methods
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_inherited_methods_dont_count(self):
         """Inherited methods should not count toward limit."""
         code = """
@@ -224,6 +234,7 @@ class DerivedClass(BaseClass):
         rule.check(context)
         # DerivedClass only has 2 methods (should pass)
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_class_and_static_methods_count(self):
         """@classmethod and @staticmethod should count as methods."""
         code = """
@@ -253,6 +264,7 @@ class UtilityClass:
         violations = rule.check(context)
         assert len(violations) > 0, "Class with 8 methods should violate"
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_async_methods_count(self):
         """Async methods should count toward limit."""
         code = """

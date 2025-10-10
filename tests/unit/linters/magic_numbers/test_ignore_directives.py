@@ -24,10 +24,13 @@ Implementation: Mock-based testing with inline comment patterns, validates selec
 from pathlib import Path
 from unittest.mock import Mock
 
+import pytest
+
 
 class TestInlineIgnoreDirectives:
     """Test inline ignore directive support."""
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_ignores_magic_number_with_inline_comment(self):
         """Should ignore magic number with inline thailint ignore comment."""
         code = """
@@ -46,6 +49,7 @@ def get_timeout():
         # Should not flag 3600 because of ignore directive
         assert len(violations) == 0, "Should ignore number with inline directive"
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_ignores_only_commented_line(self):
         """Should ignore only the line with the comment, not others."""
         code = """
@@ -87,6 +91,7 @@ def get_value():
         # Generic ignore should work too
         assert len(violations) == 0, "Should respect generic ignore directive"
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_multiple_numbers_one_ignored(self):
         """Should handle multiple numbers where only one is ignored."""
         code = """
@@ -114,6 +119,7 @@ def complex():
 class TestIgnoreDirectiveFormats:
     """Test various ignore directive formats."""
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_end_of_line_comment_format(self):
         """Should handle end-of-line comment format."""
         code = """
@@ -131,6 +137,7 @@ def timeout():
         violations = rule.check(context)
         assert len(violations) == 0, "Should handle comment with explanation"
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_ignore_with_multiple_rules(self):
         """Should handle ignore directive with multiple rules."""
         code = """

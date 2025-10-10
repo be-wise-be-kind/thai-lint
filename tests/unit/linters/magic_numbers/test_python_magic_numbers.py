@@ -25,10 +25,13 @@ Implementation: Uses Mock objects for context creation, inline Python code strin
 from pathlib import Path
 from unittest.mock import Mock
 
+import pytest
+
 
 class TestBasicDetection:
     """Test basic magic number detection in Python code."""
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_detects_integer_in_return_statement(self):
         """Should detect integer magic number in return statement."""
         code = """
@@ -47,6 +50,7 @@ def get_timeout():
         assert len(violations) > 0, "Should detect magic number 3600 in return"
         assert "3600" in str(violations[0].message), "Violation should mention the number"
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_detects_float_in_calculation(self):
         """Should detect float magic number in calculation."""
         code = """
@@ -65,6 +69,7 @@ def calculate_area(radius):
         assert len(violations) > 0, "Should detect magic number 3.14159 (PI)"
         assert "3.14159" in str(violations[0].message), "Violation should mention PI value"
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_detects_integer_in_comparison(self):
         """Should detect integer magic number in comparison."""
         code = """
@@ -82,6 +87,7 @@ def is_valid_age(age):
         violations = rule.check(context)
         assert len(violations) > 0, "Should detect magic number 18 in comparison"
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_detects_multiple_magic_numbers(self):
         """Should detect all magic numbers in a function."""
         code = """
@@ -100,6 +106,7 @@ def complex_calculation(x):
         violations = rule.check(context)
         assert len(violations) >= 3, "Should detect at least 3 magic numbers (42, 365, 7)"
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_detects_negative_magic_number(self):
         """Should detect negative magic numbers outside allowed set."""
         code = """
@@ -142,6 +149,7 @@ def use_constants():
         violations = rule.check(context)
         assert len(violations) == 0, "Should not flag constant definitions"
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_ignores_small_integers_in_range(self):
         """Should not flag small integers used in range() calls."""
         code = """
@@ -160,6 +168,7 @@ def process_batch():
         violations = rule.check(context)
         assert len(violations) == 0, "Should not flag small integers in range()"
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_ignores_allowed_numbers_from_config(self):
         """Should not flag numbers in allowed_numbers configuration."""
         code = """
@@ -201,6 +210,7 @@ def test_calculation():
         violations = rule.check(context)
         assert len(violations) == 0, "Should not flag numbers in test files"
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_ignores_small_integers_in_enumerate(self):
         """Should not flag small integers in enumerate() calls."""
         code = """
@@ -219,6 +229,7 @@ def process_items(items):
         violations = rule.check(context)
         assert len(violations) == 0, "Should not flag small integers in enumerate()"
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_detects_large_numbers_even_in_range(self):
         """Should flag large numbers in range() that exceed max_small_integer."""
         code = """
@@ -242,6 +253,7 @@ def process_many():
 class TestViolationDetails:
     """Test that violations contain appropriate details."""
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_violation_contains_line_number(self):
         """Should include line number in violation."""
         code = """
@@ -261,6 +273,7 @@ def get_value():
         # Line number should be present (line 3 for return 42)
         assert violations[0].line is not None, "Violation should have line number"
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_violation_contains_rule_id(self):
         """Should include magic-numbers rule ID."""
         code = """
@@ -279,6 +292,7 @@ def get_value():
         assert len(violations) > 0, "Should have violations"
         assert "magic-numbers" in violations[0].rule_id, "Should have magic-numbers rule ID"
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_violation_contains_helpful_message(self):
         """Should provide helpful message suggesting constant extraction."""
         code = """

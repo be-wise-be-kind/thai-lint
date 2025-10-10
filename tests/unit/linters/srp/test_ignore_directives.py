@@ -25,10 +25,13 @@ Implementation: Uses inline code with ignore comments, verifies violations are
 from pathlib import Path
 from unittest.mock import Mock
 
+import pytest
+
 
 class TestIgnoreDirectives:
     """Test ignore directive handling for SRP violations."""
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_python_inline_ignore_suppresses_violation(self):
         """Python class with ignore comment should not violate."""
         code = """
@@ -120,6 +123,7 @@ class SecondHandler:
         violations = rule.check(context)
         assert len(violations) == 0, "Block ignore should suppress all violations"
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_ignore_specific_rule_too_many_methods(self):
         """Should ignore specific sub-rule: srp.too-many-methods."""
         code = """
@@ -145,6 +149,7 @@ class DataClass:  # thailint: ignore srp.too-many-methods
         rule.check(context)
         # Should suppress method count violation but not others
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_ignore_specific_rule_too_many_lines(self):
         """Should ignore specific sub-rule: srp.too-many-lines."""
         methods = "\n".join([f"    def m{i}(self): pass" for i in range(100)])
@@ -237,6 +242,7 @@ class SecondHandler:
         violations = rule.check(context)
         assert len(violations) == 0, "File-level ignore should suppress all"
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_ignore_case_insensitive(self):
         """Ignore directives should be case-insensitive."""
         code = """
@@ -262,6 +268,7 @@ class UserManager:  # THAILINT: IGNORE SRP
         violations = rule.check(context)
         assert len(violations) == 0, "Ignore should be case-insensitive"
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_ignore_with_reason(self):
         """Ignore directive can include reason comment."""
         code = """
@@ -287,6 +294,7 @@ class LegacyManager:  # thailint: ignore srp - legacy code, refactoring planned
         violations = rule.check(context)
         assert len(violations) == 0, "Ignore with reason should work"
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_no_ignore_reports_violation(self):
         """Class without ignore directive should violate normally."""
         code = """

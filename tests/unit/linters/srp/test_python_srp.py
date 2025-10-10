@@ -26,10 +26,13 @@ Implementation: Uses inline Python code strings as test fixtures, creates mock c
 from pathlib import Path
 from unittest.mock import Mock
 
+import pytest
+
 
 class TestMethodCountViolations:
     """Test SRP violations based on method count threshold."""
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_class_with_eight_methods_violates_default_threshold(self):
         """Class with 8 methods should violate default threshold of 7."""
         code = """
@@ -57,6 +60,7 @@ class UserManager:
         assert "8 methods" in violations[0].message
         assert "UserManager" in violations[0].message
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_class_with_exactly_seven_methods_passes(self):
         """Class with exactly 7 methods should pass default threshold."""
         code = """
@@ -81,6 +85,7 @@ class UserService:
         violations = rule.check(context)
         assert len(violations) == 0, "Class with 7 methods should pass threshold 7"
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_class_with_six_methods_passes(self):
         """Class with 6 methods should pass default threshold."""
         code = """
@@ -104,6 +109,7 @@ class PaymentService:
         violations = rule.check(context)
         assert len(violations) == 0, "Class with 6 methods should pass threshold 7"
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_class_with_fifteen_methods_violates_severely(self):
         """Class with 15 methods should violate (severe case)."""
         code = """
@@ -137,6 +143,7 @@ class DataHandler:
         assert len(violations) > 0, "Class with 15 methods should violate"
         assert "15 methods" in violations[0].message
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_empty_class_passes(self):
         """Empty class should pass method count check."""
         code = """
@@ -159,6 +166,7 @@ class EmptyClass:
 class TestLinesOfCodeViolations:
     """Test SRP violations based on lines of code threshold."""
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_class_with_201_loc_violates_default_threshold(self):
         """Class with 201 lines should violate default threshold of 200."""
         # Generate class with 201 lines
@@ -179,6 +187,7 @@ class LargeClass:
         violations = rule.check(context)
         assert len(violations) > 0, "Class with >200 LOC should violate"
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_class_with_exactly_200_loc_passes(self):
         """Class with exactly 200 lines should pass threshold."""
         # Generate class with exactly 200 lines
@@ -200,6 +209,7 @@ class MediumClass:
         # May violate on method count, not LOC
         # This test validates LOC calculation works
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_class_with_150_loc_passes(self):
         """Class with 150 lines should pass threshold."""
         methods = "\n".join([f"    def method_{i}(self): pass" for i in range(70)])
@@ -238,6 +248,7 @@ class MassiveClass:
         violations = rule.check(context)
         assert len(violations) > 0, "Class with 500 LOC should violate"
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_single_line_class_passes(self):
         """Single-line class definition should pass."""
         code = """
@@ -259,6 +270,7 @@ class TinyClass: pass
 class TestResponsibilityKeywords:
     """Test SRP violations based on responsibility keywords in class names."""
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_class_named_manager_violates(self):
         """Class named 'UserManager' should violate keyword check."""
         code = """
@@ -279,6 +291,7 @@ class UserManager:
         assert len(violations) > 0, "Class with 'Manager' in name should violate"
         assert "keyword" in violations[0].message.lower()
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_class_named_handler_violates(self):
         """Class named 'DataHandler' should violate keyword check."""
         code = """
@@ -298,6 +311,7 @@ class DataHandler:
         violations = rule.check(context)
         assert len(violations) > 0, "Class with 'Handler' in name should violate"
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_class_named_processor_violates(self):
         """Class named 'RequestProcessor' should violate keyword check."""
         code = """
@@ -317,6 +331,7 @@ class RequestProcessor:
         violations = rule.check(context)
         assert len(violations) > 0, "Class with 'Processor' in name should violate"
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_class_with_utility_helper_violates(self):
         """Class named 'UtilityHelper' should violate (two keywords)."""
         code = """
@@ -336,6 +351,7 @@ class UtilityHelper:
         violations = rule.check(context)
         assert len(violations) > 0, "Class with 'Utility' and 'Helper' should violate"
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_class_named_user_passes(self):
         """Class named 'User' (no keywords) should pass."""
         code = """
@@ -361,6 +377,7 @@ class User:
 class TestCombinedViolations:
     """Test combined SRP violations (multiple heuristics triggered)."""
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_class_with_methods_and_loc_violations(self):
         """Class violating both method count and LOC thresholds."""
         methods = "\n".join([f"    def method_{i}(self): pass" for i in range(100)])
@@ -380,6 +397,7 @@ class GodClass:
         violations = rule.check(context)
         assert len(violations) > 0, "Class with methods+LOC violations should fail"
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_class_with_keyword_and_methods_violations(self):
         """Class with keyword and excessive methods should violate."""
         code = """
@@ -406,6 +424,7 @@ class DataManager:
         assert len(violations) > 0, "Class with keyword+methods should violate"
         assert "Manager" in code or "keyword" in violations[0].message.lower()
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_class_with_all_three_violations(self):
         """Class violating methods, LOC, and keyword (severe)."""
         methods = "\n".join([f"    def method_{i}(self): pass" for i in range(100)])

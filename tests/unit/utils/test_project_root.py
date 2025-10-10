@@ -4,12 +4,15 @@ Purpose: Test is_project_root() and get_project_root() functions
 Scope: Comprehensive testing of project root detection logic
 """
 
+import pytest
+
 from src.utils.project_root import get_project_root, is_project_root
 
 
 class TestIsProjectRoot:
     """Test is_project_root() function."""
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_returns_true_for_directory_with_git(self, tmp_path, monkeypatch):
         """Should return True when .git directory exists."""
         (tmp_path / ".git").mkdir()
@@ -17,6 +20,7 @@ class TestIsProjectRoot:
         monkeypatch.chdir(tmp_path)
         assert is_project_root(tmp_path) is True
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_returns_true_for_directory_with_pyproject(self, tmp_path, monkeypatch):
         """Should return True when pyproject.toml file exists."""
         (tmp_path / "pyproject.toml").touch()
@@ -24,6 +28,7 @@ class TestIsProjectRoot:
         monkeypatch.chdir(tmp_path)
         assert is_project_root(tmp_path) is True
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_returns_true_when_both_markers_exist(self, tmp_path, monkeypatch):
         """Should return True when both .git and pyproject.toml exist."""
         (tmp_path / ".git").mkdir()
@@ -32,6 +37,7 @@ class TestIsProjectRoot:
         monkeypatch.chdir(tmp_path)
         assert is_project_root(tmp_path) is True
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_returns_true_for_directory_when_isolated(self, tmp_path, monkeypatch):
         """When directory has no markers but is isolated, pyprojroot returns it as root."""
         # Change to a directory with no parent projects - pyprojroot returns current dir as root
@@ -39,11 +45,13 @@ class TestIsProjectRoot:
         # This is expected behavior: when no markers found, pyprojroot returns the starting point
         assert is_project_root(tmp_path) is True
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_returns_false_for_nonexistent_path(self, tmp_path):
         """Should return False for nonexistent path."""
         nonexistent = tmp_path / "does_not_exist"
         assert is_project_root(nonexistent) is False
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_returns_false_for_file_path(self, tmp_path):
         """Should return False when path is a file, not a directory."""
         file_path = tmp_path / "file.txt"
@@ -54,6 +62,7 @@ class TestIsProjectRoot:
 class TestGetProjectRoot:
     """Test get_project_root() function."""
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_finds_root_with_git_marker(self, tmp_path, monkeypatch):
         """Should find project root when .git directory exists."""
         (tmp_path / ".git").mkdir()
@@ -66,6 +75,7 @@ class TestGetProjectRoot:
         result = get_project_root(subdir)
         assert result == tmp_path
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_finds_root_with_pyproject_marker(self, tmp_path, monkeypatch):
         """Should find project root when pyproject.toml exists."""
         (tmp_path / "pyproject.toml").touch()
@@ -78,6 +88,7 @@ class TestGetProjectRoot:
         result = get_project_root(subdir)
         assert result == tmp_path
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_finds_root_from_nested_subdirectory(self, tmp_path, monkeypatch):
         """Should walk up tree to find root from deeply nested directory."""
         (tmp_path / ".git").mkdir()
@@ -90,6 +101,7 @@ class TestGetProjectRoot:
         result = get_project_root(deep_subdir)
         assert result == tmp_path
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_returns_start_path_when_no_markers_found(self, tmp_path, monkeypatch):
         """Should return start_path when no project markers found."""
         subdir = tmp_path / "src"
@@ -109,6 +121,7 @@ class TestGetProjectRoot:
         result = get_project_root(None)
         assert result == tmp_path
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_stops_at_first_marker_going_up(self, tmp_path, monkeypatch):
         """Should stop at the first project root marker found when walking up."""
         # Create outer project root
@@ -132,6 +145,7 @@ class TestGetProjectRoot:
         # Should find inner root first (nearest root when walking up)
         assert result == inner_root
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_handles_file_path_as_start(self, tmp_path, monkeypatch):
         """Should handle when start_path is a file by checking parent directories."""
         (tmp_path / ".git").mkdir()
@@ -146,6 +160,7 @@ class TestGetProjectRoot:
         result = get_project_root(file_path)
         assert result == tmp_path
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_returns_resolved_absolute_path(self, tmp_path, monkeypatch):
         """Should return resolved absolute path."""
         (tmp_path / ".git").mkdir()

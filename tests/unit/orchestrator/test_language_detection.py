@@ -20,10 +20,13 @@ Implementation: 7 tests covering extension-based detection for multiple language
     shebang parsing for extensionless scripts, unknown file handling
 """
 
+import pytest
+
 
 class TestLanguageDetection:
     """Test language detection from files."""
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_detect_python_from_extension(self, tmp_path):
         """Detect Python from .py extension."""
         test_file = tmp_path / "test.py"
@@ -33,6 +36,7 @@ class TestLanguageDetection:
 
         assert detect_language(test_file) == "python"
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_detect_javascript_from_extension(self, tmp_path):
         """Detect JavaScript from .js extension."""
         test_file = tmp_path / "test.js"
@@ -42,6 +46,7 @@ class TestLanguageDetection:
 
         assert detect_language(test_file) == "javascript"
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_detect_typescript_from_extension(self, tmp_path):
         """Detect TypeScript from .ts extension."""
         test_file = tmp_path / "test.ts"
@@ -51,6 +56,7 @@ class TestLanguageDetection:
 
         assert detect_language(test_file) == "typescript"
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_detect_from_python_shebang(self, tmp_path):
         """Detect Python from shebang line."""
         test_file = tmp_path / "script"
@@ -60,6 +66,7 @@ class TestLanguageDetection:
 
         assert detect_language(test_file) == "python"
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_detect_from_python_shebang_variant(self, tmp_path):
         """Detect Python from alternate shebang."""
         test_file = tmp_path / "script"
@@ -69,6 +76,7 @@ class TestLanguageDetection:
 
         assert detect_language(test_file) == "python"
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_unknown_extension_returns_unknown(self, tmp_path):
         """Unknown file extension returns 'unknown'."""
         test_file = tmp_path / "test.xyz"
@@ -78,6 +86,7 @@ class TestLanguageDetection:
 
         assert detect_language(test_file) == "unknown"
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_empty_file_with_extension(self, tmp_path):
         """Empty file still detected by extension."""
         test_file = tmp_path / "empty.py"

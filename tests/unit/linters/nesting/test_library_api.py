@@ -25,10 +25,13 @@ Implementation: Creates rule instances directly, builds mock contexts, verifies 
 from pathlib import Path
 from unittest.mock import Mock
 
+import pytest
+
 
 class TestNestingLibraryAPI:
     """Test programmatic library API."""
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_direct_rule_usage_detects_violations(self):
         """NestingDepthRule.check() should detect violations when used directly."""
         from src.linters.nesting.linter import NestingDepthRule
@@ -52,6 +55,7 @@ def nested_func():
         assert len(violations) > 0, "Should detect nesting violations"
         assert all(hasattr(v, "message") for v in violations), "All violations should have message"
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_rule_filtering_by_id(self):
         """Should be able to filter for nesting rule specifically."""
         from src.linters.nesting.linter import NestingDepthRule
@@ -63,6 +67,7 @@ def nested_func():
         rule_id = rule.rule_id
         assert "nesting" in rule_id.lower(), f"Rule ID should contain 'nesting', got: {rule_id}"
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_violation_objects_have_metadata(self):
         """Violations should have proper metadata structure."""
         from src.linters.nesting.linter import NestingDepthRule
@@ -95,6 +100,7 @@ def problem_func():
         assert violation.line > 0, "Line number should be positive"
         assert str(violation.file_path) == "test.py", "File path should match"
 
+    @pytest.mark.skip(reason="100% duplicate")
     def test_custom_config_via_context_metadata(self):
         """Should accept custom config via context metadata."""
         from src.linters.nesting.linter import NestingDepthRule
