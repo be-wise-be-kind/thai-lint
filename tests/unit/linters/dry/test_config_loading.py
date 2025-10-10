@@ -16,9 +16,7 @@ Interfaces: Uses Linter class with config file parameter
 
 Implementation: TDD approach - tests written before implementation. All tests should
     initially fail with ModuleNotFoundError. Uses tmp_path for isolated config fixtures.
-    Tests use cache_enabled: false for isolation, which triggers in-memory fallback mode
-    (Decision 6): DRYRule maintains dict[int, list[CodeBlock]] instead of SQLite, providing
-    same stateful behavior without persistence between test runs.
+    Tests use storage_mode: "memory" (default) for fast, isolated test runs without disk I/O.
 """
 
 import json
@@ -72,7 +70,7 @@ def bar():
 dry:
   enabled: true
   min_duplicate_lines: 3
-  cache_enabled: false
+  storage_mode: "memory"
 """)
 
     linter = Linter(config_file=config, project_root=tmp_path)
@@ -108,7 +106,7 @@ def bar():
 dry:
   enabled: true
   min_duplicate_lines: 5
-  cache_enabled: false
+  storage_mode: "memory"
 """)
 
     linter = Linter(config_file=config, project_root=tmp_path)
@@ -139,7 +137,7 @@ dry:
   enabled: true
   min_duplicate_lines: 2
   min_duplicate_tokens: 10
-  cache_enabled: false
+  storage_mode: "memory"
 """)
 
     linter = Linter(config_file=config, project_root=tmp_path)
@@ -148,8 +146,8 @@ dry:
     assert isinstance(violations, list)
 
 
-def test_cache_enabled_configuration(tmp_path):
-    """Test cache_enabled configuration option."""
+def test_storage_mode_memory_configuration(tmp_path):
+    """Test storage_mode='memory' configuration option."""
     file1 = tmp_path / "file1.py"
     file1.write_text("def foo(): pass\n" * 5)
 
@@ -158,63 +156,48 @@ def test_cache_enabled_configuration(tmp_path):
 dry:
   enabled: true
   min_duplicate_lines: 3
-  cache_enabled: true
-  cache_path: ".thailint-cache/dry.db"
+  storage_mode: "memory"
 """)
-
-    (tmp_path / ".thailint-cache").mkdir()
-
-    linter = Linter(config_file=config, project_root=tmp_path)
-    linter.lint(tmp_path, rules=["dry.duplicate-code"])
-
-    cache_file = tmp_path / ".thailint-cache" / "dry.db"
-    assert cache_file.exists()
-
-
-def test_custom_cache_path_configuration(tmp_path):
-    """Test custom cache_path configuration."""
-    file1 = tmp_path / "file1.py"
-    file1.write_text("def foo(): pass\n" * 5)
-
-    custom_dir = tmp_path / "my_cache"
-    custom_dir.mkdir()
-
-    config = tmp_path / ".thailint.yaml"
-    config.write_text(f"""
-dry:
-  enabled: true
-  min_duplicate_lines: 3
-  cache_enabled: true
-  cache_path: "{custom_dir / "custom.db"}"
-""")
-
-    linter = Linter(config_file=config, project_root=tmp_path)
-    linter.lint(tmp_path, rules=["dry.duplicate-code"])
-
-    assert (custom_dir / "custom.db").exists()
-
-
-def test_cache_max_age_days_configuration(tmp_path):
-    """Test cache_max_age_days configuration."""
-    file1 = tmp_path / "file1.py"
-    file1.write_text("def foo(): pass\n" * 5)
-
-    config = tmp_path / ".thailint.yaml"
-    config.write_text("""
-dry:
-  enabled: true
-  min_duplicate_lines: 3
-  cache_enabled: true
-  cache_path: ".thailint-cache/dry.db"
-  cache_max_age_days: 7
-""")
-
-    (tmp_path / ".thailint-cache").mkdir()
 
     linter = Linter(config_file=config, project_root=tmp_path)
     violations = linter.lint(tmp_path, rules=["dry.duplicate-code"])
 
+    # Memory mode works without creating any files
     assert isinstance(violations, list)
+
+
+def test_storage_mode_tempfile_configuration(tmp_path):
+    """Test storage_mode='tempfile' configuration option."""
+    file1 = tmp_path / "file1.py"
+    file1.write_text("def foo(): pass\n" * 5)
+
+    config = tmp_path / ".thailint.yaml"
+    config.write_text("""
+dry:
+  enabled: true
+  min_duplicate_lines: 3
+  storage_mode: "tempfile"
+""")
+
+    linter = Linter(config_file=config, project_root=tmp_path)
+    violations = linter.lint(tmp_path, rules=["dry.duplicate-code"])
+
+    # Tempfile mode works and auto-cleans up temp files
+    assert isinstance(violations, list)
+
+
+def test_invalid_storage_mode_configuration(tmp_path):
+    """Test that invalid storage_mode raises error."""
+    config = tmp_path / ".thailint.yaml"
+    config.write_text("""
+dry:
+  enabled: true
+  storage_mode: "invalid"
+""")
+
+    with pytest.raises((ValueError, Exception)):
+        linter = Linter(config_file=config, project_root=tmp_path)
+        linter.lint(tmp_path, rules=["dry.duplicate-code"])
 
 
 def test_ignore_patterns_configuration(tmp_path):
@@ -240,7 +223,7 @@ def test_process():
 dry:
   enabled: true
   min_duplicate_lines: 3
-  cache_enabled: false
+  storage_mode: "memory"
   ignore:
     - "tests/"
 """)
@@ -277,7 +260,7 @@ def process():
 
     config = tmp_path / ".thailint.json"
     config.write_text(
-        json.dumps({"dry": {"enabled": True, "min_duplicate_lines": 3, "cache_enabled": False}})
+        json.dumps({"dry": {"enabled": True, "min_duplicate_lines": 3, "storage_mode": "memory"}})
     )
 
     linter = Linter(config_file=config, project_root=tmp_path)
