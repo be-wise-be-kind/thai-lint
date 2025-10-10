@@ -9,7 +9,18 @@ The AI Linter - Enterprise-ready linting and governance for AI-generated code ac
 
 ## Overview
 
-thailint is a modern, enterprise-ready multi-language linter designed specifically for AI-generated code. It enforces project structure, file placement rules, and coding standards across Python, TypeScript, and other languages.
+thailint is a modern, enterprise-ready multi-language linter designed specifically for AI-generated code. It focuses on common mistakes and anti-patterns that AI coding assistants frequently introduce—issues that existing linters don't catch or don't handle consistently across languages.
+
+**Why thailint?**
+
+We're not trying to replace the wonderful existing linters like Pylint, ESLint, or Ruff. Instead, thailint fills critical gaps:
+
+- **AI-Specific Patterns**: AI assistants have predictable blind spots (excessive nesting, magic numbers, SRP violations) that traditional linters miss
+- **Cross-Language Consistency**: Detects the same anti-patterns across Python, TypeScript, and JavaScript with unified rules
+- **No Existing Solutions**: Issues like excessive nesting depth, file placement violations, and cross-project code duplication lack comprehensive multi-language detection
+- **Governance Layer**: Enforces project-wide structure and organization patterns that AI can't infer from local context
+
+thailint complements your existing linting stack by catching the patterns AI tools repeatedly miss.
 
 ## Features
 
