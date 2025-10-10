@@ -1,45 +1,32 @@
 """
 Purpose: File analysis orchestration for duplicate detection
 
-Scope: Coordinates language-specific analyzers and cache checking
+Scope: Coordinates language-specific analyzers
 
-Overview: Orchestrates file analysis by delegating to language-specific analyzers (Python, TypeScript)
-    and checking cache freshness. Handles cache hits by loading from cache, and cache misses by
-    analyzing files. Separates file analysis orchestration from main linter rule logic to maintain
-    SRP compliance.
+Overview: Orchestrates file analysis by delegating to language-specific analyzers (Python, TypeScript).
+    Analyzes files fresh every run - no cache loading. Separates file analysis orchestration from
+    main linter rule logic to maintain SRP compliance.
 
-Dependencies: PythonDuplicateAnalyzer, TypeScriptDuplicateAnalyzer, DRYCache, DRYConfig, CodeBlock
+Dependencies: PythonDuplicateAnalyzer, TypeScriptDuplicateAnalyzer, DRYConfig, CodeBlock
 
 Exports: FileAnalyzer class
 
-Interfaces: FileAnalyzer.analyze_or_load(file_path, content, language, config, cache)
+Interfaces: FileAnalyzer.analyze(file_path, content, language, config)
 
-Implementation: Delegates to language-specific analyzers, checks cache freshness
+Implementation: Delegates to language-specific analyzers, always performs fresh analysis
 """
 
-from dataclasses import dataclass
 from pathlib import Path
 
 from .block_filter import BlockFilterRegistry, create_default_registry
-from .cache import CodeBlock, DRYCache
+from .cache import CodeBlock
 from .config import DRYConfig
 from .python_analyzer import PythonDuplicateAnalyzer
 from .typescript_analyzer import TypeScriptDuplicateAnalyzer
 
 
-@dataclass
-class FileAnalysisContext:
-    """Context for file analysis."""
-
-    file_path: Path
-    content: str
-    language: str
-    config: DRYConfig
-    cache: DRYCache | None
-
-
 class FileAnalyzer:
-    """Orchestrates file analysis with cache support."""
+    """Orchestrates file analysis for duplicate detection."""
 
     def __init__(self, config: DRYConfig | None = None) -> None:
         """Initialize with language-specific analyzers.
@@ -77,49 +64,25 @@ class FileAnalyzer:
 
         return registry
 
-    def analyze_or_load(  # pylint: disable=too-many-arguments,too-many-positional-arguments
+    def analyze(
         self,
         file_path: Path,
         content: str,
         language: str,
         config: DRYConfig,
-        cache: DRYCache | None = None,
     ) -> list[CodeBlock]:
-        """Analyze file or load from cache.
+        """Analyze file for duplicate code blocks.
 
         Args:
             file_path: Path to file
             content: File content
             language: File language
             config: DRY configuration
-            cache: Optional cache instance
 
         Returns:
             List of CodeBlock instances
         """
-        # Check if file is fresh in cache
-        if cache:
-            mtime = file_path.stat().st_mtime
-            if cache.is_fresh(file_path, mtime):
-                return cache.load(file_path)
-
         # Analyze file based on language
-        return self._analyze_file(file_path, content, language, config)
-
-    def _analyze_file(
-        self, file_path: Path, content: str, language: str, config: DRYConfig
-    ) -> list[CodeBlock]:
-        """Analyze file based on language.
-
-        Args:
-            file_path: Path to file
-            content: File content
-            language: File language
-            config: DRY configuration
-
-        Returns:
-            List of CodeBlock instances
-        """
         if language == "python":
             return self._python_analyzer.analyze(file_path, content, config)
         if language in ("typescript", "javascript"):
