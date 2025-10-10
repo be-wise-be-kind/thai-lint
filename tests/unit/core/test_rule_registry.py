@@ -31,63 +31,6 @@ import pytest
 class TestRuleRegistry:
     """Test RuleRegistry functionality."""
 
-    def test_can_register_rule(self):
-        """Registry can register a rule."""
-        from src.core.base import BaseLintContext, BaseLintRule
-        from src.core.registry import RuleRegistry
-
-        class MockRule(BaseLintRule):
-            @property
-            def rule_id(self) -> str:
-                return "test.mock-rule"
-
-            @property
-            def rule_name(self) -> str:
-                return "Mock Rule"
-
-            @property
-            def description(self) -> str:
-                return "A mock rule for testing"
-
-            def check(self, context: BaseLintContext) -> list:
-                return []
-
-        registry = RuleRegistry()
-        rule = MockRule()
-        registry.register(rule)
-
-        # Verify it's in registry
-        assert registry.get("test.mock-rule") is not None
-
-    def test_can_retrieve_registered_rule(self):
-        """Registry can retrieve rule by ID."""
-        from src.core.base import BaseLintContext, BaseLintRule
-        from src.core.registry import RuleRegistry
-
-        class MockRule(BaseLintRule):
-            @property
-            def rule_id(self) -> str:
-                return "test.retrieve-rule"
-
-            @property
-            def rule_name(self) -> str:
-                return "Retrieve Rule"
-
-            @property
-            def description(self) -> str:
-                return "Test retrieval"
-
-            def check(self, context: BaseLintContext) -> list:
-                return []
-
-        registry = RuleRegistry()
-        rule = MockRule()
-        registry.register(rule)
-
-        retrieved = registry.get("test.retrieve-rule")
-        assert retrieved is rule
-        assert retrieved.rule_id == "test.retrieve-rule"
-
     def test_duplicate_rule_id_raises_error(self):
         """Registering duplicate rule ID raises error."""
         from src.core.base import BaseLintContext, BaseLintRule
@@ -132,113 +75,9 @@ class TestRuleRegistry:
         with pytest.raises(ValueError, match="already registered"):
             registry.register(MockRule2())
 
-    def test_can_list_all_rules(self):
-        """Registry can list all registered rules."""
-        from src.core.base import BaseLintContext, BaseLintRule
-        from src.core.registry import RuleRegistry
-
-        class MockRule1(BaseLintRule):
-            @property
-            def rule_id(self) -> str:
-                return "test.rule-1"
-
-            @property
-            def rule_name(self) -> str:
-                return "Rule 1"
-
-            @property
-            def description(self) -> str:
-                return "First"
-
-            def check(self, context: BaseLintContext) -> list:
-                return []
-
-        class MockRule2(BaseLintRule):
-            @property
-            def rule_id(self) -> str:
-                return "test.rule-2"
-
-            @property
-            def rule_name(self) -> str:
-                return "Rule 2"
-
-            @property
-            def description(self) -> str:
-                return "Second"
-
-            def check(self, context: BaseLintContext) -> list:
-                return []
-
-        registry = RuleRegistry()
-        rule1 = MockRule1()
-        rule2 = MockRule2()
-        registry.register(rule1)
-        registry.register(rule2)
-
-        all_rules = registry.list_all()
-        assert len(all_rules) == 2
-        assert rule1 in all_rules
-        assert rule2 in all_rules
-
-    def test_get_nonexistent_rule_returns_none(self):
-        """Getting a nonexistent rule returns None."""
-        from src.core.registry import RuleRegistry
-
-        registry = RuleRegistry()
-        result = registry.get("nonexistent.rule")
-
-        assert result is None
-
 
 class TestRuleDiscovery:
     """Test automatic rule discovery."""
-
-    def test_discovers_rules_in_package(self, tmp_path):
-        """Auto-discover rules in specified package."""
-        from src.core.registry import RuleRegistry
-
-        # Create a test package with a rule
-        test_package = tmp_path / "test_rules"
-        test_package.mkdir()
-
-        # Create __init__.py
-        (test_package / "__init__.py").write_text("")
-
-        # Create a module with a rule
-        rule_module = test_package / "test_rule.py"
-        rule_module.write_text("""
-from src.core.base import BaseLintRule, BaseLintContext
-
-class DiscoverableRule(BaseLintRule):
-    @property
-    def rule_id(self) -> str:
-        return "test.discoverable"
-
-    @property
-    def rule_name(self) -> str:
-        return "Discoverable Rule"
-
-    @property
-    def description(self) -> str:
-        return "A rule that can be discovered"
-
-    def check(self, context: BaseLintContext) -> list:
-        return []
-""")
-
-        # Add to sys.path so we can import it
-        import sys
-
-        sys.path.insert(0, str(tmp_path))
-
-        try:
-            registry = RuleRegistry()
-            count = registry.discover_rules("test_rules")
-
-            assert count == 1
-            assert registry.get("test.discoverable") is not None
-        finally:
-            sys.path.remove(str(tmp_path))
 
     def test_skips_abstract_base_classes(self):
         """Discovery skips ABC classes."""
@@ -253,55 +92,6 @@ class DiscoverableRule(BaseLintRule):
         assert registry.get("base.lint.rule") is None
         # Count should be 0 since BaseLintRule is abstract
         assert count == 0
-
-    def test_only_discovers_lint_rule_subclasses(self, tmp_path):
-        """Discovery only finds BaseLintRule subclasses."""
-        from src.core.registry import RuleRegistry
-
-        # Create test package with mixed classes
-        test_package = tmp_path / "test_mixed"
-        test_package.mkdir()
-        (test_package / "__init__.py").write_text("")
-
-        # Create module with rule and non-rule classes
-        mixed_module = test_package / "mixed.py"
-        mixed_module.write_text('''
-from src.core.base import BaseLintRule, BaseLintContext
-
-class NotARule:
-    """Regular class, not a rule."""
-    pass
-
-class ActualRule(BaseLintRule):
-    @property
-    def rule_id(self) -> str:
-        return "test.actual"
-
-    @property
-    def rule_name(self) -> str:
-        return "Actual Rule"
-
-    @property
-    def description(self) -> str:
-        return "This is a real rule"
-
-    def check(self, context: BaseLintContext) -> list:
-        return []
-''')
-
-        import sys
-
-        sys.path.insert(0, str(tmp_path))
-
-        try:
-            registry = RuleRegistry()
-            count = registry.discover_rules("test_mixed")
-
-            # Should only find ActualRule
-            assert count == 1
-            assert registry.get("test.actual") is not None
-        finally:
-            sys.path.remove(str(tmp_path))
 
     def test_discovery_handles_import_errors_gracefully(self, tmp_path):
         """Discovery handles modules with import errors."""

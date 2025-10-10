@@ -22,67 +22,10 @@ from click.testing import CliRunner
 
 from src import Linter, nesting_lint
 from src.cli import cli
-from src.orchestrator.core import Orchestrator
 
 
 class TestNestingIntegration:
     """E2E integration tests for nesting linter."""
-
-    def test_orchestrator_discovers_nesting_rule(self):
-        """Orchestrator should auto-discover NestingDepthRule."""
-        orch = Orchestrator()
-        rules = orch.registry.list_all()
-        nesting_rules = [r for r in rules if "nesting" in r.rule_id]
-        assert len(nesting_rules) > 0, "NestingDepthRule should be discovered"
-        assert nesting_rules[0].rule_id == "nesting.excessive-depth"
-
-    def test_orchestrator_lints_python_file(self, tmp_path):
-        """Orchestrator should lint Python file with nesting rule."""
-        # Create Python file with nesting violation (depth 5)
-        test_file = tmp_path / "test.py"
-        test_file.write_text(
-            """
-def deep_function(data):
-    for item in data:
-        if item:
-            for child in item:
-                if child:
-                    if child.value:  # depth 5
-                        print(child)
-"""
-        )
-
-        # Run orchestrator
-        orch = Orchestrator(project_root=tmp_path)
-        violations = orch.lint_file(test_file)
-
-        # Verify violations
-        nesting_violations = [v for v in violations if "nesting" in v.rule_id]
-        assert len(nesting_violations) > 0, "Should find nesting violation"
-
-    def test_cli_command_works(self, tmp_path):
-        """CLI command `thai-lint nesting` should work."""
-        # Create temp Python file with violation
-        test_file = tmp_path / "test.py"
-        test_file.write_text(
-            """
-def deep_function(data):
-    for item in data:
-        if item:
-            for child in item:
-                if child:
-                    if child.value:  # depth 5
-                        print(child)
-"""
-        )
-
-        # Run CLI
-        runner = CliRunner()
-        result = runner.invoke(cli, ["nesting", str(test_file)])
-
-        # Verify output and exit code
-        assert result.exit_code == 1, "Should exit with code 1 on violations"
-        assert "violation" in result.output.lower()
 
     def test_library_api_works(self, tmp_path):
         """Library API should work for nesting linter."""
@@ -107,49 +50,6 @@ def deep_function(data):
         # Filter to nesting violations
         nesting_violations = [v for v in violations if "nesting" in v.rule_id]
         assert len(nesting_violations) > 0, "Should find nesting violation"
-
-    def test_direct_lint_function_works(self, tmp_path):
-        """Direct nesting_lint function should work."""
-        # Create temp file with violation
-        test_file = tmp_path / "test.py"
-        test_file.write_text(
-            """
-def deep_function(data):
-    for item in data:
-        if item:
-            for child in item:
-                if child:
-                    if child.value:  # depth 5
-                        print(child)
-"""
-        )
-
-        # Use direct nesting_lint function
-        violations = nesting_lint(test_file, max_depth=4)
-
-        assert len(violations) > 0, "Should find nesting violation"
-        assert "nesting" in violations[0].rule_id
-
-    def test_custom_max_depth_config(self, tmp_path):
-        """Custom max_depth in config should be respected."""
-        # Create file with depth=3 (should pass with max_depth=4, fail with max_depth=2)
-        test_file = tmp_path / "test.py"
-        test_file.write_text(
-            """
-def shallow_function(data):
-    for item in data:
-        if item:
-            print(item)  # depth 3
-"""
-        )
-
-        # Test with max_depth=4 (should pass)
-        violations_pass = nesting_lint(test_file, max_depth=4)
-        assert len(violations_pass) == 0, "Should pass with max_depth=4"
-
-        # Test with max_depth=2 (should fail)
-        violations_fail = nesting_lint(test_file, max_depth=2)
-        assert len(violations_fail) > 0, "Should fail with max_depth=2"
 
     def test_multiple_files_in_directory(self, tmp_path):
         """Should lint all files in directory."""

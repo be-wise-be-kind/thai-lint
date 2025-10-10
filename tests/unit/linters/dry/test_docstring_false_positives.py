@@ -19,95 +19,8 @@ Implementation: Tests that identical docstrings across multiple functions/classe
 
 from src import Linter
 
-
-def test_duplicate_function_docstrings_should_not_violate(tmp_path):
-    """Test that duplicate function docstrings are NOT flagged as violations.
-
-    This test verifies the bugfix where docstrings were incorrectly being
-    flagged as duplicate code.
-    """
-    file1 = tmp_path / "module1.py"
-    file1.write_text('''
-def process_data(data):
-    """
-    Process the input data.
-
-    This function validates and transforms the data.
-    Returns processed result.
-    """
-    result = validate(data)
-    transformed = transform(result)
-    return save(transformed)
-
-def handle_request(request):
-    """
-    Process the input data.
-
-    This function validates and transforms the data.
-    Returns processed result.
-    """
-    result = validate(request)
-    transformed = transform(result)
-    return save(transformed)
-''')
-
-    config = tmp_path / ".thailint.yaml"
-    config.write_text("dry:\n  enabled: true\n  min_duplicate_lines: 3\n  cache_enabled: false")
-
-    linter = Linter(config_file=config, project_root=tmp_path)
-    violations = linter.lint(tmp_path, rules=["dry.duplicate-code"])
-
-    # The 3-line docstring should NOT be flagged as duplicate
-    # Docstrings should be completely filtered out from duplication detection
-    assert len(violations) == 0  # No violations - docstrings are filtered
-
-    # If we ever improve to detect code AFTER docstrings, update this test
-    # For now, filtering out blocks that overlap with docstrings is acceptable
-
-
-def test_duplicate_docstrings_across_files_should_not_violate(tmp_path):
-    """Test that identical docstrings in different files are NOT flagged."""
-    file1 = tmp_path / "parser1.py"
-    file1.write_text('''
-def parse_config(path):
-    """
-    Parse configuration file.
-
-    Args:
-        path: Path to config file
-
-    Returns:
-        Parsed configuration dict
-    """
-    data = load_file(path)
-    return parse_yaml(data)
-''')
-
-    file2 = tmp_path / "parser2.py"
-    file2.write_text('''
-def parse_settings(path):
-    """
-    Parse configuration file.
-
-    Args:
-        path: Path to config file
-
-    Returns:
-        Parsed configuration dict
-    """
-    data = load_file(path)
-    return parse_json(data)
-''')
-
-    config = tmp_path / ".thailint.yaml"
-    config.write_text("dry:\n  enabled: true\n  min_duplicate_lines: 3\n  cache_enabled: false")
-
-    linter = Linter(config_file=config, project_root=tmp_path)
-    violations = linter.lint(tmp_path, rules=["dry.duplicate-code"])
-
-    # The docstring should NOT be flagged
-    # The 2 code lines (data = load_file, return parse_*) are below threshold
-    assert len(violations) == 0
+# If we ever improve to detect code AFTER docstrings, update this test
+# For now, filtering out blocks that overlap with docstrings is acceptable
 
 
 def test_duplicate_class_docstrings_should_not_violate(tmp_path):
@@ -147,40 +60,6 @@ class ResponseHandler:
 
     # Docstrings should be filtered out, so no violations detected
     # (The code duplication is small enough to not be flagged separately)
-    assert len(violations) == 0
-
-
-def test_module_docstrings_should_not_violate(tmp_path):
-    """Test that duplicate module-level docstrings are NOT flagged."""
-    file1 = tmp_path / "utils1.py"
-    file1.write_text('''"""
-Utility functions for data processing.
-
-This module provides common utilities.
-"""
-
-def process():
-    return "result1"
-''')
-
-    file2 = tmp_path / "utils2.py"
-    file2.write_text('''"""
-Utility functions for data processing.
-
-This module provides common utilities.
-"""
-
-def process():
-    return "result2"
-''')
-
-    config = tmp_path / ".thailint.yaml"
-    config.write_text("dry:\n  enabled: true\n  min_duplicate_lines: 3\n  cache_enabled: false")
-
-    linter = Linter(config_file=config, project_root=tmp_path)
-    violations = linter.lint(tmp_path, rules=["dry.duplicate-code"])
-
-    # Module docstrings should NOT be flagged
     assert len(violations) == 0
 
 

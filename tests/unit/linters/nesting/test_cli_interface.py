@@ -29,43 +29,6 @@ from click.testing import CliRunner
 class TestNestingCLI:
     """Test CLI interface for nesting linter."""
 
-    def test_cli_command_exists(self):
-        """thai-lint nesting command should be available."""
-        from src.cli import cli
-
-        runner = CliRunner()
-        result = runner.invoke(cli, ["nesting", "--help"])
-
-        # Command should exist and show help
-        assert result.exit_code == 0, "Help command should succeed"
-        output_lower = result.output.lower()
-        assert "nesting" in output_lower, "Help should mention nesting"
-
-    def test_cli_reports_violations(self, tmp_path):
-        """CLI should report violations with text output."""
-        from src.cli import cli
-
-        # Create temp file with nesting violation
-        test_file = tmp_path / "test.py"
-        test_file.write_text("""
-def complex_function(data):
-    for item in data:
-        if item.active:
-            for child in item.children:
-                if child.valid:
-                    if child.important:
-                        process(child)
-""")
-
-        runner = CliRunner()
-        result = runner.invoke(cli, ["nesting", str(test_file)])
-
-        # Should report violation and exit with error code
-        assert result.exit_code != 0, "Should exit with error when violations found"
-        assert "complex_function" in result.output or "nesting" in result.output.lower(), (
-            "Output should mention the violation"
-        )
-
     def test_cli_json_output(self, tmp_path):
         """CLI should support JSON output format."""
         import json

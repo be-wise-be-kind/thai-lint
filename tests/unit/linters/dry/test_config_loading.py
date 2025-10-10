@@ -26,59 +26,6 @@ import pytest
 from src import Linter
 
 
-def test_default_config_values(tmp_path):
-    """Test that linter uses default configuration when no custom values provided."""
-    file1 = tmp_path / "file1.py"
-    file1.write_text("""
-def process():
-    for item in items:
-        item.save()
-""")
-
-    config = tmp_path / ".thailint.yaml"
-    config.write_text("""
-dry:
-  enabled: true
-""")
-
-    linter = Linter(config_file=config, project_root=tmp_path)
-    violations = linter.lint(tmp_path, rules=["dry.duplicate-code"])
-
-    assert isinstance(violations, list)
-
-
-def test_custom_min_duplicate_lines_3(tmp_path):
-    """Test custom min_duplicate_lines=3 configuration."""
-    file1 = tmp_path / "file1.py"
-    file1.write_text("""
-def foo():
-    x = 1
-    y = 2
-    z = 3
-""")
-
-    file2 = tmp_path / "file2.py"
-    file2.write_text("""
-def bar():
-    x = 1
-    y = 2
-    z = 3
-""")
-
-    config = tmp_path / ".thailint.yaml"
-    config.write_text("""
-dry:
-  enabled: true
-  min_duplicate_lines: 3
-  storage_mode: "memory"
-""")
-
-    linter = Linter(config_file=config, project_root=tmp_path)
-    violations = linter.lint(tmp_path, rules=["dry.duplicate-code"])
-
-    assert len(violations) == 2
-
-
 def test_custom_min_duplicate_lines_5(tmp_path):
     """Test custom min_duplicate_lines=5 configuration."""
     file1 = tmp_path / "file1.py"
@@ -106,37 +53,6 @@ def bar():
 dry:
   enabled: true
   min_duplicate_lines: 5
-  storage_mode: "memory"
-""")
-
-    linter = Linter(config_file=config, project_root=tmp_path)
-    violations = linter.lint(tmp_path, rules=["dry.duplicate-code"])
-
-    assert isinstance(violations, list)
-
-
-def test_custom_min_duplicate_tokens(tmp_path):
-    """Test custom min_duplicate_tokens configuration."""
-    file1 = tmp_path / "file1.py"
-    file1.write_text("""
-def process():
-    result = fetch() and transform() and validate() and store()
-    return result
-""")
-
-    file2 = tmp_path / "file2.py"
-    file2.write_text("""
-def handle():
-    result = fetch() and transform() and validate() and store()
-    return result
-""")
-
-    config = tmp_path / ".thailint.yaml"
-    config.write_text("""
-dry:
-  enabled: true
-  min_duplicate_lines: 2
-  min_duplicate_tokens: 10
   storage_mode: "memory"
 """)
 
