@@ -363,7 +363,7 @@ def config_reset(ctx, yes: bool):
 
 
 @cli.command("file-placement")
-@click.argument("paths", nargs=-1, type=click.Path(exists=True))
+@click.argument("paths", nargs=-1, type=click.Path())
 @click.option("--config", "-c", "config_file", type=click.Path(), help="Path to config file")
 @click.option("--rules", "-r", help="Inline JSON rules configuration")
 @format_option
@@ -432,6 +432,7 @@ def _execute_file_placement_lint(  # pylint: disable=too-many-arguments,too-many
     path_objs, config_file, rules, format, recursive, verbose
 ):
     """Execute file placement linting."""
+    _validate_paths_exist(path_objs)
     orchestrator = _setup_orchestrator(path_objs, config_file, rules, verbose)
     all_violations = _execute_linting_on_paths(orchestrator, path_objs, recursive)
 
@@ -451,6 +452,28 @@ def _handle_linting_error(error: Exception, verbose: bool) -> None:
     if verbose:
         logger.exception("Linting failed with exception")
     sys.exit(2)
+
+
+def _validate_paths_exist(path_objs: list[Path]) -> None:
+    """Validate that all provided paths exist.
+
+    Args:
+        path_objs: List of Path objects to validate
+
+    Raises:
+        SystemExit: If any path doesn't exist (exit code 2)
+    """
+    for path in path_objs:
+        if not path.exists():
+            click.echo(f"Error: Path does not exist: {path}", err=True)
+            click.echo("", err=True)
+            click.echo(
+                "Hint: When using Docker, ensure paths are inside the mounted volume:", err=True
+            )
+            click.echo(
+                "  docker run -v $(pwd):/data thailint <command> /data/your-file.py", err=True
+            )
+            sys.exit(2)
 
 
 def _find_project_root(start_path: Path) -> Path:
@@ -637,7 +660,7 @@ def _run_nesting_lint(orchestrator, path_objs: list[Path], recursive: bool):
 
 
 @cli.command("nesting")
-@click.argument("paths", nargs=-1, type=click.Path(exists=True))
+@click.argument("paths", nargs=-1, type=click.Path())
 @click.option("--config", "-c", "config_file", type=click.Path(), help="Path to config file")
 @format_option
 @click.option("--max-depth", type=int, help="Override max nesting depth (default: 4)")
@@ -710,6 +733,7 @@ def _execute_nesting_lint(  # pylint: disable=too-many-arguments,too-many-positi
     path_objs, config_file, format, max_depth, recursive, verbose
 ):
     """Execute nesting lint."""
+    _validate_paths_exist(path_objs)
     orchestrator = _setup_nesting_orchestrator(path_objs, config_file, verbose)
     _apply_nesting_config_override(orchestrator, max_depth, verbose)
     nesting_violations = _run_nesting_lint(orchestrator, path_objs, recursive)
@@ -773,7 +797,7 @@ def _run_srp_lint(orchestrator, path_objs: list[Path], recursive: bool):
 
 
 @cli.command("srp")
-@click.argument("paths", nargs=-1, type=click.Path(exists=True))
+@click.argument("paths", nargs=-1, type=click.Path())
 @click.option("--config", "-c", "config_file", type=click.Path(), help="Path to config file")
 @format_option
 @click.option("--max-methods", type=int, help="Override max methods per class (default: 7)")
@@ -845,6 +869,7 @@ def _execute_srp_lint(  # pylint: disable=too-many-arguments,too-many-positional
     path_objs, config_file, format, max_methods, max_loc, recursive, verbose
 ):
     """Execute SRP lint."""
+    _validate_paths_exist(path_objs)
     orchestrator = _setup_srp_orchestrator(path_objs, config_file, verbose)
     _apply_srp_config_override(orchestrator, max_methods, max_loc, verbose)
     srp_violations = _run_srp_lint(orchestrator, path_objs, recursive)
@@ -857,7 +882,7 @@ def _execute_srp_lint(  # pylint: disable=too-many-arguments,too-many-positional
 
 
 @cli.command("dry")
-@click.argument("paths", nargs=-1, type=click.Path(exists=True))
+@click.argument("paths", nargs=-1, type=click.Path())
 @click.option("--config", "-c", "config_file", type=click.Path(), help="Path to config file")
 @format_option
 @click.option("--min-lines", type=int, help="Override min duplicate lines threshold")
@@ -943,6 +968,7 @@ def _execute_dry_lint(  # pylint: disable=too-many-arguments,too-many-positional
     path_objs, config_file, format, min_lines, no_cache, clear_cache, recursive, verbose
 ):
     """Execute DRY linting."""
+    _validate_paths_exist(path_objs)
     orchestrator = _setup_dry_orchestrator(path_objs, config_file, verbose)
     _apply_dry_config_override(orchestrator, min_lines, no_cache, verbose)
 
