@@ -2,8 +2,8 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
-[![Tests](https://img.shields.io/badge/tests-317%2F317%20passing-brightgreen.svg)](tests/)
-[![Coverage](https://img.shields.io/badge/coverage-90%25-brightgreen.svg)](htmlcov/)
+[![Tests](https://img.shields.io/badge/tests-253%2F253%20passing-brightgreen.svg)](tests/)
+[![Coverage](https://img.shields.io/badge/coverage-28%25-brightgreen.svg)](htmlcov/)
 
 The AI Linter - Enterprise-ready linting and governance for AI-generated code across multiple languages.
 

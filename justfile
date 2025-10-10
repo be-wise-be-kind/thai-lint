@@ -581,8 +581,8 @@ update-test-badges:
         COVERAGE=$(poetry run coverage report --precision=0 2>/dev/null | grep TOTAL | awk '{print $NF}' | sed 's/%//')
         TEST_COUNT=$(poetry run pytest --collect-only -q 2>/dev/null | tail -n 1 | grep -oP '\d+' | head -n 1)
         if [ -n "$COVERAGE" ] && [ -n "$TEST_COUNT" ]; then
-            sed -i "s|!\[Tests\](https://img.shields.io/badge/tests-.*passing-brightgreen)|![Tests](https://img.shields.io/badge/tests-${TEST_COUNT}%2F${TEST_COUNT}%20passing-brightgreen)|g" README.md
-            sed -i "s|!\[Coverage\](https://img.shields.io/badge/coverage-.*-brightgreen)|![Coverage](https://img.shields.io/badge/coverage-${COVERAGE}%25-brightgreen)|g" README.md
+            sed -i "s|!\[Tests\](https://img.shields.io/badge/tests-.*passing-brightgreen\.svg)|![Tests](https://img.shields.io/badge/tests-${TEST_COUNT}%2F${TEST_COUNT}%20passing-brightgreen.svg)|g" README.md
+            sed -i "s|!\[Coverage\](https://img.shields.io/badge/coverage-.*-brightgreen\.svg)|![Coverage](https://img.shields.io/badge/coverage-${COVERAGE}%25-brightgreen.svg)|g" README.md
             echo "✓ Test badges updated: $TEST_COUNT tests, $COVERAGE% coverage"
         else
             echo "⚠️  Could not extract test/coverage metrics (Coverage: $COVERAGE, Tests: $TEST_COUNT)"
