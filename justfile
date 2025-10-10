@@ -48,6 +48,9 @@ help:
     @echo "Maintenance:"
     @echo "  just clean             - Clean cache and artifacts"
     @echo ""
+    @echo "Git Workflow:"
+    @echo "  just share [message] [--yes]  - Quick commit & push (skips hooks, with safety checks)"
+    @echo ""
     @echo "Versioning:"
     @echo "  just show-version      - Show current version"
     @echo "  just bump-version      - Interactive version bump with validation"
@@ -478,6 +481,14 @@ clean:
     @find . -type f -name "*.pyc" -delete 2>/dev/null || true
     @rm -rf htmlcov/ .coverage 2>/dev/null || true
     @echo "✓ Cleaned cache and artifacts"
+
+# Quick share - commit and push changes for collaboration without running hooks
+# Usage: just share [message] [--yes to skip confirmations]
+# Safety features: sensitive file detection, branch name validation, change preview
+share message="" *args="":
+    #!/usr/bin/env bash
+    set -euo pipefail
+    ./scripts/git-share.sh "{{ message }}" {{ args }}
 
 # Show current version from pyproject.toml
 show-version:
