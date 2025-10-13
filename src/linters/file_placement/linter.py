@@ -75,9 +75,12 @@ class FilePlacementLinter:
         # Load and validate config
         if config_obj:
             # Handle both wrapped and unwrapped config formats
-            # Wrapped: {"file-placement": {...}}
+            # Wrapped: {"file-placement": {...}} or {"file_placement": {...}}
             # Unwrapped: {"directories": {...}, "global_deny": [...], ...}
-            self.config = config_obj.get("file-placement", config_obj)
+            # Try both hyphenated and underscored keys for backward compatibility
+            self.config = config_obj.get(
+                "file-placement", config_obj.get("file_placement", config_obj)
+            )
         elif config_file:
             self.config = self._components.config_loader.load_config_file(config_file)
         else:
@@ -279,7 +282,9 @@ class FilePlacementRule(BaseLintRule):  # thailint: ignore[srp.violation]
 
     @staticmethod
     def _get_wrapped_config(context: BaseLintContext) -> dict[str, Any] | None:
-        """Get config from wrapped format: {"file-placement": {...}}.
+        """Get config from wrapped format: {"file-placement": {...}} or {"file_placement": {...}}.
+
+        Supports both hyphenated and underscored keys for backward compatibility.
 
         Args:
             context: Lint context with metadata
@@ -289,8 +294,12 @@ class FilePlacementRule(BaseLintRule):  # thailint: ignore[srp.violation]
         """
         if not hasattr(context, "metadata"):
             return None
+        # Try hyphenated format first (original format)
         if "file-placement" in context.metadata:
             return context.metadata["file-placement"]
+        # Try underscored format (normalized format)
+        if "file_placement" in context.metadata:
+            return context.metadata["file_placement"]
         return None
 
     @staticmethod
@@ -378,9 +387,11 @@ class FilePlacementRule(BaseLintRule):  # thailint: ignore[srp.violation]
         try:
             config = self._parse_layout_file(layout_path)
 
-            # Unwrap file-placement key if present
+            # Unwrap file-placement key if present (try both formats for backward compatibility)
             if "file-placement" in config:
                 return config["file-placement"]
+            if "file_placement" in config:
+                return config["file_placement"]
 
             return config
         except Exception:
