@@ -1216,10 +1216,13 @@ def _setup_magic_numbers_orchestrator(
     path_objs: list[Path], config_file: str | None, verbose: bool
 ):
     """Set up orchestrator for magic-numbers command."""
-    first_path = path_objs[0] if path_objs else Path.cwd()
-    project_root = first_path if first_path.is_dir() else first_path.parent
-
     from src.orchestrator.core import Orchestrator
+    from src.utils.project_root import get_project_root
+
+    # Find actual project root (where .git or .thailint.yaml exists)
+    first_path = path_objs[0] if path_objs else Path.cwd()
+    search_start = first_path if first_path.is_dir() else first_path.parent
+    project_root = get_project_root(search_start)
 
     orchestrator = Orchestrator(project_root=project_root)
 

@@ -52,14 +52,30 @@ def is_project_root(path: Path) -> bool:
         return False
 
 
+def _try_find_with_criterion(criterion: object, start_path: Path) -> Path | None:
+    """Try to find project root with a specific criterion.
+
+    Args:
+        criterion: pyprojroot criterion function (e.g., has_dir(".git"))
+        start_path: Path to start searching from
+
+    Returns:
+        Found project root or None if not found
+    """
+    try:
+        return find_root(criterion, start=start_path)  # type: ignore[arg-type]
+    except (OSError, RuntimeError):
+        return None
+
+
 def get_project_root(start_path: Path | None = None) -> Path:
     """Find project root by walking up the directory tree.
 
     This is the single source of truth for project root detection.
     All code that needs to find the project root should use this function.
 
-    Uses pyprojroot which searches for standard project markers defined by the
-    pyprojroot library (git repos, Python projects, etc).
+    Uses pyprojroot which searches for standard project markers (.git directory,
+    pyproject.toml, .thailint.yaml, etc) starting from start_path and walking upward.
 
     Args:
         start_path: Directory to start searching from. If None, uses current working directory.
@@ -71,14 +87,19 @@ def get_project_root(start_path: Path | None = None) -> Path:
         >>> root = get_project_root()
         >>> config_file = root / ".thailint.yaml"
     """
+    from pyprojroot import has_dir, has_file
+
     if start_path is None:
         start_path = Path.cwd()
 
     current = start_path.resolve()
 
-    try:
-        # Use pyprojroot to find the project root
-        return find_root(current)
-    except (OSError, RuntimeError):
-        # No project markers found, return the start path
-        return current
+    # Search for project root markers in priority order
+    # Try .git first (most reliable), then .thailint.yaml, then pyproject.toml
+    for criterion in [has_dir(".git"), has_file(".thailint.yaml"), has_file("pyproject.toml")]:
+        root = _try_find_with_criterion(criterion, current)
+        if root is not None:
+            return root
+
+    # No markers found, return start path
+    return current
