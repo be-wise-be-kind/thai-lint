@@ -33,6 +33,7 @@ class MagicNumberConfig:
         default_factory=lambda: {-1, 0, 1, 2, 3, 4, 5, 10, 100, 1000}
     )
     max_small_integer: int = 10
+    ignore: list[str] = field(default_factory=list)
 
     def __post_init__(self) -> None:
         """Validate configuration values."""
@@ -69,8 +70,13 @@ class MagicNumberConfig:
             )
             max_small_integer = config.get("max_small_integer", 10)
 
+        ignore_patterns = config.get("ignore", [])
+        if not isinstance(ignore_patterns, list):
+            ignore_patterns = []
+
         return cls(
             enabled=config.get("enabled", True),
             allowed_numbers=allowed_numbers,
             max_small_integer=max_small_integer,
+            ignore=ignore_patterns,
         )

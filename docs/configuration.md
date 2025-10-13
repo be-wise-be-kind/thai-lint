@@ -1,36 +1,291 @@
 # Configuration Reference
 
-**Purpose**: Complete reference for thailint configuration options and file formats
+Complete reference for configuring thailint linters with presets, ignore patterns, and all options.
 
-**Scope**: All configuration options, YAML/JSON formats, pattern syntax, and advanced configuration
+## Table of Contents
 
-**Overview**: Comprehensive configuration reference covering all thailint settings, file formats,
-    pattern matching rules, ignore directives, and directory-specific configurations. Documents
-    YAML and JSON configuration formats with complete examples, regex pattern syntax for file
-    matching, global and directory-scoped rules, and the 5-level ignore system. Helps users
-    create robust configurations for any project structure.
+- [Quick Start with init-config](#quick-start-with-init-config)
+- [Configuration File Basics](#configuration-file-basics)
+- [Ignore Patterns (All Linters)](#ignore-patterns-all-linters)
+- [Magic Numbers Configuration](#magic-numbers-configuration)
+- [Nesting Depth Configuration](#nesting-depth-configuration)
+- [SRP Configuration](#srp-configuration)
+- [DRY Configuration](#dry-configuration)
+- [File Placement Configuration](#file-placement-configuration)
 
-**Dependencies**: PyYAML for YAML parsing, json for JSON parsing, regex for pattern matching
+## Quick Start with init-config
 
-**Exports**: Configuration schemas, examples, and best practices
+The fastest way to configure thailint is using the `init-config` command:
 
-**Related**: getting-started.md for basic config, file-placement-linter.md for linter-specific rules
+```bash
+# Interactive mode (recommended for first-time setup)
+thailint init-config
 
-**Implementation**: Schema documentation with examples, pattern syntax reference, and validation rules
+# Non-interactive with preset (for CI/CD or quick setup)
+thailint init-config --preset lenient --non-interactive
 
----
+# Overwrite existing config
+thailint init-config --preset standard --force
 
-## Overview
+# Custom output location
+thailint init-config --output config/linting.yaml
+```
 
-thailint supports flexible configuration through YAML or JSON files. Configuration files define linting rules, file placement patterns, ignore directives, and directory-specific behaviors.
+### Presets Explained
 
-## Configuration File Discovery
+#### `strict` - New Projects
 
-thailint searches for configuration files in this order:
+**Best for:** Greenfield projects, strict code quality
 
-1. **Command-line specified**: `--config /path/to/config.yaml`
+```yaml
+magic-numbers:
+  allowed_numbers: [-1, 0, 1]
+  max_small_integer: 2
+```
+
+**Characteristics:**
+- Only universal values (-1, 0, 1)
+- Very low max_small_integer
+- Catches almost all numeric literals
+
+#### `standard` - Balanced (Default)
+
+**Best for:** Most projects
+
+```yaml
+magic-numbers:
+  allowed_numbers: [-1, 0, 1, 2, 3, 4, 5, 10, 100, 1000]
+  max_small_integer: 10
+```
+
+**Characteristics:**
+- Common small numbers (0-5)
+- Powers of 10
+- Good balance of strictness
+
+#### `lenient` - Existing Codebases
+
+**Best for:** Legacy code, gradual adoption
+
+```yaml
+magic-numbers:
+  allowed_numbers:
+    - -1
+    - 0
+    - 1
+    - 2
+    - 3
+    - 4
+    - 5
+    - 10
+    - 60      # Time: seconds in minute
+    - 100
+    - 1000
+    - 1024    # Binary: bytes in KB
+    - 3600    # Time: seconds in hour
+  max_small_integer: 10
+```
+
+**Characteristics:**
+- Includes time conversions (60s, 3600s)
+- Includes binary units (1024)
+- Reduces false positives
+
+## Configuration File Basics
+
+### File Locations
+
+thailint searches for configuration in this order:
+
+1. **Command-line flag**: `thailint --config custom.yaml magic-numbers src/`
 2. **Current directory**: `.thailint.yaml` or `.thailint.json`
-3. **Project root**: `.thailint.yaml` or `.thailint.json` (auto-discovered)
+3. **Project root**: Searches up directory tree
+4. **Default config**: Built-in defaults if no file found
+
+## Ignore Patterns (All Linters)
+
+All linters support the `ignore` field to exclude files from linting. This section documents the complete glob pattern syntax and matching behavior.
+
+### Pattern Syntax
+
+thailint uses Python's `pathlib.Path.match()` for glob pattern matching with substring fallback:
+
+| Pattern Type | Syntax | Example | Matches |
+|--------------|--------|---------|---------|
+| **Exact file** | `path/to/file.py` | `backend/app/famous_tracks.py` | Exact file path |
+| **Wildcard (*)** | `*.py` | `test_*.py` | Files starting with `test_` |
+| **Recursive (**)** | `**/pattern` | `**/test_*.py` | Recursively matches in any directory |
+| **Directory** | `dir/**` | `tests/**` | All files in directory tree |
+| **Substring** | `substring` | `famous_tracks` | Any path containing substring |
+
+### How Pattern Matching Works
+
+**Important:** Patterns are matched against the **full file path** relative to where you run the command.
+
+```bash
+# If you run from project root:
+thailint magic-numbers backend/
+
+# File path seen by thailint:
+backend/app/famous_tracks.py
+
+# Patterns that match:
+- "backend/app/famous_tracks.py"    # Exact match
+- "**/famous_tracks.py"              # Recursive match
+- "backend/**"                       # Directory match
+- "famous_tracks"                    # Substring match
+```
+
+### Real-World Examples
+
+#### Example 1: Ignore Specific File
+
+```yaml
+magic-numbers:
+  ignore:
+    - "backend/app/famous_tracks.py"
+```
+
+**Matches:**
+- `backend/app/famous_tracks.py` ✅
+
+**Does NOT match:**
+- `backend/app/other_file.py` ❌
+- `frontend/famous_tracks.py` ❌
+
+#### Example 2: Ignore All Test Files
+
+```yaml
+magic-numbers:
+  ignore:
+    - "**/test_*.py"    # test_foo.py in any directory
+    - "**/*_test.py"    # foo_test.py in any directory
+    - "**/*.test.ts"    # foo.test.ts in any directory
+    - "**/*.spec.js"    # foo.spec.js in any directory
+```
+
+**Matches:**
+- `tests/test_app.py` ✅
+- `backend/tests/test_models.py` ✅
+- `src/utils_test.py` ✅
+- `components/Button.test.ts` ✅
+- `services/api.spec.js` ✅
+
+#### Example 3: Ignore Entire Directories
+
+```yaml
+dry:
+  ignore:
+    - "tests/**"           # All files in tests/ tree
+    - "**/migrations/**"   # All migration dirs
+    - "node_modules/**"    # Dependencies
+```
+
+**Matches:**
+- `tests/unit/test_foo.py` ✅
+- `backend/tests/test_bar.py` ✅
+- `backend/db/migrations/001_init.py` ✅
+- `node_modules/package/index.js` ✅
+
+#### Example 4: Multiple Patterns (Real Project)
+
+```yaml
+magic-numbers:
+  ignore:
+    # Specific files with legitimate magic numbers
+    - "backend/app/famous_tracks.py"
+    - "backend/config/constants.py"
+
+    # All test files
+    - "**/test_*.py"
+    - "**/*_test.py"
+    - "**/*.test.ts"
+    - "**/*.spec.js"
+
+    # Generated/vendor code
+    - "**/migrations/**"
+    - "node_modules/**"
+    - "**/dist/**"
+    - "**/build/**"
+```
+
+### Common Patterns Reference
+
+| Use Case | Pattern | Notes |
+|----------|---------|-------|
+| **Python tests** | `**/test_*.py`, `**/*_test.py` | Covers pytest conventions |
+| **JS/TS tests** | `**/*.test.{ts,js}`, `**/*.spec.{ts,js}` | Covers Jest/Vitest conventions |
+| **Test directories** | `tests/**`, `**/tests/**` | All files in test dirs |
+| **Generated code** | `**/migrations/**`, `**/generated/**` | Database migrations, codegen |
+| **Dependencies** | `node_modules/**`, `vendor/**` | Third-party code |
+| **Build outputs** | `dist/**`, `build/**`, `out/**` | Compiled artifacts |
+| **Config files** | `**/config/*.py`, `**/*_config.py` | Configuration files |
+| **Type stubs** | `**/*.pyi`, `**/stubs/**` | Python type hints |
+
+### Debugging Ignore Patterns
+
+If your ignore patterns aren't working:
+
+1. **Check the file path thailint sees:**
+   ```bash
+   # Run with verbose output to see file paths
+   thailint magic-numbers --format json src/ | grep file_path
+   ```
+
+2. **Verify pattern matching:**
+   ```python
+   from pathlib import Path
+
+   file_path = Path("backend/app/famous_tracks.py")
+   pattern = "**/famous_tracks.py"
+
+   print(file_path.match(pattern))  # Should be True
+   ```
+
+3. **Common mistakes:**
+   - ❌ Pattern: `famous_tracks.py` (too specific, no directory context)
+   - ✅ Pattern: `**/famous_tracks.py` (matches in any directory)
+
+   - ❌ Pattern: `test/*.py` (only matches immediate children)
+   - ✅ Pattern: `test/**/*.py` (matches all descendants)
+
+4. **Escape special characters in filenames:**
+   ```yaml
+   ignore:
+     - "**/file[with]brackets.py"  # Use quotes for special chars
+   ```
+
+### Per-Linter Ignore Patterns
+
+Each linter can have its own ignore list:
+
+```yaml
+magic-numbers:
+  ignore:
+    - "backend/config/constants.py"  # Lots of config numbers
+    - "**/test_*.py"
+
+nesting:
+  ignore:
+    - "backend/legacy/**"  # Deep nesting in legacy code
+    - "**/migrations/**"
+
+dry:
+  ignore:
+    - "tests/**"          # Duplicate test setup is OK
+    - "**/models.py"      # Similar model definitions
+
+srp:
+  ignore:
+    - "backend/monolith.py"  # Legacy god object
+    - "**/admin.py"          # Admin classes often complex
+```
+
+### Version Notes
+
+- **0.4.1+**: Ignore patterns fully functional for magic-numbers linter
+- **0.4.0**: Ignore patterns not implemented (known bug, fixed in 0.4.1)
+- **Earlier**: Check release notes for ignore support per linter
 
 ## File Formats
 

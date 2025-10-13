@@ -597,15 +597,19 @@ publish-pypi:
     @echo "Publishing to PyPI"
     @echo "=========================================="
     @echo ""
-    @echo "Step 1: Running tests..."
+    @echo "Step 1: Auto-formatting code..."
+    just format
+    @echo "✓ Code formatted"
+    @echo ""
+    @echo "Step 2: Running tests..."
     just test
     @echo "✓ Tests passed"
     @echo ""
-    @echo "Step 2: Running full linting..."
+    @echo "Step 3: Running full linting..."
     just lint-full
     @echo "✓ Linting passed"
     @echo ""
-    @echo "Step 3: Version bump..."
+    @echo "Step 4: Version bump..."
     just bump-version
     @echo ""
     just _publish-pypi-only
@@ -666,15 +670,19 @@ publish-docker:
     @echo "Publishing to Docker Hub"
     @echo "=========================================="
     @echo ""
-    @echo "Step 1: Running tests..."
+    @echo "Step 1: Auto-formatting code..."
+    just format
+    @echo "✓ Code formatted"
+    @echo ""
+    @echo "Step 2: Running tests..."
     just test
     @echo "✓ Tests passed"
     @echo ""
-    @echo "Step 2: Running full linting..."
+    @echo "Step 3: Running full linting..."
     just lint-full
     @echo "✓ Linting passed"
     @echo ""
-    @echo "Step 3: Version bump..."
+    @echo "Step 4: Version bump..."
     just bump-version
     @echo ""
     just _publish-docker-only
@@ -758,7 +766,11 @@ publish *ARGS="":
 
     # Run checks unless skipped
     if [ "$SKIP_CHECKS" = "false" ]; then
-        echo "Step 1: Running tests with coverage (for badge updates)..."
+        echo "Step 1: Auto-formatting code..."
+        just format
+        echo "✓ Code formatted"
+        echo ""
+        echo "Step 2: Running tests with coverage (for badge updates)..."
         just test-coverage
         if [ $? -ne 0 ]; then
             echo "❌ Tests failed! Cannot publish."
@@ -766,10 +778,10 @@ publish *ARGS="":
         fi
         echo "✓ Tests passed (coverage reports generated)"
         echo ""
-        echo "Step 2: Updating test and coverage badges..."
+        echo "Step 3: Updating test and coverage badges..."
         just update-test-badges
         echo ""
-        echo "Step 3: Running full linting..."
+        echo "Step 4: Running full linting..."
         just lint-full
         if [ $? -ne 0 ]; then
             echo "❌ Linting failed! Cannot publish."
@@ -783,7 +795,7 @@ publish *ARGS="":
     fi
 
     # Version bump always runs (even with --skip-checks)
-    echo "Step 4: Version bump..."
+    echo "Step 5: Version bump..."
     just bump-version
     if [ $? -ne 0 ]; then
         echo "❌ Version bump cancelled or failed!"

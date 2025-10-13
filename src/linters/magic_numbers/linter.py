@@ -24,6 +24,7 @@ Implementation: Composition pattern with helper classes, AST-based analysis with
 """
 
 import ast
+from pathlib import Path
 
 from src.core.base import BaseLintContext, MultiLanguageLintRule
 from src.core.linter_utils import load_linter_config
@@ -98,6 +99,48 @@ class MagicNumberRule(MultiLanguageLintRule):  # thailint: ignore[srp]
             return None
         return load_linter_config(context, "magic_numbers", MagicNumberConfig)
 
+    def _is_file_ignored(self, context: BaseLintContext, config: MagicNumberConfig) -> bool:
+        """Check if file matches ignore patterns.
+
+        Args:
+            context: Lint context
+            config: Magic numbers configuration
+
+        Returns:
+            True if file should be ignored
+        """
+        if not config.ignore:
+            return False
+
+        if not context.file_path:
+            return False
+
+        file_path = Path(context.file_path)
+        for pattern in config.ignore:
+            if self._matches_pattern(file_path, pattern):
+                return True
+        return False
+
+    def _matches_pattern(self, file_path: Path, pattern: str) -> bool:
+        """Check if file path matches a glob pattern.
+
+        Args:
+            file_path: Path to check
+            pattern: Glob pattern (e.g., "test/**", "**/test_*.py", "specific/file.py")
+
+        Returns:
+            True if path matches pattern
+        """
+        # Try glob pattern matching first (handles **, *, etc.)
+        if file_path.match(pattern):
+            return True
+
+        # Also check if pattern is a substring (for partial path matching)
+        if pattern in str(file_path):
+            return True
+
+        return False
+
     def _check_python(self, context: BaseLintContext, config: MagicNumberConfig) -> list[Violation]:
         """Check Python code for magic number violations.
 
@@ -108,6 +151,9 @@ class MagicNumberRule(MultiLanguageLintRule):  # thailint: ignore[srp]
         Returns:
             List of violations found in Python code
         """
+        if self._is_file_ignored(context, config):
+            return []
+
         tree = self._parse_python_code(context.file_content)
         if tree is None:
             return []
@@ -267,6 +313,9 @@ class MagicNumberRule(MultiLanguageLintRule):  # thailint: ignore[srp]
         Returns:
             List of violations found in TypeScript/JavaScript code
         """
+        if self._is_file_ignored(context, config):
+            return []
+
         analyzer = TypeScriptMagicNumberAnalyzer()
         root_node = analyzer.parse_typescript(context.file_content or "")
         if root_node is None:
