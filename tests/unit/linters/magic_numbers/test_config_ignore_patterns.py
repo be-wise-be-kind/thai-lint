@@ -31,10 +31,11 @@ from src.linters.magic_numbers.linter import MagicNumberRule
 class TestIgnorePatterns:
     """Test configuration-based ignore patterns."""
 
-    def test_ignores_specific_file_from_config(self):
+    @pytest.mark.parametrize("config_key", ["magic_numbers", "magic-numbers"])
+    def test_ignores_specific_file_from_config(self, config_key):
         """Should ignore file that matches specific path in config ignore list.
 
-        RED TEST: This currently fails because ignore patterns are not checked.
+        Tests both underscore and hyphenated config key formats for backward compatibility.
         """
         code = """
 def get_data():
@@ -51,7 +52,7 @@ def get_data():
         context.file_content = code
         context.language = "python"
         context.metadata = {
-            "magic_numbers": {
+            config_key: {
                 "enabled": True,
                 "allowed_numbers": [-1, 0, 1, 2],
                 "ignore": [
@@ -62,17 +63,17 @@ def get_data():
 
         violations = rule.check(context)
 
-        # EXPECTATION: 0 violations (file is ignored)
-        # ACTUAL: 4 violations (ignore pattern not working)
+        # Both formats should work after key normalization
         assert len(violations) == 0, (
-            f"Should ignore file 'backend/app/famous_tracks.py' per config, "
+            f"Should ignore file 'backend/app/famous_tracks.py' per config (key={config_key}), "
             f"but got {len(violations)} violations"
         )
 
-    def test_ignores_glob_pattern_from_config(self):
+    @pytest.mark.parametrize("config_key", ["magic_numbers", "magic-numbers"])
+    def test_ignores_glob_pattern_from_config(self, config_key):
         """Should ignore files matching glob patterns from config.
 
-        RED TEST: This currently fails because glob patterns are not checked.
+        Tests both underscore and hyphenated config key formats for backward compatibility.
         """
         code = """
 def test_something():
@@ -86,7 +87,7 @@ def test_something():
         context.file_content = code
         context.language = "python"
         context.metadata = {
-            "magic_numbers": {
+            config_key: {
                 "enabled": True,
                 "allowed_numbers": [-1, 0, 1, 2],
                 "ignore": [
@@ -98,17 +99,17 @@ def test_something():
 
         violations = rule.check(context)
 
-        # EXPECTATION: 0 violations (matched by **/test_*.py pattern)
-        # ACTUAL: 2 violations (glob patterns not working)
+        # Both formats should work after key normalization
         assert len(violations) == 0, (
-            f"Should ignore test files via glob pattern '**/test_*.py', "
+            f"Should ignore test files via glob pattern '**/test_*.py' (key={config_key}), "
             f"but got {len(violations)} violations"
         )
 
-    def test_ignores_directory_pattern_from_config(self):
+    @pytest.mark.parametrize("config_key", ["magic_numbers", "magic-numbers"])
+    def test_ignores_directory_pattern_from_config(self, config_key):
         """Should ignore entire directories from config.
 
-        RED TEST: This currently fails because directory patterns are not checked.
+        Tests both underscore and hyphenated config key formats for backward compatibility.
         """
         code = """
 def generate_track():
@@ -122,7 +123,7 @@ def generate_track():
         context.file_content = code
         context.language = "python"
         context.metadata = {
-            "magic_numbers": {
+            config_key: {
                 "enabled": True,
                 "allowed_numbers": [-1, 0, 1, 2],
                 "ignore": [
@@ -133,17 +134,18 @@ def generate_track():
 
         violations = rule.check(context)
 
-        # EXPECTATION: 0 violations (file in ignored directory)
-        # ACTUAL: 6 violations (directory pattern not working)
+        # Both formats should work after key normalization
         assert len(violations) == 0, (
-            f"Should ignore files in 'backend/app/racing/algorithms/**', "
+            f"Should ignore files in 'backend/app/racing/algorithms/**' (key={config_key}), "
             f"but got {len(violations)} violations"
         )
 
-    def test_processes_file_not_in_ignore_list(self):
+    @pytest.mark.parametrize("config_key", ["magic_numbers", "magic-numbers"])
+    def test_processes_file_not_in_ignore_list(self, config_key):
         """Should process files that don't match any ignore patterns.
 
-        This test should PASS (GREEN) to verify normal processing still works.
+        Tests both underscore and hyphenated config key formats for backward compatibility.
+        This test verifies normal processing still works when files don't match ignore patterns.
         """
         code = """
 def calculate():
@@ -155,7 +157,7 @@ def calculate():
         context.file_content = code
         context.language = "python"
         context.metadata = {
-            "magic_numbers": {
+            config_key: {
                 "enabled": True,
                 "allowed_numbers": [-1, 0, 1, 2],
                 "ignore": [
@@ -169,7 +171,7 @@ def calculate():
 
         # This file is NOT in ignore list, should detect violations normally
         assert len(violations) == 2, (
-            f"Should detect violations in non-ignored file, expected 2, got {len(violations)}"
+            f"Should detect violations in non-ignored file (key={config_key}), expected 2, got {len(violations)}"
         )
 
 

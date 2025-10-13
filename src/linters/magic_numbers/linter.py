@@ -97,7 +97,22 @@ class MagicNumberRule(MultiLanguageLintRule):  # thailint: ignore[srp]
         """Try to load production configuration."""
         if not hasattr(context, "metadata") or not isinstance(context.metadata, dict):
             return None
-        return load_linter_config(context, "magic_numbers", MagicNumberConfig)
+
+        # Try both hyphenated and underscored keys for backward compatibility
+        # The config parser normalizes keys when loading from YAML, but
+        # direct metadata injection (tests) may use either format
+        metadata = context.metadata
+
+        # Try underscore version first (normalized format)
+        if "magic_numbers" in metadata:
+            return load_linter_config(context, "magic_numbers", MagicNumberConfig)
+
+        # Fallback to hyphenated version (for direct test injection)
+        if "magic-numbers" in metadata:
+            return load_linter_config(context, "magic-numbers", MagicNumberConfig)
+
+        # No config found, return None to use defaults
+        return None
 
     def _is_file_ignored(self, context: BaseLintContext, config: MagicNumberConfig) -> bool:
         """Check if file matches ignore patterns.

@@ -72,18 +72,41 @@ def parse_json(file_obj: TextIO, path: Path) -> dict[str, Any]:
         raise ConfigParseError(f"Invalid JSON in {path}: {e}") from e
 
 
+def _normalize_config_keys(config: dict[str, Any]) -> dict[str, Any]:
+    """Normalize configuration keys from hyphens to underscores.
+
+    Converts top-level keys like "magic-numbers" to "magic_numbers" to match
+    internal linter expectations while maintaining backward compatibility with
+    both formats in config files.
+
+    Args:
+        config: Configuration dictionary with potentially hyphenated keys
+
+    Returns:
+        Configuration dictionary with normalized (underscored) keys
+    """
+    normalized = {}
+    for key, value in config.items():
+        # Replace hyphens with underscores in keys
+        normalized_key = key.replace("-", "_")
+        normalized[normalized_key] = value
+    return normalized
+
+
 def parse_config_file(path: Path, encoding: str = "utf-8") -> dict[str, Any]:
     """Parse configuration file based on extension.
 
     Supports .yaml, .yml, and .json formats. Automatically detects format
-    from file extension and uses appropriate parser.
+    from file extension and uses appropriate parser. Normalizes hyphenated
+    keys (e.g., "magic-numbers") to underscored keys (e.g., "magic_numbers")
+    for internal consistency.
 
     Args:
         path: Path to configuration file.
         encoding: File encoding (default: utf-8).
 
     Returns:
-        Parsed configuration dictionary.
+        Parsed configuration dictionary with normalized keys.
 
     Raises:
         ConfigParseError: If file format is unsupported or parsing fails.
@@ -95,5 +118,9 @@ def parse_config_file(path: Path, encoding: str = "utf-8") -> dict[str, Any]:
 
     with path.open(encoding=encoding) as f:
         if suffix in [".yaml", ".yml"]:
-            return parse_yaml(f, path)
-        return parse_json(f, path)
+            config = parse_yaml(f, path)
+        else:
+            config = parse_json(f, path)
+
+    # Normalize keys from hyphens to underscores
+    return _normalize_config_keys(config)
