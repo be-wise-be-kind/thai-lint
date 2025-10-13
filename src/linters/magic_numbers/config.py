@@ -4,7 +4,7 @@ Purpose: Configuration schema for magic numbers linter
 Scope: MagicNumberConfig dataclass with allowed_numbers and max_small_integer settings
 
 Overview: Defines configuration schema for magic numbers linter. Provides MagicNumberConfig dataclass
-    with allowed_numbers set (default includes common acceptable numbers like 0, 1, 2, -1, 10, 100, 1000)
+    with allowed_numbers set (default includes common acceptable numbers like -1, 0, 1, 2, 3, 4, 5, 10, 100, 1000)
     and max_small_integer threshold (default 10) for range() contexts. Supports per-file and per-directory
     config overrides through from_dict class method. Validates that configuration values are appropriate
     types. Integrates with orchestrator's configuration system to allow users to customize allowed numbers
@@ -29,7 +29,9 @@ class MagicNumberConfig:
     """Configuration for magic numbers linter."""
 
     enabled: bool = True
-    allowed_numbers: set[int | float] = field(default_factory=lambda: {-1, 0, 1, 2, 10, 100, 1000})
+    allowed_numbers: set[int | float] = field(
+        default_factory=lambda: {-1, 0, 1, 2, 3, 4, 5, 10, 100, 1000}
+    )
     max_small_integer: int = 10
 
     def __post_init__(self) -> None:
@@ -54,14 +56,17 @@ class MagicNumberConfig:
             lang_config = config[language]
             allowed_numbers = set(
                 lang_config.get(
-                    "allowed_numbers", config.get("allowed_numbers", {-1, 0, 1, 2, 10, 100, 1000})
+                    "allowed_numbers",
+                    config.get("allowed_numbers", {-1, 0, 1, 2, 3, 4, 5, 10, 100, 1000}),
                 )
             )
             max_small_integer = lang_config.get(
                 "max_small_integer", config.get("max_small_integer", 10)
             )
         else:
-            allowed_numbers = set(config.get("allowed_numbers", {-1, 0, 1, 2, 10, 100, 1000}))
+            allowed_numbers = set(
+                config.get("allowed_numbers", {-1, 0, 1, 2, 3, 4, 5, 10, 100, 1000})
+            )
             max_small_integer = config.get("max_small_integer", 10)
 
         return cls(

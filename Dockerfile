@@ -23,7 +23,7 @@ FROM python:3.11-slim AS builder
 WORKDIR /build
 
 # Install Poetry
-RUN pip install --no-cache-dir poetry==1.7.1
+RUN pip install --no-cache-dir poetry==2.1.4
 
 # Copy dependency files first (better layer caching)
 COPY pyproject.toml poetry.lock README.md ./
@@ -51,7 +51,7 @@ LABEL description="Thai-Lint - AI code linter for multi-language projects"
 RUN useradd -m -u 1000 -s /bin/bash thailint
 
 # Install Poetry in runtime (needed for dependency resolution)
-RUN pip install --no-cache-dir poetry==1.7.1
+RUN pip install --no-cache-dir poetry==2.1.4
 
 # Copy pyproject.toml and poetry.lock
 COPY --chown=thailint:thailint pyproject.toml poetry.lock README.md /app/

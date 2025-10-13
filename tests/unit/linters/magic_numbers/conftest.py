@@ -30,7 +30,7 @@ def magic_numbers_config():
     """
     return {
         "enabled": True,
-        "allowed_numbers": {-1, 0, 1, 2, 10, 100, 1000},
+        "allowed_numbers": {-1, 0, 1, 2, 3, 4, 5, 10, 100, 1000},
         "max_small_integer": 10,
     }
 
