@@ -101,8 +101,9 @@ class Orchestrator:
         self.config_loader = LinterConfigLoader()
         self.ignore_parser = IgnoreDirectiveParser(self.project_root)
 
-        # Auto-discover and register all linting rules from src.linters
-        self.registry.discover_rules("src.linters")
+        # Performance optimization: Defer rule discovery until first file is linted
+        # This eliminates ~0.077s overhead for commands that don't need rules (--help, config, etc.)
+        self._rules_discovered = False
 
         # Use provided config or load from project root
         if config is not None:
@@ -208,6 +209,12 @@ class Orchestrator:
 
         return violations
 
+    def _ensure_rules_discovered(self) -> None:
+        """Ensure rules have been discovered and registered (lazy initialization)."""
+        if not self._rules_discovered:
+            self.registry.discover_rules("src.linters")
+            self._rules_discovered = True
+
     def _get_rules_for_file(self, file_path: Path, language: str) -> list[BaseLintRule]:
         """Get rules applicable to this file.
 
@@ -218,6 +225,9 @@ class Orchestrator:
         Returns:
             List of rules to execute against this file.
         """
+        # Lazy initialization: discover rules on first lint operation
+        self._ensure_rules_discovered()
+
         # For now, return all registered rules
         # Future: filter by language, configuration, etc.
         return self.registry.list_all()

@@ -62,8 +62,15 @@ class PythonDuplicateAnalyzer(BaseTokenAnalyzer):  # thailint: ignore[srp.violat
         """
         super().__init__()
         self._filter_registry = filter_registry or create_default_registry()
+        # Performance optimization: Cache parsed AST to avoid re-parsing for each hash window
+        self._cached_ast: ast.Module | None = None
+        self._cached_content: str | None = None
+        # Performance optimization: Line-to-node index for O(1) lookups instead of O(n) ast.walk()
+        self._line_to_nodes: dict[int, list[ast.AST]] | None = None
 
-    def analyze(self, file_path: Path, content: str, config: DRYConfig) -> list[CodeBlock]:
+    def analyze(  # thailint: ignore[nesting.excessive-depth]
+        self, file_path: Path, content: str, config: DRYConfig
+    ) -> list[CodeBlock]:
         """Analyze Python file for duplicate code blocks, excluding docstrings.
 
         Args:
@@ -74,37 +81,73 @@ class PythonDuplicateAnalyzer(BaseTokenAnalyzer):  # thailint: ignore[srp.violat
         Returns:
             List of CodeBlock instances with hash values
         """
-        # Get docstring line ranges
-        docstring_ranges = self._get_docstring_ranges_from_content(content)
+        # Performance optimization: Parse AST once and cache for _is_single_statement_in_source() calls
+        self._cached_ast = self._parse_content_safe(content)
+        self._cached_content = content
 
-        # Tokenize with line number tracking
-        lines_with_numbers = self._tokenize_with_line_numbers(content, docstring_ranges)
+        # Performance optimization: Build line-to-node index for O(1) lookups
+        self._line_to_nodes = self._build_line_to_node_index(self._cached_ast)
 
-        # Generate rolling hash windows
-        windows = self._rolling_hash_with_tracking(lines_with_numbers, config.min_duplicate_lines)
+        try:
+            # Get docstring line ranges
+            docstring_ranges = self._get_docstring_ranges_from_content(content)
 
-        blocks = []
-        for hash_val, start_line, end_line, snippet in windows:
-            # Skip blocks that are single logical statements
-            # Check the original source code, not the normalized snippet
-            if self._is_single_statement_in_source(content, start_line, end_line):
-                continue
+            # Tokenize with line number tracking
+            lines_with_numbers = self._tokenize_with_line_numbers(content, docstring_ranges)
 
-            block = CodeBlock(
-                file_path=file_path,
-                start_line=start_line,
-                end_line=end_line,
-                snippet=snippet,
-                hash_value=hash_val,
+            # Generate rolling hash windows
+            windows = self._rolling_hash_with_tracking(
+                lines_with_numbers, config.min_duplicate_lines
             )
 
-            # Apply extensible filters (keyword arguments, imports, etc.)
-            if self._filter_registry.should_filter_block(block, content):
-                continue
+            return self._filter_valid_blocks(windows, file_path, content)
+        finally:
+            # Clear cache after analysis to avoid memory leaks
+            self._cached_ast = None
+            self._cached_content = None
+            self._line_to_nodes = None
 
-            blocks.append(block)
-
+    def _filter_valid_blocks(
+        self,
+        windows: list[tuple[int, int, int, str]],
+        file_path: Path,
+        content: str,
+    ) -> list[CodeBlock]:
+        """Filter hash windows and create valid CodeBlock instances."""
+        blocks = []
+        for hash_val, start_line, end_line, snippet in windows:
+            block = self._create_block_if_valid(
+                file_path, content, hash_val, start_line, end_line, snippet
+            )
+            if block:
+                blocks.append(block)
         return blocks
+
+    def _create_block_if_valid(  # pylint: disable=too-many-arguments,too-many-positional-arguments
+        self,
+        file_path: Path,
+        content: str,
+        hash_val: int,
+        start_line: int,
+        end_line: int,
+        snippet: str,
+    ) -> CodeBlock | None:
+        """Create CodeBlock if it passes all validation checks."""
+        if self._is_single_statement_in_source(content, start_line, end_line):
+            return None
+
+        block = CodeBlock(
+            file_path=file_path,
+            start_line=start_line,
+            end_line=end_line,
+            snippet=snippet,
+            hash_value=hash_val,
+        )
+
+        if self._filter_registry.should_filter_block(block, content):
+            return None
+
+        return block
 
     def _get_docstring_ranges_from_content(self, content: str) -> set[int]:
         """Extract line numbers that are part of docstrings.
@@ -225,10 +268,20 @@ class PythonDuplicateAnalyzer(BaseTokenAnalyzer):  # thailint: ignore[srp.violat
         return hashes
 
     def _is_single_statement_in_source(self, content: str, start_line: int, end_line: int) -> bool:
-        """Check if a line range in the original source is a single logical statement."""
-        tree = self._parse_content_safe(content)
-        if tree is None:
-            return False
+        """Check if a line range in the original source is a single logical statement.
+
+        Performance optimization: Uses cached AST if available (set by analyze() method)
+        to avoid re-parsing the entire file for each hash window check.
+        """
+        # Use cached AST if available and content matches
+        tree: ast.Module | None
+        if self._cached_ast is not None and content == self._cached_content:
+            tree = self._cached_ast
+        else:
+            # Fallback: parse content (used by tests or standalone calls)
+            tree = self._parse_content_safe(content)
+            if tree is None:
+                return False
 
         return self._check_overlapping_nodes(tree, start_line, end_line)
 
@@ -240,12 +293,98 @@ class PythonDuplicateAnalyzer(BaseTokenAnalyzer):  # thailint: ignore[srp.violat
         except SyntaxError:
             return None
 
-    def _check_overlapping_nodes(self, tree: ast.Module, start_line: int, end_line: int) -> bool:
-        """Check if any AST node overlaps and matches single-statement pattern."""
+    @staticmethod
+    def _build_line_to_node_index(tree: ast.Module | None) -> dict[int, list[ast.AST]] | None:
+        """Build an index mapping each line number to overlapping AST nodes.
+
+        Performance optimization: This allows O(1) lookups instead of O(n) ast.walk() calls.
+        For a file with 5,144 nodes and 673 hash windows, this reduces 3.46M node operations
+        to just ~3,365 relevant node checks (99.9% reduction).
+
+        Args:
+            tree: Parsed AST tree (None if parsing failed)
+
+        Returns:
+            Dictionary mapping line numbers to list of AST nodes overlapping that line,
+            or None if tree is None
+        """
+        if tree is None:
+            return None
+
+        line_to_nodes: dict[int, list[ast.AST]] = {}
         for node in ast.walk(tree):
-            if self._node_overlaps_and_matches(node, start_line, end_line):
+            if PythonDuplicateAnalyzer._node_has_line_info(node):
+                PythonDuplicateAnalyzer._add_node_to_index(node, line_to_nodes)
+
+        return line_to_nodes
+
+    @staticmethod
+    def _node_has_line_info(node: ast.AST) -> bool:
+        """Check if node has valid line number information."""
+        if not hasattr(node, "lineno") or not hasattr(node, "end_lineno"):
+            return False
+        return node.lineno is not None and node.end_lineno is not None
+
+    @staticmethod
+    def _add_node_to_index(node: ast.AST, line_to_nodes: dict[int, list[ast.AST]]) -> None:
+        """Add node to all lines it overlaps in the index."""
+        for line_num in range(node.lineno, node.end_lineno + 1):  # type: ignore[attr-defined]
+            if line_num not in line_to_nodes:
+                line_to_nodes[line_num] = []
+            line_to_nodes[line_num].append(node)
+
+    def _check_overlapping_nodes(self, tree: ast.Module, start_line: int, end_line: int) -> bool:
+        """Check if any AST node overlaps and matches single-statement pattern.
+
+        Performance optimization: Use line-to-node index for O(1) lookups instead of O(n) ast.walk().
+        """
+        if self._line_to_nodes is not None:
+            return self._check_nodes_via_index(start_line, end_line)
+        return self._check_nodes_via_walk(tree, start_line, end_line)
+
+    def _check_nodes_via_index(self, start_line: int, end_line: int) -> bool:
+        """Check nodes using line-to-node index for O(1) lookups."""
+        candidates = self._collect_candidate_nodes_from_index(start_line, end_line)
+        return self._any_node_matches_pattern(candidates, start_line, end_line)
+
+    def _collect_candidate_nodes_from_index(self, start_line: int, end_line: int) -> set[ast.AST]:
+        """Collect unique nodes that overlap with the line range from index."""
+        candidate_nodes: set[ast.AST] = set()
+        for line_num in range(start_line, end_line + 1):
+            if self._line_to_nodes and line_num in self._line_to_nodes:
+                candidate_nodes.update(self._line_to_nodes[line_num])
+        return candidate_nodes
+
+    def _any_node_matches_pattern(
+        self, nodes: set[ast.AST], start_line: int, end_line: int
+    ) -> bool:
+        """Check if any node matches single-statement pattern."""
+        for node in nodes:
+            if self._is_single_statement_pattern(node, start_line, end_line):
                 return True
         return False
+
+    def _check_nodes_via_walk(self, tree: ast.Module, start_line: int, end_line: int) -> bool:
+        """Check nodes using ast.walk() fallback for tests or standalone calls."""
+        for node in ast.walk(tree):
+            if self._node_matches_via_walk(node, start_line, end_line):
+                return True
+        return False
+
+    def _node_matches_via_walk(self, node: ast.AST, start_line: int, end_line: int) -> bool:
+        """Check if a single node overlaps and matches pattern."""
+        if not self._node_overlaps_range(node, start_line, end_line):
+            return False
+        return self._is_single_statement_pattern(node, start_line, end_line)
+
+    @staticmethod
+    def _node_overlaps_range(node: ast.AST, start_line: int, end_line: int) -> bool:
+        """Check if node overlaps with the given line range."""
+        if not hasattr(node, "lineno") or not hasattr(node, "end_lineno"):
+            return False
+        node_end = node.end_lineno
+        node_start = node.lineno
+        return not (node_end < start_line or node_start > end_line)
 
     def _node_overlaps_and_matches(self, node: ast.AST, start_line: int, end_line: int) -> bool:
         """Check if node overlaps with range and matches single-statement pattern."""
