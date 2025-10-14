@@ -56,6 +56,7 @@ const processItems = (items: Item[]) => {
         context.file_path = Path("test.ts")
         context.file_content = code
         context.language = "typescript"
+        context.metadata = {}
 
         violations = rule.check(context)
         # Arrow function with depth 5 should violate
@@ -89,6 +90,7 @@ class MyClass {
         context.file_path = Path("test.ts")
         context.file_content = code
         context.language = "typescript"
+        context.metadata = {}
 
         violations = rule.check(context)
         # Method with depth 5 should violate

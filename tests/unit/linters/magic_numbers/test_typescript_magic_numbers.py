@@ -46,6 +46,7 @@ function useTimeout() {
         context.file_path = Path("test.ts")
         context.file_content = code
         context.language = "typescript"
+        context.metadata = {}
 
         violations = rule.check(context)
         assert len(violations) > 0, "Should detect magic number 3600 in const"
@@ -65,6 +66,7 @@ function calculateArea(radius: number): number {
         context.file_path = Path("test.ts")
         context.file_content = code
         context.language = "typescript"
+        context.metadata = {}
 
         violations = rule.check(context)
         assert len(violations) > 0, "Should detect magic number 3.14159 (PI)"
@@ -84,6 +86,7 @@ function isValidAge(age: number): boolean {
         context.file_path = Path("test.ts")
         context.file_content = code
         context.language = "typescript"
+        context.metadata = {}
 
         violations = rule.check(context)
         assert len(violations) > 0, "Should detect magic number 18 in comparison"
@@ -103,6 +106,7 @@ function complexCalculation(x: number): number {
         context.file_path = Path("test.ts")
         context.file_content = code
         context.language = "typescript"
+        context.metadata = {}
 
         violations = rule.check(context)
         assert len(violations) >= 3, "Should detect at least 3 magic numbers (42, 365, 7)"
@@ -121,6 +125,7 @@ function getTwelfthElement(arr: number[]): number {
         context.file_path = Path("test.ts")
         context.file_content = code
         context.language = "typescript"
+        context.metadata = {}
 
         violations = rule.check(context)
         assert len(violations) > 0, "Should detect magic number 11 in array access"
@@ -147,6 +152,7 @@ function useConstants(): number {
         context.file_path = Path("test.ts")
         context.file_content = code
         context.language = "typescript"
+        context.metadata = {}
 
         violations = rule.check(context)
         assert len(violations) == 0, "Should not flag constant definitions"
@@ -172,6 +178,7 @@ function checkStatus(status: Status): boolean {
         context.file_path = Path("test.ts")
         context.file_content = code
         context.language = "typescript"
+        context.metadata = {}
 
         violations = rule.check(context)
         assert len(violations) == 0, "Should not flag enum values"
@@ -193,6 +200,7 @@ function checkValue(x: number): boolean {
         context.file_path = Path("test.ts")
         context.file_content = code
         context.language = "typescript"
+        context.metadata = {}
 
         violations = rule.check(context)
         # -1, 0, 100 are in default allowed_numbers
@@ -215,6 +223,7 @@ describe('calculation', () => {
         context.file_path = Path("test_my_module.test.ts")  # Test file
         context.file_content = code
         context.language = "typescript"
+        context.metadata = {}
 
         violations = rule.check(context)
         assert len(violations) == 0, "Should not flag numbers in test files"
@@ -236,6 +245,7 @@ describe('service', () => {
         context.file_path = Path("my_service.spec.ts")  # Spec file
         context.file_content = code
         context.language = "typescript"
+        context.metadata = {}
 
         violations = rule.check(context)
         assert len(violations) == 0, "Should not flag numbers in spec files"
@@ -255,6 +265,7 @@ class Config {
         context.file_path = Path("config.ts")
         context.file_content = code
         context.language = "typescript"
+        context.metadata = {}
 
         violations = rule.check(context)
         # Should flag 5000 and 12 (not in allowed list, not UPPERCASE constants)
@@ -277,6 +288,7 @@ const timeout = () => 3600;
         context.file_path = Path("test.ts")
         context.file_content = code
         context.language = "typescript"
+        context.metadata = {}
 
         violations = rule.check(context)
         assert len(violations) >= 2, "Should detect magic numbers in arrow functions"
@@ -296,6 +308,7 @@ async function fetchWithTimeout(url: string): Promise<Response> {
         context.file_path = Path("test.ts")
         context.file_content = code
         context.language = "typescript"
+        context.metadata = {}
 
         violations = rule.check(context)
         assert len(violations) > 0, "Should detect magic number 5000 in async function"
@@ -320,6 +333,7 @@ class Calculator {
         context.file_path = Path("calculator.ts")
         context.file_content = code
         context.language = "typescript"
+        context.metadata = {}
 
         violations = rule.check(context)
         assert len(violations) >= 2, "Should detect magic numbers in class methods"
@@ -338,6 +352,7 @@ function getStatus(x: number): string {
         context.file_path = Path("test.ts")
         context.file_content = code
         context.language = "typescript"
+        context.metadata = {}
 
         violations = rule.check(context)
         assert len(violations) > 0, "Should detect magic number 500 in ternary"
@@ -358,6 +373,7 @@ const config = {
         context.file_path = Path("config.ts")
         context.file_content = code
         context.language = "typescript"
+        context.metadata = {}
 
         violations = rule.check(context)
         assert len(violations) >= 2, "Should detect magic numbers in object literals"
@@ -380,6 +396,7 @@ function getTimeout(): number {
         context.file_path = Path("test.ts")
         context.file_content = code
         context.language = "typescript"
+        context.metadata = {}
 
         violations = rule.check(context)
         assert len(violations) == 0, "Should respect single-line ignore directive"
@@ -398,6 +415,7 @@ function calculate(x: number): number {
         context.file_path = Path("test.ts")
         context.file_content = code
         context.language = "typescript"
+        context.metadata = {}
 
         violations = rule.check(context)
         assert len(violations) == 0, "Should respect noqa style directive"
@@ -418,6 +436,7 @@ function multipleNumbers(): number {
         context.file_path = Path("test.ts")
         context.file_content = code
         context.language = "typescript"
+        context.metadata = {}
 
         violations = rule.check(context)
         # Should detect 365 but not 42
@@ -442,6 +461,7 @@ function getValue(): number {
         context.file_path = Path("test.ts")
         context.file_content = code
         context.language = "typescript"
+        context.metadata = {}
 
         violations = rule.check(context)
         assert len(violations) > 0, "Should have violations"
@@ -461,6 +481,7 @@ function getValue(): number {
         context.file_path = Path("test.ts")
         context.file_content = code
         context.language = "typescript"
+        context.metadata = {}
 
         violations = rule.check(context)
         assert len(violations) > 0, "Should have violations"
@@ -481,6 +502,7 @@ function getTimeout(): number {
         context.file_path = Path("test.ts")
         context.file_content = code
         context.language = "typescript"
+        context.metadata = {}
 
         violations = rule.check(context)
         # Should not violate - TIMEOUT is uppercase constant
@@ -504,6 +526,7 @@ function getTimeout() {
         context.file_path = Path("test.js")
         context.file_content = code
         context.language = "javascript"
+        context.metadata = {}
 
         violations = rule.check(context)
         assert len(violations) > 0, "Should detect magic numbers in JavaScript files"
@@ -525,6 +548,7 @@ function useConstants() {
         context.file_path = Path("test.js")
         context.file_content = code
         context.language = "javascript"
+        context.metadata = {}
 
         violations = rule.check(context)
         assert len(violations) == 0, "Should not flag constants in JavaScript"
