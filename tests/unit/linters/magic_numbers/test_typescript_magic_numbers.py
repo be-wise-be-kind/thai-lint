@@ -110,8 +110,8 @@ function complexCalculation(x: number): number {
     def test_detects_magic_number_in_array_access(self):
         """Should detect magic numbers in array access."""
         code = """
-function getFifthElement(arr: number[]): number {
-    return arr[4];
+function getTwelfthElement(arr: number[]): number {
+    return arr[11];
 }
 """
         from src.linters.magic_numbers.linter import MagicNumberRule
@@ -123,7 +123,7 @@ function getFifthElement(arr: number[]): number {
         context.language = "typescript"
 
         violations = rule.check(context)
-        assert len(violations) > 0, "Should detect magic number 4 in array access"
+        assert len(violations) > 0, "Should detect magic number 11 in array access"
 
 
 class TestTypeScriptAcceptableContexts:
@@ -245,7 +245,7 @@ describe('service', () => {
         code = """
 class Config {
     readonly timeout = 5000;
-    readonly maxRetries = 3;
+    readonly maxRetries = 12;
 }
 """
         from src.linters.magic_numbers.linter import MagicNumberRule
@@ -257,7 +257,7 @@ class Config {
         context.language = "typescript"
 
         violations = rule.check(context)
-        # Should flag 5000 and 3 (not in allowed list, not UPPERCASE constants)
+        # Should flag 5000 and 12 (not in allowed list, not UPPERCASE constants)
         assert len(violations) >= 1, "Should flag magic numbers in readonly properties"
 
 
@@ -347,7 +347,7 @@ function getStatus(x: number): string {
         code = """
 const config = {
     timeout: 5000,
-    maxRetries: 3,
+    maxRetries: 15,
     port: 8080
 };
 """

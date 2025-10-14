@@ -362,6 +362,141 @@ def config_reset(ctx, yes: bool):
         sys.exit(1)
 
 
+@cli.command("init-config")
+@click.option(
+    "--preset",
+    "-p",
+    type=click.Choice(["strict", "standard", "lenient"]),
+    default="standard",
+    help="Configuration preset",
+)
+@click.option("--non-interactive", is_flag=True, help="Skip interactive prompts (for AI agents)")
+@click.option("--force", is_flag=True, help="Overwrite existing .thailint.yaml file")
+@click.option(
+    "--output", "-o", type=click.Path(), default=".thailint.yaml", help="Output file path"
+)
+def init_config(preset: str, non_interactive: bool, force: bool, output: str):
+    """
+    Generate a .thailint.yaml configuration file with preset values.
+
+    Creates a richly-commented configuration file with sensible defaults
+    and optional customizations for different strictness levels.
+
+    For AI agents, use --non-interactive mode:
+      thailint init-config --non-interactive --preset lenient
+
+    Presets:
+      strict:   Minimal allowed numbers (only -1, 0, 1)
+      standard: Balanced defaults (includes 2, 3, 4, 5, 10, 100, 1000)
+      lenient:  Includes time conversions (adds 60, 3600)
+
+    Examples:
+
+        \\b
+        # Interactive mode (default, for humans)
+        thailint init-config
+
+        \\b
+        # Non-interactive mode (for AI agents)
+        thailint init-config --non-interactive
+
+        \\b
+        # Generate with lenient preset
+        thailint init-config --preset lenient
+
+        \\b
+        # Overwrite existing config
+        thailint init-config --force
+
+        \\b
+        # Custom output path
+        thailint init-config --output my-config.yaml
+    """
+    output_path = Path(output)
+
+    # Check if file exists (unless --force)
+    if output_path.exists() and not force:
+        click.echo(f"Error: {output} already exists", err=True)
+        click.echo("", err=True)
+        click.echo("Use --force to overwrite:", err=True)
+        click.echo("  thailint init-config --force", err=True)
+        sys.exit(1)
+
+    # Interactive mode: Ask user for preferences
+    if not non_interactive:
+        click.echo("thai-lint Configuration Generator")
+        click.echo("=" * 50)
+        click.echo("")
+        click.echo("This will create a .thailint.yaml configuration file.")
+        click.echo("For non-interactive mode (AI agents), use:")
+        click.echo("  thailint init-config --non-interactive")
+        click.echo("")
+
+        # Ask for preset
+        click.echo("Available presets:")
+        click.echo("  strict:   Only -1, 0, 1 allowed (strictest)")
+        click.echo("  standard: -1, 0, 1, 2, 3, 4, 5, 10, 100, 1000 (balanced)")
+        click.echo("  lenient:  Includes time conversions 60, 3600 (most permissive)")
+        click.echo("")
+
+        preset = click.prompt(
+            "Choose preset", type=click.Choice(["strict", "standard", "lenient"]), default=preset
+        )
+
+    # Generate config based on preset
+    config_content = _generate_config_content(preset)
+
+    # Write config file
+    try:
+        output_path.write_text(config_content, encoding="utf-8")
+        click.echo("")
+        click.echo(f"✓ Created {output}")
+        click.echo(f"✓ Preset: {preset}")
+        click.echo("")
+        click.echo("Next steps:")
+        click.echo(f"  1. Review and customize {output}")
+        click.echo("  2. Run: thailint magic-numbers .")
+        click.echo("  3. See docs: https://github.com/your-org/thai-lint")
+    except OSError as e:
+        click.echo(f"Error writing config file: {e}", err=True)
+        sys.exit(1)
+
+
+def _generate_config_content(preset: str) -> str:
+    """Generate config file content based on preset."""
+    # Preset configurations
+    presets = {
+        "strict": {
+            "allowed_numbers": "[-1, 0, 1]",
+            "max_small_integer": "3",
+            "description": "Strict (only universal values)",
+        },
+        "standard": {
+            "allowed_numbers": "[-1, 0, 1, 2, 3, 4, 5, 10, 100, 1000]",
+            "max_small_integer": "10",
+            "description": "Standard (balanced defaults)",
+        },
+        "lenient": {
+            "allowed_numbers": "[-1, 0, 1, 2, 3, 4, 5, 10, 60, 100, 1000, 3600]",
+            "max_small_integer": "10",
+            "description": "Lenient (includes time conversions)",
+        },
+    }
+
+    config = presets[preset]
+
+    # Read template
+    template_path = Path(__file__).parent / "templates" / "thailint_config_template.yaml"
+    template = template_path.read_text(encoding="utf-8")
+
+    # Replace placeholders
+    content = template.replace("{{PRESET}}", config["description"])
+    content = content.replace("{{ALLOWED_NUMBERS}}", config["allowed_numbers"])
+    content = content.replace("{{MAX_SMALL_INTEGER}}", config["max_small_integer"])
+
+    return content
+
+
 @cli.command("file-placement")
 @click.argument("paths", nargs=-1, type=click.Path())
 @click.option("--config", "-c", "config_file", type=click.Path(), help="Path to config file")
@@ -1081,10 +1216,13 @@ def _setup_magic_numbers_orchestrator(
     path_objs: list[Path], config_file: str | None, verbose: bool
 ):
     """Set up orchestrator for magic-numbers command."""
-    first_path = path_objs[0] if path_objs else Path.cwd()
-    project_root = first_path if first_path.is_dir() else first_path.parent
-
     from src.orchestrator.core import Orchestrator
+    from src.utils.project_root import get_project_root
+
+    # Find actual project root (where .git or .thailint.yaml exists)
+    first_path = path_objs[0] if path_objs else Path.cwd()
+    search_start = first_path if first_path.is_dir() else first_path.parent
+    project_root = get_project_root(search_start)
 
     orchestrator = Orchestrator(project_root=project_root)
 

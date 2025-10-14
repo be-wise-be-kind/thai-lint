@@ -2,10 +2,19 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
-[![Tests](https://img.shields.io/badge/tests-253%2F253%20passing-brightgreen.svg)](tests/)
-[![Coverage](https://img.shields.io/badge/coverage-88%25-brightgreen.svg)](htmlcov/)
+[![Tests](https://img.shields.io/badge/tests-267%2F267%20passing-brightgreen.svg)](tests/)
+[![Coverage](https://img.shields.io/badge/coverage-87%25-brightgreen.svg)](htmlcov/)
 
 The AI Linter - Enterprise-ready linting and governance for AI-generated code across multiple languages.
+
+## Documentation
+
+**New to thailint?** Start here:
+- **[Quick Start Guide](docs/quick-start.md)** - Get running in 5 minutes
+- **[Configuration Reference](docs/configuration.md)** - Complete config options for all linters
+- **[Troubleshooting Guide](docs/troubleshooting.md)** - Common issues and solutions
+
+**Full Documentation:** Browse the **[docs/](docs/)** folder for comprehensive guides covering installation, all linters, configuration patterns, and integration examples.
 
 ## Overview
 
@@ -21,6 +30,8 @@ We're not trying to replace the wonderful existing linters like Pylint, ESLint, 
 - **Governance Layer**: Enforces project-wide structure and organization patterns that AI can't infer from local context
 
 thailint complements your existing linting stack by catching the patterns AI tools repeatedly miss.
+
+**Complete documentation available in the [docs/](docs/) folder** covering installation, configuration, all linters, and troubleshooting.
 
 ## Features
 
@@ -117,6 +128,8 @@ thailint dry --config .thailint.yaml src/
 # JSON output for CI/CD
 thailint dry --format json src/
 ```
+
+**New to thailint?** See the **[Quick Start Guide](docs/quick-start.md)** for a complete walkthrough including config generation, understanding output, and next steps.
 
 ### Library Mode
 

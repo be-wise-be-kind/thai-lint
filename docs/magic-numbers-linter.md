@@ -77,7 +77,7 @@ The linter uses Abstract Syntax Tree (AST) parsing to analyze code structure:
    - Constants: `MAX_SIZE = 100` (UPPERCASE names)
    - Small integers in `range()`: `range(5)`, `enumerate(items, 1)`
    - Test files: `test_*.py`, `*.test.ts`
-   - Allowed numbers: `-1, 0, 1, 2, 10, 100, 1000` (configurable)
+   - Allowed numbers: `-1, 0, 1, 2, 3, 4, 5, 10, 100, 1000` (configurable)
 
 4. **Report violations** for unexplained numeric literals
 
@@ -91,21 +91,43 @@ The linter **does not** flag numbers in these contexts:
 | Small `range()` | `range(5)` | Small loop bounds are clear |
 | Small `enumerate()` | `enumerate(items, 1)` | Start index is obvious |
 | Test files | `test_*.py`, `*.test.ts` | Test data can be literal |
-| Allowed numbers | `-1, 0, 1, 2, 10` | Common values are self-explanatory |
+| Allowed numbers | `-1, 0, 1, 2, 3, 4, 5, 10` | Common values are self-explanatory |
 | String repetition | `"-" * 40` | Repetition count is obvious |
 
 **Note**: Only **numeric literals** (integers and floats) are detected. String literals are not magic numbers.
 
 ## Configuration
 
+### Quick Start: Generate Configuration File
+
+The easiest way to get started is to use the `init-config` command to generate a `.thailint.yaml` file:
+
+```bash
+# Interactive mode (for humans - asks questions)
+thailint init-config
+
+# Non-interactive mode (for AI agents)
+thailint init-config --non-interactive
+
+# With preset
+thailint init-config --preset lenient --non-interactive
+```
+
+**Available presets:**
+- `strict`: Only `-1, 0, 1` allowed (strictest)
+- `standard` (**default**): `-1, 0, 1, 2, 3, 4, 5, 10, 100, 1000` (balanced)
+- `lenient`: Adds time conversions `60, 3600` (most permissive)
+
+The generated file includes rich comments explaining all options and common customizations.
+
 ### Basic Configuration
 
-Add to `.thailint.yaml`:
+Alternatively, manually create `.thailint.yaml`:
 
 ```yaml
 magic-numbers:
   enabled: true
-  allowed_numbers: [-1, 0, 1, 2, 10, 100, 1000]  # Numbers that won't be flagged
+  allowed_numbers: [-1, 0, 1, 2, 3, 4, 5, 10, 100, 1000]  # Numbers that won't be flagged
   max_small_integer: 10  # Max value for range() to be acceptable
 ```
 
@@ -114,15 +136,21 @@ magic-numbers:
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
 | `enabled` | boolean | `true` | Enable/disable magic numbers linter |
-| `allowed_numbers` | array | `[-1, 0, 1, 2, 10, 100, 1000]` | Numbers that are acceptable without constants |
+| `allowed_numbers` | array | `[-1, 0, 1, 2, 3, 4, 5, 10, 100, 1000]` | Numbers that are acceptable without constants |
 | `max_small_integer` | integer | `10` | Maximum value allowed in `range()` or `enumerate()` |
 
 ### Recommended Values
 
 **Allowed Numbers:**
 - **Strict**: `[-1, 0, 1]` - Only very common values
-- **Standard**: `[-1, 0, 1, 2, 10, 100, 1000]` - Recommended (default)
-- **Lenient**: `[-1, 0, 1, 2, 10, 100, 1000, 60, 24]` - Include time units
+- **Standard**: `[-1, 0, 1, 2, 3, 4, 5, 10, 100, 1000]` - Recommended (default)
+- **Lenient**: `[-1, 0, 1, 2, 3, 4, 5, 10, 60, 100, 1000, 3600]` - Include time conversions
+
+**Rationale for Default Numbers:**
+- `-1, 0, 1, 2`: Ubiquitous values (return codes, boolean-like, counters)
+- `3, 4, 5`: Self-documenting in array indexing, small loops, geometry (triangles, squares, pentagons)
+- `10, 100, 1000`: Common powers of 10, often self-documenting in context
+- `60, 3600` (lenient only): Universal time constants (seconds/minute, seconds/hour)
 
 **Max Small Integer:**
 - **Strict**: `3` - Very small loop bounds only
@@ -135,7 +163,7 @@ magic-numbers:
 {
   "magic-numbers": {
     "enabled": true,
-    "allowed_numbers": [-1, 0, 1, 2, 10, 100, 1000],
+    "allowed_numbers": [-1, 0, 1, 2, 3, 4, 5, 10, 100, 1000],
     "max_small_integer": 10
   }
 }
@@ -535,7 +563,7 @@ def check_status(code):
 - Small integers in `range()`: `range(10)`
 - Small integers in `enumerate()`: `enumerate(items, 1)`
 - Test files: `test_*.py`, `*_test.py`
-- Allowed numbers: `-1, 0, 1, 2, 10, 100, 1000` (default)
+- Allowed numbers: `-1, 0, 1, 2, 3, 4, 5, 10, 100, 1000` (default)
 - String repetition: `"-" * 40`
 
 ### TypeScript Support
@@ -551,7 +579,7 @@ def check_status(code):
 - Constant definitions: `const MAX_SIZE = 100` (UPPERCASE)
 - Enum values: `enum Status { ACTIVE = 1 }`
 - Test files: `*.test.ts`, `*.spec.ts`, `*.test.tsx`
-- Allowed numbers: `-1, 0, 1, 2, 10, 100, 1000` (default)
+- Allowed numbers: `-1, 0, 1, 2, 3, 4, 5, 10, 100, 1000` (default)
 
 ### JavaScript Support
 
