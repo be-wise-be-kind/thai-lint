@@ -142,26 +142,171 @@ magic-numbers:
 
 **Problem:** Changed config values but violations still appear
 
+**This is the most common issue!** Usually caused by config file not being loaded from correct location.
+
+**Quick diagnostic test:**
+
+```bash
+# Test 1: Check project root detection
+cd /path/to/your/project
+python -c "
+from pathlib import Path
+from src.utils.project_root import get_project_root  # If using source install
+
+# Or use this standalone test:
+test_path = Path('src/myfile.py')  # Replace with your file
+search_start = test_path.parent if test_path.is_file() else test_path
+print(f'Starting search from: {search_start}')
+
+# Walk up looking for markers
+current = search_start
+while current != current.parent:
+    for marker in ['.git', '.thailint.yaml', 'pyproject.toml']:
+        if (current / marker).exists():
+            print(f'Found {marker} at: {current}')
+            break
+    current = current.parent
+"
+
+# Test 2: Verify config is readable
+python -c "import yaml; print(yaml.safe_load(open('.thailint.yaml')))"
+
+# Test 3: Test with explicit config path
+thailint magic-numbers --config .thailint.yaml src/
+```
+
 **Solutions:**
 
-1. **Check config is being loaded**:
+1. **Project root detection issue** (MOST COMMON):
+
+   **Symptom**: Config works when you specify `--config` but not without it.
+
+   **Cause**: thailint can't find your project root automatically.
+
+   **Debug steps:**
    ```bash
-   # Run with verbose output
-   thailint magic-numbers --format json src/ | head -20
+   # Check where thailint thinks your project root is
+   cd your-project-dir
+   python -c "
+   from pathlib import Path
+   test_file = Path('src/myfile.py')  # Your problematic file
+
+   # Check for project markers
+   for marker in ['.git', '.thailint.yaml', 'pyproject.toml']:
+       marker_path = Path.cwd() / marker
+       print(f'{marker}: exists={marker_path.exists()} at {marker_path}')
+   "
+
+   # Test if config is found from different directories
+   cd /path/to/project && thailint magic-numbers src/file.py  # From root
+   cd /path/to/project/src && thailint magic-numbers file.py  # From subdirectory
    ```
 
-2. **Check linter is enabled**:
+   **Fix**: Ensure you have at least ONE of these in your project root:
+   - `.git/` directory (most reliable)
+   - `.thailint.yaml` file
+   - `pyproject.toml` file
+
+   ```bash
+   # Create .git directory if missing
+   git init
+
+   # OR ensure .thailint.yaml is in the right place
+   mv config/.thailint.yaml ./.thailint.yaml
+
+   # Verify location
+   ls -la .thailint.yaml
+   pwd
+   ```
+
+2. **Running from wrong directory**:
+
+   ```bash
+   # Wrong - running from parent of project
+   cd /home/user/Projects
+   thailint magic-numbers my-project/src/  # Config won't be found!
+
+   # Correct - run from project root
+   cd /home/user/Projects/my-project
+   thailint magic-numbers src/  # Config will be found
+
+   # OR use explicit config
+   thailint magic-numbers --config /path/to/.thailint.yaml src/
+   ```
+
+3. **Check config is being loaded**:
+   ```bash
+   # Run with verbose output
+   thailint magic-numbers --format json src/ 2>&1 | head -20
+   ```
+
+4. **Check linter is enabled**:
    ```yaml
    magic-numbers:
      enabled: true  # Make sure this is true
      allowed_numbers: [0, 1, 2]
    ```
 
-3. **Restart CLI** - Some cached configs may persist:
+5. **Config key format issues** (0.4.0 compatibility):
+
+   ```yaml
+   # Both formats are supported in 0.4.1+
+   magic_numbers:     # Underscore (preferred)
+     enabled: true
+
+   magic-numbers:     # Hyphen (also works)
+     enabled: true
+   ```
+
+6. **Restart CLI** - Some cached configs may persist:
    ```bash
    # Clear Python cache
    find . -type d -name "__pycache__" -exec rm -r {} +
    ```
+
+**Advanced debugging:**
+
+If config still not loading, test the config loading chain:
+
+```bash
+# Step 1: Can Python read the YAML?
+python -c "
+import yaml
+from pathlib import Path
+config = yaml.safe_load(Path('.thailint.yaml').read_text())
+print('Config keys:', list(config.keys()))
+print('Magic numbers config:', config.get('magic_numbers') or config.get('magic-numbers'))
+"
+
+# Step 2: Where does thailint think project root is?
+python -c "
+from pathlib import Path
+import sys
+sys.path.insert(0, '/path/to/thai-lint')  # If using source install
+
+from src.utils.project_root import get_project_root
+root = get_project_root(Path('src'))  # Adjust path
+print(f'Project root: {root}')
+print(f'Config file: {root / \".thailint.yaml\"}')
+print(f'Config exists: {(root / \".thailint.yaml\").exists()}')
+"
+
+# Step 3: Test with minimal config
+cat > /tmp/.thailint.yaml << EOF
+magic_numbers:
+  enabled: true
+  allowed_numbers: [0, 1, 2, 60]
+EOF
+
+# Test file with violations
+echo "x = 99" > /tmp/test.py
+
+# Run with explicit config
+cd /tmp && thailint magic-numbers --config .thailint.yaml test.py
+
+# Should show: "Magic number 99 should be a named constant"
+# Should NOT show: violations for 0, 1, 2, or 60
+```
 
 ### Language-specific config not working
 
