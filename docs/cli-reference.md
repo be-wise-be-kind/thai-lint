@@ -102,6 +102,73 @@ thai-lint --config /path/to/config.yaml file-placement .
 - `.thailint.json` (JSON format)
 - Custom path with `--config`
 
+**Project Root Inference:**
+
+When `--config` is specified, thailint automatically infers the project root as the directory containing the config file. This is useful for Docker environments with sibling directories:
+
+```bash
+# Directory structure:
+# /workspace/root/        (contains .thailint.yaml)
+# /workspace/backend/     (code to lint)
+
+# Config path inference - automatically uses /workspace/root/ as project root
+thai-lint --config /workspace/root/.thailint.yaml magic-numbers /workspace/backend/
+```
+
+See `--project-root` option below for explicit control.
+
+### --project-root PATH
+
+**NEW:** Explicitly specify project root directory (overrides auto-detection and config inference).
+
+```bash
+thai-lint --project-root /path/to/root magic-numbers /path/to/code/
+```
+
+**Use Cases:**
+- **Docker with sibling directories** - When config and code are in separate directories
+- **Monorepos** - Multiple projects sharing configuration
+- **CI/CD** - Explicit paths prevent auto-detection issues
+- **Ignore patterns** - Ensures patterns resolve from correct base directory
+
+**Priority Order:**
+1. **Explicit `--project-root`** (highest priority)
+2. **Inferred from `--config` path** (automatic)
+3. **Auto-detection** from file location (fallback)
+
+**Examples:**
+
+```bash
+# Docker scenario with sibling directories
+docker run --rm -v $(pwd):/workspace \
+  washad/thailint:latest \
+  --project-root /workspace/root \
+  magic-numbers /workspace/backend/
+
+# Monorepo with shared config
+thai-lint --project-root /repo/config magic-numbers /repo/services/api/
+
+# Override config inference
+thai-lint --project-root /actual/root --config /other/path/.thailint.yaml magic-numbers .
+
+# Relative paths (resolved from current directory)
+thai-lint --project-root ./config magic-numbers ./src/
+```
+
+**Error Handling:**
+
+```bash
+# Non-existent path
+thai-lint --project-root /does/not/exist magic-numbers .
+# Output: Error: Project root does not exist: /does/not/exist
+# Exit code: 2
+
+# Path is a file, not directory
+thai-lint --project-root ./file.txt magic-numbers .
+# Output: Error: Project root must be a directory: ./file.txt
+# Exit code: 2
+```
+
 ### --help
 
 Show help message and exit.

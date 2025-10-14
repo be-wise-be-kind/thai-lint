@@ -24,11 +24,12 @@
 The Python CLI application architecture provides a production-ready foundation for building command-line tools with:
 
 - **Modular Command Structure**: Click-based commands organized hierarchically
+- **Project Root Detection**: Three-level precedence system for accurate path resolution
 - **Configuration Management**: YAML/JSON config with validation and defaults
 - **Comprehensive Error Handling**: User-friendly error messages and exit codes
 - **Structured Logging**: Configurable logging with multiple levels
 - **Testing Framework**: pytest with Click testing utilities
-- **Container Packaging**: Docker-based distribution
+- **Container Packaging**: Docker-based distribution with sibling directory support
 
 ## Architecture Diagram
 
@@ -47,10 +48,19 @@ The Python CLI application architecture provides a production-ready foundation f
 │  └─────────┼──────────────┼────────────────┼─────────────┘  │
 │            │              │                │                 │
 │  ┌─────────▼──────────────▼────────────────▼─────────────┐  │
+│  │       Project Root Detection (src/cli.py)             │  │
+│  │  ┌────────────┐  ┌────────────┐  ┌────────────┐     │  │
+│  │  │  Explicit  │  │   Config   │  │    Auto    │     │  │
+│  │  │   --root   │  │  Inference │  │  Detection │     │  │
+│  │  │ (Priority 1│  │ (Priority 2│  │ (Priority 3│     │  │
+│  │  └────────────┘  └────────────┘  └────────────┘     │  │
+│  └──────────────────────────┬───────────────────────────┘  │
+│                              │                               │
+│  ┌──────────────────────────▼───────────────────────────┐  │
 │  │          Configuration Layer (src/config.py)          │  │
 │  │  ┌────────────┐  ┌────────────┐  ┌────────────┐     │  │
-│  │  │   Load     │  │   Validate │  │    Save    │     │  │
-│  │  │   Config   │  │   Schema   │  │   Config   │     │  │
+│  │  │   Load     │  │   Validate │  │   Ignore   │     │  │
+│  │  │   Config   │  │   Schema   │  │  Patterns  │     │  │
 │  │  └────────────┘  └────────────┘  └────────────┘     │  │
 │  └────────────────────────────────────────────────────────┘  │
 │                                                               │
@@ -72,6 +82,8 @@ The Python CLI application architecture provides a production-ready foundation f
               │  │  Python 3.11 Slim   │  │
               │  │  + Dependencies     │  │
               │  │  + CLI Application  │  │
+              │  │  + Sibling Dir      │  │
+              │  │    Support          │  │
               │  └─────────────────────┘  │
               └───────────────────────────┘
 ```
@@ -136,7 +148,284 @@ def config_show():
 - **Decorators**: Clean, declarative command definitions
 - **Help Text**: Comprehensive help for all commands and options
 
-### 2. Configuration Management (src/config.py)
+### 2. Project Root Detection (src/cli.py, src/orchestrator.py)
+
+Manages project root directory detection with three-level precedence system for accurate configuration and ignore pattern resolution.
+
+**Responsibilities**:
+- Resolve project root from explicit `--project-root` parameter
+- Infer project root from `--config` path when provided
+- Auto-detect project root by walking up from target file location
+- Validate project root exists and is a directory
+- Pass project root to orchestrator for configuration and path resolution
+
+**Priority Order**:
+1. **Explicit `--project-root`** (highest priority) - User-specified path via CLI flag
+2. **Config path inference** - Automatically inferred from `--config` directory
+3. **Auto-detection** (fallback) - Walk up tree from file location to find markers
+
+**Key Patterns**:
+
+```python
+from pathlib import Path
+from typing import Optional
+import click
+
+@click.option(
+    '--project-root',
+    type=click.Path(exists=True, file_okay=False, dir_okay=True, resolve_path=True),
+    help='Explicitly specify project root directory (overrides auto-detection and config inference)'
+)
+@click.option(
+    '--config',
+    type=click.Path(exists=True, dir_okay=False, resolve_path=True),
+    help='Path to config file (also infers project root from config directory)'
+)
+def lint_command(project_root: Optional[str], config: Optional[str], target: str):
+    """Lint command with project root handling."""
+
+    # Priority 1: Explicit --project-root (highest)
+    if project_root:
+        resolved_root = Path(project_root)
+    # Priority 2: Infer from --config path
+    elif config:
+        resolved_root = Path(config).parent
+    # Priority 3: Auto-detection (fallback)
+    else:
+        resolved_root = None  # Let orchestrator auto-detect
+
+    # Pass to orchestrator
+    orchestrator = Orchestrator(
+        project_root=resolved_root,
+        config_path=config
+    )
+    results = orchestrator.lint(target)
+```
+
+**Auto-Detection Logic**:
+
+```python
+from pathlib import Path
+from typing import Optional
+
+def find_project_root(start_path: Path) -> Optional[Path]:
+    """
+    Walk up directory tree to find project root.
+
+    Project root markers (in order of preference):
+    1. .git directory
+    2. .thailint.yaml or thailint.yaml
+    3. pyproject.toml
+    """
+    markers = ['.git', '.thailint.yaml', 'thailint.yaml', 'pyproject.toml']
+
+    current = start_path if start_path.is_dir() else start_path.parent
+
+    while current != current.parent:  # Stop at filesystem root
+        for marker in markers:
+            if (current / marker).exists():
+                return current
+        current = current.parent
+
+    return None  # No project root found
+```
+
+**Design Decisions**:
+- **Three-Level Priority**: Clear hierarchy prevents ambiguity
+- **Explicit Override**: `--project-root` always wins for Docker/CI scenarios
+- **Automatic Inference**: Config path implies project root location
+- **Graceful Fallback**: Auto-detection when neither explicit option provided
+- **Path Validation**: Click validates paths at parse time (exists, is directory)
+- **Resolution**: All paths resolved to absolute paths immediately
+- **Test Compatibility**: Pyprojroot fallback for test environments
+
+**Docker Use Cases**:
+
+The project root detection solves a critical Docker challenge: **sibling directory structures**.
+
+```bash
+# Problem: Config and code in sibling directories
+/workspace/
+├── root/           # Contains .thailint.yaml and .git
+├── backend/        # Code to lint
+└── tools/
+
+# Solution 1: Explicit project root (recommended for Docker)
+docker run -v $(pwd):/workspace thailint \
+  --project-root /workspace/root \
+  magic-numbers /workspace/backend/
+
+# Solution 2: Config path inference (automatic)
+docker run -v $(pwd):/workspace thailint \
+  --config /workspace/root/.thailint.yaml \
+  magic-numbers /workspace/backend/
+
+# Solution 3: Auto-detection (only works for nested structures)
+docker run -v $(pwd):/workspace thailint \
+  magic-numbers /workspace/root/backend/  # backend nested under root
+```
+
+**Configuration Loading Integration**:
+
+```python
+class Orchestrator:
+    def __init__(
+        self,
+        project_root: Optional[Path] = None,
+        config_path: Optional[Path] = None
+    ):
+        """
+        Initialize orchestrator with project root handling.
+
+        Args:
+            project_root: Explicit project root (priority 1)
+            config_path: Config file path (implies project root as priority 2)
+        """
+        self.explicit_project_root = project_root
+        self.config_path = config_path
+
+    def load_config(self, file_path: Path) -> Dict[str, Any]:
+        """Load config with project root awareness."""
+
+        # Determine project root
+        if self.explicit_project_root:
+            # Priority 1: Explicit
+            project_root = self.explicit_project_root
+        elif self.config_path:
+            # Priority 2: Inferred from config
+            project_root = self.config_path.parent
+        else:
+            # Priority 3: Auto-detect from file location
+            project_root = find_project_root(file_path)
+
+        # Load config relative to project root
+        if project_root:
+            config_locations = [
+                self.config_path if self.config_path else None,
+                project_root / '.thailint.yaml',
+                project_root / 'thailint.yaml',
+            ]
+        else:
+            config_locations = [self.config_path] if self.config_path else []
+
+        # Load first existing config
+        for location in config_locations:
+            if location and location.exists():
+                return self._parse_config(location)
+
+        return {}  # Default config
+```
+
+**Ignore Pattern Resolution**:
+
+Ignore patterns in config are resolved relative to project root:
+
+```python
+def resolve_ignore_patterns(
+    patterns: List[str],
+    project_root: Path
+) -> List[Path]:
+    """
+    Resolve ignore patterns relative to project root.
+
+    Args:
+        patterns: Patterns from config (e.g., ['tests/', '*.pyc'])
+        project_root: Project root directory
+
+    Returns:
+        Absolute paths for pattern matching
+    """
+    resolved = []
+    for pattern in patterns:
+        # Patterns are relative to project root
+        absolute_pattern = project_root / pattern
+        resolved.append(absolute_pattern)
+    return resolved
+```
+
+**Error Handling**:
+
+```python
+# Click validation at parse time
+@click.option(
+    '--project-root',
+    type=click.Path(
+        exists=True,           # Must exist
+        file_okay=False,       # Must not be a file
+        dir_okay=True,         # Must be a directory
+        resolve_path=True      # Convert to absolute path
+    )
+)
+
+# Exit codes
+# 0: Success
+# 2: Invalid project root (doesn't exist or not a directory)
+
+# Error messages
+# Error: Invalid value for '--project-root': Directory '/path' does not exist.
+# Error: Invalid value for '--project-root': File '/path' is not a directory.
+```
+
+**Testing Strategy**:
+
+```python
+# Test explicit project root
+def test_explicit_project_root(tmp_path):
+    """Test --project-root overrides all other methods."""
+    root = tmp_path / "root"
+    root.mkdir()
+
+    result = runner.invoke(cli, [
+        '--project-root', str(root),
+        'magic-numbers', str(tmp_path / 'code')
+    ])
+
+    assert result.exit_code == 0
+
+# Test config path inference
+def test_config_infers_project_root(tmp_path):
+    """Test project root inferred from config directory."""
+    config = tmp_path / "project" / ".thailint.yaml"
+    config.parent.mkdir()
+    config.write_text("linters:\n  enabled: []\n")
+
+    result = runner.invoke(cli, [
+        '--config', str(config),
+        'magic-numbers', str(tmp_path / 'code')
+    ])
+
+    # Should use tmp_path/project as project root
+    assert result.exit_code == 0
+
+# Test priority order
+def test_explicit_overrides_inference(tmp_path):
+    """Test --project-root takes priority over config inference."""
+    root1 = tmp_path / "root1"
+    root2 = tmp_path / "root2"
+    root1.mkdir()
+    root2.mkdir()
+
+    config = root2 / ".thailint.yaml"
+    config.write_text("linters:\n  enabled: []\n")
+
+    result = runner.invoke(cli, [
+        '--project-root', str(root1),  # Explicit
+        '--config', str(config),        # Would infer root2
+        'magic-numbers', '.'
+    ])
+
+    # Should use root1, not root2
+    assert result.exit_code == 0
+```
+
+**Related Components**:
+- `src/cli.py`: CLI parameter parsing and initial project root resolution
+- `src/orchestrator.py`: Project root handling and config loading
+- `src/config.py`: Configuration file parsing (receives project root context)
+- `tests/unit/test_cli_project_root.py`: Explicit project root tests
+- `tests/unit/test_cli_config_inference.py`: Config inference tests
+
+### 3. Configuration Management (src/config.py)
 
 Handles loading, validating, and saving configuration files.
 
@@ -145,7 +434,7 @@ Handles loading, validating, and saving configuration files.
 - Provide sensible defaults
 - Validate configuration schema
 - Save configuration updates
-- Locate config files (user home, current directory, explicit path)
+- Work with project root context from orchestrator
 
 **Key Patterns**:
 
