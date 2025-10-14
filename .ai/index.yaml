@@ -37,6 +37,11 @@ documentation:
     - secrets-management.md
     - dependency-scanning.md
     - code-scanning.md
+    - FILE_HEADER_STANDARDS.md
+  user_facing:
+    - path: ../docs/ai-doc-standard.md
+      description: AI-optimized documentation header standard for LLM-assisted development workflows
+      tags: [documentation, standards, ai, headers, llm]
 
 howto:
   location: .ai/howtos/

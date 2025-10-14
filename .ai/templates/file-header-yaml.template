@@ -83,14 +83,15 @@
 #
 # Related: FILE_HEADER_STANDARDS.md, Docker plugin documentation
 
+# File: {{FILE_PATH}}
 # Purpose: {{PURPOSE}}
-# Scope: {{SCOPE}}
-# Overview: {{OVERVIEW}}
-# Dependencies: {{DEPENDENCIES}}
 # Exports: {{EXPORTS}}
+# Depends: {{DEPENDENCIES}}
 # Environment: {{ENVIRONMENT}}
 # Related: {{RELATED}}
-# Implementation: {{IMPLEMENTATION}}
+# Overview: {{OVERVIEW}}
+# Usage: {{USAGE}}
+# Notes: {{IMPLEMENTATION}}
 
 # Your YAML configuration starts here
 # version: '3.8'

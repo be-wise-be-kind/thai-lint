@@ -80,24 +80,17 @@ Usage:
 Related: FILE_HEADER_STANDARDS.md, how-to-write-file-headers.md
 -->
 
-# {{DOCUMENT_TITLE}}
-
-**Purpose**: {{PURPOSE}}
-
-**Scope**: {{SCOPE}}
-
-**Overview**: {{OVERVIEW}}
-
-**Dependencies**: {{DEPENDENCIES}}
-
-**Exports**: {{EXPORTS}}
-
-**Related**: {{RELATED}}
-
-**Implementation**: {{IMPLEMENTATION}}
-
+---
+file: {{FILE_PATH}}
+purpose: {{PURPOSE}}
+audience: {{AUDIENCE}}
+status: {{STATUS}}
+updated: {{UPDATED}}
+exports: {{EXPORTS}}
+related: {{RELATED}}
+overview: {{OVERVIEW}}
 ---
 
-## Overview
+# {{DOCUMENT_TITLE}}
 
 Document content starts here...

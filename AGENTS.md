@@ -107,7 +107,10 @@ If the user says any of the following:
 - ✅ Check `.ai/docs/FILE_HEADER_STANDARDS.md` for correct header template
 - ✅ Use template matching file type (Python: lines 131-151, YAML: lines 177-193, etc.)
 - ✅ Include ALL mandatory fields: Purpose, Scope, Overview, Dependencies, Exports, Interfaces, Implementation
-- ✅ Use atemporal language (no "currently", "now", "new", "old", dates, or temporal references)
+- ✅ **Use atemporal language** (no "currently", "now", "new", "old", dates, or temporal references)
+  - ❌ BAD: "Currently supports OAuth", "Created 2025-01-15", "This replaces the old system"
+  - ✅ GOOD: "Supports OAuth authentication", "Handles user sessions", "Implements circuit breaker pattern"
+- ✅ For AI-optimized headers, see `docs/ai-doc-standard.md` (recommended for new files)
 
 ### Roadmap Lifecycle
 

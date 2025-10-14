@@ -76,19 +76,23 @@ Related: FILE_HEADER_STANDARDS.md, Python plugin documentation
 """
 
 """
+File: {{FILE_PATH}}
+
 Purpose: {{PURPOSE}}
-
-Scope: {{SCOPE}}
-
-Overview: {{OVERVIEW}}
-
-Dependencies: {{DEPENDENCIES}}
 
 Exports: {{EXPORTS}}
 
-Interfaces: {{INTERFACES}}
+Depends: {{DEPENDENCIES}}
 
-Implementation: {{IMPLEMENTATION}}
+Implements: {{INTERFACES}}
+
+Related: {{RELATED}}
+
+Overview: {{OVERVIEW}}
+
+Usage: {{USAGE}}
+
+Notes: {{IMPLEMENTATION}}
 """
 
 # Module imports go here

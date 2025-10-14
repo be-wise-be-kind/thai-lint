@@ -76,19 +76,23 @@
  */
 
 /**
+ * File: {{FILE_PATH}}
+ *
  * Purpose: {{PURPOSE}}
- *
- * Scope: {{SCOPE}}
- *
- * Overview: {{OVERVIEW}}
- *
- * Dependencies: {{DEPENDENCIES}}
  *
  * Exports: {{EXPORTS}}
  *
- * Props/Interfaces: {{PROPS_INTERFACES}}
+ * Depends: {{DEPENDENCIES}}
  *
- * State/Behavior: {{STATE_BEHAVIOR}}
+ * Implements: {{PROPS_INTERFACES}}
+ *
+ * Related: {{RELATED}}
+ *
+ * Overview: {{OVERVIEW}}
+ *
+ * Usage: {{USAGE}}
+ *
+ * Notes: {{STATE_BEHAVIOR}}
  */
 
 // Module imports go here
