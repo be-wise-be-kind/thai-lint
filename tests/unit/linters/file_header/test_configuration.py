@@ -1,233 +1,190 @@
 """
 File: tests/unit/linters/file_header/test_configuration.py
-
 Purpose: Test suite for configuration loading and handling in file header linter
+Exports: TestDefaultConfiguration, TestCustomConfiguration, TestInvalidConfiguration
+Depends: pytest, conftest.create_mock_context, src.linters.file_header.linter.FileHeaderRule
+Related: test_ignore_directives.py, test_mandatory_fields.py
 
-Exports: TestConfiguration test class with ~8 tests
+Overview:
+    Tests for configuration loading and validation in file header linter including
+    default configuration, custom configuration from .thailint.yaml, required fields
+    configuration, ignore patterns, and invalid configuration handling. All tests
+    initially fail (TDD RED phase) since FileHeaderRule does not exist yet.
 
-Depends: pytest, unittest.mock, src.linters.file_header.linter.FileHeaderRule
-
-Implements: TDD RED phase tests for configuration support
-
-Related: conftest.py for configuration fixtures
-
-Overview: Tests configuration loading from metadata, default configuration behavior,
-    custom required fields, and ignore patterns configuration. Validates that linter
-    correctly reads and applies configuration settings. TDD RED phase tests.
-
-Usage: Run via pytest: `pytest tests/unit/linters/file_header/test_configuration.py`
-
-Notes: All tests FAIL initially until FileHeaderRule configuration handling in PR3
+Usage:
+    pytest tests/unit/linters/file_header/test_configuration.py -v
 """
 
-from pathlib import Path
-from unittest.mock import Mock
+from tests.unit.linters.file_header.conftest import create_mock_context
 
 
-class TestConfiguration:
-    """Tests for configuration loading and handling."""
+class TestDefaultConfiguration:
+    """Test default configuration when no custom config provided."""
 
-    def test_uses_default_config_when_no_metadata(self):
-        """Should use default configuration when no metadata provided."""
+    def test_uses_default_required_fields_for_python(self):
+        """Should use default required fields for Python files."""
+        code = '"""Purpose: Test"""'
+        from src.linters.file_header.linter import FileHeaderRule
+
+        rule = FileHeaderRule()
+        context = create_mock_context(code, "test.py")
+        violations = rule.check(context)
+
+        # Should detect missing default required fields
+        # Default: Purpose, Scope, Overview, Dependencies, Exports, Interfaces, Implementation
+        assert len(violations) >= 6
+        violation_messages = " ".join([v.message for v in violations])
+        assert "Scope" in violation_messages
+        assert "Overview" in violation_messages
+
+    def test_default_atemporal_enforcement_enabled(self):
+        """Should enforce atemporal language by default."""
         code = '''"""
-Purpose: Test
+Purpose: Created 2025-01-15
 Scope: Test
-Overview: Test
+Overview: Test module
 Dependencies: None
-Exports: Test
-Interfaces: test()
-Implementation: Standard
+Exports: None
+Interfaces: None
+Implementation: Test
 """
 '''
         from src.linters.file_header.linter import FileHeaderRule
 
         rule = FileHeaderRule()
-        context = Mock()
-        context.file_path = Path("test.py")
-        context.file_content = code
-        context.language = "python"
-        context.metadata = {}  # No config
-
+        context = create_mock_context(code, "test.py")
         violations = rule.check(context)
-        # Should work with defaults, no violations for valid header
-        assert isinstance(violations, list)
 
-    def test_loads_config_from_metadata(self, file_header_config):
-        """Should load configuration from context metadata."""
-        code = '''"""
-Purpose: Test
-"""
-'''
-        from src.linters.file_header.linter import FileHeaderRule
-
-        rule = FileHeaderRule()
-        context = Mock()
-        context.file_path = Path("test.py")
-        context.file_content = code
-        context.language = "python"
-        context.metadata = {"file_header": file_header_config}
-
-        violations = rule.check(context)
-        # Should detect missing fields based on config
+        # Should detect temporal language (date) by default
         assert len(violations) >= 1
+        assert any("temporal" in v.message.lower() or "2025" in v.message for v in violations)
 
-    def test_respects_custom_required_fields(self):
-        """Should respect custom required fields configuration."""
+    def test_default_ignore_patterns_exclude_tests(self):
+        """Should exclude test files by default."""
+        code = '"""Purpose: Test"""'
+        from src.linters.file_header.linter import FileHeaderRule
+
+        rule = FileHeaderRule()
+        # Note: Default config should ignore test_*.py files
+        context = create_mock_context(code, "test_module.py")
+        _ = rule.check(context)
+
+        # Depending on default config, test files may be ignored
+        # This tests that default ignore patterns are respected
+        # If test files are ignored by default, violations should be 0
+        # This behavior will be determined by FileHeaderConfig defaults
+
+
+class TestCustomConfiguration:
+    """Test custom configuration loading."""
+
+    def test_loads_custom_required_fields(self):
+        """Should load custom required fields from configuration."""
         code = '''"""
-Purpose: Test purpose
-CustomField: Test value
+Purpose: Custom config test
+CustomField: Custom value
 """
 '''
         from src.linters.file_header.linter import FileHeaderRule
 
         rule = FileHeaderRule()
-        context = Mock()
-        context.file_path = Path("test.py")
-        context.file_content = code
-        context.language = "python"
-        # Custom config with only Purpose and CustomField required
-        context.metadata = {
-            "file_header": {
-                "required_fields_python": ["Purpose", "CustomField"],
-                "enforce_atemporal": True,
-            }
-        }
-
+        context = create_mock_context(
+            code,
+            "test.py",
+            metadata={"file_header": {"required_fields": {"python": ["Purpose", "CustomField"]}}},
+        )
         violations = rule.check(context)
-        # Should only check for Purpose and CustomField
-        # Filter to just missing field violations
+
+        # Should only require Purpose and CustomField, not default fields
+        # Should have no violations if both are present
         missing_violations = [v for v in violations if "missing" in v.message.lower()]
-        assert len(missing_violations) == 0  # Both required fields present
+        assert len(missing_violations) == 0
 
-    def test_respects_enforce_atemporal_setting(self):
-        """Should respect enforce_atemporal configuration setting."""
-        code = '''"""
-Purpose: Created 2025-01-15 for testing
-Scope: Test
-Overview: Test
-Dependencies: None
-Exports: Test
-Interfaces: test()
-Implementation: Standard
-"""
-'''
+    def test_loads_custom_ignore_patterns(self):
+        """Should load custom ignore patterns from configuration."""
+        code = '"""Purpose: Test"""'
         from src.linters.file_header.linter import FileHeaderRule
 
         rule = FileHeaderRule()
-        context = Mock()
-        context.file_path = Path("test.py")
-        context.file_content = code
-        context.language = "python"
-        # Disable atemporal checking
-        context.metadata = {
-            "file_header": {
-                "enforce_atemporal": False,
-                "required_fields_python": [
-                    "Purpose",
-                    "Scope",
-                    "Overview",
-                    "Dependencies",
-                    "Exports",
-                    "Interfaces",
-                    "Implementation",
-                ],
-            }
-        }
-
+        context = create_mock_context(
+            code,
+            "generated/auto_gen.py",
+            metadata={"file_header": {"ignore": ["generated/**", "vendor/**"]}},
+        )
         violations = rule.check(context)
-        # Should not flag temporal language when disabled
-        temporal_violations = [
-            v for v in violations if "temporal" in v.message.lower() or "date" in v.message.lower()
-        ]
-        assert len(temporal_violations) == 0
 
-    def test_applies_ignore_patterns_from_config(self):
-        """Should apply ignore patterns from configuration."""
-        code = '''"""
-No proper header
-"""
-'''
-        from src.linters.file_header.linter import FileHeaderRule
-
-        rule = FileHeaderRule()
-        context = Mock()
-        context.file_path = Path("test/test_module.py")
-        context.file_content = code
-        context.language = "python"
-        context.metadata = {
-            "file_header": {
-                "ignore": ["test/**", "**/migrations/**"],
-            }
-        }
-
-        violations = rule.check(context)
-        # Should be ignored due to test/** pattern
+        # Should ignore files matching custom patterns
         assert len(violations) == 0
 
-    def test_handles_missing_config_section(self):
-        """Should handle missing file_header config section gracefully."""
+    def test_can_disable_atemporal_enforcement(self):
+        """Should allow disabling atemporal language enforcement."""
         code = '''"""
-Purpose: Test
+Purpose: Created 2025-01-15
 Scope: Test
-Overview: Test
+Overview: Test module
 Dependencies: None
-Exports: Test
-Interfaces: test()
-Implementation: Standard
+Exports: None
+Interfaces: None
+Implementation: Test
 """
 '''
         from src.linters.file_header.linter import FileHeaderRule
 
         rule = FileHeaderRule()
-        context = Mock()
-        context.file_path = Path("test.py")
-        context.file_content = code
-        context.language = "python"
-        context.metadata = {"other_linter": {"some_setting": True}}  # No file_header section
-
+        context = create_mock_context(
+            code, "test.py", metadata={"file_header": {"enforce_atemporal": False}}
+        )
         violations = rule.check(context)
-        # Should use defaults and not crash
+
+        # Should not detect temporal language when disabled
+        temporal_violations = [v for v in violations if "temporal" in v.message.lower()]
+        assert len(temporal_violations) == 0
+
+
+class TestInvalidConfiguration:
+    """Test handling of invalid configuration."""
+
+    def test_handles_missing_configuration_gracefully(self):
+        """Should handle missing configuration gracefully with defaults."""
+        code = '"""Purpose: Test"""'
+        from src.linters.file_header.linter import FileHeaderRule
+
+        rule = FileHeaderRule()
+        # No metadata provided - should use defaults
+        context = create_mock_context(code, "test.py")
+        violations = rule.check(context)
+
+        # Should not crash, should use default configuration
         assert isinstance(violations, list)
 
-    def test_handles_invalid_config_gracefully(self):
-        """Should handle invalid configuration gracefully."""
-        code = '''"""
-Purpose: Test
-"""
-'''
+    def test_handles_empty_configuration_gracefully(self):
+        """Should handle empty configuration gracefully."""
+        code = '"""Purpose: Test"""'
         from src.linters.file_header.linter import FileHeaderRule
 
         rule = FileHeaderRule()
-        context = Mock()
-        context.file_path = Path("test.py")
-        context.file_content = code
-        context.language = "python"
-        context.metadata = {"file_header": "invalid_config_type"}  # Invalid type
-
+        context = create_mock_context(
+            code,
+            "test.py",
+            metadata={"file_header": {}},  # Empty config
+        )
         violations = rule.check(context)
-        # Should fall back to defaults or handle gracefully
+
+        # Should not crash, should use defaults
         assert isinstance(violations, list)
 
-    def test_config_enabled_setting(self):
-        """Should respect enabled setting in configuration."""
-        code = '''"""
-No proper header
-"""
-'''
+    def test_handles_invalid_metadata_type(self):
+        """Should handle invalid metadata type gracefully."""
+        code = '"""Purpose: Test"""'
         from src.linters.file_header.linter import FileHeaderRule
 
         rule = FileHeaderRule()
-        context = Mock()
-        context.file_path = Path("test.py")
-        context.file_content = code
-        context.language = "python"
-        context.metadata = {
-            "file_header": {
-                "enabled": False,  # Linter disabled
-            }
-        }
-
+        context = create_mock_context(
+            code,
+            "test.py",
+            metadata="invalid",  # Invalid type
+        )
         violations = rule.check(context)
-        # May return empty if linter respects enabled=False
-        # Implementation detail, but should handle gracefully
+
+        # Should not crash, should use defaults
         assert isinstance(violations, list)

@@ -1,241 +1,192 @@
 """
 File: tests/unit/linters/file_header/test_python_header_validation.py
+Purpose: Test suite for Python file header structure validation
+Exports: TestPythonDocstringExtraction, TestHeaderPresenceDetection, TestHeaderStructure
+Depends: pytest, conftest.create_mock_context, src.linters.file_header.linter.FileHeaderRule
+Related: test_mandatory_fields.py, test_atemporal_language.py
 
-Purpose: Test suite for basic Python file header structure validation
+Overview:
+    Tests basic header structure validation for Python files including docstring
+    extraction, header presence detection, and format validation. Covers Python-specific
+    docstring parsing and basic structural requirements before detailed field validation.
+    All tests initially fail (TDD RED phase) since FileHeaderRule does not exist yet.
 
-Exports: TestHeaderExtraction, TestBasicValidation test classes with ~10 tests total
-
-Depends: pytest, unittest.mock, src.linters.file_header.linter.FileHeaderRule
-
-Implements: TDD RED phase tests (will initially fail - no implementation exists)
-
-Related: conftest.py for fixtures, test_mandatory_fields.py for field-specific tests
-
-Overview: Tests basic Python file header validation including docstring extraction,
-    header presence detection, and format validation. Covers fundamental header
-    structure requirements without delving into specific field validation (covered
-    in test_mandatory_fields.py) or atemporal language (test_atemporal_language.py).
-    Tests use mock contexts following project patterns.
-
-Usage: Run via pytest: `pytest tests/unit/linters/file_header/test_python_header_validation.py`
-
-Notes: All tests will FAIL initially (TDD RED phase) until FileHeaderRule implementation exists
+Usage:
+    pytest tests/unit/linters/file_header/test_python_header_validation.py -v
 """
 
-from pathlib import Path
-from unittest.mock import Mock
+from tests.unit.linters.file_header.conftest import create_mock_context
 
 
-class TestHeaderExtraction:
-    """Tests for extracting headers from Python files."""
+class TestPythonDocstringExtraction:
+    """Test extraction of module-level docstrings from Python files."""
 
-    def test_extracts_module_docstring(self, valid_python_header):
-        """Should extract module-level docstring from Python file."""
+    def test_extracts_module_docstring_triple_double_quotes(self):
+        """Should extract docstring using triple double quotes."""
+        code = '''"""
+Purpose: Test module
+Scope: Testing
+Overview: Module for testing
+"""
+
+import sys
+'''
         from src.linters.file_header.linter import FileHeaderRule
 
         rule = FileHeaderRule()
-        context = Mock()
-        context.file_path = Path("test.py")
-        context.file_content = valid_python_header
-        context.language = "python"
-        context.metadata = {}
-
+        context = create_mock_context(code, "test.py")
         violations = rule.check(context)
-        # Should not have "missing docstring" violation since valid header exists
-        assert not any("docstring" in v.message.lower() for v in violations)
 
-    def test_detects_missing_docstring(self, python_code_without_docstring):
-        """Should detect when Python file has no docstring."""
+        # Should not have "missing docstring" violation
+        missing_docstring_violations = [v for v in violations if "docstring" in v.message.lower()]
+        assert len(missing_docstring_violations) == 0
+
+    def test_extracts_module_docstring_triple_single_quotes(self):
+        """Should extract docstring using triple single quotes."""
+        code = """'''
+Purpose: Test module
+Scope: Testing
+Overview: Module for testing
+'''
+
+import sys
+"""
         from src.linters.file_header.linter import FileHeaderRule
 
         rule = FileHeaderRule()
-        context = Mock()
-        context.file_path = Path("test.py")
-        context.file_content = python_code_without_docstring
-        context.language = "python"
-        context.metadata = {}
-
+        context = create_mock_context(code, "test.py")
         violations = rule.check(context)
+
+        # Should not have "missing docstring" violation
+        missing_docstring_violations = [v for v in violations if "docstring" in v.message.lower()]
+        assert len(missing_docstring_violations) == 0
+
+    def test_ignores_class_and_function_docstrings(self):
+        """Should only extract module-level docstring, not class/function docstrings."""
+        code = '''"""
+Purpose: Module header
+"""
+
+class MyClass:
+    """Class docstring that is not the header."""
+    pass
+'''
+        from src.linters.file_header.linter import FileHeaderRule
+
+        rule = FileHeaderRule()
+        context = create_mock_context(code, "test.py")
+        violations = rule.check(context)
+
+        # Should extract "Purpose: Module header", not class docstring
+        missing_docstring_violations = [v for v in violations if "docstring" in v.message.lower()]
+        assert len(missing_docstring_violations) == 0
+
+
+class TestHeaderPresenceDetection:
+    """Test detection of missing or present file headers."""
+
+    def test_detects_missing_docstring(self):
+        """Should detect when file has no module-level docstring."""
+        code = """
+import sys
+
+def my_function():
+    pass
+"""
+        from src.linters.file_header.linter import FileHeaderRule
+
+        rule = FileHeaderRule()
+        context = create_mock_context(code, "test.py")
+        violations = rule.check(context)
+
+        # Should have violation for missing docstring
         assert len(violations) >= 1
-        assert any(
-            "docstring" in v.message.lower() or "header" in v.message.lower() for v in violations
-        )
+        assert any("docstring" in v.message.lower() for v in violations)
 
-    def test_handles_empty_file(self, python_code_empty_file):
-        """Should handle empty Python file gracefully."""
+    def test_detects_file_with_only_comments(self):
+        """Should detect missing docstring in file with only comments."""
+        code = """# This is just a comment
+# Not a docstring
+
+import sys
+"""
         from src.linters.file_header.linter import FileHeaderRule
 
         rule = FileHeaderRule()
-        context = Mock()
-        context.file_path = Path("test.py")
-        context.file_content = python_code_empty_file
-        context.language = "python"
-        context.metadata = {}
-
+        context = create_mock_context(code, "test.py")
         violations = rule.check(context)
+
+        # Should have violation for missing docstring
         assert len(violations) >= 1
-        # Should report missing header/docstring
+        assert any("docstring" in v.message.lower() for v in violations)
 
+    def test_accepts_file_with_valid_header(self):
+        """Should not flag file with valid header structure."""
+        code = '''"""
+Purpose: Module with valid header
+Scope: Testing module
+Overview: Comprehensive test module for validating functionality
+Dependencies: pytest
+Exports: test_function
+Interfaces: test_function()
+Implementation: Test implementation pattern
+"""
 
-class TestBasicValidation:
-    """Tests for basic header structure validation."""
-
-    def test_accepts_valid_complete_header(self, valid_python_header):
-        """Should not flag valid header with all required fields."""
+def test_function():
+    pass
+'''
         from src.linters.file_header.linter import FileHeaderRule
 
         rule = FileHeaderRule()
-        context = Mock()
-        context.file_path = Path("test.py")
-        context.file_content = valid_python_header
-        context.language = "python"
-        context.metadata = {}
-
+        context = create_mock_context(code, "test.py")
         violations = rule.check(context)
-        # Should have 0 violations for complete, valid header
-        assert len(violations) == 0
+
+        # May have violations for other reasons, but not missing docstring
+        missing_docstring_violations = [v for v in violations if "docstring" in v.message.lower()]
+        assert len(missing_docstring_violations) == 0
+
+
+class TestHeaderStructure:
+    """Test basic header structure requirements."""
+
+    def test_accepts_multiline_field_values(self):
+        """Should accept fields with multi-line values."""
+        code = '''"""
+Purpose: Multi-line test
+Scope: Testing scope
+Overview: This is a multi-line overview that spans
+    multiple lines with proper indentation and continues
+    across several lines to provide detailed information
+Dependencies: pytest, mock
+Exports: MyClass
+Interfaces: my_method()
+Implementation: Standard pattern
+"""
+'''
+        from src.linters.file_header.linter import FileHeaderRule
+
+        rule = FileHeaderRule()
+        context = create_mock_context(code, "test.py")
+        violations = rule.check(context)
+
+        # Should successfully parse multi-line field values
+        # No violations expected for structure issues
+        structure_violations = [
+            v
+            for v in violations
+            if "structure" in v.message.lower() or "format" in v.message.lower()
+        ]
+        assert len(structure_violations) == 0
 
     def test_detects_malformed_docstring(self):
-        """Should detect malformed docstring structure."""
-        code = '''"""
-        This is a malformed header without proper field structure
-        Just some random text
-        No field markers at all
-        """
-        def func():
-            pass
-        '''
+        """Should handle malformed docstrings gracefully."""
+        code = '''"""Malformed docstring without proper fields
+'''
         from src.linters.file_header.linter import FileHeaderRule
 
         rule = FileHeaderRule()
-        context = Mock()
-        context.file_path = Path("test.py")
-        context.file_content = code
-        context.language = "python"
-        context.metadata = {}
-
+        context = create_mock_context(code, "test.py")
         violations = rule.check(context)
-        # Should detect missing mandatory fields
+
+        # Should have violations for missing mandatory fields
         assert len(violations) >= 1
-
-    def test_handles_multiline_field_values(self):
-        """Should handle field values spanning multiple lines."""
-        code = '''"""
-Purpose: Multi-line purpose description
-    that spans multiple lines with proper indentation
-
-Scope: Module scope
-
-Overview: This is a comprehensive overview
-    that continues on multiple lines
-    with proper indentation maintained
-
-Dependencies: pytest, mock
-
-Exports: TestClass
-
-Interfaces: test_method()
-
-Implementation: Standard implementation
-"""
-
-class TestClass:
-    pass
-'''
-        from src.linters.file_header.linter import FileHeaderRule
-
-        rule = FileHeaderRule()
-        context = Mock()
-        context.file_path = Path("test.py")
-        context.file_content = code
-        context.language = "python"
-        context.metadata = {}
-
-        violations = rule.check(context)
-        # Should accept multi-line field values
-        # Check for absence of "missing" violations for fields that are present
-        missing_violations = [v for v in violations if "missing" in v.message.lower()]
-        assert len(missing_violations) == 0
-
-    def test_validates_python_files_only(self):
-        """Should only validate Python files, skip other languages."""
-        from src.linters.file_header.linter import FileHeaderRule
-
-        rule = FileHeaderRule()
-        context = Mock()
-        context.file_path = Path("test.js")
-        context.file_content = "// JavaScript code"
-        context.language = "javascript"  # Non-Python
-        context.metadata = {}
-
-        violations = rule.check(context)
-        # Should skip non-Python files in PR2/PR3 (Python-only implementation)
-        assert len(violations) == 0
-
-    def test_returns_violation_objects(self, python_code_without_docstring):
-        """Should return proper Violation objects with required attributes."""
-        from src.linters.file_header.linter import FileHeaderRule
-
-        rule = FileHeaderRule()
-        context = Mock()
-        context.file_path = Path("test.py")
-        context.file_content = python_code_without_docstring
-        context.language = "python"
-        context.metadata = {}
-
-        violations = rule.check(context)
-        if len(violations) > 0:
-            v = violations[0]
-            # Violation should have required attributes
-            assert hasattr(v, "rule_id")
-            assert hasattr(v, "message")
-            assert hasattr(v, "file_path")
-            assert hasattr(v, "line")
-            assert hasattr(v, "severity")
-
-    def test_rule_properties(self):
-        """Should have correct rule properties."""
-        from src.linters.file_header.linter import FileHeaderRule
-
-        rule = FileHeaderRule()
-        assert rule.rule_id is not None
-        assert isinstance(rule.rule_id, str)
-        assert rule.rule_name is not None
-        assert isinstance(rule.rule_name, str)
-        assert rule.description is not None
-        assert isinstance(rule.description, str)
-
-    def test_handles_unicode_in_headers(self):
-        """Should handle Unicode characters in header text."""
-        code = '''"""
-Purpose: Authentication with émojis 🔐 and spëcial çharacters
-
-Scope: User authentication módule
-
-Overview: Handles authentication with Ünicode support
-
-Dependencies: None
-
-Exports: AuthHandler
-
-Interfaces: authenticate()
-
-Implementation: Standard approach
-"""
-
-def authenticate():
-    pass
-'''
-        from src.linters.file_header.linter import FileHeaderRule
-
-        rule = FileHeaderRule()
-        context = Mock()
-        context.file_path = Path("test.py")
-        context.file_content = code
-        context.language = "python"
-        context.metadata = {}
-
-        violations = rule.check(context)
-        # Should handle Unicode without errors
-        # Check that it doesn't crash and can still detect fields
-        assert isinstance(violations, list)

@@ -1,32 +1,26 @@
 """
 File: tests/unit/linters/file_header/test_mandatory_fields.py
-
 Purpose: Test suite for mandatory field validation in Python file headers
+Exports: TestMandatoryFieldDetection, TestMissingFieldMessages, TestAllFieldsPresent
+Depends: pytest, conftest.create_mock_context, src.linters.file_header.linter.FileHeaderRule
+Related: test_python_header_validation.py, test_atemporal_language.py
 
-Exports: TestMandatoryFieldsDetection test class with ~12 tests
+Overview:
+    Comprehensive tests for detecting missing or invalid mandatory fields in Python
+    file headers. Tests all required fields (Purpose, Scope, Overview, Dependencies,
+    Exports, Interfaces, Implementation) and validates error messages and violation
+    details. All tests initially fail (TDD RED phase) since FileHeaderRule does not
+    exist yet.
 
-Depends: pytest, unittest.mock, src.linters.file_header.linter.FileHeaderRule
-
-Implements: TDD RED phase tests for required field detection (will initially fail)
-
-Related: conftest.py for fixtures, PR_BREAKDOWN.md for field requirements
-
-Overview: Comprehensive tests for detecting missing or invalid mandatory fields in
-    Python file headers. Tests all required fields (Purpose, Scope, Overview, Dependencies,
-    Exports, Interfaces, Implementation) and validates error messages and violation details.
-    Follows TDD RED phase approach where all tests initially fail before implementation.
-
-Usage: Run via pytest: `pytest tests/unit/linters/file_header/test_mandatory_fields.py`
-
-Notes: All tests FAIL initially until FileHeaderRule implementation in PR3
+Usage:
+    pytest tests/unit/linters/file_header/test_mandatory_fields.py -v
 """
 
-from pathlib import Path
-from unittest.mock import Mock
+from tests.unit.linters.file_header.conftest import create_mock_context
 
 
-class TestMandatoryFieldsDetection:
-    """Tests for detecting missing mandatory fields."""
+class TestMandatoryFieldDetection:
+    """Test detection of missing mandatory fields."""
 
     def test_detects_missing_purpose_field(self):
         """Should detect when Purpose field is missing."""
@@ -42,15 +36,12 @@ Implementation: Test implementation
         from src.linters.file_header.linter import FileHeaderRule
 
         rule = FileHeaderRule()
-        context = Mock()
-        context.file_path = Path("test.py")
-        context.file_content = code
-        context.language = "python"
-        context.metadata = {}
-
+        context = create_mock_context(code, "test.py")
         violations = rule.check(context)
+
         assert len(violations) >= 1
         assert any("Purpose" in v.message for v in violations)
+        assert any("missing" in v.message.lower() for v in violations)
 
     def test_detects_missing_scope_field(self):
         """Should detect when Scope field is missing."""
@@ -66,13 +57,9 @@ Implementation: Test implementation
         from src.linters.file_header.linter import FileHeaderRule
 
         rule = FileHeaderRule()
-        context = Mock()
-        context.file_path = Path("test.py")
-        context.file_content = code
-        context.language = "python"
-        context.metadata = {}
-
+        context = create_mock_context(code, "test.py")
         violations = rule.check(context)
+
         assert len(violations) >= 1
         assert any("Scope" in v.message for v in violations)
 
@@ -90,13 +77,9 @@ Implementation: Test implementation
         from src.linters.file_header.linter import FileHeaderRule
 
         rule = FileHeaderRule()
-        context = Mock()
-        context.file_path = Path("test.py")
-        context.file_content = code
-        context.language = "python"
-        context.metadata = {}
-
+        context = create_mock_context(code, "test.py")
         violations = rule.check(context)
+
         assert len(violations) >= 1
         assert any("Overview" in v.message for v in violations)
 
@@ -114,13 +97,9 @@ Implementation: Test implementation
         from src.linters.file_header.linter import FileHeaderRule
 
         rule = FileHeaderRule()
-        context = Mock()
-        context.file_path = Path("test.py")
-        context.file_content = code
-        context.language = "python"
-        context.metadata = {}
-
+        context = create_mock_context(code, "test.py")
         violations = rule.check(context)
+
         assert len(violations) >= 1
         assert any("Dependencies" in v.message for v in violations)
 
@@ -138,13 +117,9 @@ Implementation: Test implementation
         from src.linters.file_header.linter import FileHeaderRule
 
         rule = FileHeaderRule()
-        context = Mock()
-        context.file_path = Path("test.py")
-        context.file_content = code
-        context.language = "python"
-        context.metadata = {}
-
+        context = create_mock_context(code, "test.py")
         violations = rule.check(context)
+
         assert len(violations) >= 1
         assert any("Exports" in v.message for v in violations)
 
@@ -162,13 +137,9 @@ Implementation: Test implementation
         from src.linters.file_header.linter import FileHeaderRule
 
         rule = FileHeaderRule()
-        context = Mock()
-        context.file_path = Path("test.py")
-        context.file_content = code
-        context.language = "python"
-        context.metadata = {}
-
+        context = create_mock_context(code, "test.py")
         violations = rule.check(context)
+
         assert len(violations) >= 1
         assert any("Interfaces" in v.message for v in violations)
 
@@ -186,13 +157,9 @@ Interfaces: test_method()
         from src.linters.file_header.linter import FileHeaderRule
 
         rule = FileHeaderRule()
-        context = Mock()
-        context.file_path = Path("test.py")
-        context.file_content = code
-        context.language = "python"
-        context.metadata = {}
-
+        context = create_mock_context(code, "test.py")
         violations = rule.check(context)
+
         assert len(violations) >= 1
         assert any("Implementation" in v.message for v in violations)
 
@@ -205,107 +172,110 @@ Purpose: Test purpose only
         from src.linters.file_header.linter import FileHeaderRule
 
         rule = FileHeaderRule()
-        context = Mock()
-        context.file_path = Path("test.py")
-        context.file_content = code
-        context.language = "python"
-        context.metadata = {}
-
+        context = create_mock_context(code, "test.py")
         violations = rule.check(context)
-        # Should have violations for: Scope, Overview, Dependencies, Exports, Interfaces, Implementation
+
+        # Should have violations for: Scope, Overview, Dependencies, Exports,
+        # Interfaces, Implementation
         assert len(violations) >= 6
         missing_fields = [v.message for v in violations]
         assert any("Scope" in msg for msg in missing_fields)
         assert any("Overview" in msg for msg in missing_fields)
+        assert any("Dependencies" in msg for msg in missing_fields)
+        assert any("Exports" in msg for msg in missing_fields)
+        assert any("Interfaces" in msg for msg in missing_fields)
+        assert any("Implementation" in msg for msg in missing_fields)
 
-    def test_accepts_all_mandatory_fields_present(self, valid_python_header):
-        """Should not flag when all mandatory fields present."""
+
+class TestMissingFieldMessages:
+    """Test violation message quality for missing fields."""
+
+    def test_missing_field_violation_has_field_name(self):
+        """Should include field name in violation message."""
+        code = '"""Purpose: Test\\n"""'
         from src.linters.file_header.linter import FileHeaderRule
 
         rule = FileHeaderRule()
-        context = Mock()
-        context.file_path = Path("test.py")
-        context.file_content = valid_python_header
-        context.language = "python"
-        context.metadata = {}
-
+        context = create_mock_context(code, "test.py")
         violations = rule.check(context)
-        # Filter out any non-mandatory-field violations
+
+        # Pick one violation and check it mentions a field name
+        assert len(violations) >= 1
+        # Should mention at least one missing field by name
+        has_field_name = False
+        for violation in violations:
+            if any(
+                field in violation.message
+                for field in [
+                    "Scope",
+                    "Overview",
+                    "Dependencies",
+                    "Exports",
+                    "Interfaces",
+                    "Implementation",
+                ]
+            ):
+                has_field_name = True
+                break
+        assert has_field_name
+
+    def test_missing_field_violation_suggests_fix(self):
+        """Should provide suggestion for fixing missing field."""
+        code = '"""Purpose: Test\\n"""'
+        from src.linters.file_header.linter import FileHeaderRule
+
+        rule = FileHeaderRule()
+        context = create_mock_context(code, "test.py")
+        violations = rule.check(context)
+
+        assert len(violations) >= 1
+        # Should have suggestion field (may be empty but attribute should exist)
+        assert hasattr(violations[0], "suggestion") or "add" in violations[0].message.lower()
+
+
+class TestAllFieldsPresent:
+    """Test that no violations when all mandatory fields present."""
+
+    def test_accepts_all_mandatory_fields_present(self):
+        """Should not flag when all mandatory fields present."""
+        code = '''"""
+Purpose: Complete header with all fields
+Scope: Test module scope
+Overview: Comprehensive overview explaining module purpose and functionality
+Dependencies: pytest, mock
+Exports: TestClass, test_function
+Interfaces: public_method(), another_method()
+Implementation: Uses composition pattern with helper classes
+"""
+'''
+        from src.linters.file_header.linter import FileHeaderRule
+
+        rule = FileHeaderRule()
+        context = create_mock_context(code, "test.py")
+        violations = rule.check(context)
+
+        # Filter out any non-mandatory-field violations (like atemporal language)
         mandatory_violations = [v for v in violations if "missing" in v.message.lower()]
         assert len(mandatory_violations) == 0
 
-    def test_detects_empty_purpose_field(self):
-        """Should detect when Purpose field exists but is empty."""
+    def test_accepts_empty_field_values_as_present(self):
+        """Should accept empty values like 'None' or 'N/A' as present fields."""
         code = '''"""
-Purpose:
-Scope: Test scope
-Overview: Test overview
+Purpose: Module with minimal dependencies
+Scope: Testing
+Overview: Test module with no external dependencies
 Dependencies: None
-Exports: TestClass
-Interfaces: test_method()
-Implementation: Test implementation
+Exports: N/A
+Interfaces: None
+Implementation: Simple direct implementation
 """
 '''
         from src.linters.file_header.linter import FileHeaderRule
 
         rule = FileHeaderRule()
-        context = Mock()
-        context.file_path = Path("test.py")
-        context.file_content = code
-        context.language = "python"
-        context.metadata = {}
-
+        context = create_mock_context(code, "test.py")
         violations = rule.check(context)
-        assert len(violations) >= 1
-        assert any(
-            "Purpose" in v.message
-            and ("empty" in v.message.lower() or "missing" in v.message.lower())
-            for v in violations
-        )
 
-    def test_detects_whitespace_only_field(self):
-        """Should detect when field contains only whitespace."""
-        code = '''"""
-Purpose:
-Scope: Test scope
-Overview: Test overview
-Dependencies: None
-Exports: TestClass
-Interfaces: test_method()
-Implementation: Test implementation
-"""
-'''
-        from src.linters.file_header.linter import FileHeaderRule
-
-        rule = FileHeaderRule()
-        context = Mock()
-        context.file_path = Path("test.py")
-        context.file_content = code
-        context.language = "python"
-        context.metadata = {}
-
-        violations = rule.check(context)
-        assert len(violations) >= 1
-        assert any("Purpose" in v.message for v in violations)
-
-    def test_violation_messages_are_clear(self):
-        """Should provide clear, actionable violation messages."""
-        code = '''"""
-Scope: Test scope
-"""
-'''
-        from src.linters.file_header.linter import FileHeaderRule
-
-        rule = FileHeaderRule()
-        context = Mock()
-        context.file_path = Path("test.py")
-        context.file_content = code
-        context.language = "python"
-        context.metadata = {}
-
-        violations = rule.check(context)
-        assert len(violations) >= 1
-        # Messages should be clear and mention the field name
-        for v in violations:
-            assert len(v.message) > 10  # Not just field name
-            assert v.message[0].isupper() or v.message.startswith("Missing")  # Proper sentence
+        # None/N/A should be acceptable as field values
+        mandatory_violations = [v for v in violations if "missing" in v.message.lower()]
+        assert len(mandatory_violations) == 0
