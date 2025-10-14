@@ -751,6 +751,110 @@ docker run \
   washad/thailint:latest magic-numbers --config /config/.thailint.yaml /src
 ```
 
+### Docker sibling directory structure not working
+
+**Problem:** Docker setup with sibling directories doesn't find config or properly resolve ignore patterns
+
+**Symptoms:**
+- Config file exists but violations use default settings
+- Ignore patterns don't match files
+- Error: "Config file not found" even though it's mounted
+
+**Common scenario:**
+```
+/workspace/
+├── root/           # Contains .thailint.yaml and .git
+├── backend/        # Code to lint
+└── tools/
+```
+
+**Root cause:** thailint auto-detects project root by walking UP from the file being linted. When you lint `/workspace/backend/`, it never finds `/workspace/root/.thailint.yaml` because it's in a sibling directory.
+
+**Solution 1: Use `--project-root` (recommended)**
+
+```bash
+# Explicit project root - most reliable
+docker run --rm -v $(pwd):/workspace \
+  washad/thailint:latest \
+  --project-root /workspace/root \
+  magic-numbers /workspace/backend/
+```
+
+**Solution 2: Use config path inference (automatic)**
+
+When you specify `--config`, thailint automatically infers the project root from the config's directory:
+
+```bash
+# Config path inference - no --project-root needed
+docker run --rm -v $(pwd):/workspace \
+  washad/thailint:latest \
+  --config /workspace/root/.thailint.yaml \
+  magic-numbers /workspace/backend/
+```
+
+**Solution 3: Restructure to nested directories**
+
+If possible, restructure so config is a parent of code:
+
+```
+/workspace/root/
+├── .thailint.yaml
+├── .git/
+├── backend/        # Nested under root
+└── tools/
+```
+
+Then auto-detection works:
+```bash
+docker run --rm -v $(pwd):/workspace/root \
+  washad/thailint:latest \
+  magic-numbers /workspace/root/backend/
+```
+
+**Priority order:**
+1. `--project-root` (highest - explicit specification)
+2. Inferred from `--config` path directory (automatic)
+3. Auto-detection from file location (may fail with siblings)
+
+**Debugging sibling directory issues:**
+
+```bash
+# Test 1: Check if config is accessible
+docker run --rm -v $(pwd):/workspace \
+  washad/thailint:latest \
+  ls -la /workspace/root/.thailint.yaml
+
+# Test 2: Try with explicit paths
+docker run --rm -v $(pwd):/workspace \
+  washad/thailint:latest \
+  --project-root /workspace/root \
+  --config /workspace/root/.thailint.yaml \
+  magic-numbers /workspace/backend/
+
+# Test 3: Check ignore pattern resolution
+# Add debug output to config temporarily:
+cat > .thailint.yaml << EOF
+magic_numbers:
+  enabled: true
+  allowed_numbers: [0, 1, 2]
+  ignore:
+    - "**/test_*.py"
+    - "../backend/famous_tracks.py"  # Relative to config location
+EOF
+
+# Run with verbose output
+docker run --rm -v $(pwd):/workspace \
+  washad/thailint:latest \
+  --verbose \
+  --project-root /workspace/root \
+  magic-numbers /workspace/backend/ 2>&1 | head -50
+```
+
+**See also:**
+- README.md section "Docker with Sibling Directories"
+- CLI Reference: `--project-root` option
+- Configuration Guide: ignore pattern resolution
+
 ## CI/CD Issues
 
 ### Pre-commit hook fails

@@ -2,7 +2,7 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
-[![Tests](https://img.shields.io/badge/tests-267%2F267%20passing-brightgreen.svg)](tests/)
+[![Tests](https://img.shields.io/badge/tests-296%2F296%20passing-brightgreen.svg)](tests/)
 [![Coverage](https://img.shields.io/badge/coverage-87%25-brightgreen.svg)](htmlcov/)
 
 The AI Linter - Enterprise-ready linting and governance for AI-generated code across multiple languages.
@@ -167,6 +167,44 @@ docker run --rm -v $(pwd):/data \
 docker run --rm -v $(pwd):/data \
   washad/thailint:latest nesting /data/src
 ```
+
+### Docker with Sibling Directories
+
+For Docker environments with sibling directories (e.g., separate config and source directories), use `--project-root` or config path inference:
+
+```bash
+# Directory structure:
+# /workspace/
+# ├── root/           # Contains .thailint.yaml and .git
+# ├── backend/        # Code to lint
+# └── tools/
+
+# Option 1: Explicit project root (recommended)
+docker run --rm -v $(pwd):/data \
+  washad/thailint:latest \
+  --project-root /data/root \
+  magic-numbers /data/backend/
+
+# Option 2: Config path inference (automatic)
+docker run --rm -v $(pwd):/data \
+  washad/thailint:latest \
+  --config /data/root/.thailint.yaml \
+  magic-numbers /data/backend/
+
+# With ignore patterns resolving from project root
+docker run --rm -v $(pwd):/data \
+  washad/thailint:latest \
+  --project-root /data/root \
+  --config /data/root/.thailint.yaml \
+  magic-numbers /data/backend/
+```
+
+**Priority order:**
+1. `--project-root` (highest priority - explicit specification)
+2. Inferred from `--config` path directory
+3. Auto-detection from file location (fallback)
+
+See **[Docker Usage](#docker-usage)** section below for more examples.
 
 ## Configuration
 
@@ -1000,6 +1038,8 @@ See `just --list` or `just help` for all available commands.
 
 ## Docker Usage
 
+### Basic Docker Commands
+
 ```bash
 # Pull published image
 docker pull washad/thailint:latest
@@ -1027,6 +1067,44 @@ docker run --rm -v $(pwd):/data \
 docker run --rm -v $(pwd):/data \
     washad/thailint:latest file-placement --format json /data
 ```
+
+### Docker with Sibling Directories (Advanced)
+
+For complex Docker setups with sibling directories, use `--project-root` for explicit control:
+
+```bash
+# Scenario: Monorepo with separate config and code directories
+# Directory structure:
+# /workspace/
+# ├── config/           # Contains .thailint.yaml
+# ├── backend/app/      # Python backend code
+# ├── frontend/         # TypeScript frontend
+# └── tools/            # Build tools
+
+# Explicit project root (recommended for Docker)
+docker run --rm -v /path/to/workspace:/workspace \
+  washad/thailint:latest \
+  --project-root /workspace/config \
+  magic-numbers /workspace/backend/
+
+# Config path inference (automatic - no --project-root needed)
+docker run --rm -v /path/to/workspace:/workspace \
+  washad/thailint:latest \
+  --config /workspace/config/.thailint.yaml \
+  magic-numbers /workspace/backend/
+
+# Lint multiple sibling directories with shared config
+docker run --rm -v /path/to/workspace:/workspace \
+  washad/thailint:latest \
+  --project-root /workspace/config \
+  nesting /workspace/backend/ /workspace/frontend/
+```
+
+**When to use `--project-root` in Docker:**
+- **Sibling directory structures** - When config/code aren't nested
+- **Monorepos** - Multiple projects sharing one config
+- **CI/CD** - Explicit paths prevent auto-detection issues
+- **Ignore patterns** - Ensures patterns resolve from correct base directory
 
 ## Documentation
 

@@ -24,6 +24,109 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Project Root Detection System** - Three-level precedence system for accurate configuration and ignore pattern resolution
+  - `--project-root` CLI option for explicit project root specification (highest priority)
+  - Automatic project root inference from `--config` path (config's parent directory becomes project root)
+  - Auto-detection fallback that walks up from file location to find markers (`.git`, `.thailint.yaml`, `pyproject.toml`)
+  - Priority order: `--project-root` > config inference > auto-detection
+  - Click path validation (exists, is directory) with helpful error messages
+  - All paths resolved to absolute paths immediately for consistency
+
+- **Docker Sibling Directory Support** - Solves critical Docker use case where config and code are in separate directories
+  - Explicit project root specification: `docker run -v $(pwd):/workspace thailint --project-root /workspace/root magic-numbers /workspace/backend/`
+  - Automatic config path inference: `docker run -v $(pwd):/workspace thailint --config /workspace/root/.thailint.yaml magic-numbers /workspace/backend/`
+  - Monorepo support with shared configuration across multiple projects
+  - CI/CD-friendly with explicit paths preventing auto-detection issues
+
+- **Enhanced Configuration System**
+  - Config loading now respects project root context
+  - Ignore patterns resolve relative to project root (not file location)
+  - Config search paths: explicit `--config` > project-root/.thailint.yaml > auto-detected locations
+  - Pyprojroot fallback for test environment compatibility
+
+- **Test Suite**
+  - 42 tests for project root detection (29 new + 13 updated, 100% passing)
+  - `tests/unit/test_cli_project_root.py` - Explicit `--project-root` tests (15 tests)
+  - `tests/unit/test_cli_config_inference.py` - Config path inference tests (14 tests)
+  - Priority order tests verifying explicit > inferred > auto-detection
+  - Error handling tests for invalid paths (doesn't exist, is file not directory)
+  - Integration tests with real directory structures
+
+### Changed
+
+- **CLI Commands** - All linter commands now accept `--project-root` option
+  - `thailint magic-numbers --project-root PATH [TARGET]`
+  - `thailint nesting --project-root PATH [TARGET]`
+  - `thailint srp --project-root PATH [TARGET]`
+  - `thailint file-placement --project-root PATH [TARGET]`
+  - All commands support combined usage: `--project-root` with `--config`
+
+- **Orchestrator Initialization** - Now accepts explicit project root parameter
+  - `Orchestrator(project_root=Path, config_path=Path)` signature
+  - Project root passed from CLI to orchestrator for all linting operations
+  - Config loading uses project root context for path resolution
+
+- **Path Resolution** - All ignore patterns resolve relative to project root
+  - Previous behavior: patterns resolved relative to file being linted
+  - New behavior: patterns resolved relative to project root directory
+  - More predictable and consistent ignore pattern matching
+  - Better Docker compatibility with volume mounts
+
+### Documentation
+
+- **README.md** - Added comprehensive Docker sibling directory examples
+  - "Docker with Sibling Directories" section (lines 171-207)
+  - "Docker with Sibling Directories (Advanced)" section (lines 1071-1107)
+  - Directory structure examples and use cases
+  - Priority order explanation with multiple solution approaches
+
+- **CLI Reference** (docs/cli-reference.md)
+  - Complete `--project-root` option documentation (lines 120-170)
+  - Enhanced `--config` section explaining automatic project root inference (lines 92-118)
+  - Use case examples: Docker, monorepos, CI/CD, ignore patterns
+  - Error handling examples and exit codes
+  - Priority order documentation
+
+- **Troubleshooting Guide** (docs/troubleshooting.md)
+  - New "Docker sibling directory structure not working" section (lines 754-856)
+  - Problem symptoms and root cause explanation
+  - Three solution approaches ranked by recommendation
+  - Debugging steps with test commands
+  - Cross-references to related documentation
+
+- **Technical Architecture** (.ai/docs/python-cli-architecture.md)
+  - New "Project Root Detection" component documentation (section 2)
+  - Architecture diagram updated with project root detection layer
+  - Design decisions and implementation patterns
+  - Testing strategy and related components
+  - Docker use case examples and configuration integration
+
+### Fixed
+
+- **Docker Sibling Directory Issue** - Config and code can now be in separate, non-nested directories
+  - Previous: Only worked when code was nested under config directory
+  - Fixed: Works with any directory structure using `--project-root` or config inference
+  - Ignore patterns now resolve correctly in Docker volume mount scenarios
+
+- **Ignore Pattern Resolution** - Patterns now resolve consistently relative to project root
+  - Previous: Resolved relative to file being linted (inconsistent behavior)
+  - Fixed: Resolved relative to project root (predictable, consistent)
+  - Especially important for Docker and monorepo scenarios
+
+- **Test Environment Compatibility** - Added pyprojroot fallback for pytest environments
+  - Tests can run in isolated temporary directories
+  - Auto-detection gracefully handles test scenarios without project markers
+  - No impact on production code behavior
+
+### Infrastructure
+
+- Test suite execution time: All tests pass in <120ms (optimized for fast feedback)
+- TDD approach: RED tests → GREEN implementation → Documentation
+- Pre-commit hooks validated for all changes
+- Zero regressions in existing functionality (13 existing tests updated, all passing)
+
 ## [0.2.1] - 2025-10-09
 
 **Docker Path Validation Fix** - Fixes critical Docker image bug where file-specific linting failed due to premature path validation.
