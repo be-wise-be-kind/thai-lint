@@ -59,12 +59,145 @@ def setup_logging(verbose: bool = False):
     )
 
 
+def _determine_project_root(
+    explicit_root: str | None, config_path: str | None, verbose: bool
+) -> Path:
+    """Determine project root with precedence rules.
+
+    Precedence order:
+    1. Explicit --project-root (highest priority)
+    2. Inferred from --config path directory
+    3. Auto-detection via get_project_root() (fallback)
+
+    Args:
+        explicit_root: Explicitly specified project root path (from --project-root)
+        config_path: Config file path (from --config)
+        verbose: Whether verbose logging is enabled
+
+    Returns:
+        Path to determined project root
+
+    Raises:
+        SystemExit: If explicit_root doesn't exist or is not a directory
+    """
+    from src.utils.project_root import get_project_root
+
+    # Priority 1: Explicit --project-root
+    if explicit_root:
+        return _resolve_explicit_project_root(explicit_root, verbose)
+
+    # Priority 2: Infer from --config path
+    if config_path:
+        return _infer_root_from_config(config_path, verbose)
+
+    # Priority 3: Auto-detection (fallback)
+    return _autodetect_project_root(verbose, get_project_root)
+
+
+def _resolve_explicit_project_root(explicit_root: str, verbose: bool) -> Path:
+    """Resolve and validate explicitly specified project root.
+
+    Args:
+        explicit_root: Explicitly specified project root path
+        verbose: Whether verbose logging is enabled
+
+    Returns:
+        Resolved project root path
+
+    Raises:
+        SystemExit: If explicit_root doesn't exist or is not a directory
+    """
+    root = Path(explicit_root)
+    # Check existence before resolving to handle relative paths in test environments
+    if not root.exists():
+        click.echo(f"Error: Project root does not exist: {explicit_root}", err=True)
+        sys.exit(2)
+    if not root.is_dir():
+        click.echo(f"Error: Project root must be a directory: {explicit_root}", err=True)
+        sys.exit(2)
+
+    # Now resolve after validation
+    root = root.resolve()
+
+    if verbose:
+        logger.debug(f"Using explicit project root: {root}")
+    return root
+
+
+def _infer_root_from_config(config_path: str, verbose: bool) -> Path:
+    """Infer project root from config file path.
+
+    Args:
+        config_path: Config file path
+        verbose: Whether verbose logging is enabled
+
+    Returns:
+        Inferred project root (parent directory of config file)
+    """
+    config_file = Path(config_path).resolve()
+    inferred_root = config_file.parent
+
+    if verbose:
+        logger.debug(f"Inferred project root from config path: {inferred_root}")
+    return inferred_root
+
+
+def _autodetect_project_root(verbose: bool, get_project_root) -> Path:
+    """Auto-detect project root using project root detection.
+
+    Args:
+        verbose: Whether verbose logging is enabled
+        get_project_root: Function to detect project root
+
+    Returns:
+        Auto-detected project root
+    """
+    auto_root = get_project_root(None)
+    if verbose:
+        logger.debug(f"Auto-detected project root: {auto_root}")
+    return auto_root
+
+
+def _get_project_root_from_context(ctx) -> Path:
+    """Get or determine project root from Click context.
+
+    This function defers the actual determination until needed to avoid
+    importing pyprojroot in test environments where it may not be available.
+
+    Args:
+        ctx: Click context containing CLI options
+
+    Returns:
+        Path to determined project root
+    """
+    # Check if already determined and cached
+    if "project_root" in ctx.obj:
+        return ctx.obj["project_root"]
+
+    # Determine project root using stored CLI options
+    explicit_root = ctx.obj.get("cli_project_root")
+    config_path = ctx.obj.get("cli_config_path")
+    verbose = ctx.obj.get("verbose", False)
+
+    project_root = _determine_project_root(explicit_root, config_path, verbose)
+
+    # Cache for future use
+    ctx.obj["project_root"] = project_root
+
+    return project_root
+
+
 @click.group()
 @click.version_option(version=__version__)
 @click.option("--verbose", "-v", is_flag=True, help="Enable verbose output")
 @click.option("--config", "-c", type=click.Path(), help="Path to config file")
+@click.option(
+    "--project-root",
+    type=click.Path(),
+    help="Explicitly specify project root directory (overrides auto-detection)",
+)
 @click.pass_context
-def cli(ctx, verbose: bool, config: str | None):
+def cli(ctx, verbose: bool, config: str | None, project_root: str | None):
     """
     thai-lint - AI code linter and governance tool
 
@@ -86,6 +219,10 @@ def cli(ctx, verbose: bool, config: str | None):
         thai-lint file-placement --config .thailint.yaml src/
 
         \b
+        # Specify project root explicitly (useful in Docker)
+        thai-lint --project-root /workspace/root magic-numbers backend/
+
+        \b
         # Get JSON output
         thai-lint file-placement --format json .
 
@@ -98,6 +235,11 @@ def cli(ctx, verbose: bool, config: str | None):
 
     # Setup logging
     setup_logging(verbose)
+
+    # Store CLI options for later project root determination
+    # (deferred to avoid pyprojroot import issues in test environments)
+    ctx.obj["cli_project_root"] = project_root
+    ctx.obj["cli_config_path"] = config
 
     # Load configuration
     try:
@@ -551,6 +693,7 @@ def file_placement(  # pylint: disable=too-many-arguments,too-many-positional-ar
         thai-lint file-placement --rules '{"allow": [".*\\.py$"]}' .
     """
     verbose = ctx.obj.get("verbose", False)
+    project_root = _get_project_root_from_context(ctx)
 
     if not paths:
         paths = (".",)
@@ -558,17 +701,19 @@ def file_placement(  # pylint: disable=too-many-arguments,too-many-positional-ar
     path_objs = [Path(p) for p in paths]
 
     try:
-        _execute_file_placement_lint(path_objs, config_file, rules, format, recursive, verbose)
+        _execute_file_placement_lint(
+            path_objs, config_file, rules, format, recursive, verbose, project_root
+        )
     except Exception as e:
         _handle_linting_error(e, verbose)
 
 
 def _execute_file_placement_lint(  # pylint: disable=too-many-arguments,too-many-positional-arguments
-    path_objs, config_file, rules, format, recursive, verbose
+    path_objs, config_file, rules, format, recursive, verbose, project_root=None
 ):
     """Execute file placement linting."""
     _validate_paths_exist(path_objs)
-    orchestrator = _setup_orchestrator(path_objs, config_file, rules, verbose)
+    orchestrator = _setup_orchestrator(path_objs, config_file, rules, verbose, project_root)
     all_violations = _execute_linting_on_paths(orchestrator, path_objs, recursive)
 
     # Filter to only file-placement violations
@@ -627,25 +772,54 @@ def _find_project_root(start_path: Path) -> Path:
     return get_project_root(start_path)
 
 
-def _setup_orchestrator(path_objs, config_file, rules, verbose):
+def _setup_orchestrator(path_objs, config_file, rules, verbose, project_root=None):
     """Set up and configure the orchestrator."""
     from src.orchestrator.core import Orchestrator
     from src.utils.project_root import get_project_root
+
+    # Use provided project_root or fall back to auto-detection
+    project_root = _get_or_detect_project_root(path_objs, project_root, get_project_root)
+
+    orchestrator = Orchestrator(project_root=project_root)
+    _apply_orchestrator_config(orchestrator, config_file, rules, verbose)
+
+    return orchestrator
+
+
+def _get_or_detect_project_root(path_objs, project_root, get_project_root):
+    """Get provided project root or auto-detect from paths.
+
+    Args:
+        path_objs: List of path objects
+        project_root: Optionally provided project root
+        get_project_root: Function to detect project root
+
+    Returns:
+        Project root path
+    """
+    if project_root is not None:
+        return project_root
 
     # Find actual project root (where .git or pyproject.toml exists)
     # This ensures .artifacts/ is always created at project root, not in subdirectories
     first_path = path_objs[0] if path_objs else Path.cwd()
     search_start = first_path if first_path.is_dir() else first_path.parent
-    project_root = get_project_root(search_start)
+    return get_project_root(search_start)
 
-    orchestrator = Orchestrator(project_root=project_root)
 
+def _apply_orchestrator_config(orchestrator, config_file, rules, verbose):
+    """Apply configuration to orchestrator.
+
+    Args:
+        orchestrator: Orchestrator instance
+        config_file: Path to config file (optional)
+        rules: Inline JSON rules (optional)
+        verbose: Whether verbose logging is enabled
+    """
     if rules:
         _apply_inline_rules(orchestrator, rules, verbose)
     elif config_file:
         _load_config_file(orchestrator, config_file, verbose)
-
-    return orchestrator
 
 
 def _apply_inline_rules(orchestrator, rules, verbose):
@@ -759,13 +933,18 @@ def _execute_linting_on_paths(orchestrator, path_objs: list[Path], recursive: bo
     return violations
 
 
-def _setup_nesting_orchestrator(path_objs: list[Path], config_file: str | None, verbose: bool):
+def _setup_nesting_orchestrator(
+    path_objs: list[Path], config_file: str | None, verbose: bool, project_root: Path | None = None
+):
     """Set up orchestrator for nesting command."""
-    # Use first path to determine project root
-    first_path = path_objs[0] if path_objs else Path.cwd()
-    project_root = first_path if first_path.is_dir() else first_path.parent
-
     from src.orchestrator.core import Orchestrator
+    from src.utils.project_root import get_project_root
+
+    # Use provided project_root or fall back to auto-detection
+    if project_root is None:
+        first_path = path_objs[0] if path_objs else Path.cwd()
+        search_start = first_path if first_path.is_dir() else first_path.parent
+        project_root = get_project_root(search_start)
 
     orchestrator = Orchestrator(project_root=project_root)
 
@@ -780,12 +959,32 @@ def _apply_nesting_config_override(orchestrator, max_depth: int | None, verbose:
     if max_depth is None:
         return
 
+    # Ensure nesting config exists
     if "nesting" not in orchestrator.config:
         orchestrator.config["nesting"] = {}
-    orchestrator.config["nesting"]["max_nesting_depth"] = max_depth
+
+    nesting_config = orchestrator.config["nesting"]
+
+    # Set top-level max_nesting_depth
+    nesting_config["max_nesting_depth"] = max_depth
+
+    # Override language-specific configs to ensure CLI option takes precedence
+    _override_language_specific_nesting(nesting_config, max_depth)
 
     if verbose:
         logger.debug(f"Overriding max_nesting_depth to {max_depth}")
+
+
+def _override_language_specific_nesting(nesting_config: dict, max_depth: int):
+    """Override language-specific nesting depth configs.
+
+    Args:
+        nesting_config: Nesting configuration dictionary
+        max_depth: Maximum nesting depth to set
+    """
+    for lang in ["python", "typescript", "javascript"]:
+        if lang in nesting_config:
+            nesting_config[lang]["max_nesting_depth"] = max_depth
 
 
 def _run_nesting_lint(orchestrator, path_objs: list[Path], recursive: bool):
@@ -851,6 +1050,7 @@ def nesting(  # pylint: disable=too-many-arguments,too-many-positional-arguments
         thai-lint nesting --config .thailint.yaml src/
     """
     verbose = ctx.obj.get("verbose", False)
+    project_root = _get_project_root_from_context(ctx)
 
     # Default to current directory if no paths provided
     if not paths:
@@ -859,17 +1059,19 @@ def nesting(  # pylint: disable=too-many-arguments,too-many-positional-arguments
     path_objs = [Path(p) for p in paths]
 
     try:
-        _execute_nesting_lint(path_objs, config_file, format, max_depth, recursive, verbose)
+        _execute_nesting_lint(
+            path_objs, config_file, format, max_depth, recursive, verbose, project_root
+        )
     except Exception as e:
         _handle_linting_error(e, verbose)
 
 
 def _execute_nesting_lint(  # pylint: disable=too-many-arguments,too-many-positional-arguments
-    path_objs, config_file, format, max_depth, recursive, verbose
+    path_objs, config_file, format, max_depth, recursive, verbose, project_root=None
 ):
     """Execute nesting lint."""
     _validate_paths_exist(path_objs)
-    orchestrator = _setup_nesting_orchestrator(path_objs, config_file, verbose)
+    orchestrator = _setup_nesting_orchestrator(path_objs, config_file, verbose, project_root)
     _apply_nesting_config_override(orchestrator, max_depth, verbose)
     nesting_violations = _run_nesting_lint(orchestrator, path_objs, recursive)
 
@@ -880,12 +1082,18 @@ def _execute_nesting_lint(  # pylint: disable=too-many-arguments,too-many-positi
     sys.exit(1 if nesting_violations else 0)
 
 
-def _setup_srp_orchestrator(path_objs: list[Path], config_file: str | None, verbose: bool):
+def _setup_srp_orchestrator(
+    path_objs: list[Path], config_file: str | None, verbose: bool, project_root: Path | None = None
+):
     """Set up orchestrator for SRP command."""
-    first_path = path_objs[0] if path_objs else Path.cwd()
-    project_root = first_path if first_path.is_dir() else first_path.parent
-
     from src.orchestrator.core import Orchestrator
+    from src.utils.project_root import get_project_root
+
+    # Use provided project_root or fall back to auto-detection
+    if project_root is None:
+        first_path = path_objs[0] if path_objs else Path.cwd()
+        search_start = first_path if first_path.is_dir() else first_path.parent
+        project_root = get_project_root(search_start)
 
     orchestrator = Orchestrator(project_root=project_root)
 
@@ -988,6 +1196,7 @@ def srp(  # pylint: disable=too-many-arguments,too-many-positional-arguments
         thai-lint srp --config .thailint.yaml src/
     """
     verbose = ctx.obj.get("verbose", False)
+    project_root = _get_project_root_from_context(ctx)
 
     if not paths:
         paths = (".",)
@@ -995,17 +1204,19 @@ def srp(  # pylint: disable=too-many-arguments,too-many-positional-arguments
     path_objs = [Path(p) for p in paths]
 
     try:
-        _execute_srp_lint(path_objs, config_file, format, max_methods, max_loc, recursive, verbose)
+        _execute_srp_lint(
+            path_objs, config_file, format, max_methods, max_loc, recursive, verbose, project_root
+        )
     except Exception as e:
         _handle_linting_error(e, verbose)
 
 
 def _execute_srp_lint(  # pylint: disable=too-many-arguments,too-many-positional-arguments
-    path_objs, config_file, format, max_methods, max_loc, recursive, verbose
+    path_objs, config_file, format, max_methods, max_loc, recursive, verbose, project_root=None
 ):
     """Execute SRP lint."""
     _validate_paths_exist(path_objs)
-    orchestrator = _setup_srp_orchestrator(path_objs, config_file, verbose)
+    orchestrator = _setup_srp_orchestrator(path_objs, config_file, verbose, project_root)
     _apply_srp_config_override(orchestrator, max_methods, max_loc, verbose)
     srp_violations = _run_srp_lint(orchestrator, path_objs, recursive)
 
@@ -1085,6 +1296,7 @@ def dry(  # pylint: disable=too-many-arguments,too-many-positional-arguments
         thai-lint dry --format json .
     """
     verbose = ctx.obj.get("verbose", False)
+    project_root = _get_project_root_from_context(ctx)
 
     if not paths:
         paths = (".",)
@@ -1093,18 +1305,34 @@ def dry(  # pylint: disable=too-many-arguments,too-many-positional-arguments
 
     try:
         _execute_dry_lint(
-            path_objs, config_file, format, min_lines, no_cache, clear_cache, recursive, verbose
+            path_objs,
+            config_file,
+            format,
+            min_lines,
+            no_cache,
+            clear_cache,
+            recursive,
+            verbose,
+            project_root,
         )
     except Exception as e:
         _handle_linting_error(e, verbose)
 
 
 def _execute_dry_lint(  # pylint: disable=too-many-arguments,too-many-positional-arguments
-    path_objs, config_file, format, min_lines, no_cache, clear_cache, recursive, verbose
+    path_objs,
+    config_file,
+    format,
+    min_lines,
+    no_cache,
+    clear_cache,
+    recursive,
+    verbose,
+    project_root=None,
 ):
     """Execute DRY linting."""
     _validate_paths_exist(path_objs)
-    orchestrator = _setup_dry_orchestrator(path_objs, config_file, verbose)
+    orchestrator = _setup_dry_orchestrator(path_objs, config_file, verbose, project_root)
     _apply_dry_config_override(orchestrator, min_lines, no_cache, verbose)
 
     if clear_cache:
@@ -1119,14 +1347,16 @@ def _execute_dry_lint(  # pylint: disable=too-many-arguments,too-many-positional
     sys.exit(1 if dry_violations else 0)
 
 
-def _setup_dry_orchestrator(path_objs, config_file, verbose):
+def _setup_dry_orchestrator(path_objs, config_file, verbose, project_root=None):
     """Set up orchestrator for DRY linting."""
     from src.orchestrator.core import Orchestrator
     from src.utils.project_root import get_project_root
 
-    first_path = path_objs[0] if path_objs else Path.cwd()
-    search_start = first_path if first_path.is_dir() else first_path.parent
-    project_root = get_project_root(search_start)
+    # Use provided project_root or fall back to auto-detection
+    if project_root is None:
+        first_path = path_objs[0] if path_objs else Path.cwd()
+        search_start = first_path if first_path.is_dir() else first_path.parent
+        project_root = get_project_root(search_start)
 
     orchestrator = Orchestrator(project_root=project_root)
 
@@ -1213,16 +1443,18 @@ def _run_dry_lint(orchestrator, path_objs, recursive):
 
 
 def _setup_magic_numbers_orchestrator(
-    path_objs: list[Path], config_file: str | None, verbose: bool
+    path_objs: list[Path], config_file: str | None, verbose: bool, project_root: Path | None = None
 ):
     """Set up orchestrator for magic-numbers command."""
     from src.orchestrator.core import Orchestrator
     from src.utils.project_root import get_project_root
 
-    # Find actual project root (where .git or .thailint.yaml exists)
-    first_path = path_objs[0] if path_objs else Path.cwd()
-    search_start = first_path if first_path.is_dir() else first_path.parent
-    project_root = get_project_root(search_start)
+    # Use provided project_root or fall back to auto-detection
+    if project_root is None:
+        # Find actual project root (where .git or .thailint.yaml exists)
+        first_path = path_objs[0] if path_objs else Path.cwd()
+        search_start = first_path if first_path.is_dir() else first_path.parent
+        project_root = get_project_root(search_start)
 
     orchestrator = Orchestrator(project_root=project_root)
 
@@ -1289,6 +1521,7 @@ def magic_numbers(  # pylint: disable=too-many-arguments,too-many-positional-arg
         thai-lint magic-numbers --config .thailint.yaml src/
     """
     verbose = ctx.obj.get("verbose", False)
+    project_root = _get_project_root_from_context(ctx)
 
     if not paths:
         paths = (".",)
@@ -1296,17 +1529,19 @@ def magic_numbers(  # pylint: disable=too-many-arguments,too-many-positional-arg
     path_objs = [Path(p) for p in paths]
 
     try:
-        _execute_magic_numbers_lint(path_objs, config_file, format, recursive, verbose)
+        _execute_magic_numbers_lint(
+            path_objs, config_file, format, recursive, verbose, project_root
+        )
     except Exception as e:
         _handle_linting_error(e, verbose)
 
 
 def _execute_magic_numbers_lint(  # pylint: disable=too-many-arguments,too-many-positional-arguments
-    path_objs, config_file, format, recursive, verbose
+    path_objs, config_file, format, recursive, verbose, project_root=None
 ):
     """Execute magic-numbers lint."""
     _validate_paths_exist(path_objs)
-    orchestrator = _setup_magic_numbers_orchestrator(path_objs, config_file, verbose)
+    orchestrator = _setup_magic_numbers_orchestrator(path_objs, config_file, verbose, project_root)
     magic_numbers_violations = _run_magic_numbers_lint(orchestrator, path_objs, recursive)
 
     if verbose:
