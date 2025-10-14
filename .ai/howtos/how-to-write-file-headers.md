@@ -128,7 +128,34 @@ Overview: Implements JWT token-based authentication with session management.
     with the user service for account verification and authorization.
 ```
 
-## Step 4: Write the Header (File-Type Specific)
+## Step 4: Choose Header Format
+
+### Standard vs AI-Optimized Headers
+
+You have two options for file headers:
+
+**Standard Headers** (this document):
+- Human-first, narrative style
+- Traditional documentation format
+- Good for general-purpose development
+
+**AI-Optimized Headers** (see `docs/ai-doc-standard.md`):
+- **Recommended for AI-assisted development workflows**
+- Machine-readable metadata optimized for LLMs
+- 2-3x more files fit in AI context windows
+- Front-loaded critical information (`File:` field first)
+- Explicit `Exports:` and `Depends:` fields
+- Better semantic search and retrieval
+
+**When to Use AI-Optimized Format**:
+- ✅ Team heavily uses AI coding assistants (Claude, Copilot, Cursor)
+- ✅ Large codebase (100+ files) needing better AI navigation
+- ✅ Microservices architecture with complex dependencies
+- ✅ Frequent developer rotation (AI helps onboarding)
+
+**Key Difference**: AI-optimized headers put `File:` field FIRST and use structured metadata before narrative. See `docs/ai-doc-standard.md` for complete specification with examples.
+
+## Step 5: Write the Header (File-Type Specific)
 
 ### For Markdown Files
 

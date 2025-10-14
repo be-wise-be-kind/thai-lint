@@ -20,6 +20,21 @@
 
 This document establishes unified header standards for all file types in the repository, providing consistent documentation patterns across markdown, configuration files, code files, and all other document types. The goal is to ensure every file is self-documenting with proper line breaks for readability and consistent formatting, while focusing on essential operational information that Git doesn't already track.
 
+## Relationship to AI-Optimized Standard
+
+This document defines thai-lint's current file header standards. For teams using AI-assisted development tools (Claude, GitHub Copilot, Cursor), see **docs/ai-doc-standard.md** for an AI-optimized header format that maximizes LLM effectiveness through:
+- Machine-readable metadata for faster file scanning (2-3x more files in context windows)
+- Progressive disclosure for token efficiency
+- Explicit dependency mapping and exports
+- Front-loaded critical information (first 5 lines contain 80% of what AI needs)
+- Optimized for embedding models and RAG systems
+
+Both standards are valid; choose based on your workflow:
+- **This document**: General-purpose, human-first headers for traditional development
+- **docs/ai-doc-standard.md**: AI-first, optimized for LLM code understanding and AI-assisted workflows
+
+**Key Common Requirement**: Both standards enforce atemporal language (no dates, no "currently", no "now", no temporal references). The file-header linter will enforce this requirement regardless of which standard you follow.
+
 ## Atemporal Documentation Principle
 
 File headers must be written in an atemporal manner - avoiding language that references specific points in time, historical changes, or future plans. This ensures documentation remains accurate and relevant without requiring updates when circumstances change.
