@@ -33,25 +33,79 @@ class TokenHasher:
             List of normalized code lines (non-empty, comments removed, imports filtered)
         """
         lines = []
+        in_multiline_import = False
 
         for line in code.split("\n"):
-            # Remove comments (language-specific logic can be added)
-            line = self._strip_comments(line)
-
-            # Normalize whitespace (collapse to single space)
-            line = " ".join(line.split())
-
-            # Skip empty lines
+            line = self._normalize_line(line)
             if not line:
                 continue
 
-            # Skip import statements (common false positive)
-            if self._is_import_statement(line):
+            # Update multi-line import state and check if line should be skipped
+            in_multiline_import, should_skip = self._should_skip_import_line(
+                line, in_multiline_import
+            )
+            if should_skip:
                 continue
 
             lines.append(line)
 
         return lines
+
+    def _normalize_line(self, line: str) -> str:
+        """Normalize a line by removing comments and excess whitespace.
+
+        Args:
+            line: Raw source code line
+
+        Returns:
+            Normalized line (empty string if line has no content)
+        """
+        line = self._strip_comments(line)
+        return " ".join(line.split())
+
+    def _should_skip_import_line(self, line: str, in_multiline_import: bool) -> tuple[bool, bool]:
+        """Determine if an import line should be skipped.
+
+        Args:
+            line: Normalized code line
+            in_multiline_import: Whether we're currently inside a multi-line import
+
+        Returns:
+            Tuple of (new_in_multiline_import_state, should_skip_line)
+        """
+        if self._is_multiline_import_start(line):
+            return True, True
+
+        if in_multiline_import:
+            return self._handle_multiline_import_continuation(line)
+
+        if self._is_import_statement(line):
+            return False, True
+
+        return False, False
+
+    def _is_multiline_import_start(self, line: str) -> bool:
+        """Check if line starts a multi-line import statement.
+
+        Args:
+            line: Normalized code line
+
+        Returns:
+            True if line starts a multi-line import (has opening paren but no closing)
+        """
+        return self._is_import_statement(line) and "(" in line and ")" not in line
+
+    def _handle_multiline_import_continuation(self, line: str) -> tuple[bool, bool]:
+        """Handle a line that's part of a multi-line import.
+
+        Args:
+            line: Normalized code line inside a multi-line import
+
+        Returns:
+            Tuple of (still_in_import, should_skip)
+        """
+        closes_import = ")" in line
+        return not closes_import, True
 
     def _strip_comments(self, line: str) -> str:
         """Remove comments from line (Python # and // style).

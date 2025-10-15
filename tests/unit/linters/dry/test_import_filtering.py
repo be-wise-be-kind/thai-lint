@@ -184,3 +184,70 @@ def process_request():
     # The violation should exist - imports were filtered, function code was detected
     # Line numbers may start at 1 because tokenizer tracks non-import lines
     assert any("duplicate code" in v.message.lower() for v in violations)
+
+
+def test_multiline_python_imports_not_duplicates(tmp_path):
+    """Test that multi-line Python imports are not flagged as duplicates.
+
+    Regression test for bug where multi-line imports like:
+        from module import (
+            Class1,
+            Class2,
+        )
+    were being flagged as duplicate code.
+    """
+    # Create two files with identical multi-line imports (matching bug report)
+    (tmp_path / "file_header_rules.py").write_text("""import re
+from pathlib import Path
+from typing import Any
+
+from loguru import logger
+from tools.design_linters.framework.interfaces import (
+    ASTLintRule,
+    LintContext,
+    LintViolation,
+    Severity,
+)
+
+
+class HeaderFieldValidator:
+    '''Handles validation of header field content and quality.'''
+
+    def validate_field_content(self, fields):
+        return []
+""")
+
+    (tmp_path / "test_skip_rules.py").write_text("""import ast
+from typing import Any
+
+from loguru import logger
+from tools.design_linters.framework.interfaces import (
+    ASTLintRule,
+    LintContext,
+    LintViolation,
+    Severity,
+)
+
+
+class SkipPatternDetector:
+    '''Detects various test skip patterns in code.'''
+
+    def has_skip_decorator(self, node):
+        return False
+""")
+
+    config_file = tmp_path / ".thailint.yaml"
+    config_file.write_text("""dry:
+  enabled: true
+  min_duplicate_lines: 4
+  cache_enabled: false
+""")
+
+    linter = Linter(config_file=config_file, project_root=tmp_path)
+    violations = linter.lint(tmp_path, rules=["dry.duplicate-code"])
+
+    # Should have NO violations - multi-line imports should be filtered
+    assert len(violations) == 0, (
+        f"Expected 0 violations for multi-line imports, got {len(violations)}. "
+        f"Violations: {[v.message for v in violations]}"
+    )

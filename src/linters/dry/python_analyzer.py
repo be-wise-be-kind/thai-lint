@@ -215,20 +215,21 @@ class PythonDuplicateAnalyzer(BaseTokenAnalyzer):  # thailint: ignore[srp.violat
             List of (original_line_number, normalized_code) tuples
         """
         lines_with_numbers = []
+        in_multiline_import = False
 
         for line_num, line in enumerate(content.split("\n"), start=1):
-            # Skip docstring lines
             if line_num in docstring_lines:
                 continue
 
-            # Use hasher's existing tokenization logic
-            line = self._hasher._strip_comments(line)  # pylint: disable=protected-access
-            line = " ".join(line.split())
-
+            line = self._hasher._normalize_line(line)  # pylint: disable=protected-access
             if not line:
                 continue
 
-            if self._hasher._is_import_statement(line):  # pylint: disable=protected-access
+            # Update multi-line import state and check if line should be skipped
+            in_multiline_import, should_skip = self._hasher._should_skip_import_line(  # pylint: disable=protected-access
+                line, in_multiline_import
+            )
+            if should_skip:
                 continue
 
             lines_with_numbers.append((line_num, line))
