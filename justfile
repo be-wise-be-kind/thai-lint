@@ -42,8 +42,8 @@ help:
     @echo "  just format                    - Auto-fix formatting and linting issues"
     @echo ""
     @echo "Testing:"
-    @echo "  just test              - Run tests in parallel (use --serial for single-threaded)"
-    @echo "  just test-coverage     - Run tests with coverage (serial mode - coverage doesn't support parallel)"
+    @echo "  just test              - Run tests in parallel (use --serial for reliability)"
+    @echo "  just test-coverage     - Run tests with coverage (serial mode)"
     @echo ""
     @echo "Maintenance:"
     @echo "  just clean             - Clean cache and artifacts"
@@ -401,7 +401,7 @@ format:
     @poetry run ruff format src/ tests/
     @poetry run ruff check --fix src/ tests/
 
-# Run tests (parallel by default, use --serial for single-threaded)
+# Run tests (parallel by default for speed, use --serial for reliability)
 test *ARGS="":
     #!/usr/bin/env bash
     if [[ " {{ARGS}} " =~ " --serial " ]]; then
@@ -487,7 +487,8 @@ clean:
     @find . -type d -name ".mypy_cache" -exec rm -rf {} + 2>/dev/null || true
     @find . -type d -name ".ruff_cache" -exec rm -rf {} + 2>/dev/null || true
     @find . -type f -name "*.pyc" -delete 2>/dev/null || true
-    @rm -rf htmlcov/ .coverage 2>/dev/null || true
+    @find . -type f -name ".coverage*" -delete 2>/dev/null || true
+    @rm -rf htmlcov/ 2>/dev/null || true
     @echo "✓ Cleaned cache and artifacts"
 
 # Quick share - commit and push changes for collaboration without running hooks
