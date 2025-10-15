@@ -163,3 +163,9 @@ dry:
   filters:
     keyword_argument_filter: true  # Filter function call keyword arguments (e.g., param=value, ...)
     import_group_filter: true       # Filter import statement groups
+
+# Magic numbers linter configuration
+magic-numbers:
+  enabled: true  # Enable magic number detection
+  allowed_numbers: [-1, 0, 1, 2, 3, 4, 5, 10, 100, 1000]  # Standard preset - numbers acceptable without constants
+  max_small_integer: 10  # Maximum value allowed in range() or enumerate()

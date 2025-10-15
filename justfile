@@ -36,9 +36,10 @@ help:
     @echo "  just lint-complexity [FILES...] - Complexity analysis (Radon + Xenon + Nesting)"
     @echo "  just lint-placement [PATH]     - File placement linting (dogfooding our own linter)"
     @echo "  just lint-solid [FILES...]     - SOLID principle linting (SRP)"
+    @echo "  just lint-magic-numbers [FILES...] - Magic number detection (unnamed numeric literals)"
     @echo "  just lint-dry                  - DRY principle linting (duplicate code detection)"
     @echo "  just clean-cache               - Clear DRY linter cache"
-    @echo "  just lint-full [FILES...]      - ALL quality checks (includes lint-dry as of PR4)"
+    @echo "  just lint-full [FILES...]      - ALL quality checks (includes magic numbers and DRY)"
     @echo "  just format                    - Auto-fix formatting and linting issues"
     @echo ""
     @echo "Testing:"
@@ -304,6 +305,23 @@ lint-dry +files="src/ tests/":
         fi \
     fi
 
+# Magic numbers linting (detect unnamed numeric literals)
+lint-magic-numbers +files="src/ tests/":
+    @echo ""
+    @echo "{{BLUE}}{{BOLD}}════════════════════════════════════════════════════════════{{NC}}"
+    @echo "{{BOLD}}  MAGIC NUMBERS (Unnamed Numeric Literals){{NC}}"
+    @echo "{{BLUE}}{{BOLD}}════════════════════════════════════════════════════════════{{NC}}"
+    @echo ""
+    @SRC_TARGETS=$(just _get-src-targets {{files}}); \
+    if [ -n "$SRC_TARGETS" ]; then \
+        if poetry run thai-lint magic-numbers $SRC_TARGETS --config .thailint.yaml 2>&1; then \
+            echo "{{GREEN}}✓ Magic numbers checks passed{{NC}}"; \
+        else \
+            echo "{{RED}}✗ Magic numbers checks failed{{NC}}"; \
+            exit 1; \
+        fi \
+    fi
+
 # Clear DRY linter cache
 clean-cache:
     @echo "{{BLUE}}Clearing DRY linter cache...{{NC}}"
@@ -360,6 +378,13 @@ lint-full +files="src/ tests/":
         PASSED+=("SOLID Principles")
     else
         FAILED+=("SOLID Principles")
+    fi
+
+    echo ""
+    if just lint-magic-numbers {{files}}; then
+        PASSED+=("Magic Numbers")
+    else
+        FAILED+=("Magic Numbers")
     fi
 
     echo ""
