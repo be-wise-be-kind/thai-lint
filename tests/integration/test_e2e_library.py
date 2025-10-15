@@ -66,6 +66,7 @@ class TestLibraryBasicUsage:
             config_file = tmp_path / ".thailint.yaml"
             config_file.write_text(
                 "file-placement:\n  global_patterns:\n    allow:\n      - pattern: '.*\\.py$'\n"
+                "file-header:\n  ignore:\n    - 'test.py'\n"
             )
 
             # Create test file
