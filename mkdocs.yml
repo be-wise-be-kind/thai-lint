@@ -1,0 +1,80 @@
+# MkDocs configuration for thai-lint documentation
+site_name: thai-lint
+site_description: The AI Linter - Enterprise-ready linting and governance for AI-generated code
+site_author: Steve Jackson
+site_url: https://thai-lint.readthedocs.io
+
+# Repository
+repo_name: be-wise-be-kind/thai-lint
+repo_url: https://github.com/be-wise-be-kind/thai-lint
+edit_uri: edit/main/docs/
+
+# Copyright
+copyright: Copyright &copy; 2024 Steve Jackson
+
+# Configuration
+theme:
+  name: material
+  palette:
+    - scheme: default
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - scheme: slate
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.expand
+    - navigation.top
+    - search.suggest
+    - search.highlight
+    - content.code.copy
+    - content.action.edit
+
+# Extensions
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.tabbed:
+      alternate_style: true
+  - tables
+  - toc:
+      permalink: true
+
+# Page tree
+nav:
+  - Home: index.md
+  - Getting Started:
+      - Quick Start: quick-start.md
+      - Installation: getting-started.md
+      - Configuration: configuration.md
+      - Troubleshooting: troubleshooting.md
+  - Linters:
+      - File Placement: file-placement-linter.md
+      - Magic Numbers: magic-numbers-linter.md
+      - Nesting Depth: nesting-linter.md
+      - Single Responsibility (SRP): srp-linter.md
+      - DRY (Duplicate Code): dry-linter.md
+  - Usage:
+      - CLI Reference: cli-reference.md
+      - API Reference: api-reference.md
+      - Deployment Modes: deployment-modes.md
+      - How to Ignore Violations: how-to-ignore-violations.md
+      - Pre-commit Hooks: pre-commit-hooks.md
+  - Publishing:
+      - Release Workflow: releasing.md
+      - Publishing Checklist: publishing-checklist.md
+  - Advanced:
+      - AI Documentation Standard: ai-doc-standard.md

@@ -4,17 +4,18 @@
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
 [![Tests](https://img.shields.io/badge/tests-296%2F296%20passing-brightgreen.svg)](tests/)
 [![Coverage](https://img.shields.io/badge/coverage-87%25-brightgreen.svg)](htmlcov/)
+[![Documentation Status](https://readthedocs.org/projects/thai-lint/badge/?version=latest)](https://thai-lint.readthedocs.io/en/latest/?badge=latest)
 
 The AI Linter - Enterprise-ready linting and governance for AI-generated code across multiple languages.
 
 ## Documentation
 
 **New to thailint?** Start here:
-- **[Quick Start Guide](docs/quick-start.md)** - Get running in 5 minutes
-- **[Configuration Reference](docs/configuration.md)** - Complete config options for all linters
-- **[Troubleshooting Guide](docs/troubleshooting.md)** - Common issues and solutions
+- **[Quick Start Guide](https://thai-lint.readthedocs.io/en/latest/quick-start/)** - Get running in 5 minutes
+- **[Configuration Reference](https://thai-lint.readthedocs.io/en/latest/configuration/)** - Complete config options for all linters
+- **[Troubleshooting Guide](https://thai-lint.readthedocs.io/en/latest/troubleshooting/)** - Common issues and solutions
 
-**Full Documentation:** Browse the **[docs/](docs/)** folder for comprehensive guides covering installation, all linters, configuration patterns, and integration examples.
+**Full Documentation:** Browse the **[documentation site](https://thai-lint.readthedocs.io/)** for comprehensive guides covering installation, all linters, configuration patterns, and integration examples.
 
 ## Overview
 
@@ -31,7 +32,7 @@ We're not trying to replace the wonderful existing linters like Pylint, ESLint, 
 
 thailint complements your existing linting stack by catching the patterns AI tools repeatedly miss.
 
-**Complete documentation available in the [docs/](docs/) folder** covering installation, configuration, all linters, and troubleshooting.
+**Complete documentation available at [thai-lint.readthedocs.io](https://thai-lint.readthedocs.io/)** covering installation, configuration, all linters, and troubleshooting.
 
 ## Features
 
@@ -129,7 +130,7 @@ thailint dry --config .thailint.yaml src/
 thailint dry --format json src/
 ```
 
-**New to thailint?** See the **[Quick Start Guide](docs/quick-start.md)** for a complete walkthrough including config generation, understanding output, and next steps.
+**New to thailint?** See the **[Quick Start Guide](https://thai-lint.readthedocs.io/en/latest/quick-start/)** for a complete walkthrough including config generation, understanding output, and next steps.
 
 ### Library Mode
 
@@ -321,9 +322,9 @@ magic-numbers:
 }
 ```
 
-See [Configuration Guide](docs/configuration.md) for complete reference.
+See [Configuration Guide](https://thai-lint.readthedocs.io/en/latest/configuration/) for complete reference.
 
-**Need help with ignores?** See **[How to Ignore Violations](docs/how-to-ignore-violations.md)** for complete guide to all ignore levels (line, method, class, file, repository).
+**Need help with ignores?** See **[How to Ignore Violations](https://thai-lint.readthedocs.io/en/latest/how-to-ignore-violations/)** for complete guide to all ignore levels (line, method, class, file, repository).
 
 ## Nesting Depth Linter
 
@@ -409,7 +410,7 @@ Common patterns to reduce nesting:
 - **TypeScript**: Full support (if/for/while/try/switch)
 - **JavaScript**: Supported via TypeScript parser
 
-See [Nesting Linter Guide](docs/nesting-linter.md) for comprehensive documentation and refactoring patterns.
+See [Nesting Linter Guide](https://thai-lint.readthedocs.io/en/latest/nesting-linter/) for comprehensive documentation and refactoring patterns.
 
 ## Single Responsibility Principle (SRP) Linter
 
@@ -526,7 +527,7 @@ Common patterns to fix SRP violations (discovered during dogfooding):
 - **After**: Extract Class pattern applied - 5 focused classes (ConfigLoader, PatternValidator, RuleChecker, PathResolver, FilePlacementLinter)
 - **Result**: Each class ≤8 methods, ≤150 LOC, single responsibility
 
-See [SRP Linter Guide](docs/srp-linter.md) for comprehensive documentation and refactoring patterns.
+See [SRP Linter Guide](https://thai-lint.readthedocs.io/en/latest/srp-linter/) for comprehensive documentation and refactoring patterns.
 
 ## DRY Linter (Don't Repeat Yourself)
 
@@ -679,7 +680,7 @@ Built-in filters automatically exclude common non-duplication patterns:
 3. **Extract Utility Module**: Move helper functions to shared utilities
 4. **Template Method**: Use function parameters for variations
 
-See [DRY Linter Guide](docs/dry-linter.md) for comprehensive documentation, storage modes, and refactoring patterns.
+See [DRY Linter Guide](https://thai-lint.readthedocs.io/en/latest/dry-linter/) for comprehensive documentation, storage modes, and refactoring patterns.
 
 ## Magic Numbers Linter
 
@@ -831,7 +832,7 @@ def get_ports():  # thailint: ignore[magic-numbers] - Standard ports
 # thailint: ignore-file[magic-numbers]
 ```
 
-See **[How to Ignore Violations](docs/how-to-ignore-violations.md)** and **[Magic Numbers Linter Guide](docs/magic-numbers-linter.md)** for complete documentation.
+See **[How to Ignore Violations](https://thai-lint.readthedocs.io/en/latest/how-to-ignore-violations/)** and **[Magic Numbers Linter Guide](https://thai-lint.readthedocs.io/en/latest/magic-numbers-linter/)** for complete documentation.
 
 ## Pre-commit Hooks
 
@@ -893,7 +894,7 @@ repos:
         pass_filenames: true
 ```
 
-See **[Pre-commit Hooks Guide](docs/pre-commit-hooks.md)** for complete documentation, troubleshooting, and advanced configuration.
+See **[Pre-commit Hooks Guide](https://thai-lint.readthedocs.io/en/latest/pre-commit-hooks/)** for complete documentation, troubleshooting, and advanced configuration.
 
 ## Common Use Cases
 
@@ -1110,20 +1111,20 @@ docker run --rm -v /path/to/workspace:/workspace \
 
 ### Comprehensive Guides
 
-- **[Getting Started](docs/getting-started.md)** - Installation, first lint, basic config
-- **[Configuration Reference](docs/configuration.md)** - Complete config options (YAML/JSON)
-- **[How to Ignore Violations](docs/how-to-ignore-violations.md)** - Complete guide to all ignore levels
-- **[API Reference](docs/api-reference.md)** - Library API documentation
-- **[CLI Reference](docs/cli-reference.md)** - All CLI commands and options
-- **[Deployment Modes](docs/deployment-modes.md)** - CLI, Library, and Docker usage
-- **[File Placement Linter](docs/file-placement-linter.md)** - Detailed linter guide
-- **[Magic Numbers Linter](docs/magic-numbers-linter.md)** - Magic numbers detection guide
-- **[Nesting Depth Linter](docs/nesting-linter.md)** - Nesting depth analysis guide
-- **[SRP Linter](docs/srp-linter.md)** - Single Responsibility Principle guide
-- **[DRY Linter](docs/dry-linter.md)** - Duplicate code detection guide
-- **[Pre-commit Hooks](docs/pre-commit-hooks.md)** - Automated quality checks
-- **[Publishing Guide](docs/releasing.md)** - Release and publishing workflow
-- **[Publishing Checklist](docs/publishing-checklist.md)** - Post-publication validation
+- **[Getting Started](https://thai-lint.readthedocs.io/en/latest/getting-started/)** - Installation, first lint, basic config
+- **[Configuration Reference](https://thai-lint.readthedocs.io/en/latest/configuration/)** - Complete config options (YAML/JSON)
+- **[How to Ignore Violations](https://thai-lint.readthedocs.io/en/latest/how-to-ignore-violations/)** - Complete guide to all ignore levels
+- **[API Reference](https://thai-lint.readthedocs.io/en/latest/api-reference/)** - Library API documentation
+- **[CLI Reference](https://thai-lint.readthedocs.io/en/latest/cli-reference/)** - All CLI commands and options
+- **[Deployment Modes](https://thai-lint.readthedocs.io/en/latest/deployment-modes/)** - CLI, Library, and Docker usage
+- **[File Placement Linter](https://thai-lint.readthedocs.io/en/latest/file-placement-linter/)** - Detailed linter guide
+- **[Magic Numbers Linter](https://thai-lint.readthedocs.io/en/latest/magic-numbers-linter/)** - Magic numbers detection guide
+- **[Nesting Depth Linter](https://thai-lint.readthedocs.io/en/latest/nesting-linter/)** - Nesting depth analysis guide
+- **[SRP Linter](https://thai-lint.readthedocs.io/en/latest/srp-linter/)** - Single Responsibility Principle guide
+- **[DRY Linter](https://thai-lint.readthedocs.io/en/latest/dry-linter/)** - Duplicate code detection guide
+- **[Pre-commit Hooks](https://thai-lint.readthedocs.io/en/latest/pre-commit-hooks/)** - Automated quality checks
+- **[Publishing Guide](https://thai-lint.readthedocs.io/en/latest/releasing/)** - Release and publishing workflow
+- **[Publishing Checklist](https://thai-lint.readthedocs.io/en/latest/publishing-checklist/)** - Post-publication validation
 
 ### Examples
 
