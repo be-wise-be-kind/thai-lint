@@ -1,0 +1,20 @@
+# Read the Docs configuration file for thai-lint
+# See https://docs.readthedocs.io/en/stable/config-file/v2.html for details
+
+# Required
+version: 2
+
+# Set the OS, Python version, and other tools
+build:
+  os: ubuntu-22.04
+  tools:
+    python: "3.11"
+
+# Build documentation with MkDocs
+mkdocs:
+  configuration: mkdocs.yml
+
+# Python dependencies required to build documentation
+python:
+  install:
+    - requirements: docs/requirements.txt

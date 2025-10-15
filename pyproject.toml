@@ -24,7 +24,7 @@ license = "MIT"
 readme = "README.md"
 homepage = "https://github.com/be-wise-be-kind/thai-lint"
 repository = "https://github.com/be-wise-be-kind/thai-lint"
-documentation = "https://github.com/be-wise-be-kind/thai-lint#readme"
+documentation = "https://thai-lint.readthedocs.io/"
 keywords = [
     "linter",
     "ai",
