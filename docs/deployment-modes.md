@@ -32,7 +32,7 @@ thailint supports three deployment modes to fit different use cases and environm
 
 | Feature | CLI Mode | Library Mode | Docker Mode |
 |---------|----------|--------------|-------------|
-| **Installation** | `pip install thailint` | `pip install thailint` | `docker pull thailint/thailint` |
+| **Installation** | `pip install thailint` | `pip install thailint` | `docker pull washad/thailint` |
 | **Usage** | Terminal commands | Python import | Docker run |
 | **Best For** | Interactive use, scripts | Python apps, editors | CI/CD, isolation |
 | **Configuration** | Config file or flags | Config file or code | Config file + volumes |
@@ -367,10 +367,10 @@ def suggest_fix(violation):
 
 ```bash
 # Pull from Docker Hub (when published)
-docker pull thailint/thailint:latest
+docker pull washad/thailint:latest
 
 # Or build locally
-docker build -t thailint/thailint .
+docker build -t washad/thailint .
 
 # Or use docker-compose
 docker-compose build
@@ -380,25 +380,25 @@ docker-compose build
 
 ```bash
 # Lint entire directory (recommended - lints all files recursively)
-docker run --rm -v $(pwd):/workspace thailint/thailint lint file-placement /workspace
+docker run --rm -v $(pwd):/workspace washad/thailint lint file-placement /workspace
 
 # Lint single file
-docker run --rm -v $(pwd):/workspace thailint/thailint lint file-placement /workspace/src/app.py
+docker run --rm -v $(pwd):/workspace washad/thailint lint file-placement /workspace/src/app.py
 
 # Lint multiple specific files
-docker run --rm -v $(pwd):/workspace thailint/thailint nesting /workspace/src/file1.py /workspace/src/file2.py /workspace/src/file3.py
+docker run --rm -v $(pwd):/workspace washad/thailint nesting /workspace/src/file1.py /workspace/src/file2.py /workspace/src/file3.py
 
 # Lint specific subdirectory
-docker run --rm -v $(pwd):/workspace thailint/thailint lint file-placement /workspace/src
+docker run --rm -v $(pwd):/workspace washad/thailint lint file-placement /workspace/src
 
 # With config file
 docker run --rm \
   -v $(pwd):/workspace \
-  thailint/thailint lint file-placement --config /workspace/.thailint.yaml /workspace
+  washad/thailint lint file-placement --config /workspace/.thailint.yaml /workspace
 
 # JSON output
 docker run --rm -v $(pwd):/workspace \
-  thailint/thailint lint file-placement --format json /workspace
+  washad/thailint lint file-placement --format json /workspace
 ```
 
 ### Configuration
@@ -409,14 +409,14 @@ docker run --rm -v $(pwd):/workspace \
 # Mount directory with .thailint.yaml
 docker run --rm \
   -v $(pwd):/workspace \
-  thailint/thailint lint file-placement /workspace
+  washad/thailint lint file-placement /workspace
 ```
 
 **Option 2: Inline Rules**
 
 ```bash
 docker run --rm -v $(pwd):/workspace \
-  thailint/thailint lint file-placement \
+  washad/thailint lint file-placement \
   --rules '{"allow": [".*\\.py$"]}' \
   /workspace
 ```
@@ -430,7 +430,7 @@ version: '3.8'
 
 services:
   linter:
-    image: thailint/thailint:latest
+    image: washad/thailint:latest
     volumes:
       - .:/workspace
     command: lint file-placement /workspace
@@ -461,14 +461,14 @@ jobs:
       - name: Run thailint
         run: |
           docker run --rm -v $(pwd):/workspace \
-            thailint/thailint lint file-placement /workspace
+            washad/thailint lint file-placement /workspace
 ```
 
 **GitLab CI:**
 
 ```yaml
 lint:
-  image: thailint/thailint:latest
+  image: washad/thailint:latest
   script:
     - thai-lint file-placement .
   artifacts:
@@ -483,7 +483,7 @@ lint:
 pipeline {
     agent {
         docker {
-            image 'thailint/thailint:latest'
+            image 'washad/thailint:latest'
         }
     }
     stages {
@@ -501,7 +501,7 @@ pipeline {
 ```bash
 # Same environment everywhere
 docker run --rm -v $(pwd):/workspace \
-  thailint/thailint lint file-placement /workspace
+  washad/thailint lint file-placement /workspace
 
 # No Python version conflicts
 # No dependency issues
@@ -513,11 +513,11 @@ docker run --rm -v $(pwd):/workspace \
 ```bash
 # Lint project A
 docker run --rm -v ~/projects/project-a:/workspace \
-  thailint/thailint lint file-placement /workspace
+  washad/thailint lint file-placement /workspace
 
 # Lint project B with different config
 docker run --rm -v ~/projects/project-b:/workspace \
-  thailint/thailint lint file-placement --config /workspace/.thailint.yaml /workspace
+  washad/thailint lint file-placement --config /workspace/.thailint.yaml /workspace
 ```
 
 #### 4. Development Workflow
@@ -529,7 +529,7 @@ version: '3.8'
 
 services:
   linter:
-    image: thailint/thailint:latest
+    image: washad/thailint:latest
     volumes:
       - .:/workspace
     command: lint file-placement /workspace
@@ -640,7 +640,7 @@ def lint():
         subprocess.run([
             'docker', 'run', '--rm',
             '-v', f'{os.getcwd()}:/workspace',
-            'thailint/thailint',
+            'washad/thailint',
             'lint', 'file-placement', '/workspace'
         ])
     else:
@@ -670,7 +670,7 @@ lint-library:
 # Docker mode (CI/CD)
 lint-docker:
 	docker run --rm -v $(PWD):/workspace \
-		thailint/thailint lint file-placement /workspace
+		washad/thailint lint file-placement /workspace
 
 # Default to CLI for development
 lint: lint-cli
@@ -689,7 +689,7 @@ linter = Linter(config_file='.thailint.dev.yaml')
 
 # Docker with dev config
 docker run --rm -v $(pwd):/workspace \
-  thailint/thailint lint file-placement --config /workspace/.thailint.dev.yaml /workspace
+  washad/thailint lint file-placement --config /workspace/.thailint.dev.yaml /workspace
 ```
 
 ### Production
@@ -700,7 +700,7 @@ thai-lint file-placement --config .thailint.prod.yaml .
 
 # CI/CD with production config
 docker run --rm -v $(pwd):/workspace \
-  thailint/thailint lint file-placement --config /workspace/.thailint.prod.yaml /workspace
+  washad/thailint lint file-placement --config /workspace/.thailint.prod.yaml /workspace
 ```
 
 ## Performance Comparison
@@ -742,7 +742,7 @@ python script.py
 # Solution: Use user mapping
 docker run --rm --user $(id -u):$(id -g) \
   -v $(pwd):/workspace \
-  thailint/thailint lint file-placement /workspace
+  washad/thailint lint file-placement /workspace
 ```
 
 **Issue: Config not found**
@@ -750,7 +750,7 @@ docker run --rm --user $(id -u):$(id -g) \
 # Solution: Ensure volume mount includes config
 docker run --rm \
   -v $(pwd):/workspace \
-  thailint/thailint lint file-placement --config /workspace/.thailint.yaml /workspace
+  washad/thailint lint file-placement --config /workspace/.thailint.yaml /workspace
 ```
 
 ## Next Steps

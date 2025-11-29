@@ -149,14 +149,14 @@ rm -rf /tmp/test-thailint-env
 
 ```bash
 # Build Docker image
-docker build -t thailint/thailint:test .
+docker build -t washad/thailint:test .
 
 # Test CLI in container
-docker run --rm thailint/thailint:test --help
-docker run --rm thailint/thailint:test --version
+docker run --rm washad/thailint:test --help
+docker run --rm washad/thailint:test --version
 
 # Test with volume mount
-docker run --rm -v $(pwd):/workspace thailint/thailint:test lint file-placement /workspace
+docker run --rm -v $(pwd):/workspace washad/thailint:test lint file-placement /workspace
 ```
 
 **Quality Gates:**
@@ -378,7 +378,7 @@ pip install thailint
 poetry add thailint
 
 # Test Docker pull (if published)
-docker pull thailint/thailint:X.Y.Z
+docker pull washad/thailint:X.Y.Z
 ```
 
 ### 4. Update Documentation

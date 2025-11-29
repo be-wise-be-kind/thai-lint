@@ -7,7 +7,7 @@
 #     for faster rebuilds, and configures /workspace as the working directory for volume mounts.
 #     Supports CLI execution via ENTRYPOINT for seamless command-line usage.
 # Dependencies: Docker, Python 3.11, Poetry for dependency management
-# Exports: Docker image thailint/thailint with CLI entrypoint
+# Exports: Docker image washad/thailint with CLI entrypoint (published to Docker Hub)
 # Interfaces: Volume mount at /workspace, CLI arguments via docker run
 # Environment: Production containerized deployment, development via docker-compose
 # Related: docker-compose.yml, .dockerignore, pyproject.toml
