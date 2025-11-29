@@ -38,7 +38,11 @@ logger = logging.getLogger(__name__)
 def format_option(func):
     """Add --format option to a command for output format selection."""
     return click.option(
-        "--format", "-f", type=click.Choice(["text", "json"]), default="text", help="Output format"
+        "--format",
+        "-f",
+        type=click.Choice(["text", "json", "sarif"]),
+        default="text",
+        help="Output format",
     )(func)
 
 

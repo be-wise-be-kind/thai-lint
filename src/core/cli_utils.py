@@ -146,10 +146,12 @@ def format_violations(violations: list, output_format: str) -> None:
 
     Args:
         violations: List of violation objects with rule_id, file_path, line, column, message, severity
-        output_format: Output format ("text" or "json")
+        output_format: Output format ("text", "json", or "sarif")
     """
     if output_format == "json":
         _output_json(violations)
+    elif output_format == "sarif":
+        _output_sarif(violations)
     else:
         _output_text(violations)
 
@@ -175,6 +177,19 @@ def _output_json(violations: list) -> None:
         "total": len(violations),
     }
     click.echo(json.dumps(output, indent=2))
+
+
+def _output_sarif(violations: list) -> None:
+    """Output violations in SARIF v2.1.0 format.
+
+    Args:
+        violations: List of violation objects
+    """
+    from src.formatters.sarif import SarifFormatter
+
+    formatter = SarifFormatter()
+    sarif_doc = formatter.format(violations)
+    click.echo(json.dumps(sarif_doc, indent=2))
 
 
 def _output_text(violations: list) -> None:
