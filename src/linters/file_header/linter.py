@@ -2,15 +2,16 @@
 File: src/linters/file_header/linter.py
 Purpose: Main file header linter rule implementation
 Exports: FileHeaderRule class
-Depends: BaseLintRule, PythonHeaderParser, FieldValidator, AtemporalDetector, ViolationBuilder
-Implements: Composition pattern with helper classes, AST-based Python parsing
-Related: config.py for configuration, python_parser.py for extraction
+Depends: BaseLintRule, parsers, FieldValidator, AtemporalDetector, ViolationBuilder
+Implements: Composition pattern with helper classes, multi-language parsing
+Related: config.py for configuration, *_parser.py for language-specific extraction
 
 Overview:
-    Orchestrates file header validation for Python files using focused helper classes.
-    Coordinates docstring extraction, field validation, atemporal language detection, and
+    Orchestrates file header validation for multiple languages using focused helper classes.
+    Coordinates header extraction, field validation, atemporal language detection, and
     violation building. Supports configuration from .thailint.yaml and ignore directives.
     Validates headers against mandatory field requirements and atemporal language standards.
+    Supports Python, TypeScript/JavaScript, Bash, Markdown, and CSS file types.
 
 Usage:
     rule = FileHeaderRule()
@@ -20,6 +21,7 @@ Notes: Follows composition pattern from magic_numbers linter for maintainability
 """
 
 from pathlib import Path
+from typing import Protocol
 
 from src.core.base import BaseLintContext, BaseLintRule
 from src.core.linter_utils import load_linter_config
@@ -27,10 +29,24 @@ from src.core.types import Violation
 from src.linter_config.ignore import IgnoreDirectiveParser
 
 from .atemporal_detector import AtemporalDetector
+from .bash_parser import BashHeaderParser
 from .config import FileHeaderConfig
+from .css_parser import CssHeaderParser
 from .field_validator import FieldValidator
+from .markdown_parser import MarkdownHeaderParser
 from .python_parser import PythonHeaderParser
+from .typescript_parser import TypeScriptHeaderParser
 from .violation_builder import ViolationBuilder
+
+
+class HeaderParser(Protocol):
+    """Protocol for header parsers."""
+
+    def extract_header(self, code: str) -> str | None:
+        """Extract header from source code."""
+
+    def parse_fields(self, header: str) -> dict[str, str]:
+        """Parse fields from header."""
 
 
 class FileHeaderRule(BaseLintRule):  # thailint: ignore[srp]
@@ -42,6 +58,16 @@ class FileHeaderRule(BaseLintRule):  # thailint: ignore[srp]
     pattern with focused helper classes (parser, validator, detector, builder).
     """
 
+    # Parser instances for each language
+    _parsers: dict[str, HeaderParser] = {
+        "python": PythonHeaderParser(),
+        "typescript": TypeScriptHeaderParser(),
+        "javascript": TypeScriptHeaderParser(),
+        "bash": BashHeaderParser(),
+        "markdown": MarkdownHeaderParser(),
+        "css": CssHeaderParser(),
+    }
+
     def __init__(self) -> None:
         """Initialize the file header rule."""
         self._violation_builder = ViolationBuilder(self.rule_id)
@@ -49,67 +75,80 @@ class FileHeaderRule(BaseLintRule):  # thailint: ignore[srp]
 
     @property
     def rule_id(self) -> str:
-        """Unique identifier for this rule.
-
-        Returns:
-            Rule identifier string
-        """
+        """Unique identifier for this rule."""
         return "file-header.validation"
 
     @property
     def rule_name(self) -> str:
-        """Human-readable name for this rule.
-
-        Returns:
-            Rule name string
-        """
+        """Human-readable name for this rule."""
         return "File Header Validation"
 
     @property
     def description(self) -> str:
-        """Description of what this rule checks.
-
-        Returns:
-            Rule description string
-        """
+        """Description of what this rule checks."""
         return "Validates file headers for mandatory fields and atemporal language"
 
     def check(self, context: BaseLintContext) -> list[Violation]:
-        """Check file header for violations.
-
-        Args:
-            context: Lint context with file information
-
-        Returns:
-            List of violations found in file header
-        """
-        # Only Python for now (PR3), multi-language in PR5
-        if context.language != "python":
-            return []
-
-        # Check for file-level ignore directives first
+        """Check file header for violations."""
         if self._has_file_ignore(context):
             return []
 
-        # Load configuration
         config = self._load_config(context)
 
-        # Check if file should be ignored by pattern
         if self._should_ignore_file(context, config):
             return []
 
-        # Extract and validate header
-        return self._check_python_header(context, config)
+        return self._check_language_header(context, config)
+
+    def _check_language_header(
+        self, context: BaseLintContext, config: FileHeaderConfig
+    ) -> list[Violation]:
+        """Dispatch to language-specific header checking."""
+        parser = self._parsers.get(context.language)
+        if not parser:
+            return []
+
+        # Markdown has special atemporal handling
+        if context.language == "markdown":
+            return self._check_markdown_header(parser, context, config)
+
+        return self._check_header_with_parser(parser, context, config)
+
+    def _check_header_with_parser(
+        self, parser: HeaderParser, context: BaseLintContext, config: FileHeaderConfig
+    ) -> list[Violation]:
+        """Check header using the given parser."""
+        header = parser.extract_header(context.file_content or "")
+
+        if not header:
+            return self._build_missing_header_violations(context)
+
+        fields = parser.parse_fields(header)
+        violations = self._validate_header_fields(fields, context, config)
+        violations.extend(self._check_atemporal_violations(header, context, config))
+
+        return self._filter_ignored_violations(violations, context)
+
+    def _check_markdown_header(
+        self, parser: HeaderParser, context: BaseLintContext, config: FileHeaderConfig
+    ) -> list[Violation]:
+        """Check Markdown file header with special prose-only atemporal checking."""
+        header = parser.extract_header(context.file_content or "")
+
+        if not header:
+            return self._build_missing_header_violations(context)
+
+        fields = parser.parse_fields(header)
+        violations = self._validate_header_fields(fields, context, config)
+
+        # For Markdown, only check atemporal language in prose fields
+        prose_content = self._extract_markdown_prose_fields(fields)
+        violations.extend(self._check_atemporal_violations(prose_content, context, config))
+
+        return self._filter_ignored_violations(violations, context)
 
     def _has_file_ignore(self, context: BaseLintContext) -> bool:
-        """Check if file has file-level ignore directive.
-
-        Args:
-            context: Lint context
-
-        Returns:
-            True if file has ignore-file directive
-        """
+        """Check if file has file-level ignore directive."""
         file_content = context.file_content or ""
 
         if self._has_standard_ignore(file_content):
@@ -119,7 +158,6 @@ class FileHeaderRule(BaseLintRule):  # thailint: ignore[srp]
 
     def _has_standard_ignore(self, file_content: str) -> bool:  # thailint: ignore[nesting]
         """Check standard ignore parser for file-level ignores."""
-        # Check first 10 lines for standard ignore directives
         first_lines = file_content.splitlines()[:10]
         for line in first_lines:
             if self._ignore_parser._has_ignore_directive_marker(line):  # pylint: disable=protected-access
@@ -140,32 +178,15 @@ class FileHeaderRule(BaseLintRule):  # thailint: ignore[srp]
         return "# thailint-ignore-file:" in line_lower or "# thailint-ignore" in line_lower
 
     def _load_config(self, context: BaseLintContext) -> FileHeaderConfig:
-        """Load configuration from context.
-
-        Args:
-            context: Lint context
-
-        Returns:
-            FileHeaderConfig with loaded or default values
-        """
-        # Try production config first
+        """Load configuration from context."""
         if hasattr(context, "metadata") and isinstance(context.metadata, dict):
             if "file_header" in context.metadata:
                 return load_linter_config(context, "file_header", FileHeaderConfig)  # type: ignore[type-var]
 
-        # Use defaults
         return FileHeaderConfig()
 
     def _should_ignore_file(self, context: BaseLintContext, config: FileHeaderConfig) -> bool:
-        """Check if file matches ignore patterns.
-
-        Args:
-            context: Lint context
-            config: File header configuration
-
-        Returns:
-            True if file should be ignored
-        """
+        """Check if file matches ignore patterns."""
         if not context.file_path:
             return False
 
@@ -199,30 +220,6 @@ class FileHeaderRule(BaseLintRule):  # thailint: ignore[srp]
             path_str = str(file_path)
             return file_path.name == filename_pattern or path_str.endswith(filename_pattern)
         return False
-
-    def _check_python_header(
-        self, context: BaseLintContext, config: FileHeaderConfig
-    ) -> list[Violation]:
-        """Check Python file header.
-
-        Args:
-            context: Lint context
-            config: Configuration
-
-        Returns:
-            List of violations filtered through ignore directives
-        """
-        parser = PythonHeaderParser()
-        header = parser.extract_header(context.file_content or "")
-
-        if not header:
-            return self._build_missing_header_violations(context)
-
-        fields = parser.parse_fields(header)
-        violations = self._validate_header_fields(fields, context, config)
-        violations.extend(self._check_atemporal_violations(header, context, config))
-
-        return self._filter_ignored_violations(violations, context)
 
     def _build_missing_header_violations(self, context: BaseLintContext) -> list[Violation]:
         """Build violations for missing header."""
@@ -270,25 +267,15 @@ class FileHeaderRule(BaseLintRule):  # thailint: ignore[srp]
     def _filter_ignored_violations(
         self, violations: list[Violation], context: BaseLintContext
     ) -> list[Violation]:
-        """Filter out violations that should be ignored.
-
-        Args:
-            violations: List of violations to filter
-            context: Lint context with file content
-
-        Returns:
-            Filtered list of violations
-        """
+        """Filter out violations that should be ignored."""
         file_content = context.file_content or ""
         lines = file_content.splitlines()
 
         filtered = []
         for v in violations:
-            # Check standard ignore directives
             if self._ignore_parser.should_ignore_violation(v, file_content):
                 continue
 
-            # Check custom line-level ignore syntax: # thailint-ignore-line:
             if self._has_line_level_ignore(lines, v):
                 continue
 
@@ -297,17 +284,20 @@ class FileHeaderRule(BaseLintRule):  # thailint: ignore[srp]
         return filtered
 
     def _has_line_level_ignore(self, lines: list[str], violation: Violation) -> bool:
-        """Check for thailint-ignore-line directive.
-
-        Args:
-            lines: File content split into lines
-            violation: Violation to check
-
-        Returns:
-            True if line has ignore directive
-        """
+        """Check for thailint-ignore-line directive."""
         if violation.line <= 0 or violation.line > len(lines):
             return False
 
-        line_content = lines[violation.line - 1]  # Convert to 0-indexed
+        line_content = lines[violation.line - 1]
         return "# thailint-ignore-line:" in line_content.lower()
+
+    def _extract_markdown_prose_fields(self, fields: dict[str, str]) -> str:
+        """Extract prose fields from Markdown frontmatter for atemporal checking."""
+        prose_fields = ["purpose", "scope", "overview"]
+        prose_parts = []
+
+        for field_name in prose_fields:
+            if field_name in fields:
+                prose_parts.append(f"{field_name}: {fields[field_name]}")
+
+        return "\n".join(prose_parts)
