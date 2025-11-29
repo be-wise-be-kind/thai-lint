@@ -220,7 +220,7 @@ thai-lint nesting [OPTIONS] [PATH...]
 |--------|-------|------|---------|-------------|
 | `--config` | `-c` | PATH | Auto-discover | Path to config file |
 | `--rules` | `-r` | TEXT | None | Inline JSON rules |
-| `--format` | `-f` | CHOICE | `text` | Output format: `text` or `json` |
+| `--format` | `-f` | CHOICE | `text` | Output format: `text`, `json`, or `sarif` |
 | `--recursive` | | FLAG | `True` | Scan directories recursively |
 | `--no-recursive` | | FLAG | | Disable recursive scanning |
 
@@ -276,6 +276,9 @@ thai-lint file-placement --format text .
 
 # JSON format (for parsing/CI/CD)
 thai-lint file-placement --format json .
+
+# SARIF format (for GitHub Code Scanning, VS Code)
+thai-lint file-placement --format sarif . > results.sarif
 ```
 
 **Recursive vs non-recursive:**
@@ -353,7 +356,7 @@ thai-lint nesting [OPTIONS] [PATH...]
 |--------|-------|------|---------|-------------|
 | `--config` | `-c` | PATH | Auto-discover | Path to config file |
 | `--max-depth` | `-d` | INTEGER | `4` | Maximum allowed nesting depth |
-| `--format` | `-f` | CHOICE | `text` | Output format: `text` or `json` |
+| `--format` | `-f` | CHOICE | `text` | Output format: `text`, `json`, or `sarif` |
 
 **Examples:**
 
@@ -406,6 +409,9 @@ thai-lint nesting src/
 
 # JSON format (for parsing/CI/CD)
 thai-lint nesting --format json src/
+
+# SARIF format (for GitHub Code Scanning, VS Code)
+thai-lint nesting --format sarif src/ > nesting.sarif
 ```
 
 **Output Examples:**
@@ -509,7 +515,7 @@ thai-lint dry [OPTIONS] [PATH...]
 |--------|-------|------|---------|-------------|
 | `--config` | `-c` | PATH | Auto-discover | Path to config file |
 | `--min-lines` | `-l` | INTEGER | `4` | Minimum duplicate lines |
-| `--format` | `-f` | CHOICE | `text` | Output format: `text` or `json` |
+| `--format` | `-f` | CHOICE | `text` | Output format: `text`, `json`, or `sarif` |
 | `--storage-mode` | | CHOICE | `memory` | Storage mode: `memory` or `tempfile` |
 | `--recursive` | | FLAG | `True` | Scan directories recursively |
 
@@ -570,6 +576,9 @@ thai-lint dry src/
 
 # JSON format (for parsing/CI/CD)
 thai-lint dry --format json src/
+
+# SARIF format (for GitHub Code Scanning, VS Code)
+thai-lint dry --format sarif src/ > dry.sarif
 ```
 
 **Output Examples:**
@@ -1271,7 +1280,7 @@ thai-lint file-placement --help
 ```
 -v, --verbose         Enable debug output
 -c, --config PATH     Specify config file
--f, --format FORMAT   Output format (text/json)
+-f, --format FORMAT   Output format (text/json/sarif)
 -r, --rules TEXT      Inline JSON rules
 --recursive           Scan recursively (default)
 --no-recursive        Scan top-level only
