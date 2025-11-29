@@ -28,13 +28,19 @@ This is the **PRIMARY HANDOFF DOCUMENT** for AI agents working on the File Heade
 4. **Update this document** after completing each PR
 
 ## 📍 Current Status
-**Current PR**: PR6 - Dogfooding: Update Project Files
+**Current PR**: PR7a - Minimal CLI Command (reordered to enable PR6 tooling)
 **Infrastructure State**: Multi-language implementation complete (PR5 complete) - 150 tests passing
 **Feature Target**: Production-ready file header linter enforcing AI-optimized documentation standard across 6+ file types
 
+### ⚠️ PR Reordering Decision (Nov 29, 2025)
+PR7 has been split and partially reordered to provide CLI tooling before dogfooding:
+- **PR7a** (NEW): Minimal CLI command `thailint file-header` - implement FIRST
+- **PR6**: Dogfooding with parallel agents - uses PR7a CLI for validation
+- **PR7b**: Documentation, examples, pre-commit - implement AFTER PR6
+
 ## 📁 Required Documents Location
 ```
-.roadmap/planning/file-header-linter/
+.roadmap/in-progress/file-header-linter/
 ├── AI_CONTEXT.md          # Overall feature architecture and context
 ├── PR_BREAKDOWN.md        # Detailed instructions for each PR
 ├── PROGRESS_TRACKER.md    # THIS FILE - Current progress and handoff notes
@@ -42,16 +48,16 @@ This is the **PRIMARY HANDOFF DOCUMENT** for AI agents working on the File Heade
 
 ## 🎯 Next PR to Implement
 
-### ➡️ START HERE: PR6 - Dogfooding: Update Project Files
+### ➡️ START HERE: PR7a - Minimal CLI Command
 
 **Quick Summary**:
-Systematically update project files to comply with file header standards. Update Python source files, TypeScript files, Bash scripts, Markdown docs, and CSS files with proper headers.
+Add `thailint file-header [PATHS]` CLI command to enable validation scanning before PR6 dogfooding. This is a minimal subset of PR7 (CLI only, no docs/examples/pre-commit).
 
 **Pre-flight Checklist**:
 - [x] PR5 complete (150 tests passing, multi-language implementation working)
-- [ ] Run file-header linter on codebase to identify files needing updates
-- [ ] Review FILE_HEADER_STANDARDS.md for required fields per language
-- [ ] Prioritize high-traffic files first
+- [ ] Read `src/cli.py` for existing command patterns (see `nesting` command ~line 1000)
+- [ ] Review `src/linters/file_header/linter.py` for FileHeaderRule API
+- [ ] Follow existing CLI command patterns exactly
 
 **Prerequisites Complete**:
 - ✅ PR1 merged (documentation in place)
@@ -60,7 +66,32 @@ Systematically update project files to comply with file header standards. Update
 - ✅ PR4 complete (91 multi-language tests ready)
 - ✅ PR5 complete (multi-language linter working)
 
-**Detailed Instructions**: See PR_BREAKDOWN.md → PR6 section
+**Implementation**:
+```python
+@cli.command("file-header")
+@click.argument("paths", nargs=-1, type=click.Path())
+@click.option("--config", "-c", "config_file", type=click.Path())
+@format_option
+@click.option("--recursive/--no-recursive", default=True)
+@click.pass_context
+def file_header(ctx, paths, config_file, format, recursive):
+    """Check file headers for mandatory fields and atemporal language."""
+```
+
+**Expected Outcome**: `thailint file-header --help` works, can scan files for violations
+
+---
+
+### AFTER PR7a: PR6 - Dogfooding: Update Project Files
+
+**Quick Summary**:
+Systematically update project files to comply with file header standards using 4-6 parallel agents.
+
+**Pre-flight Checklist**:
+- [ ] PR7a complete (CLI command working)
+- [ ] Run `thailint file-header --format json .` to identify violations
+- [ ] Review FILE_HEADER_STANDARDS.md for required fields per language
+- [ ] Assign files to parallel agents by directory
 
 **Expected Outcome**: All project files pass file-header linting
 
@@ -84,8 +115,9 @@ Systematically update project files to comply with file header standards. Update
 | PR3 | Implementation: Python Header Linter | 🟢 Complete | 100% | Medium-High | P0 | 59/59 tests passing (Oct 15, 2025) |
 | PR4 | Test Suite: Multi-Language Support | 🟢 Complete | 100% | Medium | P0 | 91 tests written (Nov 29, 2025) |
 | PR5 | Implementation: Multi-Language Linter | 🟢 Complete | 100% | High | P0 | 150/150 tests passing (Nov 29, 2025) |
-| PR6 | Dogfooding: Update Project Files | 🔴 Not Started | 0% | High | P1 | Systematically update 200-300 files |
-| PR7 | Documentation and Integration | 🔴 Not Started | 0% | Low-Medium | P1 | CLI, docs, examples, pre-commit |
+| PR7a | **Minimal CLI Command** | 🟡 In Progress | 0% | Low | P0 | **REORDERED** - CLI before dogfooding |
+| PR6 | Dogfooding: Update Project Files | 🔴 Not Started | 0% | High | P1 | Uses PR7a CLI, 4-6 parallel agents |
+| PR7b | Documentation and Integration | 🔴 Not Started | 0% | Low-Medium | P1 | Docs, examples, pre-commit (after PR6) |
 
 ### Status Legend
 - 🔴 Not Started
