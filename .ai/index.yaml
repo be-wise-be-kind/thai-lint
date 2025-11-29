@@ -38,6 +38,7 @@ documentation:
     - dependency-scanning.md
     - code-scanning.md
     - FILE_HEADER_STANDARDS.md
+    - SARIF_STANDARDS.md
   user_facing:
     - path: ../docs/ai-doc-standard.md
       description: AI-optimized documentation header standard for LLM-assisted development workflows
@@ -48,6 +49,7 @@ howto:
   files:
     - documentation-howtos-README.md
     - how-to-add-custom-hook.md
+    - how-to-add-linter.md
     - how-to-configure-code-scanning.md
     - how-to-create-readme.md
     - how-to-debug-failing-hooks.md
@@ -99,6 +101,16 @@ standards:
     configuration:
       - path: ".pre-commit-config.yaml"
         description: "Pre-commit hooks configuration"
+  linter-development:
+    description: "Standards for developing new linters in thai-lint"
+    documentation:
+      - path: ".ai/docs/SARIF_STANDARDS.md"
+        description: "SARIF v2.1.0 output format requirements (MANDATORY)"
+      - path: ".ai/docs/FILE_HEADER_STANDARDS.md"
+        description: "File header requirements for linter code"
+    howtos:
+      - path: "howtos/how-to-add-linter.md"
+        description: "Step-by-step guide to implementing new linters"
 
 templates:
   location: .ai/templates/

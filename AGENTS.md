@@ -622,11 +622,35 @@ This systematic linting approach supports the Quality Gates requirements:
 See `.ai/howtos/python-cli/how-to-add-cli-command.md`
 
 ### Adding a New Linter
+
+When implementing a new linter for thai-lint, follow this comprehensive checklist:
+
+#### Development Checklist
 1. Create linter module in `src/linters/`
 2. Implement linter class with common interface
-3. Add tests in `tests/test_linters/`
-4. Register linter in CLI
+3. Add tests in `tests/unit/linters/` (TDD approach recommended)
+4. Register linter in CLI (`src/cli.py`)
 5. Document linter rules
+
+#### ⭐ MANDATORY: Output Format Support
+**ALL new linters MUST support all three output formats:**
+- `text` - Human-readable console output
+- `json` - Machine-readable JSON format
+- `sarif` - SARIF v2.1.0 for CI/CD integration
+
+See `.ai/docs/SARIF_STANDARDS.md` for:
+- SARIF structure requirements
+- Field mapping guidelines
+- Testing requirements
+- Implementation checklist
+
+#### Quality Requirements
+- Follow file header standards (`.ai/docs/FILE_HEADER_STANDARDS.md`)
+- Achieve 10.00/10 Pylint score
+- Maintain A-grade complexity (Xenon)
+- Pass all type checks (MyPy)
+
+See `.ai/howtos/how-to-add-linter.md` for detailed implementation guidance.
 
 ### Debugging
 1. Check logs (configured in `src/cli.py`)
