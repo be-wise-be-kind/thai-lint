@@ -21,6 +21,12 @@
 
 ---
 
+## Overview
+
+This document defines the SARIF (Static Analysis Results Interchange Format) v2.1.0 standards for thai-lint. It covers why SARIF is mandatory, the required document structure, field mappings from thai-lint Violation objects to SARIF results, testing requirements, and implementation checklists. All linter developers must follow these standards to ensure compatibility with GitHub Code Scanning, Azure DevOps, VS Code SARIF Viewer, and other industry-standard tools.
+
+---
+
 ## Why SARIF is Mandatory
 
 SARIF (Static Analysis Results Interchange Format) is the industry-standard format for static analysis tool output. All thai-lint linters MUST support SARIF v2.1.0 output for the following reasons:
