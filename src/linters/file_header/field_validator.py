@@ -32,9 +32,7 @@ class FieldValidator:
         """
         self.config = config
 
-    def validate_fields(  # thailint: ignore[nesting]
-        self, fields: dict[str, str], language: str
-    ) -> list[tuple[str, str]]:
+    def validate_fields(self, fields: dict[str, str], language: str) -> list[tuple[str, str]]:
         """Validate all required fields are present.
 
         Args:
@@ -48,22 +46,30 @@ class FieldValidator:
         required_fields = self._get_required_fields(language)
 
         for field_name in required_fields:
-            if field_name not in fields:
-                violations.append((field_name, f"Missing mandatory field: {field_name}"))
-            elif not fields[field_name] or len(fields[field_name].strip()) == 0:
-                violations.append((field_name, f"Empty mandatory field: {field_name}"))
+            error = self._check_field(fields, field_name)
+            if error:
+                violations.append(error)
 
         return violations
 
+    def _check_field(self, fields: dict[str, str], field_name: str) -> tuple[str, str] | None:
+        """Check a single field for presence and content."""
+        if field_name not in fields:
+            return (field_name, f"Missing mandatory field: {field_name}")
+
+        if not fields[field_name] or not fields[field_name].strip():
+            return (field_name, f"Empty mandatory field: {field_name}")
+
+        return None
+
     def _get_required_fields(self, language: str) -> list[str]:
-        """Get required fields for language.
-
-        Args:
-            language: Programming language
-
-        Returns:
-            List of required field names for the language
-        """
-        if language == "python":
-            return self.config.required_fields_python
-        return []  # Other languages in PR5
+        """Get required fields for language using dictionary lookup."""
+        language_fields = {
+            "python": self.config.required_fields_python,
+            "typescript": self.config.required_fields_typescript,
+            "javascript": self.config.required_fields_typescript,
+            "bash": self.config.required_fields_bash,
+            "markdown": self.config.required_fields_markdown,
+            "css": self.config.required_fields_css,
+        }
+        return language_fields.get(language, [])
