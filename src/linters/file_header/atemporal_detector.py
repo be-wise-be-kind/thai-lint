@@ -1,21 +1,21 @@
 """
-File: src/linters/file_header/atemporal_detector.py
 Purpose: Detects temporal language patterns in file headers
-Exports: AtemporalDetector class
-Depends: re module for regex matching
-Implements: Regex-based pattern matching with configurable patterns
-Related: linter.py for detector usage, violation_builder.py for violation creation
 
-Overview:
-    Implements pattern-based detection of temporal language that violates atemporal
+Scope: File header validation for atemporal language compliance
+
+Overview: Implements pattern-based detection of temporal language that violates atemporal
     documentation requirements. Detects dates, temporal qualifiers, state change language,
     and future references using regex patterns. Provides violation details for each pattern match.
+    Uses four pattern categories (dates, temporal qualifiers, state changes, future references)
+    to identify violations and returns detailed information for each match.
 
-Usage:
-    detector = AtemporalDetector()
-    violations = detector.detect_violations(header_text)
+Dependencies: re module for regex-based pattern matching
 
-Notes: Four pattern categories - dates, temporal qualifiers, state changes, future references
+Exports: AtemporalDetector class with detect_violations method
+
+Interfaces: detect_violations(text) -> list[tuple[str, str, int]] returns pattern matches with line numbers
+
+Implementation: Regex-based pattern matching with predefined patterns organized by category
 """
 
 import re

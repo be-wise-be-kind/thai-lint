@@ -1,21 +1,22 @@
 """
-File: src/linters/file_header/violation_builder.py
 Purpose: Builds violation messages for file header linter
-Exports: ViolationBuilder class
-Depends: Violation type from core
-Implements: Message templates with context-specific details
-Related: linter.py for builder usage, atemporal_detector.py for temporal violations
 
-Overview:
-    Creates formatted violation messages for file header validation failures.
+Scope: Violation message creation for file header validation failures
+
+Overview: Creates formatted violation messages for file header validation failures.
     Handles missing fields, atemporal language, and other header issues with clear,
-    actionable messages. Provides consistent violation format across all validation types.
+    actionable messages. Provides consistent violation format across all validation types
+    including rule_id, message, location, severity, and helpful suggestions. Supports
+    multiple violation types with appropriate error messages and remediation guidance.
 
-Usage:
-    builder = ViolationBuilder("file-header.validation")
-    violation = builder.build_missing_field("Purpose", "test.py", 1)
+Dependencies: Violation and Severity types from core.types module
 
-Notes: Follows standard violation format with rule_id, message, location, severity, suggestion
+Exports: ViolationBuilder class
+
+Interfaces: build_missing_field(field_name, file_path, line) -> Violation,
+    build_atemporal_violation(pattern, description, file_path, line) -> Violation
+
+Implementation: Builder pattern with message templates for different violation types
 """
 
 from src.core.types import Severity, Violation

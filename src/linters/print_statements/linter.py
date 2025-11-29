@@ -1,28 +1,26 @@
 """
-File: src/linters/print_statements/linter.py
-
 Purpose: Main print statements linter rule implementation
 
-Exports: PrintStatementRule class
+Scope: Print and console statement detection for Python, TypeScript, and JavaScript files
 
-Depends: BaseLintContext, MultiLanguageLintRule, PythonPrintStatementAnalyzer,
-    TypeScriptPrintStatementAnalyzer, ViolationBuilder, PrintStatementConfig, IgnoreDirectiveParser
-
-Implements: PrintStatementRule.check(context) -> list[Violation], properties for rule metadata
-
-Related: src/linters/magic_numbers/linter.py, src/core/base.py
-
-Overview: Implements print statements linter rule following BaseLintRule interface. Orchestrates
+Overview: Implements print statements linter rule following MultiLanguageLintRule interface. Orchestrates
     configuration loading, Python AST analysis for print() calls, TypeScript tree-sitter analysis
     for console.* calls, and violation building through focused helper classes. Detects print and
     console statements that should be replaced with proper logging. Supports configurable
     allow_in_scripts option to permit print() in __main__ blocks and configurable console_methods
-    set for TypeScript/JavaScript. Handles ignore directives for suppressing specific violations.
+    set for TypeScript/JavaScript. Handles ignore directives for suppressing specific violations
+    through inline comments and configuration patterns.
 
-Usage: rule = PrintStatementRule()
-    violations = rule.check(context)
+Dependencies: BaseLintContext and MultiLanguageLintRule from core, ast module, pathlib,
+    analyzer classes, config classes
 
-Notes: Composition pattern with helper classes, AST-based analysis for Python, tree-sitter for TS/JS
+Exports: PrintStatementRule class implementing MultiLanguageLintRule interface
+
+Interfaces: check(context) -> list[Violation] for rule validation, standard rule properties
+    (rule_id, rule_name, description)
+
+Implementation: Composition pattern with helper classes (analyzers, violation builder),
+    AST-based analysis for Python, tree-sitter for TypeScript/JavaScript
 """
 
 import ast

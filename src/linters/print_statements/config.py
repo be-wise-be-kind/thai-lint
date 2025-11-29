@@ -1,16 +1,7 @@
 """
-File: src/linters/print_statements/config.py
-
 Purpose: Configuration schema for print statements linter
 
-Exports: PrintStatementConfig dataclass
-
-Depends: dataclasses, typing
-
-Implements: PrintStatementConfig(enabled, ignore, allow_in_scripts, console_methods),
-    from_dict class method for loading configuration from dictionary
-
-Related: src/linters/magic_numbers/config.py, src/core/types.py
+Scope: Print statements linter configuration for all supported languages
 
 Overview: Defines configuration schema for print statements linter. Provides PrintStatementConfig
     dataclass with enabled flag, ignore patterns list, allow_in_scripts setting (default True to
@@ -19,9 +10,13 @@ Overview: Defines configuration schema for print statements linter. Provides Pri
     per-directory config overrides through from_dict class method. Integrates with orchestrator's
     configuration system to allow users to customize detection via .thailint.yaml configuration.
 
-Usage: config = PrintStatementConfig.from_dict(yaml_config, language="python")
+Dependencies: dataclasses module for configuration structure, typing module for type hints
 
-Notes: Dataclass with defaults matching common use cases, language-specific override support
+Exports: PrintStatementConfig dataclass
+
+Interfaces: from_dict(config, language) -> PrintStatementConfig for configuration loading from dictionary
+
+Implementation: Dataclass with defaults matching common use cases and language-specific override support
 """
 
 from dataclasses import dataclass, field

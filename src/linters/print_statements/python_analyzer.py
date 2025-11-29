@@ -1,28 +1,22 @@
 """
-File: src/linters/print_statements/python_analyzer.py
-
 Purpose: Python AST analysis for finding print() call nodes
 
-Exports: PythonPrintStatementAnalyzer class
-
-Depends: ast module for AST parsing and node types
-
-Implements: PythonPrintStatementAnalyzer.find_print_calls(tree) -> list[tuple],
-    PythonPrintStatementAnalyzer.is_in_main_block(node) -> bool
-
-Related: src/linters/magic_numbers/python_analyzer.py
+Scope: Python print() statement detection and __main__ block context analysis
 
 Overview: Provides PythonPrintStatementAnalyzer class that traverses Python AST to find all
     print() function calls. Uses ast.walk() to traverse the syntax tree and collect
     Call nodes where the function is 'print'. Tracks parent nodes to detect if print calls
     are within __main__ blocks (if __name__ == "__main__":) for allow_in_scripts filtering.
     Returns structured data about each print call including the AST node, parent context,
-    and line number for violation reporting.
+    and line number for violation reporting. Handles both simple print() and builtins.print() calls.
 
-Usage: analyzer = PythonPrintStatementAnalyzer()
-    print_calls = analyzer.find_print_calls(ast.parse(code))
+Dependencies: ast module for AST parsing and node types
 
-Notes: AST walk pattern with parent tracking for context detection
+Exports: PythonPrintStatementAnalyzer class
+
+Interfaces: find_print_calls(tree) -> list[tuple[Call, AST | None, int]], is_in_main_block(node) -> bool
+
+Implementation: AST walk pattern with parent map for context detection and __main__ block identification
 """
 
 import ast

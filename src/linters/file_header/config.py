@@ -1,22 +1,22 @@
 """
-File: src/linters/file_header/config.py
 Purpose: Configuration model for file header linter
-Exports: FileHeaderConfig dataclass
-Depends: dataclasses
-Implements: Configuration with validation and defaults
-Related: linter.py for configuration usage
 
-Overview:
-    Defines configuration structure for file header linter including required fields
+Scope: File header linter configuration for all supported languages
+
+Overview: Defines configuration structure for file header linter including required fields
     per language, ignore patterns, and validation options. Provides defaults matching
-    ai-doc-standard.md requirements and supports loading from .thailint.yaml configuration.
-    Supports Python, TypeScript/JavaScript, Bash, Markdown, and CSS file types.
+    FILE_HEADER_STANDARDS.md requirements and supports loading from .thailint.yaml configuration.
+    Supports Python, TypeScript/JavaScript, Bash, Markdown, and CSS file types with
+    language-specific required field sets. Includes atemporal language enforcement
+    configuration and file ignore patterns.
 
-Usage:
-    config = FileHeaderConfig()
-    config = FileHeaderConfig.from_dict(config_dict, "python")
+Dependencies: dataclasses module for configuration structure
 
-Notes: Dataclass with validation and language-specific defaults
+Exports: FileHeaderConfig dataclass
+
+Interfaces: from_dict(config_dict, language) -> FileHeaderConfig for configuration loading
+
+Implementation: Dataclass with language-specific field lists and factory method for config loading
 """
 
 from dataclasses import dataclass, field

@@ -1,27 +1,25 @@
 """
-File: src/linters/print_statements/violation_builder.py
-
 Purpose: Builds Violation objects for print statement detection
 
-Exports: ViolationBuilder class
-
-Depends: ast, pathlib.Path, src.core.types.Violation
-
-Implements: ViolationBuilder.create_python_violation(node, line, file_path) -> Violation,
-    ViolationBuilder.create_typescript_violation(method, line, file_path) -> Violation
-
-Related: src/linters/magic_numbers/violation_builder.py, src/core/types.py
+Scope: Violation creation for print and console statement detections
 
 Overview: Provides ViolationBuilder class that creates Violation objects for print statement
     detections. Generates descriptive messages suggesting the use of proper logging instead of
     print/console statements. Constructs complete Violation instances with rule_id, file_path,
     line number, column, message, and suggestions. Provides separate methods for Python print()
-    violations and TypeScript/JavaScript console.* violations with language-appropriate messages.
+    violations and TypeScript/JavaScript console.* violations with language-appropriate messages
+    and helpful remediation guidance.
 
-Usage: builder = ViolationBuilder("print-statements.detected")
-    violation = builder.create_python_violation(node, line, file_path)
+Dependencies: ast module for Python AST nodes, pathlib.Path for file paths,
+    src.core.types.Violation for violation structure
 
-Notes: Message templates suggest logging as alternative, consistent with other linter patterns
+Exports: ViolationBuilder class
+
+Interfaces: create_python_violation(node, line, file_path) -> Violation,
+    create_typescript_violation(method, line, file_path) -> Violation
+
+Implementation: Builder pattern with message templates suggesting logging as alternative
+    to print/console statements
 """
 
 import ast
