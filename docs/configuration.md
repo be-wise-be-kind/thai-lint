@@ -374,6 +374,83 @@ file-placement:
 }
 ```
 
+## Output Formats
+
+thailint supports three output formats for linting results:
+
+### Text Format (Default)
+
+Human-readable format for terminal output:
+
+```bash
+thailint nesting src/
+# or explicitly
+thailint nesting --format text src/
+```
+
+**Example output:**
+```
+src/processor.py:42:9 - Nesting depth 5 exceeds maximum 4 in function 'process_data'
+src/handler.py:88:13 - Nesting depth 6 exceeds maximum 4 in function 'handle_request'
+
+Found 2 violations
+```
+
+### JSON Format
+
+Machine-readable JSON for custom tooling and CI/CD:
+
+```bash
+thailint nesting --format json src/
+```
+
+**Example output:**
+```json
+[
+  {
+    "rule_id": "nesting.excessive-depth",
+    "message": "Nesting depth 5 exceeds maximum 4",
+    "file_path": "src/processor.py",
+    "line": 42,
+    "column": 8
+  }
+]
+```
+
+### SARIF Format
+
+SARIF (Static Analysis Results Interchange Format) v2.1.0 for GitHub Code Scanning, Azure DevOps, and VS Code:
+
+```bash
+thailint nesting --format sarif src/ > results.sarif
+```
+
+**Example output:**
+```json
+{
+  "version": "2.1.0",
+  "$schema": "https://raw.githubusercontent.com/oasis-tcs/sarif-spec/main/sarif-2.1/schema/sarif-schema-2.1.0.json",
+  "runs": [{
+    "tool": {
+      "driver": {
+        "name": "thai-lint",
+        "version": "0.5.0",
+        "informationUri": "https://github.com/be-wise-be-kind/thai-lint"
+      }
+    },
+    "results": [...]
+  }]
+}
+```
+
+**Use cases:**
+- GitHub Code Scanning integration
+- VS Code SARIF Viewer
+- Azure DevOps security dashboard
+- Enterprise security tooling
+
+See [SARIF Output Guide](sarif-output.md) for comprehensive documentation on SARIF integration.
+
 ## Configuration Schema
 
 ### Root Level Options

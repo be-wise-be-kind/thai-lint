@@ -22,9 +22,9 @@ Implementation: TDD approach with comprehensive test coverage, expects SarifForm
 import json
 
 import pytest
-from src.formatters.sarif import SarifFormatter
 
 from src.core.types import Severity, Violation
+from src.formatters.sarif import SarifFormatter
 
 # === Fixtures ===
 

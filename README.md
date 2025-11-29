@@ -5,6 +5,7 @@
 [![Tests](https://img.shields.io/badge/tests-393%2F393%20passing-brightgreen.svg)](tests/)
 [![Coverage](https://img.shields.io/badge/coverage-87%25-brightgreen.svg)](htmlcov/)
 [![Documentation Status](https://readthedocs.org/projects/thai-lint/badge/?version=latest)](https://thai-lint.readthedocs.io/en/latest/?badge=latest)
+[![SARIF 2.1.0](https://img.shields.io/badge/SARIF-2.1.0-orange.svg)](docs/sarif-output.md)
 
 The AI Linter - Enterprise-ready linting and governance for AI-generated code across multiple languages.
 
@@ -128,6 +129,9 @@ thailint dry --config .thailint.yaml src/
 
 # JSON output for CI/CD
 thailint dry --format json src/
+
+# SARIF output for GitHub Code Scanning
+thailint nesting --format sarif src/ > results.sarif
 ```
 
 **New to thailint?** See the **[Quick Start Guide](https://thai-lint.readthedocs.io/en/latest/quick-start/)** for a complete walkthrough including config generation, understanding output, and next steps.
@@ -1123,6 +1127,7 @@ docker run --rm -v /path/to/workspace:/workspace \
 - **[SRP Linter](https://thai-lint.readthedocs.io/en/latest/srp-linter/)** - Single Responsibility Principle guide
 - **[DRY Linter](https://thai-lint.readthedocs.io/en/latest/dry-linter/)** - Duplicate code detection guide
 - **[Pre-commit Hooks](https://thai-lint.readthedocs.io/en/latest/pre-commit-hooks/)** - Automated quality checks
+- **[SARIF Output Guide](docs/sarif-output.md)** - SARIF format for GitHub Code Scanning and CI/CD
 - **[Publishing Guide](https://thai-lint.readthedocs.io/en/latest/releasing/)** - Release and publishing workflow
 - **[Publishing Checklist](https://thai-lint.readthedocs.io/en/latest/publishing-checklist/)** - Post-publication validation
 
@@ -1133,6 +1138,7 @@ See [`examples/`](examples/) directory for working code:
 - **[basic_usage.py](examples/basic_usage.py)** - Simple library API usage
 - **[advanced_usage.py](examples/advanced_usage.py)** - Advanced patterns and workflows
 - **[ci_integration.py](examples/ci_integration.py)** - CI/CD integration example
+- **[sarif_usage.py](examples/sarif_usage.py)** - SARIF output format examples
 
 ## Project Structure
 
