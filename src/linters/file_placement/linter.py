@@ -6,22 +6,20 @@ Scope: Validate file organization against allow/deny patterns
 Overview: Implements file placement validation using regex patterns from JSON/YAML config.
     Orchestrates configuration loading, pattern validation, path resolution, rule checking,
     and violation creation through focused helper classes. Supports directory-specific rules,
-    global patterns, and generates helpful suggestions. Main linter class acts as coordinator.
+    global patterns, and generates helpful suggestions. Main linter class acts as coordinator
+    using composition pattern with specialized helper classes for configuration loading,
+    path resolution, pattern matching, and violation creation.
 
-Dependencies: src.core (base classes, types), pathlib, typing
+Dependencies: src.core (base classes, types), pathlib, typing, json, yaml modules
 
 Exports: FilePlacementLinter, FilePlacementRule
 
-Implementation: Composition pattern with helper classes for each responsibility
+Interfaces: lint_path(file_path) -> list[Violation], check_file_allowed(file_path) -> bool,
+    lint_directory(dir_path) -> list[Violation]
 
-SRP Exception: FilePlacementRule has 13 methods (exceeds max 8)
-    Justification: Framework adapter class that bridges BaseLintRule interface with
-    FilePlacementLinter implementation. Must handle multiple config sources (metadata vs file),
-    multiple config formats (wrapped vs unwrapped), project root detection with fallbacks,
-    and linter caching. This complexity is inherent to adapter pattern - splitting would
-    create unnecessary indirection between framework and implementation without improving
-    maintainability. All methods are focused on the single responsibility of integrating
-    file placement validation with the linting framework.
+Implementation: Composition pattern with helper classes for each responsibility
+    (ConfigLoader, PathResolver, PatternMatcher, PatternValidator, RuleChecker,
+    ViolationFactory)
 """
 
 import json

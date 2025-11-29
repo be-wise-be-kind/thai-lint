@@ -1665,5 +1665,118 @@ def _execute_print_statements_lint(  # pylint: disable=too-many-arguments,too-ma
     sys.exit(1 if print_statements_violations else 0)
 
 
+# File Header Command Helper Functions
+
+
+def _setup_file_header_orchestrator(
+    path_objs: list[Path], config_file: str | None, verbose: bool, project_root: Path | None = None
+):
+    """Set up orchestrator for file-header command."""
+    from src.orchestrator.core import Orchestrator
+    from src.utils.project_root import get_project_root
+
+    # Use provided project_root or fall back to auto-detection
+    if project_root is None:
+        first_path = path_objs[0] if path_objs else Path.cwd()
+        search_start = first_path if first_path.is_dir() else first_path.parent
+        project_root = get_project_root(search_start)
+
+    orchestrator = Orchestrator(project_root=project_root)
+
+    if config_file:
+        _load_config_file(orchestrator, config_file, verbose)
+
+    return orchestrator
+
+
+def _run_file_header_lint(orchestrator, path_objs: list[Path], recursive: bool):
+    """Execute file-header lint on files or directories."""
+    all_violations = _execute_linting_on_paths(orchestrator, path_objs, recursive)
+    return [v for v in all_violations if "file-header" in v.rule_id]
+
+
+@cli.command("file-header")
+@click.argument("paths", nargs=-1, type=click.Path())
+@click.option("--config", "-c", "config_file", type=click.Path(), help="Path to config file")
+@format_option
+@click.option("--recursive/--no-recursive", default=True, help="Scan directories recursively")
+@click.pass_context
+def file_header(
+    ctx,
+    paths: tuple[str, ...],
+    config_file: str | None,
+    format: str,
+    recursive: bool,
+):
+    """Check file headers for mandatory fields and atemporal language.
+
+    Validates that source files have proper documentation headers containing
+    required fields (Purpose, Scope, Overview, etc.) and don't use temporal
+    language (dates, "currently", "now", etc.).
+
+    Supports Python, TypeScript, JavaScript, Bash, Markdown, and CSS files.
+
+    PATHS: Files or directories to lint (defaults to current directory if none provided)
+
+    Examples:
+
+        \b
+        # Check current directory (all files recursively)
+        thai-lint file-header
+
+        \b
+        # Check specific directory
+        thai-lint file-header src/
+
+        \b
+        # Check single file
+        thai-lint file-header src/cli.py
+
+        \b
+        # Check multiple files
+        thai-lint file-header src/cli.py src/api.py tests/
+
+        \b
+        # Get JSON output
+        thai-lint file-header --format json .
+
+        \b
+        # Get SARIF output for CI/CD integration
+        thai-lint file-header --format sarif src/
+
+        \b
+        # Use custom config file
+        thai-lint file-header --config .thailint.yaml src/
+    """
+    verbose = ctx.obj.get("verbose", False)
+    project_root = _get_project_root_from_context(ctx)
+
+    # Default to current directory if no paths provided
+    if not paths:
+        paths = (".",)
+
+    path_objs = [Path(p) for p in paths]
+
+    try:
+        _execute_file_header_lint(path_objs, config_file, format, recursive, verbose, project_root)
+    except Exception as e:
+        _handle_linting_error(e, verbose)
+
+
+def _execute_file_header_lint(  # pylint: disable=too-many-arguments,too-many-positional-arguments
+    path_objs, config_file, format, recursive, verbose, project_root=None
+):
+    """Execute file-header lint."""
+    _validate_paths_exist(path_objs)
+    orchestrator = _setup_file_header_orchestrator(path_objs, config_file, verbose, project_root)
+    file_header_violations = _run_file_header_lint(orchestrator, path_objs, recursive)
+
+    if verbose:
+        logger.info(f"Found {len(file_header_violations)} file header violation(s)")
+
+    format_violations(file_header_violations, format)
+    sys.exit(1 if file_header_violations else 0)
+
+
 if __name__ == "__main__":
     cli()

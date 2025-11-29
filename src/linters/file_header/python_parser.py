@@ -1,23 +1,21 @@
 """
-File: src/linters/file_header/python_parser.py
 Purpose: Python docstring extraction and parsing for file headers
-Exports: PythonHeaderParser class
-Depends: Python ast module, base_parser.BaseHeaderParser
-Implements: AST-based docstring extraction with field parsing
-Related: linter.py for parser usage, field_validator.py for field validation
 
-Overview:
-    Extracts module-level docstrings from Python files using AST parsing.
+Scope: Python file header parsing from module-level docstrings
+
+Overview: Extracts module-level docstrings from Python files using AST parsing.
     Parses structured header fields from docstring content and handles both
     well-formed and malformed headers. Provides field extraction and validation
-    support for FileHeaderRule.
+    support for FileHeaderRule. Uses ast.get_docstring() for reliable extraction
+    and gracefully handles syntax errors in source code.
 
-Usage:
-    parser = PythonHeaderParser()
-    header = parser.extract_header(code)
-    fields = parser.parse_fields(header)
+Dependencies: Python ast module for AST parsing, base_parser.BaseHeaderParser for field parsing
 
-Notes: Uses ast.get_docstring() for reliable module-level docstring extraction
+Exports: PythonHeaderParser class
+
+Interfaces: extract_header(code) -> str | None for docstring extraction, parse_fields(header) inherited from base
+
+Implementation: AST-based docstring extraction with syntax error handling
 """
 
 import ast

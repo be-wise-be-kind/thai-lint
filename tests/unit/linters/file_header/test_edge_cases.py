@@ -1,19 +1,24 @@
 """
-File: tests/unit/linters/file_header/test_edge_cases.py
-Purpose: Test suite for edge case handling in file header linter
-Exports: TestFilesWithoutDocstrings, TestMalformedHeaders, TestSpecialContent, TestEmptyFiles
-Depends: pytest, conftest.create_mock_context, src.linters.file_header.linter.FileHeaderRule
-Related: test_python_header_validation.py, test_mandatory_fields.py
+Purpose: Unit tests for edge case handling in file header linter
 
-Overview:
-    Tests for edge cases and unusual file structures including files without docstrings,
-    malformed docstrings, very long headers, Unicode in headers, multi-line field values,
-    empty files, and files with only comments. Validates robust error handling and
-    graceful degradation. All tests initially fail (TDD RED phase) since FileHeaderRule
-    does not exist yet.
+Scope: Testing unusual file structures and error handling in header validation
 
-Usage:
-    pytest tests/unit/linters/file_header/test_edge_cases.py -v
+Overview: Comprehensive test suite for edge cases and unusual file structures including
+    files without docstrings, malformed docstrings, very long headers, Unicode content,
+    multi-line field values, empty files, and files with only comments. Validates robust
+    error handling, graceful degradation with invalid inputs, and proper parsing of
+    special content. Tests performance with large headers and correctness with Unicode.
+
+Dependencies: pytest, conftest.create_mock_context, src.linters.file_header.linter.FileHeaderRule
+
+Exports: TestFilesWithoutDocstrings, TestMalformedHeaders, TestSpecialContent,
+    TestEmptyFiles test classes
+
+Interfaces: test_detects_file_without_docstring, test_handles_unclosed_docstring,
+    test_handles_unicode_in_header, test_handles_whitespace_only_file, and other test methods
+
+Implementation: Tests boundary conditions and error cases, validates parser robustness,
+    uses mock contexts for isolated testing
 """
 
 from tests.unit.linters.file_header.conftest import create_mock_context

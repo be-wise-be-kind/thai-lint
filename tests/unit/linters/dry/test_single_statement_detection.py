@@ -1,16 +1,23 @@
 """
 Purpose: Unit tests for single statement detection methods in PythonDuplicateAnalyzer
 
-Scope: Test each specialized detection method (_is_part_of_decorator, _is_part_of_function_call, etc.)
+Scope: Testing specialized detection methods for multi-line single logical statements
 
-Overview: Provides comprehensive parameterized tests for each detection method to ensure
-    they correctly identify single logical statements spanning multiple lines.
+Overview: Comprehensive parameterized test suite for each detection method including decorator
+    detection, function call detection, list literal detection, dict literal detection, and other
+    patterns that represent single logical statements spanning multiple lines. Ensures accurate
+    identification to prevent false positive duplication violations on formatted code patterns.
+    Tests boundary conditions and various formatting styles for each pattern type.
 
 Dependencies: pytest, src.linters.dry.python_analyzer.PythonDuplicateAnalyzer
 
-Exports: Test functions for each detection method
+Exports: TestIsPartOfDecorator, TestIsPartOfFunctionCall, TestIsPartOfListLiteral,
+    TestIsPartOfDictLiteral test classes
 
-Implementation: Uses parameterized tests with concrete examples of each pattern
+Interfaces: test methods with parameterized inputs for code samples, start_line, end_line, expected result
+
+Implementation: Uses pytest parametrization with concrete examples for each pattern, analyzer fixture
+    provides PythonDuplicateAnalyzer instance, validates detection logic for each method independently
 """
 
 import pytest

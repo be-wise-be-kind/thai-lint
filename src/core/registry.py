@@ -6,7 +6,7 @@ Scope: Dynamic rule management and discovery across all linter plugin packages
 Overview: Implements rule registry that maintains a collection of registered linting rules indexed
     by rule_id. Provides methods to register individual rules, retrieve rules by identifier, list
     all available rules, and discover rules from packages using the RuleDiscovery helper. Enables
-    the extensible plugin architecture by allowing rules to be added dynamically without framework
+    the extensible plugin architecture by allowing dynamic rule registration without framework
     modifications. Validates rule uniqueness and handles registration errors gracefully.
 
 Dependencies: BaseLintRule, RuleDiscovery

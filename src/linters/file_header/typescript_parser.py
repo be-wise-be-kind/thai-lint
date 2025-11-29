@@ -1,23 +1,21 @@
 """
-File: src/linters/file_header/typescript_parser.py
 Purpose: TypeScript/JavaScript JSDoc comment extraction and parsing
-Exports: TypeScriptHeaderParser class
-Depends: re module for regex matching, base_parser.BaseHeaderParser
-Implements: Regex-based JSDoc extraction with field parsing
-Related: linter.py for parser usage, base_parser.py for common logic
 
-Overview:
-    Extracts JSDoc-style comments (/** ... */) from TypeScript and JavaScript files.
+Scope: TypeScript and JavaScript file header parsing from JSDoc comments
+
+Overview: Extracts JSDoc-style comments (/** ... */) from TypeScript and JavaScript files.
     Parses structured header fields from JSDoc content and handles both single-line
     and multi-line field values. Distinguishes JSDoc comments from regular block
-    comments (/* ... */).
+    comments (/* ... */) by requiring the double asterisk syntax. Cleans formatting
+    characters including leading asterisks from content lines.
 
-Usage:
-    parser = TypeScriptHeaderParser()
-    header = parser.extract_header(code)
-    fields = parser.parse_fields(header)
+Dependencies: re module for regex-based JSDoc pattern matching, base_parser.BaseHeaderParser for field parsing
 
-Notes: Only recognizes JSDoc comments starting with /** (not /*)
+Exports: TypeScriptHeaderParser class
+
+Interfaces: extract_header(code) -> str | None for JSDoc extraction, parse_fields(header) inherited from base
+
+Implementation: Regex-based JSDoc extraction with content cleaning and formatting removal
 """
 
 import re

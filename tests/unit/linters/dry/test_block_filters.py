@@ -1,10 +1,21 @@
 """
 Purpose: Unit tests for extensible block filter system
 
-Scope: Tests for KeywordArgumentFilter, ImportGroupFilter, and BlockFilterRegistry
+Scope: Testing block filters for excluding false positive duplications
 
-Overview: TDD tests ensuring filters correctly identify and filter false positive duplications
-    like keyword arguments in function calls, import groups, and other API boilerplate patterns.
+Overview: Comprehensive test suite ensuring filters correctly identify and exclude false positive
+    duplications such as keyword arguments in function calls, import statement groups, and other
+    API boilerplate patterns from DRY violation detection. Tests filter registry management
+    including enabling and disabling filters, and validates each filter type independently.
+
+Dependencies: pytest, pathlib.Path, src.linters.dry.block_filter, src.linters.dry.cache.CodeBlock
+
+Exports: TestKeywordArgumentFilter, TestImportGroupFilter, TestBlockFilterRegistry test classes
+
+Interfaces: test_filters_import_only_blocks, test_can_disable_filters, and other test methods
+
+Implementation: Creates CodeBlock instances for testing, uses filter registry for configuration,
+    validates filter application logic
 """
 
 from pathlib import Path

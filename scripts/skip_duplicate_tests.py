@@ -1,5 +1,17 @@
 #!/usr/bin/env python3
-"""Mark duplicate tests as skipped instead of deleting them."""
+"""
+Purpose: Marks duplicate test functions as skipped using pytest decorators
+Scope: Test file maintenance and duplicate test management
+Overview: Utility script that marks 100% duplicate test functions with @pytest.mark.skip
+    decorators instead of removing them. Reads duplicate test candidates from a JSON artifact
+    file, parses test file paths to locate functions, and adds skip decorators with
+    appropriate indentation. Automatically adds pytest imports if needed. Provides a
+    safe, reversible way to disable duplicate tests while preserving them for review.
+Dependencies: json, pathlib, re for pattern matching and file operations
+Exports: main script logic for marking duplicate tests as skipped
+Interfaces: Reads .artifacts/removal_candidates_100pct.json, writes skip decorators to test files
+Implementation: Text-based parsing with regex to locate function definitions and add decorators
+"""
 
 import json
 from pathlib import Path

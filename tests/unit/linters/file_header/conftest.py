@@ -1,20 +1,23 @@
 """
-File: tests/unit/linters/file_header/conftest.py
 Purpose: Shared pytest fixtures and test helpers for file header linter tests
-Exports: create_mock_context, VALID_TYPESCRIPT_HEADER, VALID_BASH_HEADER, etc.
-Depends: pytest, pathlib.Path, unittest.mock.Mock, src.core.base.BaseLintContext
-Related: All test files in this directory
 
-Overview:
-    Provides shared pytest fixtures and helper functions for file header linter
+Scope: Test infrastructure for file header validation across multiple languages
+
+Overview: Provides shared pytest fixtures and helper functions for file header linter
     test suite. Includes mock context creation utilities following the pattern
     established in magic_numbers linter tests. Helper functions simplify test
     setup and reduce duplication across test files. Supports multi-language
     testing with TypeScript, Bash, Markdown, and CSS fixtures.
 
-Usage:
-    context = create_mock_context(code="...", filename="test.py")
-    context = create_mock_context(code="...", filename="test.ts", language="typescript")
+Dependencies: pytest, pathlib.Path, unittest.mock.Mock, src.core.base.BaseLintContext
+
+Exports: create_mock_context, VALID_TYPESCRIPT_HEADER, VALID_BASH_HEADER,
+    VALID_MARKDOWN_HEADER, VALID_CSS_HEADER, and invalid header examples
+
+Interfaces: create_mock_context(code, filename, language, metadata) -> BaseLintContext
+
+Implementation: Factory function pattern for mock context creation, constant definitions
+    for valid and invalid header examples used across test modules
 """
 
 from pathlib import Path

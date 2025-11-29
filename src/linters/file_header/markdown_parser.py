@@ -1,22 +1,22 @@
 """
-File: src/linters/file_header/markdown_parser.py
 Purpose: Markdown YAML frontmatter extraction and parsing
-Exports: MarkdownHeaderParser class
-Depends: re module, yaml module (optional), logging module
-Implements: YAML frontmatter extraction with field parsing
-Related: linter.py for parser usage, base_parser.py for pattern reference
 
-Overview:
-    Extracts YAML frontmatter from Markdown files. Frontmatter must be at the
+Scope: Markdown file header parsing from YAML frontmatter
+
+Overview: Extracts YAML frontmatter from Markdown files. Frontmatter must be at the
     start of the file, enclosed in --- markers. Parses YAML content to extract
-    field values. Falls back to regex parsing if PyYAML is not available.
+    field values using PyYAML when available, falling back to regex parsing if not.
+    Handles both simple key-value pairs and complex YAML structures including lists.
+    Flattens nested structures into string representations for field validation.
 
-Usage:
-    parser = MarkdownHeaderParser()
-    header = parser.extract_header(code)
-    fields = parser.parse_fields(header)
+Dependencies: re module for frontmatter pattern matching, yaml module (optional) for parsing, logging module
 
-Notes: Frontmatter must be at file start between --- markers
+Exports: MarkdownHeaderParser class
+
+Interfaces: extract_header(code) -> str | None for frontmatter extraction,
+    parse_fields(header) -> dict[str, str] for field parsing
+
+Implementation: YAML frontmatter extraction with PyYAML parsing and regex fallback for robustness
 """
 
 import logging

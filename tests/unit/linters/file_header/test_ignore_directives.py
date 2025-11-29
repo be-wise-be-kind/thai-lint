@@ -1,18 +1,24 @@
 """
-File: tests/unit/linters/file_header/test_ignore_directives.py
-Purpose: Test suite for ignore directive support in file header linter
-Exports: TestLineIgnoreDirectives, TestFileIgnoreDirectives, TestPatternIgnoreConfiguration
-Depends: pytest, conftest.create_mock_context, src.linters.file_header.linter.FileHeaderRule
-Related: test_configuration.py, test_python_header_validation.py
+Purpose: Unit tests for ignore directive support in file header linter
 
-Overview:
-    Tests for ignore directive support allowing developers to suppress file header
-    validation. Covers line-level ignore directives, file-level ignore directives,
-    and pattern-based ignore configuration. All tests initially fail (TDD RED phase)
-    since FileHeaderRule does not exist yet.
+Scope: Testing ignore mechanisms for suppressing file header validation
 
-Usage:
-    pytest tests/unit/linters/file_header/test_ignore_directives.py -v
+Overview: Comprehensive test suite for ignore directive support allowing developers to
+    suppress file header validation when appropriate. Covers line-level ignore directives
+    using thailint-ignore-line comments, file-level ignore directives for entire files,
+    and pattern-based ignore configuration for test files, generated files, and migrations.
+    Validates glob pattern matching and generic ignore directive support.
+
+Dependencies: pytest, conftest.create_mock_context, src.linters.file_header.linter.FileHeaderRule
+
+Exports: TestLineIgnoreDirectives, TestFileIgnoreDirectives,
+    TestPatternIgnoreConfiguration test classes
+
+Interfaces: test_respects_line_ignore_directive, test_respects_file_ignore_directive,
+    test_respects_test_file_ignore_pattern, test_generic_ignore_directive, and other test methods
+
+Implementation: Tests ignore directive parsing and application, validates pattern matching
+    against file paths, uses mock contexts with metadata for configuration testing
 """
 
 from tests.unit.linters.file_header.conftest import create_mock_context

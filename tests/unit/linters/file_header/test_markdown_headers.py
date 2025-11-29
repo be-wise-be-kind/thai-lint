@@ -1,19 +1,25 @@
 """
-File: tests/unit/linters/file_header/test_markdown_headers.py
-Purpose: Test suite for Markdown file header (YAML frontmatter) validation
-Exports: TestMarkdownFrontmatterExtraction, TestMarkdownMandatoryFields, etc.
-Depends: pytest, conftest fixtures, src.linters.file_header.linter.FileHeaderRule
-Related: test_python_header_validation.py, test_multi_language_validation.py
+Purpose: Unit tests for Markdown file header validation using YAML frontmatter
 
-Overview:
-    Comprehensive tests for Markdown file header validation using YAML frontmatter
-    format. Includes frontmatter extraction, mandatory field detection, YAML parsing,
-    atemporal language validation, and edge case handling. Tests cover .md files with
-    Markdown-specific requirements. All tests initially fail (TDD RED phase) since
-    Markdown parser does not exist yet.
+Scope: Testing Markdown-specific YAML frontmatter parsing and validation
 
-Usage:
-    pytest tests/unit/linters/file_header/test_markdown_headers.py -v
+Overview: Comprehensive test suite for Markdown file header validation using YAML frontmatter
+    format between --- markers. Tests frontmatter extraction from file start, mandatory field
+    detection, YAML list and nested structure parsing, atemporal language validation in metadata,
+    and edge case handling including malformed YAML. Validates position-sensitive frontmatter
+    detection and handles .md files with Markdown-specific requirements.
+
+Dependencies: pytest, conftest fixtures (VALID_MARKDOWN_HEADER, MARKDOWN_NO_FRONTMATTER),
+    src.linters.file_header.linter.FileHeaderRule
+
+Exports: TestMarkdownFrontmatterExtraction, TestMarkdownMandatoryFields,
+    TestMarkdownAtemporalLanguage, TestMarkdownEdgeCases test classes
+
+Interfaces: test_extracts_yaml_frontmatter, test_detects_missing_frontmatter,
+    test_detects_date_in_frontmatter, test_handles_malformed_yaml, and other test methods
+
+Implementation: Uses conftest fixtures for valid and invalid Markdown headers, validates
+    YAML frontmatter position requirements, tests YAML structure parsing
 """
 
 from tests.unit.linters.file_header.conftest import (

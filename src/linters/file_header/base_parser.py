@@ -1,24 +1,21 @@
 """
-File: src/linters/file_header/base_parser.py
 Purpose: Base class for file header parsers with common field parsing logic
-Exports: BaseHeaderParser class
-Depends: re module, abc module
-Implements: Abstract base class with shared field parsing methods
-Related: typescript_parser.py, bash_parser.py, css_parser.py
 
-Overview:
-    Provides common field parsing functionality shared across all language-specific
+Scope: File header parsing infrastructure for all language-specific parsers
+
+Overview: Provides common field parsing functionality shared across all language-specific
     header parsers. Implements the parse_fields method and helper methods for
-    detecting field lines and saving fields. Subclasses implement extract_header
-    for language-specific header extraction.
+    detecting field lines and saving fields. Uses template method pattern where subclasses
+    implement extract_header for language-specific header extraction while this base class
+    handles field parsing logic. Supports multi-line field values and field continuation.
 
-Usage:
-    class MyParser(BaseHeaderParser):
-        def extract_header(self, code: str) -> str | None:
-            # Language-specific extraction
-            pass
+Dependencies: re module for field pattern matching, abc module for abstract base class
 
-Notes: Uses template method pattern for field parsing
+Exports: BaseHeaderParser abstract base class
+
+Interfaces: extract_header(code) abstract method, parse_fields(header) -> dict[str, str] for field extraction
+
+Implementation: Template method pattern with shared field parsing and language-specific extraction
 """
 
 import re

@@ -1,23 +1,25 @@
 """
-File: src/linters/file_header/linter.py
 Purpose: Main file header linter rule implementation
-Exports: FileHeaderRule class
-Depends: BaseLintRule, parsers, FieldValidator, AtemporalDetector, ViolationBuilder
-Implements: Composition pattern with helper classes, multi-language parsing
-Related: config.py for configuration, *_parser.py for language-specific extraction
 
-Overview:
-    Orchestrates file header validation for multiple languages using focused helper classes.
+Scope: File header validation for Python, TypeScript, JavaScript, Bash, Markdown, and CSS files
+
+Overview: Orchestrates file header validation for multiple languages using focused helper classes.
     Coordinates header extraction, field validation, atemporal language detection, and
-    violation building. Supports configuration from .thailint.yaml and ignore directives.
-    Validates headers against mandatory field requirements and atemporal language standards.
-    Supports Python, TypeScript/JavaScript, Bash, Markdown, and CSS file types.
+    violation building. Supports configuration from .thailint.yaml and ignore directives
+    including file-level and line-level ignore markers. Validates headers against mandatory
+    field requirements and atemporal language standards. Handles language-specific parsing
+    and special Markdown prose field extraction for atemporal checking.
 
-Usage:
-    rule = FileHeaderRule()
-    violations = rule.check(context)
+Dependencies: BaseLintRule and BaseLintContext from core, language-specific parsers,
+    FieldValidator, AtemporalDetector, ViolationBuilder
 
-Notes: Follows composition pattern from magic_numbers linter for maintainability
+Exports: FileHeaderRule class implementing BaseLintRule interface
+
+Interfaces: check(context) -> list[Violation] for rule validation, standard rule properties
+    (rule_id, rule_name, description)
+
+Implementation: Composition pattern with helper classes for parsing, validation,
+    and violation building
 """
 
 from pathlib import Path

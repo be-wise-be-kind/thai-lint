@@ -1,21 +1,23 @@
 #!/usr/bin/env python3
 """
-Purpose: Example usage of the SRP (Single Responsibility Principle) linter
+Purpose: Demonstrates SRP linter usage patterns and integration approaches
 
-Scope: Demonstrates library API usage, configuration options, and result processing
+Scope: Library API examples, configuration options, and CI/CD integration patterns
 
-Overview: Working example showing how to use the SRP linter programmatically. Covers
-    basic usage with default settings, custom configuration with language-specific
-    thresholds, batch processing multiple files, and integration patterns for CI/CD.
-    Demonstrates both the convenience function and direct rule class usage.
+Overview: Working examples showing how to use the SRP linter programmatically through
+    multiple usage patterns. Covers basic usage with default settings, custom threshold
+    configuration, language-specific settings, batch processing of multiple files, CI/CD
+    pipeline integration, and keyword-based filtering. Demonstrates both the convenience
+    srp_lint function and direct SRPRule class usage for different scenarios.
 
-Dependencies: thailint package
+Dependencies: thailint package (src.Linter, src.SRPRule, src.srp_lint), pathlib, sys
 
-Exports: Example code for SRP linter integration
+Exports: Six example functions demonstrating different SRP linter usage patterns
 
-Related: basic_usage.py, advanced_usage.py, docs/srp-linter.md
+Interfaces: example_1_basic_usage(), example_2_custom_thresholds(), example_3_language_specific(),
+    example_4_batch_processing(), example_5_ci_integration(), example_6_filtering_by_keyword()
 
-Implementation: Library API examples with multiple usage patterns
+Implementation: Executable examples with working code showing API usage and integration patterns
 """
 
 import sys

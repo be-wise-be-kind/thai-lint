@@ -1,22 +1,21 @@
 """
-File: src/linters/file_header/bash_parser.py
 Purpose: Bash shell script comment header extraction and parsing
-Exports: BashHeaderParser class
-Depends: base_parser.BaseHeaderParser
-Implements: Hash comment extraction with field parsing
-Related: linter.py for parser usage, base_parser.py for common logic
 
-Overview:
-    Extracts hash comment headers from Bash shell scripts. Handles shebang lines
+Scope: Bash and shell script file header parsing
+
+Overview: Extracts hash comment headers from Bash shell scripts. Handles shebang lines
     (#!/bin/bash, #!/usr/bin/env bash, etc.) by skipping them and extracting the
     comment block that follows. Parses structured header fields from comment content.
+    Extracts contiguous comment blocks from the start of the file and processes them
+    into structured fields for validation.
 
-Usage:
-    parser = BashHeaderParser()
-    header = parser.extract_header(code)
-    fields = parser.parse_fields(header)
+Dependencies: base_parser.BaseHeaderParser for common field parsing functionality
 
-Notes: Skips shebang line if present, extracts contiguous comment block
+Exports: BashHeaderParser class
+
+Interfaces: extract_header(code) -> str | None for comment extraction, parse_fields(header) inherited from base
+
+Implementation: Skips shebang and preamble, then extracts contiguous hash comment block
 """
 
 from src.linters.file_header.base_parser import BaseHeaderParser

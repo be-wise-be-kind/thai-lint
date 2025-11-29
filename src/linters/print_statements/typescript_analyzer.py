@@ -1,28 +1,23 @@
 """
-File: src/linters/print_statements/typescript_analyzer.py
-
 Purpose: TypeScript/JavaScript console.* call detection using Tree-sitter AST analysis
 
-Exports: TypeScriptPrintStatementAnalyzer class
-
-Depends: TypeScriptBaseAnalyzer for tree-sitter parsing, tree-sitter Node type
-
-Implements: find_console_calls(root_node, methods) -> list[tuple]
-
-Related: src/linters/magic_numbers/typescript_analyzer.py, src/analyzers/typescript_base.py
+Scope: TypeScript and JavaScript console statement detection
 
 Overview: Analyzes TypeScript and JavaScript code to detect console.* method calls that should
     be replaced with proper logging. Uses Tree-sitter parser to traverse TypeScript/JavaScript
     AST and identify call expressions where the callee is console.log, console.warn, console.error,
     console.debug, or console.info (configurable). Returns structured data with the node, method
     name, and line number for each detected console call. Supports both TypeScript and JavaScript
-    files with shared detection logic.
+    files with shared detection logic. Handles member expression pattern matching to identify
+    console object method calls.
 
-Usage: analyzer = TypeScriptPrintStatementAnalyzer()
-    root = analyzer.parse_typescript(code)
-    calls = analyzer.find_console_calls(root, {"log", "warn", "error"})
+Dependencies: TypeScriptBaseAnalyzer for tree-sitter parsing infrastructure, tree-sitter Node type, logging module
 
-Notes: Tree-sitter node traversal with call_expression and member_expression pattern matching
+Exports: TypeScriptPrintStatementAnalyzer class
+
+Interfaces: find_console_calls(root_node, methods) -> list[tuple[Node, str, int]]
+
+Implementation: Tree-sitter node traversal with call_expression and member_expression pattern matching
 """
 
 import logging

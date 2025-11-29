@@ -1,19 +1,24 @@
 """
-File: tests/unit/linters/file_header/test_multi_language_validation.py
-Purpose: Test suite for multi-language file header validation
-Exports: TestLanguageDetection, TestParserSelection, TestCrossLanguageValidation
-Depends: pytest, conftest fixtures, src.linters.file_header.linter.FileHeaderRule
-Related: test_typescript_headers.py, test_bash_headers.py, test_markdown_headers.py
+Purpose: Unit tests for multi-language file header validation
 
-Overview:
-    Comprehensive tests for multi-language support in file header validation
-    including language detection, parser selection, cross-language field
-    validation, and atemporal language detection across all supported file
-    types. All tests initially fail (TDD RED phase) since multi-language
-    support does not exist yet.
+Scope: Testing language detection and cross-language header validation consistency
 
-Usage:
-    pytest tests/unit/linters/file_header/test_multi_language_validation.py -v
+Overview: Comprehensive test suite for multi-language support in file header validation including
+    language detection from file extensions, correct parser selection per language, cross-language
+    field validation consistency, and atemporal language detection across all supported file types
+    including Python, TypeScript, JavaScript, Bash, Markdown, and CSS. Validates that validation
+    rules apply consistently across languages while respecting language-specific header formats.
+
+Dependencies: pytest, conftest fixtures (VALID_TYPESCRIPT_HEADER, VALID_BASH_HEADER, etc.),
+    src.linters.file_header.linter.FileHeaderRule
+
+Exports: TestLanguageDetection, TestParserSelection, TestCrossLanguageValidation test classes
+
+Interfaces: test_detects_typescript_from_ts_extension, test_uses_jsdoc_parser_for_typescript,
+    test_atemporal_detection_works_across_languages, and other test methods
+
+Implementation: Tests language detection from extensions, validates parser routing,
+    uses conftest fixtures for each supported language
 """
 
 from tests.unit.linters.file_header.conftest import (

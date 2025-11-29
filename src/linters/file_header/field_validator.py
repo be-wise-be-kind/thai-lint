@@ -1,21 +1,21 @@
 """
-File: src/linters/file_header/field_validator.py
 Purpose: Validates mandatory fields in file headers
-Exports: FieldValidator class
-Depends: FileHeaderConfig for field requirements
-Implements: Configuration-driven validation with field presence checking
-Related: linter.py for validator usage, config.py for configuration
 
-Overview:
-    Validates presence and quality of mandatory header fields. Checks that all
+Scope: File header field validation for all supported languages
+
+Overview: Validates presence and quality of mandatory header fields. Checks that all
     required fields are present, non-empty, and meet minimum content requirements.
-    Supports language-specific required fields and provides detailed violation messages.
+    Supports language-specific required fields and provides detailed violation messages
+    for missing or empty fields. Uses configuration-driven validation to support
+    different field requirements per language type.
 
-Usage:
-    validator = FieldValidator(config)
-    violations = validator.validate_fields(fields, "python")
+Dependencies: FileHeaderConfig for language-specific field requirements
 
-Notes: Language-specific field requirements defined in config
+Exports: FieldValidator class
+
+Interfaces: validate_fields(fields, language) -> list[tuple[str, str]] returns field violations
+
+Implementation: Configuration-driven validation with field presence and emptiness checking
 """
 
 from .config import FileHeaderConfig

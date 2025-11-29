@@ -1,22 +1,21 @@
 """
-File: src/linters/file_header/css_parser.py
 Purpose: CSS block comment header extraction and parsing
-Exports: CssHeaderParser class
-Depends: re module for regex matching, base_parser.BaseHeaderParser
-Implements: Regex-based block comment extraction with field parsing
-Related: linter.py for parser usage, base_parser.py for common logic
 
-Overview:
-    Extracts JSDoc-style block comments (/** ... */) from CSS and SCSS files.
+Scope: CSS and SCSS file header parsing
+
+Overview: Extracts JSDoc-style block comments (/** ... */) from CSS and SCSS files.
     Handles @charset declarations by allowing them before the header comment.
-    Parses structured header fields from comment content.
+    Parses structured header fields from comment content and cleans formatting
+    characters. Requires JSDoc-style comment (/**) not regular block comment (/*).
+    Processes multi-line comments and removes leading asterisks from content.
 
-Usage:
-    parser = CssHeaderParser()
-    header = parser.extract_header(code)
-    fields = parser.parse_fields(header)
+Dependencies: re module for regex pattern matching, base_parser.BaseHeaderParser for field parsing
 
-Notes: Requires JSDoc-style comment (/**) not regular block comment (/*)
+Exports: CssHeaderParser class
+
+Interfaces: extract_header(code) -> str | None for JSDoc comment extraction, parse_fields(header) inherited from base
+
+Implementation: Regex-based JSDoc comment extraction with content cleaning and formatting removal
 """
 
 import re

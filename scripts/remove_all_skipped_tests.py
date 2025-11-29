@@ -1,5 +1,17 @@
 #!/usr/bin/env python3
-"""Remove ALL tests marked with @pytest.mark.skip decorator."""
+"""
+Purpose: Removes all test functions marked with pytest skip decorators
+Scope: Test file cleanup and maintenance
+Overview: Utility script that scans all test files for @pytest.mark.skip decorators
+    and removes the entire decorated function. Uses regex pattern matching to identify
+    skip decorators, then removes decorator lines and associated function bodies based
+    on indentation levels. Cleans up consecutive blank lines after removal. Provides
+    progress reporting during processing.
+Dependencies: re, pathlib for pattern matching and file operations
+Exports: main script logic for removing skipped test functions
+Interfaces: Scans tests/**/*.py files, modifies test files in place
+Implementation: Regex-based decorator detection with indentation-aware function removal
+"""
 
 import re
 from pathlib import Path
