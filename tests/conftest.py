@@ -1,7 +1,21 @@
-"""Pytest configuration and shared fixtures.
+"""
+Purpose: Provides pytest configuration and reusable test fixtures
 
-Purpose: Provide reusable test fixtures for all tests
-Scope: Project-wide pytest configuration
+Scope: Project-wide pytest configuration and shared test utilities
+
+Overview: Defines shared pytest fixtures for creating mock project structures in tests.
+    Provides make_project factory fixture for flexible project creation with configurable
+    .git directories, .thailint.yaml configs, and file structures. Includes legacy fixtures
+    for backward compatibility. Serves as single source of truth for test project setup
+    across all test suites.
+
+Dependencies: pytest, pathlib, collections.abc for fixture creation
+
+Exports: make_project factory fixture, mock_project_root fixture, mock_project_with_config fixture
+
+Interfaces: make_project(git, config_type, thailint_yaml, files) returns Path to project root
+
+Implementation: Factory pattern for test project creation with preset configurations and custom YAML
 """
 
 from collections.abc import Callable

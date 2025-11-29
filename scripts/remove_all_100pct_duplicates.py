@@ -1,5 +1,17 @@
 #!/usr/bin/env python3
-"""Quick script to remove all 100% duplicate tests without intermediate validation."""
+"""
+Purpose: Removes 100% duplicate test functions from test files
+Scope: Test file maintenance and deduplication
+Overview: Utility script that permanently deletes duplicate test functions identified
+    as 100% overlapping in code coverage. Reads candidates from JSON artifact file,
+    limits removal to 40% of total tests for safety, and removes entire function
+    definitions including decorators. Uses indentation-based parsing to identify
+    function boundaries. Saves removal report to JSON for audit trail.
+Dependencies: json, pathlib for file operations
+Exports: main script logic for removing duplicate test functions
+Interfaces: Reads .artifacts/removal_candidates_100pct.json, writes to test files
+Implementation: Indentation-based function removal with safety limits and progress tracking
+"""
 
 import json
 from pathlib import Path

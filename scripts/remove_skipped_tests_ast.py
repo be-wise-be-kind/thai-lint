@@ -1,5 +1,17 @@
 #!/usr/bin/env python3
-"""Remove all skipped tests using AST parsing for clean removal."""
+"""
+Purpose: Removes skipped test functions using AST parsing for accurate removal
+Scope: Test file cleanup and maintenance
+Overview: Utility script that removes test functions marked with @pytest.mark.skip
+    decorators using Python AST parsing for precise line identification. Walks the
+    AST to find functions with skip decorators, identifies exact line ranges including
+    decorators, and removes those lines from source files. More accurate than regex
+    approaches as it understands Python syntax. Cleans up excessive blank lines.
+Dependencies: ast, subprocess, pathlib, collections for AST parsing and file operations
+Exports: main script logic for AST-based test removal
+Interfaces: Scans tests/**/*.py files, modifies test files in place
+Implementation: AST-based function detection with line-range removal and cleanup
+"""
 
 import ast
 import subprocess
