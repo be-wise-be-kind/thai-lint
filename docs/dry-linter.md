@@ -333,21 +333,21 @@ violations = orchestrator.lint_directory('src/')
 ```bash
 # Run with default config
 docker run --rm -v $(pwd):/workspace \
-  thailint/thailint dry /workspace/src/
+  washad/thailint dry /workspace/src/
 
 # With custom config
 docker run --rm \
   -v $(pwd):/workspace \
   -v $(pwd)/.thailint.yaml:/config/.thailint.yaml:ro \
-  thailint/thailint dry --config /config/.thailint.yaml /workspace/src/
+  washad/thailint dry --config /config/.thailint.yaml /workspace/src/
 
 # With tempfile mode for large projects
 docker run --rm -v $(pwd):/workspace \
-  thailint/thailint dry --storage-mode tempfile /workspace/src/
+  washad/thailint dry --storage-mode tempfile /workspace/src/
 
 # JSON output
 docker run --rm -v $(pwd):/workspace \
-  thailint/thailint dry --format json /workspace/src/
+  washad/thailint dry --format json /workspace/src/
 ```
 
 ## Violation Examples

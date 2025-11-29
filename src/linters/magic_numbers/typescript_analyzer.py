@@ -26,6 +26,7 @@ from typing import Any
 
 from src.analyzers.typescript_base import TypeScriptBaseAnalyzer
 
+# dry: ignore-block - tree-sitter import pattern (common across TypeScript analyzers)
 try:
     from tree_sitter import Node
 

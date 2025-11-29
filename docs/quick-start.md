@@ -23,7 +23,7 @@ poetry install
 pip install -e ".[dev]"
 ```
 
-### Option 2: From PyPI (Coming Soon)
+### Option 2: From PyPI
 
 ```bash
 pip install thai-lint

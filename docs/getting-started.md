@@ -63,10 +63,10 @@ pip install -e .
 
 ```bash
 # Pull image (when published)
-docker pull thailint/thailint:latest
+docker pull washad/thailint:latest
 
 # Or build locally
-docker build -t thailint/thailint .
+docker build -t washad/thailint .
 ```
 
 ## Quick Start
@@ -287,10 +287,10 @@ See [API Reference](api-reference.md) for complete library documentation.
 
 ```bash
 # Show help
-docker run --rm thailint/thailint --help
+docker run --rm washad/thailint --help
 
 # Lint current directory (mount as volume)
-docker run --rm -v $(pwd):/workspace thailint/thailint lint file-placement /workspace
+docker run --rm -v $(pwd):/workspace washad/thailint lint file-placement /workspace
 ```
 
 ### Docker Compose (Development)
@@ -302,7 +302,7 @@ version: '3.8'
 
 services:
   linter:
-    image: thailint/thailint:latest
+    image: washad/thailint:latest
     volumes:
       - .:/workspace
     command: lint file-placement /workspace
@@ -505,7 +505,7 @@ Ensure `.thailint.yaml` or `.thailint.json` exists in:
 Use user mapping:
 
 ```bash
-docker run --rm --user $(id -u):$(id -g) -v $(pwd):/workspace thailint/thailint lint file-placement /workspace
+docker run --rm --user $(id -u):$(id -g) -v $(pwd):/workspace washad/thailint lint file-placement /workspace
 ```
 
 **Issue: No violations detected**

@@ -107,6 +107,32 @@ file-placement:
       message: "Config files should be in config/ or project root"
 
 # ============================================================================
+# PRINT STATEMENTS LINTER
+# ============================================================================
+# Detects print()/console.* statements that should use proper logging
+#
+print-statements:
+  enabled: true
+
+  # Allow print() in if __name__ == "__main__": blocks (Python only)
+  # Default: true
+  allow_in_scripts: true
+
+  # Console methods to detect in TypeScript/JavaScript
+  # Default: [log, warn, error, debug, info]
+  console_methods:
+    - log
+    - warn
+    - error
+    - debug
+    - info
+
+  # File patterns to ignore (glob syntax)
+  # ignore:
+  #   - "scripts/**"
+  #   - "**/debug.py"
+
+# ============================================================================
 # GLOBAL SETTINGS
 # ============================================================================
 #

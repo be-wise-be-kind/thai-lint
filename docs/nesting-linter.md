@@ -231,17 +231,17 @@ violations = orchestrator.lint_file('src/example.py', rules=[rule])
 ```bash
 # Run with default config
 docker run --rm -v $(pwd):/workspace \
-  thailint/thailint nesting /workspace/src/
+  washad/thailint nesting /workspace/src/
 
 # With custom max depth
 docker run --rm -v $(pwd):/workspace \
-  thailint/thailint nesting --max-depth 3 /workspace/src/
+  washad/thailint nesting --max-depth 3 /workspace/src/
 
 # With config file
 docker run --rm \
   -v $(pwd):/workspace \
   -v $(pwd)/.thailint.yaml:/config/.thailint.yaml:ro \
-  thailint/thailint nesting --config /config/.thailint.yaml /workspace/src/
+  washad/thailint nesting --config /config/.thailint.yaml /workspace/src/
 ```
 
 ## Violation Examples

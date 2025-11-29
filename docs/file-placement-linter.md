@@ -412,7 +412,7 @@ for v in violations:
 
 ```bash
 docker run --rm -v $(pwd):/workspace \
-  thailint/thailint lint file-placement /workspace
+  washad/thailint lint file-placement /workspace
 ```
 
 ## Understanding Violations

@@ -711,7 +711,7 @@ just publish
 
 **Solutions:**
 - Check Docker Hub is up
-- Verify image name: `username/thailint` not `thailint/thailint`
+- Verify image name: `username/thailint` not `washad/thailint`
 - Check Docker Hub permissions
 - Try pulling latest: `docker pull username/thailint:latest`
 
