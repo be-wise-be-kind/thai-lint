@@ -1,19 +1,25 @@
 """
-File: tests/unit/linters/file_header/test_css_headers.py
-Purpose: Test suite for CSS file header validation
-Exports: TestCssHeaderExtraction, TestCssMandatoryFields, etc.
-Depends: pytest, conftest fixtures, src.linters.file_header.linter.FileHeaderRule
-Related: test_python_header_validation.py, test_multi_language_validation.py
+Purpose: Unit tests for CSS file header validation
 
-Overview:
-    Comprehensive tests for CSS file header validation including block comment
-    extraction, mandatory field detection, atemporal language validation, and
-    edge case handling. Tests cover .css and .scss files with CSS-specific
-    requirements. All tests initially fail (TDD RED phase) since CSS parser
-    does not exist yet.
+Scope: Testing CSS and SCSS file header parsing and validation requirements
 
-Usage:
-    pytest tests/unit/linters/file_header/test_css_headers.py -v
+Overview: Comprehensive test suite for CSS file header validation including block comment
+    header extraction, mandatory field detection, atemporal language validation, and edge
+    case handling. Tests cover .css and .scss files with CSS-specific mandatory fields
+    including Environment. Validates JSDoc-style comment detection and differentiates from
+    regular block comments. Tests @charset directive handling and multi-line field values.
+
+Dependencies: pytest, conftest fixtures (VALID_CSS_HEADER, CSS_NO_HEADER),
+    src.linters.file_header.linter.FileHeaderRule
+
+Exports: TestCssHeaderExtraction, TestCssMandatoryFields, TestCssAtemporalLanguage,
+    TestCssEdgeCases test classes
+
+Interfaces: test_extracts_block_comment_header, test_detects_missing_purpose_field,
+    test_detects_currently_keyword, test_handles_css_with_charset, and other test methods
+
+Implementation: Uses conftest fixtures for valid and invalid CSS headers, validates
+    JSDoc-style comment requirement, tests CSS-specific features
 """
 
 from tests.unit.linters.file_header.conftest import (

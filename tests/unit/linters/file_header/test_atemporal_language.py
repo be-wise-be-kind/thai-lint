@@ -1,19 +1,24 @@
 """
-File: tests/unit/linters/file_header/test_atemporal_language.py
-Purpose: Test suite for atemporal language detection in file headers
-Exports: TestDatePatternDetection, TestTemporalQualifierDetection, TestStateChangeDetection, TestFutureReferenceDetection, TestAcceptableLanguage
-Depends: pytest, conftest.create_mock_context, src.linters.file_header.linter.FileHeaderRule
-Related: test_mandatory_fields.py, docs/ai-doc-standard.md
+Purpose: Unit tests for atemporal language detection in file headers
 
-Overview:
-    Comprehensive tests for detecting temporal language patterns that violate atemporal
-    documentation requirements. Tests date detection, temporal qualifiers, state change
-    language, and future references. Validates that only present-tense, factual
-    descriptions are accepted. All tests initially fail (TDD RED phase) since
-    FileHeaderRule does not exist yet.
+Scope: Testing AtemporalDetector class functionality and temporal pattern validation
 
-Usage:
-    pytest tests/unit/linters/file_header/test_atemporal_language.py -v
+Overview: Comprehensive test suite validating detection of temporal language patterns in
+    file headers including dates, time qualifiers, state changes, and future references.
+    Tests cover positive cases detecting violations and negative cases accepting atemporal
+    language. Validates that only present-tense factual descriptions pass validation while
+    temporal references trigger violations. Organized into test classes by violation type.
+
+Dependencies: pytest, conftest.create_mock_context, src.linters.file_header.linter.FileHeaderRule
+
+Exports: TestDatePatternDetection, TestTemporalQualifierDetection, TestStateChangeDetection,
+    TestFutureReferenceDetection, TestAcceptableLanguage test classes
+
+Interfaces: test_detects_iso_date_format, test_detects_currently_qualifier,
+    test_detects_replaces_state_change, test_accepts_present_tense_factual, and other test methods
+
+Implementation: Pytest parametrized tests for temporal pattern detection, uses mock contexts
+    for isolated testing, validates violation messages and counts
 """
 
 from tests.unit.linters.file_header.conftest import create_mock_context

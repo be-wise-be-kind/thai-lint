@@ -1,18 +1,23 @@
 """
-Purpose: Test that import statements are filtered and not reported as duplicates
+Purpose: Unit tests validating import statements are excluded from DRY detection
 
-Scope: Verify TokenHasher filters Python and TypeScript imports correctly
+Scope: Testing import filtering for Python and TypeScript to prevent false positives
 
-Overview: Tests that identical import statements across multiple files are not reported as
-    duplicate code violations. Ensures import filtering works for both Python (import/from)
-    and TypeScript/JavaScript (import/export) syntax, including multi-line imports.
+Overview: Comprehensive test suite ensuring identical import statements across multiple files
+    are not reported as duplicate code violations. Validates import filtering for both Python
+    syntax including import and from statements, and TypeScript/JavaScript syntax including
+    import and export statements. Tests single-line and multi-line import formatting to ensure
+    consistent filtering regardless of formatting style.
 
-Dependencies: pytest, tmp_path fixture, Linter class
+Dependencies: pytest, tmp_path fixture, src.Linter
 
-Exports: Test functions for import filtering
+Exports: test_python_imports_not_duplicates, test_typescript_imports_not_duplicates,
+    test_multiline_imports_not_duplicates test functions
 
-Implementation: Creates multiple files with identical imports but different logic, verifies
-    no violations are reported for the import statements
+Interfaces: Test functions accepting tmp_path fixture for file system operations
+
+Implementation: Creates temporary files with identical imports but different logic, runs DRY linter
+    with configured min_duplicate_lines threshold, validates no violations reported for import statements
 """
 
 from src import Linter

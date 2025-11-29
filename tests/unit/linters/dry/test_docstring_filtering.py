@@ -1,18 +1,23 @@
 """
-Purpose: Test that docstrings are NOT flagged as duplicate code
+Purpose: Unit tests validating docstrings are excluded from DRY duplication detection
 
-Scope: Verify DRY linter filters out docstrings from duplication detection
+Scope: Testing docstring filtering to prevent false positive duplication violations
 
-Overview: Tests that identical docstrings appearing in multiple functions/classes
-    are not incorrectly flagged as duplicate code. Docstrings are documentation,
-    not logic, and should be filtered from DRY analysis.
+Overview: Comprehensive test suite ensuring identical docstrings appearing in multiple
+    functions or classes are not incorrectly flagged as duplicate code violations.
+    Docstrings are documentation rather than logic and should be filtered from DRY analysis.
+    Tests class docstrings, function docstrings, and module docstrings across multiple files
+    to ensure consistent filtering behavior.
 
 Dependencies: pytest, src.Linter, pathlib, tmp_path fixture
 
-Exports: Test functions for docstring filtering
+Exports: test_class_docstrings_not_flagged, test_function_docstrings_not_flagged,
+    test_module_docstrings_not_flagged test functions
 
-Implementation: Creates files with identical docstrings in multiple locations
-    and verifies they are NOT flagged as violations.
+Interfaces: Test functions accepting tmp_path fixture for file system operations
+
+Implementation: Creates temporary Python files with identical docstrings in multiple locations,
+    runs DRY linter, validates no violations reported for docstring content
 """
 
 from src import Linter

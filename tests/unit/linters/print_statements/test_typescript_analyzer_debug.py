@@ -1,23 +1,23 @@
 """
-File: tests/unit/linters/print_statements/test_typescript_analyzer_debug.py
+Purpose: Debug tests for TypeScript console analyzer internals
 
-Purpose: Debug tests for TypeScript console.* analyzer
+Scope: Testing tree-sitter parsing and AST analysis for TypeScript
+
+Overview: Diagnostic test suite verifying the TypeScript analyzer correctly parses code and finds
+    console.* calls using tree-sitter. These tests examine internal workings of the analyzer to help
+    debug detection issues including AST node traversal, call expression identification, and console
+    method extraction. Validates tree-sitter integration and provides troubleshooting tests for
+    parser-level functionality.
+
+Dependencies: pytest, src.linters.print_statements.typescript_analyzer.TypeScriptPrintStatementAnalyzer
 
 Exports: TestAnalyzerInternals test class
 
-Depends: pytest, src.linters.print_statements.typescript_analyzer
+Interfaces: test_tree_sitter_parses_typescript, test_finds_call_expressions,
+    test_extracts_console_methods and other diagnostic test methods
 
-Implements: Tests to verify tree-sitter parsing and console call detection
-
-Related: test_typescript_print_statements.py
-
-Overview: Diagnostic tests to verify the TypeScript analyzer is correctly parsing code
-    and finding console.* calls. These tests examine the internal workings of the analyzer
-    to help debug detection issues.
-
-Usage: pytest tests/unit/linters/print_statements/test_typescript_analyzer_debug.py -v
-
-Notes: Debug/diagnostic tests for troubleshooting
+Implementation: Uses TypeScriptPrintStatementAnalyzer parse methods directly, validates AST structure
+    and node types, provides debugging visibility into parser behavior
 """
 
 

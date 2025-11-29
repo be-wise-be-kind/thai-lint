@@ -1,18 +1,23 @@
 """
-File: tests/unit/linters/file_header/test_configuration.py
-Purpose: Test suite for configuration loading and handling in file header linter
-Exports: TestDefaultConfiguration, TestCustomConfiguration, TestInvalidConfiguration
-Depends: pytest, conftest.create_mock_context, src.linters.file_header.linter.FileHeaderRule
-Related: test_ignore_directives.py, test_mandatory_fields.py
+Purpose: Unit tests for configuration loading and handling in file header linter
 
-Overview:
-    Tests for configuration loading and validation in file header linter including
-    default configuration, custom configuration from .thailint.yaml, required fields
-    configuration, ignore patterns, and invalid configuration handling. All tests
-    initially fail (TDD RED phase) since FileHeaderRule does not exist yet.
+Scope: Testing configuration system for file header validation rules and settings
 
-Usage:
-    pytest tests/unit/linters/file_header/test_configuration.py -v
+Overview: Comprehensive test suite for configuration loading and validation in file header
+    linter including default configuration behavior, custom configuration from metadata,
+    required fields configuration per language, ignore patterns, and invalid configuration
+    handling. Tests cover atemporal language enforcement settings, custom field requirements,
+    and graceful degradation with missing or invalid configuration.
+
+Dependencies: pytest, conftest.create_mock_context, src.linters.file_header.linter.FileHeaderRule
+
+Exports: TestDefaultConfiguration, TestCustomConfiguration, TestInvalidConfiguration test classes
+
+Interfaces: test_uses_default_required_fields_for_python, test_loads_custom_required_fields,
+    test_handles_missing_configuration_gracefully, and other test methods
+
+Implementation: Uses mock contexts with metadata for configuration testing, validates
+    default behavior and custom configuration override mechanisms
 """
 
 from tests.unit.linters.file_header.conftest import create_mock_context

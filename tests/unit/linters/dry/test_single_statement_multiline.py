@@ -1,19 +1,23 @@
 """
-Purpose: Test that single logical statements spanning multiple lines are NOT flagged
+Purpose: Unit tests validating single statements spanning multiple lines are not flagged as duplicates
 
-Scope: Verify DRY linter doesn't flag single statements as duplicate code
+Scope: Testing multi-line single statement filtering in DRY violation detection
 
-Overview: Tests that multi-line formatting of a single logical statement (like a decorator,
-    function call, or list/dict literal) is not incorrectly flagged as duplicate code.
-    A single statement that happens to span 3+ lines should not trigger a DRY violation,
-    even if the same statement appears multiple times.
+Overview: Comprehensive test suite ensuring multi-line formatting of single logical statements such
+    as decorators, function calls, list literals, and dict literals are not incorrectly flagged as
+    duplicate code. Validates that statements spanning 3 or more lines due to formatting do not
+    trigger DRY violations even when identical statements appear multiple times across files.
+    Tests real-world patterns like Click decorators and API configuration.
 
 Dependencies: pytest, src.Linter, pathlib, tmp_path fixture
 
-Exports: Test functions for single-statement filtering
+Exports: test_single_decorator_multiline_not_duplicate, test_function_call_multiline_not_duplicate,
+    test_list_literal_multiline_not_duplicate test functions
 
-Implementation: Creates files with identical multi-line single statements and verifies
-    they are NOT flagged as violations.
+Interfaces: Test functions accepting tmp_path fixture for file system operations
+
+Implementation: Creates temporary Python files with identical multi-line single statements but different
+    surrounding logic, runs DRY linter, validates no violations reported for single statement patterns
 """
 
 from src import Linter

@@ -1,18 +1,24 @@
 """
-Purpose: Test that JSDoc comments are NOT flagged as duplicate code in TypeScript
+Purpose: Unit tests validating JSDoc comments are excluded from TypeScript DRY detection
 
-Scope: Verify DRY linter filters out JSDoc comments from duplication detection
+Scope: Testing JSDoc comment filtering to prevent false positive duplication violations
 
-Overview: Tests that identical JSDoc comments appearing in multiple functions/classes
-    are not incorrectly flagged as duplicate code. JSDoc comments are documentation,
-    not logic, and should be filtered from DRY analysis - similar to Python docstrings.
+Overview: Comprehensive test suite ensuring identical JSDoc comments appearing in multiple
+    TypeScript functions or classes are not incorrectly flagged as duplicate code violations.
+    JSDoc comments are documentation rather than logic and should be filtered from DRY analysis
+    similar to Python docstrings. Tests function JSDoc, class JSDoc, and interface JSDoc across
+    multiple files to ensure consistent filtering behavior for TypeScript documentation.
 
 Dependencies: pytest, src.Linter, pathlib, tmp_path fixture
 
-Exports: Test functions for JSDoc comment filtering
+Exports: test_function_jsdoc_not_flagged, test_class_jsdoc_not_flagged,
+    test_interface_jsdoc_not_flagged test functions
 
-Implementation: Creates files with identical JSDoc comments in multiple locations
-    and verifies they are NOT flagged as violations.
+Interfaces: Test functions accepting tmp_path fixture for file system operations
+
+Implementation: Creates temporary TypeScript files with identical JSDoc comments in multiple locations,
+    runs DRY linter with configured min_duplicate_lines threshold, validates no violations reported
+    for JSDoc comment content
 """
 
 from src import Linter

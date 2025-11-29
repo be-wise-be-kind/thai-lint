@@ -1,24 +1,23 @@
 """
-File: tests/unit/linters/print_statements/test_python_print_statements.py
+Purpose: Unit tests for Python print statement detection
 
-Purpose: Test suite for Python print() statement detection
+Scope: Testing Python print() call detection and configuration handling
+
+Overview: Comprehensive test suite for Python print() statement detection covering basic detection
+    of print() calls, allow_in_scripts feature for __main__ blocks, ignore directives, and
+    violation details. Validates that the linter correctly identifies print statements that should
+    be replaced with proper logging while respecting configuration options. Tests various print()
+    formats including f-strings, multiple arguments, and different code contexts.
+
+Dependencies: pytest, pathlib.Path, unittest.mock.Mock, src.linters.print_statements.linter.PrintStatementRule
 
 Exports: TestBasicDetection, TestMainBlockHandling, TestViolationDetails test classes
 
-Depends: pytest, pathlib.Path, unittest.mock.Mock, src.linters.print_statements.linter
+Interfaces: test_detects_simple_print, test_flags_print_in_regular_code, test_allows_print_in_main_block,
+    and other test methods validating PrintStatementRule.check(context)
 
-Implements: Tests for PrintStatementRule.check(context) with Python code samples
-
-Related: tests/unit/linters/magic_numbers/test_python_magic_numbers.py
-
-Overview: Comprehensive tests for Python print() statement detection covering basic detection
-    of print() calls, allow_in_scripts feature for __main__ blocks, ignore directives, and
-    violation details. Validates that the linter correctly identifies print statements that
-    should be replaced with proper logging while respecting configuration options.
-
-Usage: pytest tests/unit/linters/print_statements/test_python_print_statements.py
-
-Notes: Uses Mock objects for context creation, inline Python code strings as test fixtures
+Implementation: Uses Mock objects for context creation, inline Python code strings as test fixtures,
+    validates violation line numbers and messages
 """
 
 from pathlib import Path

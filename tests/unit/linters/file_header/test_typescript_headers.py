@@ -1,19 +1,25 @@
 """
-File: tests/unit/linters/file_header/test_typescript_headers.py
-Purpose: Test suite for TypeScript/JavaScript file header validation
-Exports: TestTypeScriptHeaderExtraction, TestTypeScriptMandatoryFields, etc.
-Depends: pytest, conftest fixtures, src.linters.file_header.linter.FileHeaderRule
-Related: test_python_header_validation.py, test_multi_language_validation.py
+Purpose: Unit tests for TypeScript and JavaScript file header validation
 
-Overview:
-    Comprehensive tests for TypeScript and JavaScript file header validation
-    including JSDoc comment extraction, mandatory field detection, atemporal
-    language validation, and edge case handling. Tests cover .ts, .tsx, .js,
-    and .jsx files with TypeScript-specific requirements. All tests initially
-    fail (TDD RED phase) since TypeScript parser does not exist yet.
+Scope: Testing TypeScript, TSX, JavaScript, and JSX file header parsing and validation
 
-Usage:
-    pytest tests/unit/linters/file_header/test_typescript_headers.py -v
+Overview: Comprehensive test suite for TypeScript and JavaScript file header validation including
+    JSDoc comment extraction with asterisk prefix lines, mandatory field detection with Props/Interfaces
+    field, atemporal language validation, and edge case handling. Tests cover .ts, .tsx, .js, and .jsx
+    files with TypeScript-specific requirements including Props/Interfaces and State/Behavior fields.
+    Validates JSDoc comment format requirements and React component header patterns.
+
+Dependencies: pytest, conftest fixtures (VALID_TYPESCRIPT_HEADER, TYPESCRIPT_NO_HEADER, etc.),
+    src.linters.file_header.linter.FileHeaderRule
+
+Exports: TestTypeScriptHeaderExtraction, TestTypeScriptMandatoryFields,
+    TestTypeScriptAtemporalLanguage, TestTypeScriptEdgeCases test classes
+
+Interfaces: test_extracts_jsdoc_comment_from_ts_file, test_detects_missing_purpose_field,
+    test_detects_temporal_language, test_handles_empty_file, and other test methods
+
+Implementation: Uses conftest fixtures for valid and invalid TypeScript headers, validates
+    JSDoc comment format, tests TypeScript-specific mandatory fields
 """
 
 from tests.unit.linters.file_header.conftest import (

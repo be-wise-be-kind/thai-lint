@@ -1,19 +1,25 @@
 """
-File: tests/unit/linters/file_header/test_bash_headers.py
-Purpose: Test suite for Bash shell script file header validation
-Exports: TestBashHeaderExtraction, TestBashMandatoryFields, etc.
-Depends: pytest, conftest fixtures, src.linters.file_header.linter.FileHeaderRule
-Related: test_python_header_validation.py, test_multi_language_validation.py
+Purpose: Unit tests for Bash shell script file header validation
 
-Overview:
-    Comprehensive tests for Bash shell script file header validation including
-    hash comment header extraction, mandatory field detection, shebang handling,
-    atemporal language validation, and edge case handling. Tests cover .sh and
-    .bash files with Bash-specific requirements. All tests initially fail (TDD
-    RED phase) since Bash parser does not exist yet.
+Scope: Testing Bash-specific header parsing and validation requirements
 
-Usage:
-    pytest tests/unit/linters/file_header/test_bash_headers.py -v
+Overview: Comprehensive test suite for Bash shell script file header validation including
+    hash comment header extraction after shebang, mandatory field detection, shebang line
+    handling, atemporal language validation, and edge case handling. Tests cover .sh and .bash
+    files with Bash-specific mandatory fields including Usage and Environment. Validates proper
+    header detection with and without shebang lines.
+
+Dependencies: pytest, conftest fixtures (VALID_BASH_HEADER, BASH_NO_HEADER, etc.),
+    src.linters.file_header.linter.FileHeaderRule
+
+Exports: TestBashHeaderExtraction, TestBashMandatoryFields, TestBashShebangHandling,
+    TestBashAtemporalLanguage, TestBashEdgeCases test classes
+
+Interfaces: test_extracts_comment_header_after_shebang, test_detects_missing_purpose_field,
+    test_handles_bin_bash_shebang, test_detects_date_in_header, and other test methods
+
+Implementation: Uses conftest fixtures for valid and invalid Bash headers, mock contexts
+    for isolated testing, validates Bash-specific field requirements
 """
 
 from tests.unit.linters.file_header.conftest import (

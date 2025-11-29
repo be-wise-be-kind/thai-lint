@@ -1,19 +1,24 @@
 """
-File: tests/unit/linters/file_header/test_mandatory_fields.py
-Purpose: Test suite for mandatory field validation in Python file headers
-Exports: TestMandatoryFieldDetection, TestMissingFieldMessages, TestAllFieldsPresent
-Depends: pytest, conftest.create_mock_context, src.linters.file_header.linter.FileHeaderRule
-Related: test_python_header_validation.py, test_atemporal_language.py
+Purpose: Unit tests for mandatory field validation in Python file headers
 
-Overview:
-    Comprehensive tests for detecting missing or invalid mandatory fields in Python
-    file headers. Tests all required fields (Purpose, Scope, Overview, Dependencies,
-    Exports, Interfaces, Implementation) and validates error messages and violation
-    details. All tests initially fail (TDD RED phase) since FileHeaderRule does not
-    exist yet.
+Scope: Testing detection and validation of required header fields
 
-Usage:
-    pytest tests/unit/linters/file_header/test_mandatory_fields.py -v
+Overview: Comprehensive test suite for detecting missing or invalid mandatory fields in
+    Python file headers. Tests all seven required fields including Purpose, Scope, Overview,
+    Dependencies, Exports, Interfaces, and Implementation. Validates error messages provide
+    clear field names and suggestions. Tests acceptance of complete headers and empty values
+    like None or N/A. Organized into test classes by validation aspect.
+
+Dependencies: pytest, conftest.create_mock_context, src.linters.file_header.linter.FileHeaderRule
+
+Exports: TestMandatoryFieldDetection, TestMissingFieldMessages, TestAllFieldsPresent test classes
+
+Interfaces: test_detects_missing_purpose_field, test_detects_multiple_missing_fields,
+    test_missing_field_violation_has_field_name, test_accepts_all_mandatory_fields_present,
+    and other test methods
+
+Implementation: Uses mock contexts for isolated testing, validates violation messages and counts,
+    tests each mandatory field independently and in combination
 """
 
 from tests.unit.linters.file_header.conftest import create_mock_context

@@ -1,25 +1,23 @@
 """
-File: tests/unit/linters/print_statements/test_typescript_print_statements.py
+Purpose: Unit tests for TypeScript and JavaScript console statement detection
 
-Purpose: Test suite for TypeScript/JavaScript console.* statement detection
+Scope: Testing console.* call detection for TypeScript and JavaScript files
+
+Overview: Comprehensive test suite for TypeScript/JavaScript console.* statement detection covering
+    basic detection of console.log, console.warn, console.error, console.debug, console.info, method
+    filtering based on configuration, ignore directives, and test file handling. Validates that the
+    linter correctly identifies console statements that should be replaced with proper logging while
+    allowing configuration of which console methods trigger violations.
+
+Dependencies: pytest, pathlib.Path, unittest.mock.Mock, src.linters.print_statements.linter.PrintStatementRule
 
 Exports: TestBasicDetection, TestMethodFiltering, TestIgnoreDirectives test classes
 
-Depends: pytest, pathlib.Path, unittest.mock.Mock, src.linters.print_statements.linter
+Interfaces: test_detects_console_log, test_filters_console_methods, test_respects_ignore_directives,
+    and other test methods validating PrintStatementRule.check(context)
 
-Implements: Tests for PrintStatementRule.check(context) with TypeScript/JavaScript code samples
-
-Related: tests/unit/linters/magic_numbers/test_typescript_magic_numbers.py
-
-Overview: Comprehensive tests for TypeScript/JavaScript console.* statement detection covering
-    basic detection of console.log, console.warn, console.error, console.debug, console.info,
-    method filtering based on configuration, ignore directives, and test file handling.
-    Validates that the linter correctly identifies console statements that should be replaced
-    with proper logging.
-
-Usage: pytest tests/unit/linters/print_statements/test_typescript_print_statements.py
-
-Notes: Uses Mock objects for context creation, tree-sitter for TypeScript parsing
+Implementation: Uses Mock objects for context creation, tree-sitter for TypeScript parsing,
+    inline TypeScript code strings as test fixtures, validates violation detection
 """
 
 from pathlib import Path

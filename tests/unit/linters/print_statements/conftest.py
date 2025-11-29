@@ -1,24 +1,23 @@
 """
-File: tests/unit/linters/print_statements/conftest.py
+Purpose: Shared pytest fixtures for print statements linter tests
 
-Purpose: Shared fixtures for print statements linter tests
-
-Exports: print_statements_config fixture, sample code fixtures
-
-Depends: pytest for fixture support, pathlib for Path handling
-
-Implements: pytest fixture discovery and dependency injection
-
-Related: tests/unit/linters/magic_numbers/conftest.py
+Scope: Fixture definitions for print statement and console call test scenarios
 
 Overview: Provides pytest fixtures for print statements linter tests including standard
     configuration fixtures, sample Python code with print statements, and sample TypeScript
     code with console calls. Centralizes common test setup patterns to ensure consistency
-    across test modules and reduce code duplication.
+    across test modules and reduce code duplication. Fixtures cover various scenarios including
+    main block handling, multiple console methods, and configuration options.
 
-Usage: Fixtures are auto-discovered by pytest through conftest.py
+Dependencies: pytest for fixture support, pathlib for Path handling
 
-Notes: pytest fixture decorators with function-scoped lifecycle
+Exports: print_statements_config, python_code_with_print, python_code_with_main_block,
+    typescript_code_with_console, typescript_code_with_various_console fixtures
+
+Interfaces: pytest fixtures with function scope returning configuration dicts or code strings
+
+Implementation: Pytest fixture decorators with function-scoped lifecycle, provides reusable
+    test data for print statement detection tests
 """
 
 import pytest

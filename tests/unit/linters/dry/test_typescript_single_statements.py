@@ -1,17 +1,24 @@
 """
-Purpose: Test single statement detection for TypeScript DRY linter
+Purpose: Unit tests for TypeScript single statement detection in DRY linter
 
-Scope: Verify that single logical statements spanning multiple lines are NOT flagged
+Scope: Testing multi-line single statement filtering for TypeScript code patterns
 
-Overview: Tests that multi-line patterns representing single logical statements (decorators,
-    function calls, object literals, class field definitions) are filtered from duplicate
-    detection. Mirrors Python's single statement detection using tree-sitter AST analysis.
+Overview: Comprehensive test suite ensuring multi-line patterns representing single logical
+    statements such as decorators, function calls, object literals, and class field definitions
+    are filtered from duplicate detection. Mirrors Python single statement detection using
+    tree-sitter AST analysis for TypeScript. Tests Angular decorators, React patterns, and
+    configuration objects to validate filtering of common TypeScript idioms.
 
 Dependencies: pytest, src.Linter, pathlib, tmp_path fixture
 
-Exports: Parametrized tests for each single statement pattern type
+Exports: test_decorator_pattern_not_flagged, test_object_literal_not_flagged,
+    test_function_call_not_flagged test functions
 
-Implementation: Comprehensive tests following TDD approach - tests written first, then implementation
+Interfaces: Test functions accepting tmp_path fixture for file system operations
+
+Implementation: Creates temporary TypeScript files with identical multi-line single statements,
+    runs DRY linter with configured threshold, validates no violations for single statement patterns,
+    follows TDD approach with tests written before implementation
 """
 
 from src import Linter

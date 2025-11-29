@@ -1,25 +1,24 @@
 """
-Purpose: Test suite for Python magic number detection
+Purpose: Unit tests for Python magic number detection
 
-Scope: Python numeric literal detection and violation reporting
+Scope: Testing Python numeric literal detection and acceptable context filtering
 
-Overview: Comprehensive tests for Python magic number detection covering basic numeric literal
-    identification (integers and floats), acceptable contexts where numbers are allowed (constant
-    definitions, range() calls, test files, configuration contexts), ignore directive support,
-    and various code patterns. Validates that the linter correctly distinguishes between magic
-    numbers requiring extraction to constants and legitimate numeric literals in acceptable
-    contexts. Tests follow TDD approach with all tests initially failing before implementation.
+Overview: Comprehensive test suite for Python magic number detection covering basic numeric literal
+    identification including integers and floats, acceptable contexts where numbers are allowed such
+    as constant definitions and range() calls, test file handling, configuration contexts, ignore
+    directive support, and various code patterns. Validates that the linter correctly distinguishes
+    between magic numbers requiring extraction to named constants and legitimate numeric literals in
+    acceptable contexts.
 
-Dependencies: pytest for testing framework, pathlib for Path handling, unittest.mock for context
-    mocking, src.linters.magic_numbers.linter for MagicNumberRule (will be imported when exists)
+Dependencies: pytest, pathlib.Path, unittest.mock.Mock, src.linters.magic_numbers.linter.MagicNumberRule
 
-Exports: TestBasicDetection (5 tests), TestAcceptableContexts (6 tests), TestViolationDetails
-    (3 tests) - total 14 test cases
+Exports: TestBasicDetection, TestAcceptableContexts, TestViolationDetails test classes
 
-Interfaces: Tests MagicNumberRule.check(context) -> list[Violation] with Python code samples
+Interfaces: test_detects_magic_integers, test_ignores_constant_definitions, test_flags_numbers_in_calculations,
+    and other test methods validating MagicNumberRule.check(context)
 
-Implementation: Uses Mock objects for context creation, inline Python code strings as test
-    fixtures, validates violation detection with descriptive assertions
+Implementation: Uses Mock objects for context creation, inline Python code strings as test fixtures,
+    validates violation detection with line numbers and descriptive assertions
 """
 
 from pathlib import Path

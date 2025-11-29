@@ -1,18 +1,24 @@
 """
-File: tests/unit/linters/file_header/test_python_header_validation.py
-Purpose: Test suite for Python file header structure validation
-Exports: TestPythonDocstringExtraction, TestHeaderPresenceDetection, TestHeaderStructure
-Depends: pytest, conftest.create_mock_context, src.linters.file_header.linter.FileHeaderRule
-Related: test_mandatory_fields.py, test_atemporal_language.py
+Purpose: Unit tests for Python file header structure validation
 
-Overview:
-    Tests basic header structure validation for Python files including docstring
-    extraction, header presence detection, and format validation. Covers Python-specific
-    docstring parsing and basic structural requirements before detailed field validation.
-    All tests initially fail (TDD RED phase) since FileHeaderRule does not exist yet.
+Scope: Testing Python-specific docstring extraction and header structure
 
-Usage:
-    pytest tests/unit/linters/file_header/test_python_header_validation.py -v
+Overview: Comprehensive test suite for basic header structure validation in Python files including
+    module-level docstring extraction with triple quotes, header presence detection, and format
+    validation. Tests Python-specific docstring parsing with both triple double and triple single
+    quotes, differentiates module docstrings from class and function docstrings, and validates
+    basic structural requirements before detailed field validation.
+
+Dependencies: pytest, conftest.create_mock_context, src.linters.file_header.linter.FileHeaderRule
+
+Exports: TestPythonDocstringExtraction, TestHeaderPresenceDetection, TestHeaderStructure test classes
+
+Interfaces: test_extracts_module_docstring_triple_double_quotes,
+    test_extracts_module_docstring_triple_single_quotes, test_detects_missing_docstring,
+    test_handles_shebang_before_docstring, and other test methods
+
+Implementation: Uses mock contexts for isolated testing, validates Python-specific docstring
+    syntax and positioning requirements
 """
 
 from tests.unit.linters.file_header.conftest import create_mock_context
