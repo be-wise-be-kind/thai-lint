@@ -722,9 +722,59 @@ After writing file headers:
 5. **Apply to new files** going forward
 6. **Share with team** to maintain consistency
 
+## Validating Headers with the File Header Linter
+
+The file-header linter automatically validates your headers for:
+- **Mandatory fields**: Purpose, Scope, Overview (configurable)
+- **Atemporal language**: Detects temporal words like "currently", "now", dates
+- **Format compliance**: Language-specific header format validation
+
+### Running the Linter
+
+```bash
+# Check all files in src/
+thailint file-header src/
+
+# Check a specific file
+thailint file-header src/my_module.py
+
+# Get JSON output
+thailint file-header --format json src/
+
+# Include in lint-full
+just lint-full  # Includes file-header checks
+```
+
+### Example Violation Output
+
+```
+src/utils.py:1 - Missing mandatory field: Purpose
+src/utils.py:1 - Missing mandatory field: Scope
+src/auth.py:5 - Atemporal language violation: "currently" found in header
+```
+
+### Configuration
+
+Add to `.thailint.yaml`:
+
+```yaml
+file-header:
+  enabled: true
+  mandatory_fields:
+    - Purpose
+    - Scope
+    - Overview
+  ignore:
+    - "**/__init__.py"
+    - "**/migrations/**"
+```
+
+See **[File Header Linter Guide](../docs/file-header-linter.md)** for complete documentation.
+
 ## Additional Resources
 
 - **Complete reference**: `.ai/docs/file-headers.md`
 - **Templates**: `.ai/templates/file-header-*.template`
 - **Standards**: `.ai/docs/FILE_HEADER_STANDARDS.md`
 - **README guide**: `.ai/howtos/how-to-create-readme.md`
+- **Linter guide**: `docs/file-header-linter.md`

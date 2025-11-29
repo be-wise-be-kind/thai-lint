@@ -37,9 +37,10 @@ help:
     @echo "  just lint-placement [PATH]     - File placement linting (dogfooding our own linter)"
     @echo "  just lint-solid [FILES...]     - SOLID principle linting (SRP)"
     @echo "  just lint-magic-numbers [FILES...] - Magic number detection (unnamed numeric literals)"
+    @echo "  just lint-file-header [FILES...] - File header validation (documentation headers)"
     @echo "  just lint-dry                  - DRY principle linting (duplicate code detection)"
     @echo "  just clean-cache               - Clear DRY linter cache"
-    @echo "  just lint-full [FILES...]      - ALL quality checks (includes magic numbers and DRY)"
+    @echo "  just lint-full [FILES...]      - ALL quality checks (includes magic numbers, headers, and DRY)"
     @echo "  just format                    - Auto-fix formatting and linting issues"
     @echo ""
     @echo "Testing:"
@@ -322,6 +323,23 @@ lint-magic-numbers +files="src/ tests/":
         fi \
     fi
 
+# File header linting (validate documentation headers)
+lint-file-header +files="src/ tests/":
+    @echo ""
+    @echo "{{BLUE}}{{BOLD}}════════════════════════════════════════════════════════════{{NC}}"
+    @echo "{{BOLD}}  FILE HEADERS (Documentation Validation){{NC}}"
+    @echo "{{BLUE}}{{BOLD}}════════════════════════════════════════════════════════════{{NC}}"
+    @echo ""
+    @SRC_TARGETS=$(just _get-src-targets {{files}}); \
+    if [ -n "$SRC_TARGETS" ]; then \
+        if poetry run thai-lint file-header $SRC_TARGETS --config .thailint.yaml 2>&1; then \
+            echo "{{GREEN}}✓ File header checks passed{{NC}}"; \
+        else \
+            echo "{{RED}}✗ File header checks failed{{NC}}"; \
+            exit 1; \
+        fi \
+    fi
+
 # Clear DRY linter cache
 clean-cache:
     @echo "{{BLUE}}Clearing DRY linter cache...{{NC}}"
@@ -392,6 +410,13 @@ lint-full +files="src/ tests/":
         PASSED+=("DRY Principles")
     else
         FAILED+=("DRY Principles")
+    fi
+
+    echo ""
+    if just lint-file-header {{files}}; then
+        PASSED+=("File Headers")
+    else
+        FAILED+=("File Headers")
     fi
 
     # Print summary

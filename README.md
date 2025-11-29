@@ -39,6 +39,11 @@ thailint complements your existing linting stack by catching the patterns AI too
 
 ### Core Capabilities
 - **File Placement Linting** - Enforce project structure and organization
+- **File Header Linting** - Validate documentation headers in source files
+  - Python, TypeScript, JavaScript, Bash, Markdown, CSS support
+  - Mandatory field validation (Purpose, Scope, Overview)
+  - Atemporal language detection (no dates, "currently", "now")
+  - Language-specific header format parsing
 - **Magic Numbers Linting** - Detect unnamed numeric literals that should be constants
   - Python and TypeScript support with AST analysis
   - Context-aware detection (ignores constants, test files, range() usage)
@@ -123,6 +128,9 @@ thailint dry .
 
 # Check for magic numbers
 thailint magic-numbers src/
+
+# Check file headers
+thailint file-header src/
 
 # With config file
 thailint dry --config .thailint.yaml src/
@@ -838,6 +846,136 @@ def get_ports():  # thailint: ignore[magic-numbers] - Standard ports
 
 See **[How to Ignore Violations](https://thai-lint.readthedocs.io/en/latest/how-to-ignore-violations/)** and **[Magic Numbers Linter Guide](https://thai-lint.readthedocs.io/en/latest/magic-numbers-linter/)** for complete documentation.
 
+## File Header Linter
+
+### Overview
+
+The file header linter validates that source files have proper documentation headers containing required fields (Purpose, Scope, Overview) and don't use temporal language (dates, "currently", "now"). It enforces consistent documentation patterns across entire codebases.
+
+### Why File Headers?
+
+File headers serve as **self-documentation** that helps developers (and AI assistants) quickly understand:
+
+- **Purpose**: What does this file do?
+- **Scope**: What area of the system does it cover?
+- **Dependencies**: What does it rely on?
+- **Exports**: What does it provide to other modules?
+
+### Quick Start
+
+```bash
+# Check file headers in current directory
+thailint file-header .
+
+# Check specific directory
+thailint file-header src/
+
+# Get JSON output
+thailint file-header --format json src/
+
+# Get SARIF output for CI/CD
+thailint file-header --format sarif src/ > results.sarif
+```
+
+### Configuration
+
+Add to `.thailint.yaml`:
+
+```yaml
+file-header:
+  enabled: true
+  mandatory_fields:
+    - Purpose
+    - Scope
+    - Overview
+  ignore:
+    - "**/__init__.py"
+    - "**/migrations/**"
+```
+
+### Example Violation
+
+**Code without proper header:**
+```python
+import os
+
+def process_data():
+    pass
+```
+
+**Violation messages:**
+```
+src/utils.py:1 - Missing mandatory field: Purpose
+src/utils.py:1 - Missing mandatory field: Scope
+src/utils.py:1 - Missing mandatory field: Overview
+```
+
+**Refactored with header:**
+```python
+"""
+Purpose: Data processing utilities for ETL pipeline
+
+Scope: Data transformation layer, used by batch processing jobs
+
+Overview: Provides data transformation functions for the ETL pipeline.
+    Handles parsing, validation, and normalization of incoming data.
+
+Dependencies: os, json
+
+Exports: process_data(), validate_input(), transform_record()
+"""
+import os
+
+def process_data():
+    pass
+```
+
+### Atemporal Language Detection
+
+The linter detects temporal language that becomes stale:
+
+**Temporal (flagged):**
+```python
+"""
+Purpose: Authentication module
+
+Overview: Currently handles OAuth. This was recently updated.
+    Created: 2024-01-15. Will be extended in the future.
+"""
+```
+
+**Atemporal (correct):**
+```python
+"""
+Purpose: Authentication module
+
+Overview: Handles OAuth authentication with Google and GitHub.
+    Implements authorization code flow with PKCE for security.
+"""
+```
+
+### Language Support
+
+- **Python**: Module docstrings (`"""..."""`)
+- **TypeScript/JavaScript**: JSDoc comments (`/** ... */`)
+- **Bash**: Hash comments after shebang (`# ...`)
+- **Markdown**: YAML frontmatter (`---...---`)
+- **CSS/SCSS**: Block comments (`/* ... */`)
+
+### Ignoring Violations
+
+```python
+# File-level ignore
+# thailint: ignore-file[file-header]
+
+# Line-level ignore for atemporal violation
+"""
+Overview: Created 2024-01-15.  # thailint: ignore[file-header]
+"""
+```
+
+See **[How to Ignore Violations](https://thai-lint.readthedocs.io/en/latest/how-to-ignore-violations/)** and **[File Header Linter Guide](https://thai-lint.readthedocs.io/en/latest/file-header-linter/)** for complete documentation.
+
 ## Pre-commit Hooks
 
 Automate code quality checks before every commit and push with pre-commit hooks.
@@ -1122,6 +1260,7 @@ docker run --rm -v /path/to/workspace:/workspace \
 - **[CLI Reference](https://thai-lint.readthedocs.io/en/latest/cli-reference/)** - All CLI commands and options
 - **[Deployment Modes](https://thai-lint.readthedocs.io/en/latest/deployment-modes/)** - CLI, Library, and Docker usage
 - **[File Placement Linter](https://thai-lint.readthedocs.io/en/latest/file-placement-linter/)** - Detailed linter guide
+- **[File Header Linter](https://thai-lint.readthedocs.io/en/latest/file-header-linter/)** - File header validation guide
 - **[Magic Numbers Linter](https://thai-lint.readthedocs.io/en/latest/magic-numbers-linter/)** - Magic numbers detection guide
 - **[Nesting Depth Linter](https://thai-lint.readthedocs.io/en/latest/nesting-linter/)** - Nesting depth analysis guide
 - **[SRP Linter](https://thai-lint.readthedocs.io/en/latest/srp-linter/)** - Single Responsibility Principle guide
@@ -1139,6 +1278,7 @@ See [`examples/`](examples/) directory for working code:
 - **[advanced_usage.py](examples/advanced_usage.py)** - Advanced patterns and workflows
 - **[ci_integration.py](examples/ci_integration.py)** - CI/CD integration example
 - **[sarif_usage.py](examples/sarif_usage.py)** - SARIF output format examples
+- **[file_header_usage.py](examples/file_header_usage.py)** - File header validation examples
 
 ## Project Structure
 
