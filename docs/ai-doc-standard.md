@@ -29,9 +29,8 @@ This standard defines a structured documentation header format optimized for AI-
 
 ### Key Benefits
 
-- **2-3x more files** can be evaluated by AI within context window constraints
-- **15-25% improvement** in file retrieval accuracy for RAG-based systems
-- **23% higher** suggestion acceptance rates (GitHub Copilot internal testing)
+- **More files evaluated per context window** - shorter structured headers (vs verbose prose) allow AI to scan more files before hitting token limits
+- **Improved semantic search** - structured metadata creates cleaner vector embeddings for RAG retrieval
 - **Faster onboarding** for both AI assistants and human developers
 - **Explicit dependency mapping** accelerates codebase understanding
 
@@ -139,19 +138,21 @@ Modern AI coding tools operate in three stages:
 
 ### Token Economics
 
-Context window constraints are real. Here's the math:
+Context window constraints are real. Simple math illustrates the impact:
 
-| Model | Context Window | Files @ 600 tokens | Files @ 300 tokens |
-|-------|----------------|--------------------|--------------------|
-| GPT-4 | 128K tokens | ~213 files | ~426 files |
-| Claude 3.5 Sonnet | 200K tokens | ~333 files | ~666 files |
-| GitHub Copilot | Variable | ~20-40 files | ~40-80 files |
+| Model | Advertised Context | Reliable Context* |
+|-------|-------------------|-------------------|
+| GPT-4 | 128K tokens | ~100K tokens |
+| Claude 3.5 Sonnet | 200K tokens | ~130K tokens |
+| Claude Opus 4.5 | 200K tokens | ~150K tokens |
 
-**Key Insight:** Structured headers averaging 250 tokens vs. prose headers averaging 400 tokens = **60% more files in context**.
+*Per [IBM Research](https://research.ibm.com/blog/larger-context-window): "Most models break much earlier than advertised... with sudden performance drops rather than gradual degradation."
+
+**Key Insight:** If structured headers use fewer tokens than verbose prose, more files fit in context. The exact multiplier depends on your codebase, but the direction is clear.
 
 ### Embedding Quality
 
-Vector embeddings power semantic search. Structured metadata produces superior embeddings:
+Vector embeddings power semantic search (as used by [Cursor](https://docs.cursor.com/context/codebase-indexing)). Structured metadata produces cleaner embeddings:
 
 **Structured:**
 ```
@@ -163,21 +164,9 @@ Vector embeddings power semantic search. Structured metadata produces superior e
 ```
 "A TypeScript service that processes payments using the Stripe API for handling transactions..."
 ```
-→ Noisy embeddings: {typescript, service, processes, payments, using, api, handling, transactions}
+→ Noisier embeddings: {typescript, service, processes, payments, using, api, handling, transactions}
 
-In testing with sentence-transformers models, structured formats achieve **higher cosine similarity** (0.82 vs 0.71) between semantically related files, improving retrieval precision.
-
-### Real-World Performance Data
-
-From internal testing with various AI coding assistants:
-
-| Metric | Prose Headers | Structured Headers | Improvement |
-|--------|---------------|-----------------------|-------------|
-| Average tokens per header | 380 | 240 | 37% reduction |
-| Files scannable in 128K context | 337 | 533 | 58% increase |
-| Retrieval precision (RAG) | 0.68 | 0.84 | 24% improvement |
-| Time to build dep graph | 2.3s | 0.9s | 61% faster |
-| Developer onboarding speed | Baseline | 1.8x faster | 80% improvement |
+**Principle:** Fewer filler words = tighter embedding clusters = better retrieval precision. This is consistent with how RAG systems work, though specific improvement percentages vary by implementation.
 
 ---
 
@@ -285,65 +274,64 @@ settlement of transactions.
 
 ---
 
-## Evidence from AI Tool Creators
+## Evidence from AI Tool Documentation
 
-### GitHub Copilot
+### How AI Coding Tools Process Files
 
-**From GitHub Research Papers:**
+The following is based on publicly available documentation and observed behavior of AI coding assistants.
 
-**"Evaluating Large Language Models Trained on Code" (Chen et al., 2021):**
-> "We find that model performance improves significantly when relevant context is easily identifiable within the first few lines of a file. In A/B testing, structured metadata in headers improved completion acceptance rates by 18-23%."
+### Cursor - Codebase Indexing
 
-**GitHub Copilot Documentation (docs.github.com/copilot, 2024):**
-> "Copilot uses surrounding code, including comments and file structure, to generate suggestions. Clear, structured documentation helps Copilot understand your intent. Files with explicit exports and dependencies are weighted higher in our retrieval system."
+From [Cursor's official documentation](https://docs.cursor.com/context/codebase-indexing):
 
-**GitHub Universe 2023 Talk - "Building Better with Copilot":**
-> "When developers include structured headers with exports and dependencies, we see a measurable improvement in suggestion quality. The model spends less time inferring context and more time generating relevant code."
+- Cursor indexes codebases by computing **embeddings** for each file
+- Files are **chunked into semantically meaningful pieces** using tools like tree-sitter
+- Embeddings are stored in a **vector database** for nearest-neighbor semantic search
+- When you query with `@Codebase`, Cursor retrieves relevant chunks based on **cosine similarity**
+- Ignoring large content files improves answer accuracy
 
-### Cursor
+**Implication:** Structured metadata at the top of files creates cleaner embedding vectors, improving retrieval precision.
 
-**From Cursor Documentation (cursor.sh/docs):**
+### GitHub Copilot - Context Usage
 
-**On Codebase Indexing:**
-> "Cursor builds an index of your codebase using file headers, function signatures, and import statements. Files with clear exports and dependencies are weighted higher in retrieval."
+From [Microsoft's Visual Studio Blog](https://devblogs.microsoft.com/visualstudio/how-to-use-comments-to-prompt-github-copilot-visual-studio/):
 
-**Best Practices Guide:**
-> "Include structured metadata at the top of files: what the file exports, what it depends on, and how it relates to other files. This dramatically improves Cmd+K's ability to find relevant code."
+- Copilot uses **surrounding code, comments, and file structure** to generate suggestions
+- **Clear, understandable comments** help Copilot generate desired solutions
+- Context includes function names, code comments, docstrings, file names, and cursor position
 
-**Cursor Blog - "How Cursor Understands Your Codebase" (2024):**
-> "Our RAG system performs best when files have explicit metadata. In benchmarking, structured headers improved retrieval precision from 68% to 84% compared to prose-only documentation."
+**Implication:** Well-structured file headers provide immediate context that Copilot uses to improve suggestions.
 
-### Anthropic (Claude)
+### Anthropic Claude - Prompt Engineering
 
-**From Anthropic Prompt Engineering Guide (docs.anthropic.com):**
+From [Anthropic's prompt engineering documentation](https://docs.anthropic.com/en/docs/build-with-claude/prompt-engineering/overview):
 
-**On Code Understanding:**
-> "When analyzing codebases, Claude benefits from explicit structure. Headers that clearly state exports, dependencies, and relationships reduce the need for inference and improve accuracy."
+- Claude 4.x models are trained for **precise instruction following**
+- **Structured formats** (JSON, YAML frontmatter) help Claude understand schema requirements
+- Agent skills use **YAML frontmatter with name and description** as "the first level of progressive disclosure"
+- Claude features **context awareness** to track remaining token budget
 
-**Token Efficiency:**
-> "Front-loading critical information in the first 100-200 tokens of each file allows Claude to evaluate more files within context limits, leading to better codebase understanding."
+**Implication:** Front-loaded structured metadata aligns with how Claude processes information progressively.
 
-**Anthropic Developer Conference 2024:**
-> "In our testing with Claude for code, we found that structured metadata reduced the tokens needed to understand a file by 35-40%. This translates to significantly better performance in large codebase analysis tasks."
+### IBM Research - Context Windows
 
-### OpenAI (ChatGPT/GPT-4)
+From [IBM Research blog on context windows](https://research.ibm.com/blog/larger-context-window):
 
-**From OpenAI GPT-4 Technical Report (March 2023):**
-> "Structured data representations improve model performance on code understanding tasks. Explicit metadata reduces ambiguity and allows for more efficient token usage. In code completion benchmarks, models performed 15-20% better when provided structured context."
+- LLMs are **more apt to pick up on important information appearing at the start or end** of a long prompt rather than buried in the middle
+- Most models **break much earlier than advertised** (e.g., 200K claimed → ~130K reliable)
+- Larger context windows improve coding tasks by allowing more documentation to be ingested
 
-**OpenAI Developer Blog - "Best Practices for GPT-4 Code Generation" (2024):**
-> "Clear file headers with explicit exports and dependencies help GPT-4 build accurate mental models of your codebase. This is particularly important in multi-file tasks where the model needs to understand relationships between components."
+**Implication:** Front-loading critical metadata ensures it's in the high-attention zone of the context window.
 
-### Academic Research
+### Emerging Standard: LLMs.txt
 
-**"Large Language Models for Code: A Survey" (ACM Computing Surveys, 2024):**
-> "Retrieval-augmented generation (RAG) systems for code benefit significantly from structured metadata. Precision and recall improve by 18-30% when files include explicit exports, dependencies, and purpose statements in standardized formats."
+The [LLMs.txt standard](https://garysvenson09.medium.com/2025-dev-trend-ai-friendly-docs-via-llms-txt-8d25a9ae1bb6), proposed by Jeremy Howard of Answer.AI in late 2024, applies similar principles at the project level:
 
-**"CodeBERT and GraphCodeBERT" (Microsoft Research, 2021):**
-> "Code embeddings achieve higher semantic accuracy when structural information (imports, exports, relationships) is explicitly declared rather than requiring inference from implementation details. Our experiments show a 22% improvement in code search tasks when metadata is structured."
+- A markdown file describing **high-level goals, key areas, and file structure**
+- One-time investment that improves AI code generation quality
+- Rapidly gaining adoption in AI-first development workflows
 
-**"Retrieval Augmented Code Generation" (Meta AI Research, 2023):**
-> "We find that front-loaded metadata in file headers significantly improves retrieval quality in RAG systems. The first 100 tokens of a file have disproportionate impact on retrieval scores—structured metadata in this space yields 2.3x better retrieval than prose descriptions."
+**Implication:** The industry is converging on structured, AI-readable documentation formats.
 
 ---
 
@@ -1772,41 +1760,50 @@ Focus documentation on hand-written source code that developers need to understa
 
 ## References
 
-### Research Papers
+### Official Documentation (Verified)
 
-1. **Chen, M., et al.** (2021). "Evaluating Large Language Models Trained on Code." arXiv:2107.03374. https://arxiv.org/abs/2107.03374
+1. **Cursor Codebase Indexing Documentation.** https://docs.cursor.com/context/codebase-indexing
+   - Explains embedding-based indexing, chunking with tree-sitter, and RAG retrieval
 
-2. **Feng, Z., et al.** (2020). "CodeBERT: A Pre-Trained Model for Programming and Natural Languages." EMNLP 2020. https://arxiv.org/abs/2002.08155
+2. **Microsoft Visual Studio Blog - GitHub Copilot Comments.** https://devblogs.microsoft.com/visualstudio/how-to-use-comments-to-prompt-github-copilot-visual-studio/
+   - Documents how Copilot uses comments and file structure for context
 
-3. **Guo, D., et al.** (2021). "GraphCodeBERT: Pre-training Code Representations with Data Flow." ICLR 2021. https://arxiv.org/abs/2009.08366
+3. **Anthropic Prompt Engineering Guide.** https://docs.anthropic.com/en/docs/build-with-claude/prompt-engineering/overview
+   - Claude 4.x best practices, structured formats, progressive disclosure
 
-4. **Parvez, M. R., et al.** (2023). "Retrieval Augmented Code Generation and Summarization." Meta AI Research. https://arxiv.org/abs/2108.11601
+4. **Anthropic Claude Code Best Practices.** https://www.anthropic.com/engineering/claude-code-best-practices
+   - How Anthropic teams use Claude for codebase understanding
 
-5. **Wang, Y., et al.** (2024). "Large Language Models for Code: A Survey." ACM Computing Surveys. (Forthcoming)
-
-### Industry Documentation
+5. **IBM Research - Context Windows.** https://research.ibm.com/blog/larger-context-window
+   - Research on context window reliability and information positioning
 
 6. **GitHub Copilot Documentation.** https://docs.github.com/en/copilot
 
-7. **Cursor Documentation.** https://cursor.sh/docs
+7. **Google Python Style Guide.** https://google.github.io/styleguide/pyguide.html
 
-8. **Anthropic Prompt Engineering Guide.** https://docs.anthropic.com/claude/docs/introduction-to-prompt-design
+8. **TypeScript JSDoc Reference.** https://www.typescriptlang.org/docs/handbook/jsdoc-supported-types.html
 
-9. **OpenAI GPT-4 Technical Report.** (2023). https://arxiv.org/abs/2303.08774
+### Research Papers (Verified - Available on arXiv)
 
-10. **Google Python Style Guide.** https://google.github.io/styleguide/pyguide.html
+9. **Chen, M., et al.** (2021). "Evaluating Large Language Models Trained on Code." arXiv:2107.03374. https://arxiv.org/abs/2107.03374
+   - Codex paper, foundation for GitHub Copilot
 
-11. **TypeScript Documentation - JSDoc Reference.** https://www.typescriptlang.org/docs/handbook/jsdoc-supported-types.html
+10. **Feng, Z., et al.** (2020). "CodeBERT: A Pre-Trained Model for Programming and Natural Languages." EMNLP 2020. https://arxiv.org/abs/2002.08155
 
-### Blog Posts and Talks
+11. **Guo, D., et al.** (2021). "GraphCodeBERT: Pre-training Code Representations with Data Flow." ICLR 2021. https://arxiv.org/abs/2009.08366
 
-12. **GitHub Universe 2023.** "Building Better with Copilot" (Video). https://githubuniverse.com/
+12. **OpenAI GPT-4 Technical Report.** (2023). https://arxiv.org/abs/2303.08774
 
-13. **Cursor Blog.** (2024). "How Cursor Understands Your Codebase." https://cursor.sh/blog
+### Blog Posts and Articles
 
-14. **Anthropic Developer Conference 2024.** "Claude for Code" (Video).
+13. **LLMs.txt Standard - Gary Svenson.** https://garysvenson09.medium.com/2025-dev-trend-ai-friendly-docs-via-llms-txt-8d25a9ae1bb6
+   - Emerging standard for AI-friendly project documentation
 
-15. **Martin Fowler.** "Event-Driven Architecture." https://martinfowler.com/articles/201701-event-driven.html
+14. **How Cursor Indexes Codebases Fast - Engineer's Codex.** https://read.engineerscodex.com/p/how-cursor-indexes-codebases-fast
+
+15. **Building RAG on Codebases - LanceDB.** https://blog.lancedb.com/rag-codebase-1/
+
+16. **How I Code With LLMs These Days - Honeycomb.** https://www.honeycomb.io/blog/how-i-code-with-llms-these-days
 
 ---
 
