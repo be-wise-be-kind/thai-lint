@@ -2,7 +2,7 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
-[![Tests](https://img.shields.io/badge/tests-571%2F571%20passing-brightgreen.svg)](tests/)
+[![Tests](https://img.shields.io/badge/tests-682%2F682%20passing-brightgreen.svg)](tests/)
 [![Coverage](https://img.shields.io/badge/coverage-87%25-brightgreen.svg)](htmlcov/)
 [![Documentation Status](https://readthedocs.org/projects/thai-lint/badge/?version=latest)](https://thai-lint.readthedocs.io/en/latest/?badge=latest)
 [![SARIF 2.1.0](https://img.shields.io/badge/SARIF-2.1.0-orange.svg)](docs/sarif-output.md)
