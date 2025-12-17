@@ -19,7 +19,7 @@ Dependencies: PyYAML for YAML parsing with safe_load(), json (stdlib) for JSON p
 Exports: LinterConfigLoader class
 
 Interfaces: load(config_path: Path) -> dict[str, Any] for loading config files,
-    get_defaults() -> dict[str, Any] for default configuration structure
+    defaults property -> dict[str, Any] for default configuration structure
 
 Implementation: Extension-based format detection (.yaml/.yml vs .json), yaml.safe_load()
     for security, empty dict handling for null YAML, ValueError for unsupported formats
@@ -51,12 +51,13 @@ class LinterConfigLoader:
             ConfigParseError: If file format is unsupported or parsing fails.
         """
         if not config_path.exists():
-            return self.get_defaults()
+            return self.defaults
 
         return parse_config_file(config_path)
 
-    def get_defaults(self) -> dict[str, Any]:
-        """Get default configuration.
+    @property
+    def defaults(self) -> dict[str, Any]:
+        """Default configuration.
 
         Returns:
             Default configuration with empty rules and ignore lists.

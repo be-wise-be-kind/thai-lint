@@ -11,7 +11,7 @@ Dependencies: DRYCache, CodeBlock, Path
 
 Exports: DuplicateStorage class
 
-Interfaces: DuplicateStorage.add_blocks(file_path, blocks), get_duplicate_hashes(),
+Interfaces: DuplicateStorage.add_blocks(file_path, blocks), duplicate_hashes property,
     get_blocks_for_hash(hash_value)
 
 Implementation: Delegates to SQLite cache for all storage operations
@@ -43,13 +43,14 @@ class DuplicateStorage:
         if blocks:
             self._cache.add_blocks(file_path, blocks)
 
-    def get_duplicate_hashes(self) -> list[int]:
-        """Get all hash values with 2+ occurrences from SQLite.
+    @property
+    def duplicate_hashes(self) -> list[int]:
+        """Hash values with 2+ occurrences from SQLite.
 
         Returns:
             List of hash values that appear in multiple blocks
         """
-        return self._cache.get_duplicate_hashes()
+        return self._cache.duplicate_hashes
 
     def get_blocks_for_hash(self, hash_value: int) -> list[CodeBlock]:
         """Get all blocks with given hash value from SQLite.

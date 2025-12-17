@@ -55,7 +55,7 @@ class ViolationGenerator:
         Returns:
             List of violations filtered by ignore patterns and inline directives
         """
-        duplicate_hashes = storage.get_duplicate_hashes()
+        duplicate_hashes = storage.duplicate_hashes
         violations = []
 
         for hash_value in duplicate_hashes:

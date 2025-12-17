@@ -150,6 +150,7 @@ class PythonMethodAnalyzer:  # thailint: ignore[srp]
         # All conditions must be met for property candidacy
         checks = [
             not self._is_dunder_method(method),
+            not self._is_action_verb_method(method),
             not self._has_decorators(method),
             self._takes_only_self(method),
             self._has_simple_body(method),
@@ -171,6 +172,34 @@ class PythonMethodAnalyzer:  # thailint: ignore[srp]
         """
         name = method.name
         return name.startswith("__") and name.endswith("__")
+
+    # Action verb method prefixes - these represent actions/transformations, not properties
+    _ACTION_VERB_PREFIXES: tuple[str, ...] = ("to_",)
+
+    # Action verb method names - lifecycle hooks and actions
+    _ACTION_VERB_NAMES: frozenset[str] = frozenset({"finalize", "serialize", "validate"})
+
+    def _is_action_verb_method(self, method: ast.FunctionDef) -> bool:
+        """Check if method is an action verb (transformation/lifecycle method).
+
+        Methods like to_dict(), to_json(), finalize() represent actions, not
+        property access. These should remain as methods following Python idioms.
+
+        Args:
+            method: The method node
+
+        Returns:
+            True if method is an action verb
+        """
+        name = method.name
+
+        # Check for action verb prefixes like to_*
+        for prefix in self._ACTION_VERB_PREFIXES:
+            if name.startswith(prefix) and len(name) > len(prefix):
+                return True
+
+        # Check for specific action verb names
+        return name in self._ACTION_VERB_NAMES
 
     def _has_decorators(self, method: ast.FunctionDef) -> bool:
         """Check if method has any decorators.

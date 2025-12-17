@@ -157,8 +157,9 @@ class DRYCache:
 
         return blocks
 
-    def get_duplicate_hashes(self) -> list[int]:
-        """Get all hash values that appear 2+ times.
+    @property
+    def duplicate_hashes(self) -> list[int]:
+        """Hash values that appear 2+ times.
 
         Returns:
             List of hash values with 2 or more occurrences
