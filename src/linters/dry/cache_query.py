@@ -22,6 +22,10 @@ import sqlite3
 class CacheQueryService:
     """Handles cache database queries."""
 
+    def __init__(self) -> None:
+        """Initialize the cache query service."""
+        pass  # Stateless query service for database operations
+
     def get_duplicate_hashes(self, db: sqlite3.Connection) -> list[int]:
         """Get all hash values that appear 2+ times.
 

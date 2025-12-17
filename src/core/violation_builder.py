@@ -13,13 +13,14 @@ Overview: Provides base classes and data structures for violation creation acros
 
 Dependencies: dataclasses, src.core.types (Violation, Severity)
 
-Exports: ViolationInfo dataclass, BaseViolationBuilder class
+Exports: ViolationInfo dataclass, build_violation function, build_violation_from_params function,
+    BaseViolationBuilder class (compat)
 
 Interfaces: ViolationInfo(rule_id, file_path, line, message, column, severity),
-    BaseViolationBuilder.build(info: ViolationInfo) -> Violation
+    build_violation(info: ViolationInfo) -> Violation
 
-Implementation: Uses dataclass for type-safe violation info, base class provides build()
-    method that constructs Violation objects with proper defaults
+Implementation: Uses dataclass for type-safe violation info, functions provide build logic
+    that constructs Violation objects with proper defaults
 """
 
 from dataclasses import dataclass
@@ -50,13 +51,81 @@ class ViolationInfo:
     suggestion: str | None = None
 
 
+def build_violation(info: ViolationInfo) -> Violation:
+    """Build a Violation from ViolationInfo.
+
+    Args:
+        info: ViolationInfo containing all violation details
+
+    Returns:
+        Violation object with all fields populated
+    """
+    return Violation(
+        rule_id=info.rule_id,
+        file_path=info.file_path,
+        line=info.line,
+        column=info.column,
+        message=info.message,
+        severity=info.severity,
+        suggestion=info.suggestion,
+    )
+
+
+def build_violation_from_params(  # pylint: disable=too-many-arguments,too-many-positional-arguments
+    rule_id: str,
+    file_path: str,
+    line: int,
+    message: str,
+    column: int = 1,
+    severity: Severity = Severity.ERROR,
+    suggestion: str | None = None,
+) -> Violation:
+    """Build a Violation directly from parameters.
+
+    Note: Pylint too-many-arguments disabled. This convenience function mirrors the
+    ViolationInfo dataclass fields (7 parameters, 3 with defaults). The alternative
+    would require every caller to create ViolationInfo objects manually, reducing
+    readability.
+
+    Args:
+        rule_id: Identifier for the rule that was violated
+        file_path: Path to the file containing the violation
+        line: Line number where violation occurs (1-indexed)
+        message: Description of the violation
+        column: Column number where violation occurs (0-indexed, default=1)
+        severity: Severity level of the violation (default=ERROR)
+        suggestion: Optional suggestion for fixing the violation
+
+    Returns:
+        Violation object with all fields populated
+    """
+    info = ViolationInfo(
+        rule_id=rule_id,
+        file_path=file_path,
+        line=line,
+        message=message,
+        column=column,
+        severity=severity,
+        suggestion=suggestion,
+    )
+    return build_violation(info)
+
+
+# Legacy class wrapper for backward compatibility
 class BaseViolationBuilder:
     """Base class for building violations with consistent structure.
 
     Provides common build() method for creating Violation objects from ViolationInfo.
     Linter-specific builders extend this class to add their domain-specific violation
     creation methods while inheriting the common construction logic.
+
+    Note: This class is a thin wrapper around module-level functions
+    for backward compatibility.
     """
+
+    def __init__(self) -> None:
+        """Initialize the builder."""
+        pass  # No state needed
 
     def build(self, info: ViolationInfo) -> Violation:
         """Build a Violation from ViolationInfo.
@@ -67,15 +136,7 @@ class BaseViolationBuilder:
         Returns:
             Violation object with all fields populated
         """
-        return Violation(
-            rule_id=info.rule_id,
-            file_path=info.file_path,
-            line=info.line,
-            column=info.column,
-            message=info.message,
-            severity=info.severity,
-            suggestion=info.suggestion,
-        )
+        return build_violation(info)
 
     def build_from_params(  # pylint: disable=too-many-arguments,too-many-positional-arguments
         self,
@@ -110,7 +171,7 @@ class BaseViolationBuilder:
         Returns:
             Violation object with all fields populated
         """
-        info = ViolationInfo(
+        return build_violation_from_params(
             rule_id=rule_id,
             file_path=file_path,
             line=line,
@@ -119,4 +180,3 @@ class BaseViolationBuilder:
             severity=severity,
             suggestion=suggestion,
         )
-        return self.build(info)

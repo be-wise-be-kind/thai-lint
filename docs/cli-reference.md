@@ -560,6 +560,72 @@ Found 2 violation(s):
 
 ---
 
+### stateless-class
+
+Detect Python classes without state that should be refactored to module-level functions.
+
+```bash
+thai-lint stateless-class [OPTIONS] [PATH...]
+```
+
+**Arguments:**
+
+| Argument | Required | Default | Description |
+|----------|----------|---------|-------------|
+| `PATH...` | No | `.` (current directory) | One or more files/directories to check |
+
+**Options:**
+
+| Option | Short | Type | Default | Description |
+|--------|-------|------|---------|-------------|
+| `--config` | `-c` | PATH | Auto-discover | Path to config file |
+| `--format` | `-f` | CHOICE | `text` | Output format: `text`, `json`, or `sarif` |
+| `--recursive` | | FLAG | `True` | Scan directories recursively |
+| `--project-root` | | PATH | Auto-detect | Explicit project root directory |
+
+**Examples:**
+
+**Basic usage:**
+```bash
+# Check current directory
+thai-lint stateless-class
+
+# Check specific directory
+thai-lint stateless-class src/
+
+# Check specific file
+thai-lint stateless-class src/utils.py
+```
+
+**Output formats:**
+```bash
+# Text format (default, human-readable)
+thai-lint stateless-class src/
+
+# JSON format for CI/CD
+thai-lint stateless-class --format json src/
+
+# SARIF format for GitHub
+thai-lint stateless-class --format sarif src/ > report.sarif
+```
+
+**Sample output:**
+```
+Found 2 violation(s):
+
+  src/utils.py:5:0
+    [ERROR] stateless-class.violation: Class 'StringUtils' has no state and should be refactored to module-level functions
+
+  src/helpers.py:12:0
+    [ERROR] stateless-class.violation: Class 'TokenHasher' has no state and should be refactored to module-level functions
+```
+
+**See Also:**
+- `docs/stateless-class-linter.md` - Comprehensive stateless-class linter guide
+- Refactoring patterns for converting classes to functions
+
+---
+
 ### dry
 
 Detect duplicate code using token-based hash analysis with SQLite storage.

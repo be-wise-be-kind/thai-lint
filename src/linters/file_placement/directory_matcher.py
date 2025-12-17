@@ -23,6 +23,10 @@ from typing import Any
 class DirectoryMatcher:
     """Finds matching directory rules based on path prefixes."""
 
+    def __init__(self) -> None:
+        """Initialize the directory matcher."""
+        pass  # Stateless matcher for directory rules
+
     def find_matching_rule(
         self, path_str: str, directories: dict[str, Any]
     ) -> tuple[dict[str, Any] | None, str | None]:

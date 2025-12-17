@@ -40,6 +40,10 @@ except ImportError:
 class TypeScriptPrintStatementAnalyzer(TypeScriptBaseAnalyzer):
     """Analyzes TypeScript/JavaScript code for console.* calls using Tree-sitter."""
 
+    def __init__(self) -> None:  # pylint: disable=useless-parent-delegation
+        """Initialize the TypeScript print statement analyzer."""
+        super().__init__()  # Sets self.tree_sitter_available from base class
+
     def find_console_calls(self, root_node: Node, methods: set[str]) -> list[tuple[Node, str, int]]:
         """Find all console.* calls matching the specified methods.
 

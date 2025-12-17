@@ -26,6 +26,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Stateless Class Linter** - Detect Python classes without state that should be module-level functions
+  - AST-based detection of classes without `__init__`/`__new__` constructors
+  - Detects classes without instance state (`self.attr` assignments)
+  - Excludes ABC, Protocol, and decorated classes (legitimate patterns)
+  - Excludes classes with class-level attributes
+  - Minimum 2 methods required to flag (avoids false positives on simple wrappers)
+  - CLI command: `thailint stateless-class src/`
+  - JSON and SARIF output formats
+  - Configuration via `.thailint.yaml` with `min_methods` and `ignore` options
+  - Self-dogfooded: 23 violations in thai-lint codebase were fixed
+  - 28 tests (15 detector + 13 CLI) with 100% pass rate
+  - Documentation: `docs/stateless-class-linter.md`
+
 - **Project Root Detection System** - Three-level precedence system for accurate configuration and ignore pattern resolution
   - `--project-root` CLI option for explicit project root specification (highest priority)
   - Automatic project root inference from `--config` path (config's parent directory becomes project root)

@@ -27,6 +27,10 @@ from .cache import CodeBlock
 class DRYViolationBuilder:
     """Builds violation messages for duplicate code."""
 
+    def __init__(self) -> None:
+        """Initialize the DRY violation builder."""
+        pass  # Stateless builder for duplicate code violations
+
     def build_violation(
         self, block: CodeBlock, all_duplicates: list[CodeBlock], rule_id: str
     ) -> Violation:

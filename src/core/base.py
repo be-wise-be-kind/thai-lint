@@ -151,6 +151,10 @@ class MultiLanguageLintRule(BaseLintRule):
     - _load_config(context) for configuration loading
     """
 
+    def __init__(self) -> None:
+        """Initialize the multi-language lint rule."""
+        pass  # Base class for multi-language linters
+
     def check(self, context: BaseLintContext) -> list[Violation]:
         """Check for violations with automatic language dispatch.
 

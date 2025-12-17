@@ -803,6 +803,51 @@ method-property:
 - **Methods with control flow**: `if`, `for`, `while`, `try`, `with`
 - **Methods calling external functions**: Top-level function calls like `print()`, `fetch()`
 
+### stateless-class
+
+Detects Python classes without state that should be refactored to module-level functions.
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `enabled` | boolean | `true` | Enable/disable stateless-class linter |
+| `min_methods` | integer | `2` | Minimum number of methods for a class to be flagged |
+| `ignore` | array | `[]` | File patterns to exclude from analysis |
+
+**Example:**
+
+```yaml
+stateless-class:
+  enabled: true
+  min_methods: 2
+  ignore:
+    - "tests/"
+    - "*_test.py"
+```
+
+```json
+{
+  "stateless-class": {
+    "enabled": true,
+    "min_methods": 2,
+    "ignore": ["tests/", "*_test.py"]
+  }
+}
+```
+
+**Configuration Behavior:**
+
+- **min_methods**: Classes with fewer methods than this threshold are not flagged. Set to 2 by default because single-method classes are often legitimate patterns (e.g., simple wrappers).
+- **ignore**: File patterns using glob syntax. Useful for excluding test files or legacy code.
+
+**Automatic Exclusions** (always excluded regardless of config):
+
+- **Classes with constructors**: Classes with `__init__` or `__new__` methods
+- **Classes with instance state**: Classes where methods assign to `self.attr`
+- **Classes with class attributes**: Classes with class-level variable definitions
+- **ABC and Protocol classes**: Abstract base classes and type protocols
+- **Decorated classes**: Classes with any decorator (`@dataclass`, `@register`, etc.)
+- **Single-method classes**: Classes with 0 or 1 methods
+
 ### Global Patterns
 
 Apply rules across the entire project regardless of directory.

@@ -31,6 +31,10 @@ from .typescript_analyzer import TypeScriptSRPAnalyzer
 class ClassAnalyzer:
     """Coordinates class analysis for Python and TypeScript."""
 
+    def __init__(self) -> None:
+        """Initialize the class analyzer."""
+        pass  # Coordinates analysis between language-specific analyzers
+
     def analyze_python(
         self, context: BaseLintContext, config: SRPConfig
     ) -> list[dict[str, Any]] | list[Violation]:

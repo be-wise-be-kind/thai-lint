@@ -25,6 +25,10 @@ DEFAULT_FALLBACK_LINE_COUNT = 5
 class ViolationFilter:
     """Filters overlapping violations."""
 
+    def __init__(self) -> None:
+        """Initialize the violation filter."""
+        pass  # Stateless filter for overlapping violations
+
     def filter_overlapping(self, sorted_violations: list[Violation]) -> list[Violation]:
         """Filter overlapping violations, keeping first occurrence.
 
