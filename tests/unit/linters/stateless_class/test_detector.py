@@ -148,6 +148,33 @@ class Callable(Protocol):
         violations = rule.check(context)
         assert len(violations) == 0, "Protocol classes should not be flagged"
 
+    def test_ignores_class_with_base_class(self) -> None:
+        """Should not flag classes that inherit from other classes (polymorphism)."""
+        code = """
+class BaseDeployer:
+    def deploy(self):
+        pass
+
+class StagingDeployer(BaseDeployer):
+    def get_steps(self):
+        return []
+
+    def get_state_file_path(self):
+        return "path"
+"""
+        from src.linters.stateless_class.linter import StatelessClassRule
+
+        rule = StatelessClassRule()
+        context = Mock()
+        context.file_path = Path("test.py")
+        context.file_content = code
+        context.language = "python"
+        context.metadata = {}
+
+        violations = rule.check(context)
+        # BaseDeployer has only 1 method, StagingDeployer inherits so should not be flagged
+        assert len(violations) == 0, "Classes with base classes should not be flagged"
+
     def test_ignores_decorated_class(self) -> None:
         """Should not flag classes with decorators (framework usage)."""
         code = """

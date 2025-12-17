@@ -31,11 +31,12 @@ class ClassInfo:
     column: int
 
 
-def analyze_code(code: str) -> list[ClassInfo]:
+def analyze_code(code: str, min_methods: int = 2) -> list[ClassInfo]:
     """Analyze Python code for stateless classes.
 
     Args:
         code: Python source code
+        min_methods: Minimum methods required to flag class
 
     Returns:
         List of detected stateless class info
@@ -45,37 +46,39 @@ def analyze_code(code: str) -> list[ClassInfo]:
     except SyntaxError:
         return []
 
-    return _find_stateless_classes(tree)
+    return _find_stateless_classes(tree, min_methods)
 
 
-def _find_stateless_classes(tree: ast.Module) -> list[ClassInfo]:
+def _find_stateless_classes(tree: ast.Module, min_methods: int = 2) -> list[ClassInfo]:
     """Find all stateless classes in AST.
 
     Args:
         tree: Parsed AST module
+        min_methods: Minimum methods required to flag class
 
     Returns:
         List of stateless class info
     """
     results = []
     for node in ast.walk(tree):
-        if isinstance(node, ast.ClassDef) and _is_stateless(node):
+        if isinstance(node, ast.ClassDef) and _is_stateless(node, min_methods):
             results.append(ClassInfo(node.name, node.lineno, node.col_offset))
     return results
 
 
-def _is_stateless(class_node: ast.ClassDef) -> bool:
+def _is_stateless(class_node: ast.ClassDef, min_methods: int = 2) -> bool:
     """Check if class is stateless and should be functions.
 
     Args:
         class_node: AST ClassDef node
+        min_methods: Minimum methods required to flag class
 
     Returns:
         True if class is stateless violation
     """
     if _should_skip_class(class_node):
         return False
-    return _count_methods(class_node) >= 2
+    return _count_methods(class_node) >= min_methods
 
 
 def _should_skip_class(class_node: ast.ClassDef) -> bool:
@@ -92,7 +95,32 @@ def _should_skip_class(class_node: ast.ClassDef) -> bool:
         or _is_exception_case(class_node)
         or _has_class_attributes(class_node)
         or _has_instance_attributes(class_node)
+        or _has_base_classes(class_node)
     )
+
+
+def _has_base_classes(class_node: ast.ClassDef) -> bool:
+    """Check if class inherits from non-trivial base classes.
+
+    Classes that inherit from other classes are using polymorphism/inheritance
+    and should not be flagged as stateless.
+
+    Args:
+        class_node: AST ClassDef node
+
+    Returns:
+        True if class has non-trivial base classes
+    """
+    if not class_node.bases:
+        return False
+
+    for base in class_node.bases:
+        base_name = _get_base_name(base)
+        # Skip trivial bases like object
+        if base_name and base_name not in ("object",):
+            return True
+
+    return False
 
 
 def _count_methods(class_node: ast.ClassDef) -> int:
@@ -251,9 +279,13 @@ class StatelessClassAnalyzer:
     to maintain backward compatibility with existing code.
     """
 
-    def __init__(self) -> None:
-        """Initialize the analyzer."""
-        pass  # No state needed
+    def __init__(self, min_methods: int = 2) -> None:
+        """Initialize the analyzer.
+
+        Args:
+            min_methods: Minimum methods required to flag class
+        """
+        self._min_methods = min_methods
 
     def analyze(self, code: str) -> list[ClassInfo]:
         """Analyze Python code for stateless classes.
@@ -264,4 +296,4 @@ class StatelessClassAnalyzer:
         Returns:
             List of detected stateless class info
         """
-        return analyze_code(code)
+        return analyze_code(code, self._min_methods)
