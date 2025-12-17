@@ -138,6 +138,9 @@ Enforce project structure and organization rules.
 ### [Magic Numbers Linter](magic-numbers-linter.md)
 Detect unnamed numeric literals that should be named constants.
 
+### [Method Property Linter](method-property-linter.md)
+Detect methods that should be @property decorators.
+
 ### [Nesting Depth Linter](nesting-linter.md)
 Detect deeply nested code that reduces readability.
 
