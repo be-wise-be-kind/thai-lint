@@ -157,6 +157,13 @@ dry:
     - "tests/"  # Test code often has acceptable duplication
     - "__init__.py"  # Import-only files are exempt
     - "src/cli.py"  # CLI modules contain acceptable boilerplate across command handlers
+    # Linter implementations share common infrastructure patterns (framework duplication)
+    - "magic_numbers/linter.py"
+    - "magic_numbers/config.py"
+    - "method_property/linter.py"
+    - "method_property/config.py"
+    - "print_statements/linter.py"
+    - "print_statements/config.py"
 
   # Block filters (extensible false positive filtering)
   # These filters automatically exclude common non-duplication patterns

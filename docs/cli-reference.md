@@ -495,6 +495,71 @@ thai-lint --verbose nesting src/
 
 ---
 
+### method-property
+
+Detect Python methods that should be @property decorators.
+
+```bash
+thai-lint method-property [OPTIONS] [PATH...]
+```
+
+**Arguments:**
+
+| Argument | Required | Default | Description |
+|----------|----------|---------|-------------|
+| `PATH...` | No | `.` (current directory) | One or more files/directories to check |
+
+**Options:**
+
+| Option | Short | Type | Default | Description |
+|--------|-------|------|---------|-------------|
+| `--config` | `-c` | PATH | Auto-discover | Path to config file |
+| `--format` | `-f` | CHOICE | `text` | Output format: `text`, `json`, or `sarif` |
+| `--recursive/--no-recursive` | | FLAG | `True` | Scan directories recursively |
+
+**Examples:**
+
+**Basic usage:**
+```bash
+# Check current directory
+thai-lint method-property
+
+# Check specific directory
+thai-lint method-property src/
+
+# Check specific file
+thai-lint method-property src/models.py
+```
+
+**Output formats:**
+```bash
+# Text format (default, human-readable)
+thai-lint method-property src/
+
+# JSON format for CI/CD
+thai-lint method-property --format json src/
+
+# SARIF format for GitHub
+thai-lint method-property --format sarif src/ > report.sarif
+```
+
+**Sample output:**
+```
+Found 2 violation(s):
+
+  src/models.py:25:4
+    [ERROR] method-property.should-be-property: Method 'get_name' in class 'User' should be a @property named 'name'
+
+  src/models.py:42:4
+    [ERROR] method-property.should-be-property: Method 'full_name' in class 'User' should be a @property
+```
+
+**See Also:**
+- `docs/method-property-linter.md` - Comprehensive method-property linter guide
+- Refactoring patterns for converting methods to properties
+
+---
+
 ### dry
 
 Detect duplicate code using token-based hash analysis with SQLite storage.

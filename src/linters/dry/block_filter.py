@@ -53,9 +53,10 @@ class BaseBlockFilter(ABC):
         """
         pass
 
+    @property
     @abstractmethod
-    def get_name(self) -> str:
-        """Get filter name for configuration and logging."""
+    def name(self) -> str:
+        """Filter name for configuration and logging."""
         pass
 
 
@@ -152,8 +153,9 @@ class KeywordArgumentFilter(BaseBlockFilter):
             return False
         return True
 
-    def get_name(self) -> str:
-        """Get filter name."""
+    @property
+    def name(self) -> str:
+        """Filter name."""
         return "keyword_argument_filter"
 
 
@@ -184,8 +186,9 @@ class ImportGroupFilter(BaseBlockFilter):
 
         return True
 
-    def get_name(self) -> str:
-        """Get filter name."""
+    @property
+    def name(self) -> str:
+        """Filter name."""
         return "import_group_filter"
 
 
@@ -204,7 +207,7 @@ class BlockFilterRegistry:
             filter_instance: Filter to register
         """
         self._filters.append(filter_instance)
-        self._enabled_filters.add(filter_instance.get_name())
+        self._enabled_filters.add(filter_instance.name)
 
     def enable_filter(self, filter_name: str) -> None:
         """Enable a specific filter by name.
@@ -233,7 +236,7 @@ class BlockFilterRegistry:
             True if block should be filtered out
         """
         for filter_instance in self._filters:
-            if filter_instance.get_name() not in self._enabled_filters:
+            if filter_instance.name not in self._enabled_filters:
                 continue
 
             if filter_instance.should_filter(block, file_content):

@@ -232,6 +232,7 @@ class User:
     def name(self):
         return self._name
 """
+        from src.core.types import Severity
         from src.linters.method_property.linter import MethodPropertyRule
 
         rule = MethodPropertyRule()
@@ -242,8 +243,8 @@ class User:
 
         violations = rule.check(context)
         assert len(violations) == 1
-        # Severity should be a reasonable level (warning or info)
-        assert violations[0].severity in ["warning", "info", "convention"]
+        # Framework uses binary severity model - all violations are ERROR
+        assert violations[0].severity == Severity.ERROR
 
     def test_correct_file_path(self):
         """Should include correct file path in violation."""

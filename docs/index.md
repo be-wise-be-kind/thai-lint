@@ -35,6 +35,7 @@ thai-lint complements your existing linting stack by catching the patterns AI to
 
 - **File Placement Linting** - Enforce project structure and organization
 - **Magic Numbers Linting** - Detect unnamed numeric literals that should be constants
+- **Method Property Linting** - Detect methods that should be @property decorators
 - **Nesting Depth Linting** - Detect excessive code nesting with AST analysis
 - **SRP Linting** - Detect Single Responsibility Principle violations
 - **DRY Linting** - Detect duplicate code across projects
@@ -136,6 +137,9 @@ Enforce project structure and organization rules.
 
 ### [Magic Numbers Linter](magic-numbers-linter.md)
 Detect unnamed numeric literals that should be named constants.
+
+### [Method Property Linter](method-property-linter.md)
+Detect methods that should be @property decorators.
 
 ### [Nesting Depth Linter](nesting-linter.md)
 Detect deeply nested code that reduces readability.

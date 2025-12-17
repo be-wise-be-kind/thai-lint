@@ -2,7 +2,7 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
-[![Tests](https://img.shields.io/badge/tests-393%2F393%20passing-brightgreen.svg)](tests/)
+[![Tests](https://img.shields.io/badge/tests-682%2F682%20passing-brightgreen.svg)](tests/)
 [![Coverage](https://img.shields.io/badge/coverage-87%25-brightgreen.svg)](htmlcov/)
 [![Documentation Status](https://readthedocs.org/projects/thai-lint/badge/?version=latest)](https://thai-lint.readthedocs.io/en/latest/?badge=latest)
 [![SARIF 2.1.0](https://img.shields.io/badge/SARIF-2.1.0-orange.svg)](docs/sarif-output.md)
@@ -63,6 +63,12 @@ thailint complements your existing linting stack by catching the patterns AI too
   - Configurable thresholds (lines, tokens, occurrences)
   - Language-specific detection (Python, TypeScript, JavaScript)
   - False positive filtering (keyword args, imports)
+- **Method Property Linting** - Detect methods that should be @property decorators
+  - Python AST-based detection
+  - get_* prefix detection (Java-style getters)
+  - Simple computed value detection
+  - Action verb exclusion (to_*, finalize, serialize)
+  - Test file detection
 - **Pluggable Architecture** - Easy to extend with custom linters
 - **Multi-Language Support** - Python, TypeScript, JavaScript, and more
 - **Flexible Configuration** - YAML/JSON configs with pattern matching
