@@ -37,6 +37,7 @@ help:
     @echo "  just lint-placement [PATH]     - File placement linting (dogfooding our own linter)"
     @echo "  just lint-solid [FILES...]     - SOLID principle linting (SRP)"
     @echo "  just lint-magic-numbers [FILES...] - Magic number detection (unnamed numeric literals)"
+    @echo "  just lint-method-property [FILES...] - Method property detection (get_* methods)"
     @echo "  just lint-file-header [FILES...] - File header validation (documentation headers)"
     @echo "  just lint-dry                  - DRY principle linting (duplicate code detection)"
     @echo "  just clean-cache               - Clear DRY linter cache"
@@ -323,6 +324,23 @@ lint-magic-numbers +files="src/ tests/":
         fi \
     fi
 
+# Method property linting (detect methods that should be @property)
+lint-method-property +files="src/ tests/":
+    @echo ""
+    @echo "{{BLUE}}{{BOLD}}════════════════════════════════════════════════════════════{{NC}}"
+    @echo "{{BOLD}}  METHOD PROPERTY (Methods → @property){{NC}}"
+    @echo "{{BLUE}}{{BOLD}}════════════════════════════════════════════════════════════{{NC}}"
+    @echo ""
+    @SRC_TARGETS=$(just _get-src-targets {{files}}); \
+    if [ -n "$SRC_TARGETS" ]; then \
+        if poetry run thai-lint method-property $SRC_TARGETS --config .thailint.yaml 2>&1; then \
+            echo "{{GREEN}}✓ Method property checks passed{{NC}}"; \
+        else \
+            echo "{{RED}}✗ Method property checks failed{{NC}}"; \
+            exit 1; \
+        fi \
+    fi
+
 # File header linting (validate documentation headers)
 lint-file-header +files="src/ tests/":
     @echo ""
@@ -403,6 +421,13 @@ lint-full +files="src/ tests/":
         PASSED+=("Magic Numbers")
     else
         FAILED+=("Magic Numbers")
+    fi
+
+    echo ""
+    if just lint-method-property {{files}}; then
+        PASSED+=("Method Property")
+    else
+        FAILED+=("Method Property")
     fi
 
     echo ""
