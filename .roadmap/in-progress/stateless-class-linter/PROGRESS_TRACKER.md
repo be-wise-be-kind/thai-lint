@@ -28,14 +28,14 @@ This is the **PRIMARY HANDOFF DOCUMENT** for AI agents working on the Stateless 
 4. **Update this document** after completing each PR
 
 ## 📍 Current Status
-**Current PR**: Planning Phase - No PRs started
-**Infrastructure State**: Feature branch created (feature/stateless-class-linter)
+**Current PR**: PR1 Complete - Ready for PR2
+**Infrastructure State**: Feature branch active (feature/stateless-class-linter)
 **Feature Target**: Detect Python classes without __init__ and instance state that should be module functions
 **TDD Approach**: Red-Green-Refactor for all implementation work
 
 ## 📁 Required Documents Location
 ```
-.roadmap/planning/stateless-class-linter/
+.roadmap/in-progress/stateless-class-linter/
 ├── AI_CONTEXT.md          # Overall feature architecture and context
 ├── PR_BREAKDOWN.md        # Detailed TDD tasks for each PR
 ├── PROGRESS_TRACKER.md    # THIS FILE - Current progress and handoff notes
@@ -43,35 +43,35 @@ This is the **PRIMARY HANDOFF DOCUMENT** for AI agents working on the Stateless 
 
 ## 🎯 Next PR to Implement
 
-### ➡️ START HERE: PR1 - Core Detection Logic (TDD)
+### ➡️ START HERE: PR2 - CLI Integration & Config (TDD)
 
 **TDD Cycle**:
-1. **RED**: Write failing tests for stateless class detection
-2. **GREEN**: Implement minimum code to pass tests
-3. **REFACTOR**: Improve code while keeping tests passing
+1. **RED**: Write failing tests for CLI command integration
+2. **GREEN**: Implement CLI command to pass tests
+3. **REFACTOR**: Polish CLI code and error messages
 
 **Quick Summary**:
-Write tests first that define what a "stateless class" is, then implement AST-based detection to make those tests pass.
+Write integration tests for the `thai-lint stateless-class` CLI command, then wire up the detector to the CLI framework.
 
 **Pre-flight Checklist**:
-- [ ] Review existing test patterns in tests/test_linters/
-- [ ] Understand pytest fixtures and parametrization
-- [ ] Study AST visitor pattern from existing linters
-- [ ] Review Python AST documentation for ClassDef nodes
+- [ ] Review existing CLI command patterns in src/cli.py
+- [ ] Understand Click framework usage
+- [ ] Study configuration loading patterns
+- [ ] Review output formatting standards
 
 **Prerequisites Complete**:
-- ✅ Feature branch created
-- ✅ Research completed on existing linters
-- ✅ Confirmed no other Python linter has this rule
-- ✅ TDD approach defined
+- ✅ PR1 Core Detection Logic merged
+- ✅ StatelessClassRule implemented and tested
+- ✅ All 15 unit tests passing
+- ✅ Code coverage >90% on detector module
 
 ---
 
 ## Overall Progress
-**Total Completion**: 0% (0/3 PRs completed)
+**Total Completion**: 33% (1/3 PRs completed)
 
 ```
-[░░░░░░░░░░] 0% Complete
+[███░░░░░░░] 33% Complete
 ```
 
 ---
@@ -80,7 +80,7 @@ Write tests first that define what a "stateless class" is, then implement AST-ba
 
 | PR | Title | Status | Completion | Complexity | Priority | Notes |
 |----|-------|--------|------------|------------|----------|-------|
-| PR1 | Core Detection Logic (TDD) | 🔴 Not Started | 0% | High | P0 | Tests first, then AST implementation |
+| PR1 | Core Detection Logic (TDD) | 🟢 Complete | 100% | High | P0 | 15 tests, 93% coverage, TDD complete |
 | PR2 | CLI Integration & Config (TDD) | 🔴 Not Started | 0% | Medium | P0 | Tests for CLI, then integration |
 | PR3 | Documentation & Self-Dogfood | 🔴 Not Started | 0% | Low | P1 | Run on our codebase, document |
 
@@ -93,64 +93,69 @@ Write tests first that define what a "stateless class" is, then implement AST-ba
 
 ---
 
-## PR1: Core Detection Logic (TDD)
+## PR1: Core Detection Logic (TDD) ✅ COMPLETE
 
 **TDD Goal**: Define stateless class behavior through tests, then implement detector
 
-### RED Phase: Write Failing Tests
+### RED Phase: Write Failing Tests ✅
 
-**Test Cases to Write FIRST**:
-- [ ] Test: Detect class with 2+ methods, no __init__, no instance attrs → VIOLATION
-- [ ] Test: Detect class with __init__ but empty → NO VIOLATION (has constructor)
-- [ ] Test: Detect class with instance attributes → NO VIOLATION (has state)
-- [ ] Test: Detect ABC class → NO VIOLATION (legitimate pattern)
-- [ ] Test: Detect Protocol class → NO VIOLATION (legitimate pattern)
-- [ ] Test: Detect class with decorators → NO VIOLATION (framework usage)
-- [ ] Test: Detect class with class-level attributes → NO VIOLATION (has state)
-- [ ] Test: Detect class with __new__ → NO VIOLATION (custom constructor)
-- [ ] Test: Detect empty class → NO VIOLATION (placeholder)
-- [ ] Test: Detect class with single method → NO VIOLATION (too few methods)
-- [ ] Test: Real-world case - TokenHasher → VIOLATION
+**Test Cases Written**:
+- [x] Test: Detect class with 2+ methods, no __init__, no instance attrs → VIOLATION
+- [x] Test: Detect class with __init__ but empty → NO VIOLATION (has constructor)
+- [x] Test: Detect class with instance attributes → NO VIOLATION (has state)
+- [x] Test: Detect ABC class → NO VIOLATION (legitimate pattern)
+- [x] Test: Detect Protocol class → NO VIOLATION (legitimate pattern)
+- [x] Test: Detect class with decorators → NO VIOLATION (framework usage)
+- [x] Test: Detect class with class-level attributes → NO VIOLATION (has state)
+- [x] Test: Detect class with __new__ → NO VIOLATION (custom constructor)
+- [x] Test: Detect empty class → NO VIOLATION (placeholder)
+- [x] Test: Detect class with single method → NO VIOLATION (too few methods)
+- [x] Test: Real-world case - TokenHasher → VIOLATION
+- [x] Test: Multiple classes detection
+- [x] Test: Violation includes class name
+- [x] Test: Violation includes correct line number
+- [x] Test: Violation includes suggestion
 
-**Success Criteria for RED Phase**:
-- ✅ All tests written and fail with "NotImplementedError" or "ImportError"
+**Success Criteria for RED Phase**: ✅ MET
+- ✅ All 15 tests written and initially failed with ModuleNotFoundError
 - ✅ Tests are clear, readable, and well-documented
 - ✅ Test coverage plan reaches >90%
 
-### GREEN Phase: Implement Detector
+### GREEN Phase: Implement Detector ✅
 
-**Implementation Steps** (only after tests are written):
-- [ ] Create `src/linters/stateless_class/` directory
-- [ ] Implement minimal AST visitor to make first test pass
-- [ ] Incrementally add logic to make each test pass
-- [ ] Stop when all tests pass (don't over-engineer)
+**Implementation Steps Completed**:
+- [x] Create `src/linters/stateless_class/` directory
+- [x] Implement minimal AST visitor to make first test pass
+- [x] Incrementally add logic to make each test pass
+- [x] Stop when all tests pass (don't over-engineer)
 
-**Success Criteria for GREEN Phase**:
-- ✅ All tests pass
+**Success Criteria for GREEN Phase**: ✅ MET
+- ✅ All 15 tests pass
 - ✅ No additional features beyond what tests require
 - ✅ Code is minimal and focused
 
-### REFACTOR Phase: Improve Code Quality
+### REFACTOR Phase: Improve Code Quality ✅
 
-**Refactoring Goals**:
-- [ ] Extract repeated logic into helper methods
-- [ ] Improve variable/method names for clarity
-- [ ] Add type hints
-- [ ] Add docstrings (Google style)
-- [ ] Ensure Pylint score 10.00/10
-- [ ] Ensure all complexity checks pass (A-grade)
+**Refactoring Goals Completed**:
+- [x] Extract repeated logic into helper classes (StatelessClassAnalyzer, ClassChecker, SelfAttributeChecker)
+- [x] Improve variable/method names for clarity
+- [x] Add type hints
+- [x] Add docstrings (Google style)
+- [x] Ensure Pylint score 10.00/10
+- [x] Ensure all complexity checks pass (A-grade)
 
-**Success Criteria for REFACTOR Phase**:
-- ✅ All tests still pass
+**Success Criteria for REFACTOR Phase**: ✅ MET
+- ✅ All 15 tests still pass
 - ✅ Code is clean, readable, and well-documented
-- ✅ No quality violations
+- ✅ No quality violations (Pylint 10/10, Xenon A-grade, MyPy clean)
 - ✅ Performance is acceptable
 
-**Files to Create**:
-- `tests/test_linters/test_stateless_class/test_detector.py` (RED phase)
+**Files Created**:
+- `tests/unit/linters/stateless_class/__init__.py` (RED phase)
+- `tests/unit/linters/stateless_class/test_detector.py` (RED phase)
 - `src/linters/stateless_class/__init__.py` (GREEN phase)
-- `src/linters/stateless_class/detector.py` (GREEN phase)
-- `src/linters/stateless_class/violation.py` (GREEN phase)
+- `src/linters/stateless_class/linter.py` (GREEN phase)
+- `src/linters/stateless_class/python_analyzer.py` (REFACTOR phase)
 
 ---
 
