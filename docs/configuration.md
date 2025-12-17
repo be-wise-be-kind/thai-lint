@@ -757,6 +757,10 @@ Under the `method-property` key:
 | `max_body_statements` | integer | `3` | Maximum statements in method body to be considered a property candidate |
 | `ignore` | array | `[]` | File patterns to exclude from analysis |
 | `ignore_methods` | array | `[]` | Method names to exclude from analysis |
+| `exclude_prefixes` | array | `[]` | Additional action verb prefixes to exclude (extends defaults) |
+| `exclude_names` | array | `[]` | Additional action verb names to exclude (extends defaults) |
+| `exclude_prefixes_override` | array | - | Replace default prefixes entirely |
+| `exclude_names_override` | array | - | Replace default names entirely |
 
 **Example:**
 

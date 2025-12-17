@@ -139,6 +139,47 @@ method-property:
 | `max_body_statements` | integer | `3` | Maximum statements in method body |
 | `ignore` | array | `[]` | File patterns to exclude |
 | `ignore_methods` | array | `[]` | Method names to exclude |
+| `exclude_prefixes` | array | `[]` | Additional action verb prefixes to exclude (extends defaults) |
+| `exclude_names` | array | `[]` | Additional action verb names to exclude (extends defaults) |
+| `exclude_prefixes_override` | array | - | Replace default prefixes entirely |
+| `exclude_names_override` | array | - | Replace default names entirely |
+
+### Default Exclusions
+
+The linter ships with sensible defaults for action verb exclusions:
+
+**Default Prefixes** (methods starting with these are excluded):
+- `to_*`, `dump_*`, `generate_*`, `create_*`, `build_*`, `make_*`, `render_*`, `compute_*`, `calculate_*`
+
+**Default Names** (exact method names excluded):
+- `finalize`, `serialize`, `dump`, `validate`, `show`, `display`, `print`, `refresh`, `reset`, `clear`, `close`, `open`, `save`, `load`, `execute`, `run`
+
+### Extending Exclusions
+
+Add your own exclusions while keeping defaults:
+
+```yaml
+method-property:
+  exclude_prefixes:
+    - "fetch_"
+    - "format_"
+  exclude_names:
+    - "export"
+    - "import"
+```
+
+### Overriding Exclusions
+
+Replace defaults entirely (use with caution):
+
+```yaml
+method-property:
+  exclude_prefixes_override:
+    - "to_"
+    - "generate_"
+  exclude_names_override:
+    - "finalize"
+```
 
 ### JSON Configuration
 

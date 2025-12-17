@@ -176,7 +176,11 @@ class MethodPropertyRule(MultiLanguageLintRule):  # thailint: ignore[srp,dry]
         if tree is None:
             return []
 
-        analyzer = PythonMethodAnalyzer(config.max_body_statements)
+        analyzer = PythonMethodAnalyzer(
+            max_body_statements=config.max_body_statements,
+            exclude_prefixes=config.exclude_prefixes,
+            exclude_names=config.exclude_names,
+        )
         candidates = analyzer.find_property_candidates(tree)
         candidates = self._filter_ignored_methods(candidates, config)
         return self._collect_violations(candidates, context)

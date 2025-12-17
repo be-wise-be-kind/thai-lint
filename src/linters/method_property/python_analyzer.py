@@ -11,7 +11,7 @@ Overview: Provides PythonMethodAnalyzer class that traverses Python AST to find 
     dunder methods, and async definitions. Returns structured data about each candidate including
     method name, class name, line number, and column for violation reporting.
 
-Dependencies: ast module for AST parsing and node types
+Dependencies: ast module for AST parsing and node types, config module for exclusion defaults
 
 Exports: PythonMethodAnalyzer class, PropertyCandidate dataclass
 
@@ -22,6 +22,8 @@ Implementation: AST walk pattern with comprehensive method body analysis and exc
 
 import ast
 from dataclasses import dataclass
+
+from .config import DEFAULT_EXCLUDE_NAMES, DEFAULT_EXCLUDE_PREFIXES
 
 
 @dataclass
@@ -38,13 +40,22 @@ class PropertyCandidate:
 class PythonMethodAnalyzer:  # thailint: ignore[srp]
     """Analyzes Python AST to find methods that should be properties."""
 
-    def __init__(self, max_body_statements: int = 3) -> None:
+    def __init__(
+        self,
+        max_body_statements: int = 3,
+        exclude_prefixes: tuple[str, ...] | None = None,
+        exclude_names: frozenset[str] | None = None,
+    ) -> None:
         """Initialize the analyzer.
 
         Args:
             max_body_statements: Maximum statements in method body
+            exclude_prefixes: Action verb prefixes to exclude (uses defaults if None)
+            exclude_names: Action verb names to exclude (uses defaults if None)
         """
         self.max_body_statements = max_body_statements
+        self.exclude_prefixes = exclude_prefixes or DEFAULT_EXCLUDE_PREFIXES
+        self.exclude_names = exclude_names or DEFAULT_EXCLUDE_NAMES
         self.candidates: list[PropertyCandidate] = []
         self._visited_classes: set[int] = set()
 
@@ -173,39 +184,6 @@ class PythonMethodAnalyzer:  # thailint: ignore[srp]
         name = method.name
         return name.startswith("__") and name.endswith("__")
 
-    # Action verb method prefixes - these represent actions/transformations, not properties
-    _ACTION_VERB_PREFIXES: tuple[str, ...] = (
-        "to_",  # Transformation: to_dict, to_json, to_string
-        "generate_",  # Factory: generate_report, generate_html
-        "create_",  # Factory: create_instance, create_config
-        "build_",  # Construction: build_query, build_html
-        "make_",  # Factory: make_request, make_connection
-        "render_",  # Output: render_template, render_html
-        "compute_",  # Calculation: compute_hash, compute_total
-        "calculate_",  # Calculation: calculate_sum, calculate_average
-    )
-
-    # Action verb method names - lifecycle hooks and display actions
-    _ACTION_VERB_NAMES: frozenset[str] = frozenset(
-        {
-            "finalize",  # Lifecycle hook
-            "serialize",  # Transformation
-            "validate",  # Validation action
-            "show",  # Display action
-            "display",  # Display action
-            "print",  # Output action
-            "refresh",  # Update action
-            "reset",  # State action
-            "clear",  # State action
-            "close",  # Resource action
-            "open",  # Resource action
-            "save",  # Persistence action
-            "load",  # Persistence action
-            "execute",  # Action
-            "run",  # Action
-        }
-    )
-
     def _is_action_verb_method(self, method: ast.FunctionDef) -> bool:
         """Check if method is an action verb (transformation/lifecycle method).
 
@@ -226,12 +204,12 @@ class PythonMethodAnalyzer:  # thailint: ignore[srp]
         stripped_name = name.lstrip("_")
 
         # Check for action verb prefixes like to_*, generate_*, etc.
-        for prefix in self._ACTION_VERB_PREFIXES:
+        for prefix in self.exclude_prefixes:
             if stripped_name.startswith(prefix) and len(stripped_name) > len(prefix):
                 return True
 
         # Check for specific action verb names (also check stripped version)
-        return name in self._ACTION_VERB_NAMES or stripped_name in self._ACTION_VERB_NAMES
+        return name in self.exclude_names or stripped_name in self.exclude_names
 
     def _has_decorators(self, method: ast.FunctionDef) -> bool:
         """Check if method has any decorators.
