@@ -620,8 +620,19 @@ Found 2 violation(s):
     [ERROR] stateless-class.violation: Class 'TokenHasher' has no state and should be refactored to module-level functions
 ```
 
+**Configuration via `.thailint.yaml`:**
+```yaml
+stateless-class:
+  enabled: true
+  min_methods: 2  # Minimum methods to flag
+  ignore:
+    - "tests/"
+    - "*_test.py"
+```
+
 **See Also:**
 - `docs/stateless-class-linter.md` - Comprehensive stateless-class linter guide
+- `docs/configuration.md` - Configuration file reference
 - Refactoring patterns for converting classes to functions
 
 ---
