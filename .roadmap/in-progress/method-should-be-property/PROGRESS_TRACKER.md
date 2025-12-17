@@ -28,8 +28,8 @@ This is the **PRIMARY HANDOFF DOCUMENT** for AI agents working on the Method Sho
 4. **Update this document** after completing each PR
 
 ## Current Status
-**Current PR**: PR1 Complete - Ready for PR2
-**Infrastructure State**: Test suite created, awaiting implementation
+**Current PR**: PR3 Complete - Ready for PR4
+**Infrastructure State**: Python implementation and CLI complete, 111 tests passing
 **Feature Target**: Production-ready method-should-be-property linter for Python
 
 ## Required Documents Location
@@ -42,30 +42,31 @@ This is the **PRIMARY HANDOFF DOCUMENT** for AI agents working on the Method Sho
 
 ## Next PR to Implement
 
-### START HERE: PR2 - Python Implementation
+### START HERE: PR4 - Self-Dogfooding
 
 **Quick Summary**:
-Implement the MethodPropertyRule class and Python AST analyzer to make all PR1 tests pass. Follow the TDD green phase - write minimal code to pass tests.
+Run the method-property linter on the thai-lint codebase and address any violations found.
 
 **Pre-flight Checklist**:
-- [ ] Read PR_BREAKDOWN.md Section PR2 for detailed instructions
-- [ ] Read AI_CONTEXT.md for detection patterns and exclusions
-- [ ] Review existing linter patterns in `src/linters/print_statements/`
-- [ ] Ensure all PR1 tests are failing (verify TDD red phase)
+- [ ] Run `thailint method-property src/` to find violations
+- [ ] Categorize violations (fix vs. ignore with justification)
+- [ ] Verify `just lint-full` and `just test` still pass
 
 **Prerequisites Complete**:
 - [x] Research on best practices complete (PEP 8, Pylint discussions)
 - [x] Confirmed no existing major linter implements this rule
 - [x] Roadmap documents created
 - [x] PR1 test suite created (111 tests)
+- [x] PR2 Python implementation complete (all 111 tests pass, lint-full passes)
+- [x] PR3 CLI integration complete (text/json/sarif formats work, commit db268dc)
 
 ---
 
 ## Overall Progress
-**Total Completion**: 20% (1/5 PRs completed)
+**Total Completion**: 60% (3/5 PRs completed)
 
 ```
-[########                                ] 20% Complete
+[########################                ] 60% Complete
 ```
 
 ---
@@ -75,8 +76,8 @@ Implement the MethodPropertyRule class and Python AST analyzer to make all PR1 t
 | PR | Title | Status | Completion | Complexity | Priority | Notes |
 |----|-------|--------|------------|------------|----------|-------|
 | PR1 | Test Suite for Python Method Detection | Complete | 100% | Medium | P0 | 111 tests created, TDD red phase verified |
-| PR2 | Python Implementation | Not Started | 0% | Medium | P0 | TDD green phase - make tests pass |
-| PR3 | CLI Integration | Not Started | 0% | Low | P0 | Add `thailint method-property` command |
+| PR2 | Python Implementation | Complete | 100% | Medium | P0 | All 111 tests pass, lint-full passes |
+| PR3 | CLI Integration | Complete | 100% | Low | P0 | Command works (commit db268dc) |
 | PR4 | Self-Dogfooding: Lint Own Codebase | Not Started | 0% | Medium | P1 | Validate linter on thai-lint codebase |
 | PR5 | Documentation & Publishing | Not Started | 0% | Low | P1 | Docs for ReadTheDocs and PyPI users |
 
@@ -131,13 +132,31 @@ tests/unit/linters/method_property/
 Implement Python method-should-be-property detection to pass PR1 tests.
 
 ### Success Criteria
-- [ ] `src/linters/method_property/` module created
-- [ ] `MethodPropertyRule` class implements `MultiLanguageLintRule`
-- [ ] Python AST analysis detects all patterns from AI_CONTEXT.md
-- [ ] All exclusion rules properly implemented
-- [ ] Configuration support for thresholds and ignore patterns
-- [ ] All PR1 tests pass
-- [ ] Linting passes (`just lint-full` exits with code 0)
+- [x] `src/linters/method_property/` module created
+- [x] `MethodPropertyRule` class implements `MultiLanguageLintRule`
+- [x] Python AST analysis detects all patterns from AI_CONTEXT.md
+- [x] All exclusion rules properly implemented
+- [x] Configuration support for thresholds and ignore patterns
+- [x] All PR1 tests pass (111/111)
+- [x] Linting passes (`just lint-full` exits with code 0)
+
+### Files Created
+```
+src/linters/method_property/
+├── __init__.py           # Package exports (lint convenience function)
+├── config.py             # MethodPropertyConfig dataclass
+├── linter.py             # MethodPropertyRule class
+├── python_analyzer.py    # PythonMethodAnalyzer for AST analysis
+└── violation_builder.py  # ViolationBuilder for message creation
+```
+
+### Implementation Notes
+- Uses composition pattern with helper classes (analyzer, violation builder)
+- AST-based analysis with comprehensive exclusion checks
+- Supports ignore directives (thailint: ignore, noqa)
+- Test file detection (test_*.py, *_test.py patterns)
+- Configurable max_body_statements threshold (default: 3)
+- Added DRY ignore patterns for expected linter framework duplication
 
 ---
 
@@ -147,11 +166,17 @@ Implement Python method-should-be-property detection to pass PR1 tests.
 Add CLI command for method-property linter.
 
 ### Success Criteria
-- [ ] `thailint method-property` command registered in `src/cli.py`
-- [ ] Supports `--config`, `--format`, `--recursive` options
-- [ ] All three output formats work (text, json, sarif)
-- [ ] Help text with examples
-- [ ] Exit codes: 0 (clean), 1 (violations), 2 (error)
+- [x] `thailint method-property` command registered in `src/cli.py`
+- [x] Supports `--config`, `--format`, `--recursive` options
+- [x] All three output formats work (text, json, sarif)
+- [x] Help text with examples
+- [x] Exit codes: 0 (clean), 1 (violations), 2 (error)
+
+### Implementation Notes
+- Command added at `src/cli.py` lines 1781-1895
+- Helper functions: `_setup_method_property_orchestrator`, `_run_method_property_lint`
+- Uses existing orchestrator and format_violations infrastructure
+- Commit: db268dc
 
 ---
 
