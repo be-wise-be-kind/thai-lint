@@ -747,6 +747,52 @@ magic-numbers:
   max_small_integer: 20
 ```
 
+### Method Property Linter Options
+
+Under the `method-property` key:
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `enabled` | boolean | `true` | Enable/disable method-property linter |
+| `max_body_statements` | integer | `3` | Maximum statements in method body to be considered a property candidate |
+| `ignore` | array | `[]` | File patterns to exclude from analysis |
+
+**Example:**
+
+```yaml
+method-property:
+  enabled: true
+  max_body_statements: 3
+  ignore:
+    - "tests/"
+    - "*_test.py"
+```
+
+```json
+{
+  "method-property": {
+    "enabled": true,
+    "max_body_statements": 3,
+    "ignore": ["tests/", "*_test.py"]
+  }
+}
+```
+
+**Configuration Behavior:**
+
+- **max_body_statements**: Methods with more statements than this threshold are not flagged. Simple property candidates typically have 1-3 statements (optional docstring, optional validation, return).
+- **ignore**: File patterns using glob syntax. Test files (`test_*.py`, `*_test.py`) are always ignored regardless of this setting.
+
+**Automatic Exclusions** (always excluded regardless of config):
+
+- **Methods with parameters**: Properties can't take parameters beyond `self`
+- **Decorated methods**: `@staticmethod`, `@classmethod`, `@abstractmethod`, `@property`
+- **Dunder methods**: `__str__`, `__repr__`, `__init__`, etc.
+- **Action verb methods**: `to_*`, `finalize`, `serialize`, `validate`
+- **Methods with side effects**: Assignments to `self.*` attributes
+- **Methods with control flow**: `if`, `for`, `while`, `try`, `with`
+- **Methods calling external functions**: Top-level function calls like `print()`, `fetch()`
+
 ### Global Patterns
 
 Apply rules across the entire project regardless of directory.

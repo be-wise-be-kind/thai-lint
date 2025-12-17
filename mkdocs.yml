@@ -65,6 +65,7 @@ nav:
       - File Placement: file-placement-linter.md
       - File Header: file-header-linter.md
       - Magic Numbers: magic-numbers-linter.md
+      - Method Property: method-property-linter.md
       - Nesting Depth: nesting-linter.md
       - Print Statements: print-statements-linter.md
       - Single Responsibility (SRP): srp-linter.md
