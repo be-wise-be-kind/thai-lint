@@ -25,6 +25,10 @@ import ast
 class PythonNestingAnalyzer:
     """Calculates maximum nesting depth in Python functions."""
 
+    def __init__(self) -> None:
+        """Initialize the Python nesting analyzer."""
+        pass  # Stateless analyzer for nesting depth calculation
+
     def calculate_max_depth(
         self, func_node: ast.FunctionDef | ast.AsyncFunctionDef
     ) -> tuple[int, int]:

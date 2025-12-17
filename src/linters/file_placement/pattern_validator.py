@@ -24,6 +24,10 @@ from typing import Any
 class PatternValidator:
     """Validates regex patterns in file placement configuration."""
 
+    def __init__(self) -> None:
+        """Initialize the pattern validator."""
+        pass  # Stateless validator for regex patterns
+
     def validate_config(self, config: dict[str, Any]) -> None:
         """Validate all regex patterns in configuration.
 

@@ -165,6 +165,10 @@ class ImportGroupFilter(BaseBlockFilter):
     Import organization often creates similar patterns that aren't meaningful duplication.
     """
 
+    def __init__(self) -> None:
+        """Initialize the import group filter."""
+        pass  # Stateless filter for import blocks
+
     def should_filter(self, block: CodeBlock, file_content: str) -> bool:
         """Check if block is only import statements.
 

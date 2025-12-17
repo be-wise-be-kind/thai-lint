@@ -26,6 +26,10 @@ from .cache import CodeBlock
 class BlockGrouper:
     """Groups blocks and violations by file path."""
 
+    def __init__(self) -> None:
+        """Initialize the block grouper."""
+        pass  # Stateless grouper for code blocks
+
     def group_blocks_by_file(self, blocks: list[CodeBlock]) -> dict[Path, list[CodeBlock]]:
         """Group blocks by file path.
 

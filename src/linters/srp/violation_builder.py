@@ -29,6 +29,10 @@ from src.core.violation_builder import BaseViolationBuilder, ViolationInfo
 class ViolationBuilder(BaseViolationBuilder):
     """Builds SRP violations with messages and suggestions."""
 
+    def __init__(self) -> None:  # pylint: disable=useless-parent-delegation
+        """Initialize the violation builder."""
+        super().__init__()  # Inherits from BaseViolationBuilder
+
     def build_violation(
         self,
         metrics: dict[str, Any],

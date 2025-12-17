@@ -69,6 +69,12 @@ thailint complements your existing linting stack by catching the patterns AI too
   - Simple computed value detection
   - Action verb exclusion (to_*, finalize, serialize)
   - Test file detection
+- **Stateless Class Linting** - Detect classes that should be module-level functions
+  - Python AST-based detection
+  - No constructor (__init__ or __new__) detection
+  - No instance state (self.attr) detection
+  - Excludes ABC, Protocol, and decorated classes
+  - Helpful refactoring suggestions
 - **Pluggable Architecture** - Easy to extend with custom linters
 - **Multi-Language Support** - Python, TypeScript, JavaScript, and more
 - **Flexible Configuration** - YAML/JSON configs with pattern matching
@@ -982,6 +988,108 @@ Overview: Created 2024-01-15.  # thailint: ignore[file-header]
 
 See **[How to Ignore Violations](https://thai-lint.readthedocs.io/en/latest/how-to-ignore-violations/)** and **[File Header Linter Guide](https://thai-lint.readthedocs.io/en/latest/file-header-linter/)** for complete documentation.
 
+## Stateless Class Linter
+
+### Overview
+
+The stateless class linter detects Python classes that have no state (no constructor, no instance attributes) and should be refactored to module-level functions. This is a common anti-pattern in AI-generated code.
+
+### What Are Stateless Classes?
+
+Stateless classes are classes that:
+- Have no `__init__` or `__new__` method
+- Have no instance attributes (`self.attr` assignments)
+- Have 2+ methods (grouped functionality without state)
+
+```python
+# Bad - Stateless class (no state, just grouped functions)
+class TokenHasher:
+    def hash_token(self, token: str) -> str:
+        return hashlib.sha256(token.encode()).hexdigest()
+
+    def verify_token(self, token: str, hash_value: str) -> bool:
+        return self.hash_token(token) == hash_value
+
+# Good - Module-level functions
+def hash_token(token: str) -> str:
+    return hashlib.sha256(token.encode()).hexdigest()
+
+def verify_token(token: str, hash_value: str) -> bool:
+    return hash_token(token) == hash_value
+```
+
+### Quick Start
+
+```bash
+# Check stateless classes in current directory
+thailint stateless-class .
+
+# Check specific directory
+thailint stateless-class src/
+
+# Get JSON output
+thailint stateless-class --format json src/
+```
+
+### Configuration
+
+Add to `.thailint.yaml`:
+
+```yaml
+stateless-class:
+  enabled: true
+  min_methods: 2  # Minimum methods to flag
+```
+
+### Example Violation
+
+**Code with stateless class:**
+```python
+class StringUtils:
+    def capitalize_words(self, text: str) -> str:
+        return ' '.join(w.capitalize() for w in text.split())
+
+    def reverse_words(self, text: str) -> str:
+        return ' '.join(reversed(text.split()))
+```
+
+**Violation message:**
+```
+src/utils.py:1 - Class 'StringUtils' has no state and should be refactored to module-level functions
+```
+
+**Refactored code:**
+```python
+def capitalize_words(text: str) -> str:
+    return ' '.join(w.capitalize() for w in text.split())
+
+def reverse_words(text: str) -> str:
+    return ' '.join(reversed(text.split()))
+```
+
+### Exclusion Rules
+
+The linter does NOT flag classes that:
+- Have `__init__` or `__new__` constructors
+- Have instance attributes (`self.attr = value`)
+- Have class-level attributes
+- Inherit from ABC or Protocol
+- Have any decorator (`@dataclass`, `@register`, etc.)
+- Have 0-1 methods
+
+### Ignoring Violations
+
+```python
+# Line-level ignore
+class TokenHasher:  # thailint: ignore[stateless-class] - Legacy API
+    def hash(self, token): ...
+
+# File-level ignore
+# thailint: ignore-file[stateless-class]
+```
+
+See **[How to Ignore Violations](https://thai-lint.readthedocs.io/en/latest/how-to-ignore-violations/)** and **[Stateless Class Linter Guide](https://thai-lint.readthedocs.io/en/latest/stateless-class-linter/)** for complete documentation.
+
 ## Pre-commit Hooks
 
 Automate code quality checks before every commit and push with pre-commit hooks.
@@ -1271,6 +1379,8 @@ docker run --rm -v /path/to/workspace:/workspace \
 - **[Nesting Depth Linter](https://thai-lint.readthedocs.io/en/latest/nesting-linter/)** - Nesting depth analysis guide
 - **[SRP Linter](https://thai-lint.readthedocs.io/en/latest/srp-linter/)** - Single Responsibility Principle guide
 - **[DRY Linter](https://thai-lint.readthedocs.io/en/latest/dry-linter/)** - Duplicate code detection guide
+- **[Method Property Linter](https://thai-lint.readthedocs.io/en/latest/method-property-linter/)** - Method-to-property conversion guide
+- **[Stateless Class Linter](https://thai-lint.readthedocs.io/en/latest/stateless-class-linter/)** - Stateless class detection guide
 - **[Pre-commit Hooks](https://thai-lint.readthedocs.io/en/latest/pre-commit-hooks/)** - Automated quality checks
 - **[SARIF Output Guide](docs/sarif-output.md)** - SARIF format for GitHub Code Scanning and CI/CD
 - **[Publishing Guide](https://thai-lint.readthedocs.io/en/latest/releasing/)** - Release and publishing workflow

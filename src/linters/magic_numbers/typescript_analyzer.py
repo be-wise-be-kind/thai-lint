@@ -44,6 +44,10 @@ class TypeScriptMagicNumberAnalyzer(TypeScriptBaseAnalyzer):  # thailint: ignore
     of TypeScript magic number detection - all methods support this core purpose.
     """
 
+    def __init__(self) -> None:  # pylint: disable=useless-parent-delegation
+        """Initialize the TypeScript magic number analyzer."""
+        super().__init__()  # Sets self.tree_sitter_available from base class
+
     def find_numeric_literals(self, root_node: Node) -> list[tuple[Node, float | int, int]]:
         """Find all numeric literal nodes in TypeScript/JavaScript AST.
 

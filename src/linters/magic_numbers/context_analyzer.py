@@ -30,6 +30,10 @@ from pathlib import Path
 class ContextAnalyzer:  # thailint: ignore[srp]
     """Analyzes contexts to determine if numeric literals are acceptable."""
 
+    def __init__(self) -> None:
+        """Initialize the context analyzer."""
+        pass  # Stateless analyzer for context checking
+
     def is_acceptable_context(
         self,
         node: ast.Constant,

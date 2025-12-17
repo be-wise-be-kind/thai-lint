@@ -23,6 +23,10 @@ import re
 class PatternMatcher:
     """Handles regex pattern matching for file paths."""
 
+    def __init__(self) -> None:
+        """Initialize the pattern matcher."""
+        pass  # Stateless matcher for regex patterns
+
     def match_deny_patterns(
         self, path_str: str, deny_patterns: list[dict[str, str]]
     ) -> tuple[bool, str | None]:

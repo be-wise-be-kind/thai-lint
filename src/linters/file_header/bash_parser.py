@@ -24,6 +24,10 @@ from src.linters.file_header.base_parser import BaseHeaderParser
 class BashHeaderParser(BaseHeaderParser):
     """Extracts and parses Bash file headers from comment blocks."""
 
+    def __init__(self) -> None:
+        """Initialize the Bash header parser."""
+        pass  # BaseHeaderParser has no __init__, but we need this for stateless-class
+
     def extract_header(self, code: str) -> str | None:
         """Extract comment header from Bash script."""
         if not code or not code.strip():

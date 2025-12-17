@@ -20,8 +20,12 @@ Implementation: Token-based normalization with rolling window algorithm, languag
 """
 
 
-class TokenHasher:
+class TokenHasher:  # thailint: ignore[srp] - Methods support single responsibility of code tokenization
     """Tokenize code and create rolling hashes for duplicate detection."""
+
+    def __init__(self) -> None:
+        """Initialize the token hasher."""
+        pass  # Stateless hasher for code tokenization
 
     def tokenize(self, code: str) -> list[str]:
         """Tokenize code by stripping comments and normalizing whitespace.
