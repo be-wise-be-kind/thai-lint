@@ -174,16 +174,44 @@ class PythonMethodAnalyzer:  # thailint: ignore[srp]
         return name.startswith("__") and name.endswith("__")
 
     # Action verb method prefixes - these represent actions/transformations, not properties
-    _ACTION_VERB_PREFIXES: tuple[str, ...] = ("to_",)
+    _ACTION_VERB_PREFIXES: tuple[str, ...] = (
+        "to_",  # Transformation: to_dict, to_json, to_string
+        "generate_",  # Factory: generate_report, generate_html
+        "create_",  # Factory: create_instance, create_config
+        "build_",  # Construction: build_query, build_html
+        "make_",  # Factory: make_request, make_connection
+        "render_",  # Output: render_template, render_html
+        "compute_",  # Calculation: compute_hash, compute_total
+        "calculate_",  # Calculation: calculate_sum, calculate_average
+    )
 
-    # Action verb method names - lifecycle hooks and actions
-    _ACTION_VERB_NAMES: frozenset[str] = frozenset({"finalize", "serialize", "validate"})
+    # Action verb method names - lifecycle hooks and display actions
+    _ACTION_VERB_NAMES: frozenset[str] = frozenset(
+        {
+            "finalize",  # Lifecycle hook
+            "serialize",  # Transformation
+            "validate",  # Validation action
+            "show",  # Display action
+            "display",  # Display action
+            "print",  # Output action
+            "refresh",  # Update action
+            "reset",  # State action
+            "clear",  # State action
+            "close",  # Resource action
+            "open",  # Resource action
+            "save",  # Persistence action
+            "load",  # Persistence action
+            "execute",  # Action
+            "run",  # Action
+        }
+    )
 
     def _is_action_verb_method(self, method: ast.FunctionDef) -> bool:
         """Check if method is an action verb (transformation/lifecycle method).
 
         Methods like to_dict(), to_json(), finalize() represent actions, not
         property access. These should remain as methods following Python idioms.
+        Also handles private method variants like _to_dict(), _generate_html().
 
         Args:
             method: The method node
@@ -193,13 +221,17 @@ class PythonMethodAnalyzer:  # thailint: ignore[srp]
         """
         name = method.name
 
-        # Check for action verb prefixes like to_*
+        # Strip leading underscores to handle private method variants
+        # e.g., _generate_legend_section should match generate_* pattern
+        stripped_name = name.lstrip("_")
+
+        # Check for action verb prefixes like to_*, generate_*, etc.
         for prefix in self._ACTION_VERB_PREFIXES:
-            if name.startswith(prefix) and len(name) > len(prefix):
+            if stripped_name.startswith(prefix) and len(stripped_name) > len(prefix):
                 return True
 
-        # Check for specific action verb names
-        return name in self._ACTION_VERB_NAMES
+        # Check for specific action verb names (also check stripped version)
+        return name in self._ACTION_VERB_NAMES or stripped_name in self._ACTION_VERB_NAMES
 
     def _has_decorators(self, method: ast.FunctionDef) -> bool:
         """Check if method has any decorators.

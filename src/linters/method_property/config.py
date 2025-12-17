@@ -30,6 +30,7 @@ class MethodPropertyConfig:  # thailint: ignore[dry]
     enabled: bool = True
     max_body_statements: int = 3
     ignore: list[str] = field(default_factory=list)
+    ignore_methods: list[str] = field(default_factory=list)
 
     # dry: ignore-block
     @classmethod
@@ -52,8 +53,13 @@ class MethodPropertyConfig:  # thailint: ignore[dry]
         if not isinstance(ignore_patterns, list):
             ignore_patterns = []
 
+        ignore_methods = config.get("ignore_methods", [])
+        if not isinstance(ignore_methods, list):
+            ignore_methods = []
+
         return cls(
             enabled=config.get("enabled", True),
             max_body_statements=config.get("max_body_statements", 3),
             ignore=ignore_patterns,
+            ignore_methods=ignore_methods,
         )

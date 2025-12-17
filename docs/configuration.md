@@ -756,6 +756,7 @@ Under the `method-property` key:
 | `enabled` | boolean | `true` | Enable/disable method-property linter |
 | `max_body_statements` | integer | `3` | Maximum statements in method body to be considered a property candidate |
 | `ignore` | array | `[]` | File patterns to exclude from analysis |
+| `ignore_methods` | array | `[]` | Method names to exclude from analysis |
 
 **Example:**
 
@@ -766,6 +767,9 @@ method-property:
   ignore:
     - "tests/"
     - "*_test.py"
+  ignore_methods:
+    - "_get_css_styles"
+    - "_get_default_standards"
 ```
 
 ```json
@@ -773,7 +777,8 @@ method-property:
   "method-property": {
     "enabled": true,
     "max_body_statements": 3,
-    "ignore": ["tests/", "*_test.py"]
+    "ignore": ["tests/", "*_test.py"],
+    "ignore_methods": ["_get_css_styles", "_get_default_standards"]
   }
 }
 ```
@@ -782,6 +787,7 @@ method-property:
 
 - **max_body_statements**: Methods with more statements than this threshold are not flagged. Simple property candidates typically have 1-3 statements (optional docstring, optional validation, return).
 - **ignore**: File patterns using glob syntax. Test files (`test_*.py`, `*_test.py`) are always ignored regardless of this setting.
+- **ignore_methods**: Method names to exclude. Useful for project-specific patterns that shouldn't be flagged.
 
 **Automatic Exclusions** (always excluded regardless of config):
 

@@ -178,7 +178,26 @@ class MethodPropertyRule(MultiLanguageLintRule):  # thailint: ignore[srp,dry]
 
         analyzer = PythonMethodAnalyzer(config.max_body_statements)
         candidates = analyzer.find_property_candidates(tree)
+        candidates = self._filter_ignored_methods(candidates, config)
         return self._collect_violations(candidates, context)
+
+    def _filter_ignored_methods(
+        self,
+        candidates: list[PropertyCandidate],
+        config: MethodPropertyConfig,
+    ) -> list[PropertyCandidate]:
+        """Filter out candidates with ignored method names.
+
+        Args:
+            candidates: List of property candidates
+            config: Configuration with ignore_methods list
+
+        Returns:
+            Filtered list of candidates
+        """
+        if not config.ignore_methods:
+            return candidates
+        return [c for c in candidates if c.method_name not in config.ignore_methods]
 
     # dry: ignore-block
     def _parse_python_code(self, code: str | None) -> ast.AST | None:

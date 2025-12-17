@@ -126,6 +126,9 @@ method-property:
   ignore:                  # File patterns to ignore
     - "tests/"
     - "*_test.py"
+  ignore_methods:          # Method names to ignore
+    - "_get_css_styles"
+    - "_get_default_standards"
 ```
 
 ### Configuration Options
@@ -135,6 +138,7 @@ method-property:
 | `enabled` | boolean | `true` | Enable/disable linter |
 | `max_body_statements` | integer | `3` | Maximum statements in method body |
 | `ignore` | array | `[]` | File patterns to exclude |
+| `ignore_methods` | array | `[]` | Method names to exclude |
 
 ### JSON Configuration
 
@@ -143,7 +147,8 @@ method-property:
   "method-property": {
     "enabled": true,
     "max_body_statements": 3,
-    "ignore": ["tests/", "*_test.py"]
+    "ignore": ["tests/", "*_test.py"],
+    "ignore_methods": ["_get_css_styles", "_get_default_standards"]
   }
 }
 ```
