@@ -845,6 +845,7 @@ stateless-class:
 - **Classes with instance state**: Classes where methods assign to `self.attr`
 - **Classes with class attributes**: Classes with class-level variable definitions
 - **ABC and Protocol classes**: Abstract base classes and type protocols
+- **Classes with base classes**: Classes that inherit from other classes (polymorphism)
 - **Decorated classes**: Classes with any decorator (`@dataclass`, `@register`, etc.)
 - **Single-method classes**: Classes with 0 or 1 methods
 
