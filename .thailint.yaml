@@ -164,6 +164,8 @@ dry:
     - "method_property/config.py"
     - "print_statements/linter.py"
     - "print_statements/config.py"
+    - "stateless_class/linter.py"
+    - "stateless_class/config.py"
 
   # Block filters (extensible false positive filtering)
   # These filters automatically exclude common non-duplication patterns
@@ -176,3 +178,12 @@ magic-numbers:
   enabled: true  # Enable magic number detection
   allowed_numbers: [-1, 0, 1, 2, 3, 4, 5, 10, 100, 1000]  # Standard preset - numbers acceptable without constants
   max_small_integer: 10  # Maximum value allowed in range() or enumerate()
+
+# Stateless class linter configuration
+stateless-class:
+  enabled: true  # Enable stateless class detection
+  min_methods: 2  # Minimum methods required to flag class as stateless
+
+  # Ignore patterns for files and directories
+  ignore:
+    - "tests/"  # Test files often use stateless helper classes intentionally

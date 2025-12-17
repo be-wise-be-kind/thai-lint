@@ -28,8 +28,8 @@ This is the **PRIMARY HANDOFF DOCUMENT** for AI agents working on the Stateless 
 4. **Update this document** after completing each PR
 
 ## 📍 Current Status
-**Current PR**: ✅ FEATURE COMPLETE - All 3 PRs Done
-**Infrastructure State**: Ready to merge and move to completed
+**Current PR**: ✅ FEATURE COMPLETE - All 4 PRs Done
+**Infrastructure State**: Ready to move to completed
 **Feature Target**: Detect Python classes without __init__ and instance state that should be module functions
 **TDD Approach**: Red-Green-Refactor for all implementation work
 
@@ -45,26 +45,28 @@ This is the **PRIMARY HANDOFF DOCUMENT** for AI agents working on the Stateless 
 
 ### ✅ ALL PRs COMPLETE
 
-**Status**: Feature fully implemented and documented
+**Status**: Feature fully implemented with configuration support
 
 **Completed Tasks**:
 - ✅ PR1 Core Detection Logic merged
 - ✅ PR2 CLI Integration merged
 - ✅ PR3 Documentation & Self-Dogfood complete
-- ✅ All 28 tests passing (15 detector + 13 CLI)
+- ✅ PR4 Configuration & Ignore Support complete
+- ✅ All 45 tests passing (28 original + 17 new config/ignore tests)
 - ✅ `thailint stateless-class` command works
 - ✅ All output formats supported (text, JSON, SARIF)
-- ✅ User documentation created (docs/stateless-class-linter.md)
-- ✅ README updated with new linter section
-- ✅ CLI reference updated
-- ✅ Configuration documentation updated
-- ✅ Dogfooding complete: 23 violations in thai-lint fixed
-- ✅ CHANGELOG updated
+- ✅ Configuration via .thailint.yaml supported
+- ✅ 5-level ignore system fully integrated:
+  - Project-level ignore patterns
+  - Linter-specific ignore patterns
+  - File-level ignore directives
+  - Line-level ignore directives
+  - Block-level ignore directives
 
 ---
 
 ## Overall Progress
-**Total Completion**: 100% (3/3 PRs completed)
+**Total Completion**: 100% (4/4 PRs completed)
 
 ```
 [██████████] 100% Complete
@@ -79,6 +81,7 @@ This is the **PRIMARY HANDOFF DOCUMENT** for AI agents working on the Stateless 
 | PR1 | Core Detection Logic (TDD) | 🟢 Complete | 100% | High | P0 | 15 tests, 93% coverage, TDD complete |
 | PR2 | CLI Integration & Config (TDD) | 🟢 Complete | 100% | Medium | P0 | 13 tests, TDD complete, all formats work |
 | PR3 | Documentation & Self-Dogfood | 🟢 Complete | 100% | Low | P1 | 23 violations fixed, docs complete |
+| PR4 | Configuration & Ignore Support (TDD) | 🟢 Complete | 100% | Medium | P0 | 17 tests, full config + ignore support |
 
 ### Status Legend
 - 🔴 Not Started
