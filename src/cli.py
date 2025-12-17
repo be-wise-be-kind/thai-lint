@@ -1895,5 +1895,120 @@ def _execute_method_property_lint(  # pylint: disable=too-many-arguments,too-man
     sys.exit(1 if method_property_violations else 0)
 
 
+# =============================================================================
+# Stateless Class Linter Command
+# =============================================================================
+
+
+def _setup_stateless_class_orchestrator(
+    path_objs: list[Path], config_file: str | None, verbose: bool, project_root: Path | None = None
+):
+    """Set up orchestrator for stateless-class command."""
+    from src.orchestrator.core import Orchestrator
+    from src.utils.project_root import get_project_root
+
+    if project_root is None:
+        first_path = path_objs[0] if path_objs else Path.cwd()
+        search_start = first_path if first_path.is_dir() else first_path.parent
+        project_root = get_project_root(search_start)
+
+    orchestrator = Orchestrator(project_root=project_root)
+
+    if config_file:
+        _load_config_file(orchestrator, config_file, verbose)
+
+    return orchestrator
+
+
+def _run_stateless_class_lint(orchestrator, path_objs: list[Path], recursive: bool):
+    """Execute stateless-class lint on files or directories."""
+    all_violations = _execute_linting_on_paths(orchestrator, path_objs, recursive)
+    return [v for v in all_violations if "stateless-class" in v.rule_id]
+
+
+@cli.command("stateless-class")
+@click.argument("paths", nargs=-1, type=click.Path())
+@click.option("--config", "-c", "config_file", type=click.Path(), help="Path to config file")
+@format_option
+@click.option("--recursive/--no-recursive", default=True, help="Scan directories recursively")
+@click.pass_context
+def stateless_class(
+    ctx,
+    paths: tuple[str, ...],
+    config_file: str | None,
+    format: str,
+    recursive: bool,
+):
+    """Check for stateless classes that should be module functions.
+
+    Detects Python classes that have no constructor (__init__), no instance
+    state, and 2+ methods - indicating they should be refactored to module-level
+    functions instead of using a class as a namespace.
+
+    PATHS: Files or directories to lint (defaults to current directory if none provided)
+
+    Examples:
+
+        \b
+        # Check current directory (all files recursively)
+        thai-lint stateless-class
+
+        \b
+        # Check specific directory
+        thai-lint stateless-class src/
+
+        \b
+        # Check single file
+        thai-lint stateless-class src/utils.py
+
+        \b
+        # Check multiple files
+        thai-lint stateless-class src/utils.py src/helpers.py
+
+        \b
+        # Get JSON output
+        thai-lint stateless-class --format json .
+
+        \b
+        # Get SARIF output for CI/CD integration
+        thai-lint stateless-class --format sarif src/
+
+        \b
+        # Use custom config file
+        thai-lint stateless-class --config .thailint.yaml src/
+    """
+    verbose = ctx.obj.get("verbose", False)
+    project_root = _get_project_root_from_context(ctx)
+
+    if not paths:
+        paths = (".",)
+
+    path_objs = [Path(p) for p in paths]
+
+    try:
+        _execute_stateless_class_lint(
+            path_objs, config_file, format, recursive, verbose, project_root
+        )
+    except Exception as e:
+        _handle_linting_error(e, verbose)
+
+
+def _execute_stateless_class_lint(  # pylint: disable=too-many-arguments,too-many-positional-arguments
+    path_objs, config_file, format, recursive, verbose, project_root=None
+):
+    """Execute stateless-class lint."""
+    _validate_paths_exist(path_objs)
+    orchestrator = _setup_stateless_class_orchestrator(
+        path_objs, config_file, verbose, project_root
+    )
+    stateless_class_violations = _run_stateless_class_lint(orchestrator, path_objs, recursive)
+
+    if verbose:
+        logger.info(f"Found {len(stateless_class_violations)} stateless-class violation(s)")
+
+    format_violations(stateless_class_violations, format)
+    sys.exit(1 if stateless_class_violations else 0)
+
+
 if __name__ == "__main__":
     cli()
