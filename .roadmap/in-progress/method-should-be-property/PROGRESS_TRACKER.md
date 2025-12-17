@@ -28,8 +28,8 @@ This is the **PRIMARY HANDOFF DOCUMENT** for AI agents working on the Method Sho
 4. **Update this document** after completing each PR
 
 ## Current Status
-**Current PR**: PR3 Complete - Ready for PR4
-**Infrastructure State**: Python implementation and CLI complete, 111 tests passing
+**Current PR**: PR4 Complete - Ready for PR5
+**Infrastructure State**: Linter complete and validated on own codebase, 681 tests passing
 **Feature Target**: Production-ready method-should-be-property linter for Python
 
 ## Required Documents Location
@@ -42,15 +42,18 @@ This is the **PRIMARY HANDOFF DOCUMENT** for AI agents working on the Method Sho
 
 ## Next PR to Implement
 
-### START HERE: PR4 - Self-Dogfooding
+### START HERE: PR5 - Documentation & Publishing
 
 **Quick Summary**:
-Run the method-property linter on the thai-lint codebase and address any violations found.
+Create comprehensive user documentation for the method-property linter.
 
 **Pre-flight Checklist**:
-- [ ] Run `thailint method-property src/` to find violations
-- [ ] Categorize violations (fix vs. ignore with justification)
-- [ ] Verify `just lint-full` and `just test` still pass
+- [ ] Create `docs/method-property-linter.md`
+- [ ] Update `mkdocs.yml` with nav entry
+- [ ] Update `README.md` with linter in feature list
+- [ ] Update `docs/cli-reference.md` with command
+- [ ] Update `docs/configuration.md` with config options
+- [ ] Update `docs/index.md` with linter count
 
 **Prerequisites Complete**:
 - [x] Research on best practices complete (PEP 8, Pylint discussions)
@@ -59,14 +62,15 @@ Run the method-property linter on the thai-lint codebase and address any violati
 - [x] PR1 test suite created (111 tests)
 - [x] PR2 Python implementation complete (all 111 tests pass, lint-full passes)
 - [x] PR3 CLI integration complete (text/json/sarif formats work, commit db268dc)
+- [x] PR4 self-dogfooding complete (5 get_* methods fixed, commit b837f3b)
 
 ---
 
 ## Overall Progress
-**Total Completion**: 60% (3/5 PRs completed)
+**Total Completion**: 80% (4/5 PRs completed)
 
 ```
-[########################                ] 60% Complete
+[################################        ] 80% Complete
 ```
 
 ---
@@ -78,7 +82,7 @@ Run the method-property linter on the thai-lint codebase and address any violati
 | PR1 | Test Suite for Python Method Detection | Complete | 100% | Medium | P0 | 111 tests created, TDD red phase verified |
 | PR2 | Python Implementation | Complete | 100% | Medium | P0 | All 111 tests pass, lint-full passes |
 | PR3 | CLI Integration | Complete | 100% | Low | P0 | Command works (commit db268dc) |
-| PR4 | Self-Dogfooding: Lint Own Codebase | Not Started | 0% | Medium | P1 | Validate linter on thai-lint codebase |
+| PR4 | Self-Dogfooding: Lint Own Codebase | Complete | 100% | Medium | P1 | 5 violations fixed, action verbs excluded (commit b837f3b) |
 | PR5 | Documentation & Publishing | Not Started | 0% | Low | P1 | Docs for ReadTheDocs and PyPI users |
 
 ### Status Legend
@@ -186,10 +190,22 @@ Add CLI command for method-property linter.
 Run method-property linter on thai-lint codebase and address violations.
 
 ### Success Criteria
-- [ ] Linter runs on entire codebase
-- [ ] All violations either fixed or documented with ignore directives
-- [ ] Linting passes (`just lint-full` exits with code 0)
-- [ ] Tests still pass
+- [x] Linter runs on entire codebase
+- [x] All violations either fixed or documented with ignore directives
+- [x] Linting passes (`just lint-full` exits with code 0)
+- [x] Tests still pass (681 tests)
+
+### Implementation Notes
+- Found 7 violations initially, 2 were false positives
+- Fixed 5 get_* methods by converting to @property:
+  - `LinterConfigLoader.get_defaults()` → `defaults`
+  - `BaseBlockFilter.get_name()` → `name` (abstract property)
+  - `KeywordArgumentFilter.get_name()` → `name`
+  - `ImportGroupFilter.get_name()` → `name`
+  - `DRYCache.get_duplicate_hashes()` → `duplicate_hashes`
+  - `DuplicateStorage.get_duplicate_hashes()` → `duplicate_hashes`
+- Added exclusion for action verb methods (`to_*`, `finalize`, `serialize`, `validate`)
+- Commit: b837f3b
 
 ---
 
