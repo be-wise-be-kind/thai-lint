@@ -273,17 +273,13 @@ class FileHeaderRule(BaseLintRule):  # thailint: ignore[srp]
         file_content = context.file_content or ""
         lines = file_content.splitlines()
 
-        filtered = []
-        for v in violations:
-            if self._ignore_parser.should_ignore_violation(v, file_content):
-                continue
-
-            if self._has_line_level_ignore(lines, v):
-                continue
-
-            filtered.append(v)
-
-        return filtered
+        non_ignored = (
+            v
+            for v in violations
+            if not self._ignore_parser.should_ignore_violation(v, file_content)
+            and not self._has_line_level_ignore(lines, v)
+        )
+        return list(non_ignored)
 
     def _has_line_level_ignore(self, lines: list[str], violation: Violation) -> bool:
         """Check for thailint-ignore-line directive."""

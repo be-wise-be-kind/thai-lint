@@ -171,9 +171,8 @@ class SRPRule(MultiLanguageLintRule):
             List of violations
         """
         violations = []
-        for metrics in metrics_list:
-            if not isinstance(metrics, dict):
-                continue
+        valid_metrics = (m for m in metrics_list if isinstance(m, dict))
+        for metrics in valid_metrics:
             violation = self._create_violation_if_needed(metrics, config, context)
             if violation:
                 violations.append(violation)

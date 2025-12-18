@@ -103,9 +103,8 @@ def _load_from_explicit_path(config_path: Path) -> dict[str, Any]:
 
 def _load_from_default_locations() -> dict[str, Any]:
     """Load config from default locations."""
-    for location in CONFIG_LOCATIONS:
-        if not location.exists():
-            continue
+    existing_locations = (loc for loc in CONFIG_LOCATIONS if loc.exists())
+    for location in existing_locations:
         loaded_config = _try_load_from_location(location)
         if loaded_config:
             return loaded_config

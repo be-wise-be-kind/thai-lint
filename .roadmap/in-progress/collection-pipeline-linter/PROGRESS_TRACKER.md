@@ -30,7 +30,7 @@ This is the **PRIMARY HANDOFF DOCUMENT** for AI agents working on the Collection
 
 ## Current Status
 
-**Current PR**: PR3 - Configuration & Ignore Support (Complete)
+**Current PR**: PR4 - Dogfooding & Fixes (Complete)
 **Infrastructure State**: Ready - all prerequisites met
 **Feature Target**: Detect and report loop-with-embedded-filtering anti-patterns
 
@@ -80,33 +80,32 @@ for file_path in valid_files:
 
 ## Next PR to Implement
 
-### START HERE: PR4 - Dogfooding & Fixes
+### START HERE: PR5 - Documentation
 
 **Quick Summary**:
-Run the collection-pipeline linter on the thai-lint codebase and fix any issues found.
+Create comprehensive documentation for the collection-pipeline linter across all platforms.
 
 **Pre-flight Checklist**:
 - [x] PR1 complete with passing tests
 - [x] PR2 complete with CLI working
 - [x] PR3 complete with config and ignore support
-- [ ] Run `thailint pipeline src/` to find violations
-- [ ] Determine which violations to fix vs ignore
+- [x] PR4 complete with dogfooding done (0 violations in thai-lint codebase)
 
 **Implementation Steps**:
-1. Run `thailint pipeline src/` on thai-lint codebase
-2. Review detected violations
-3. Fix violations that improve code quality
-4. Add ignore directives for legitimate patterns
-5. Update tests if edge cases discovered
+1. Create `docs/collection-pipeline-linter.md` with usage examples
+2. Update `README.md` to add linter to list
+3. Update `docs/cli-reference.md` with `thailint pipeline` command
+4. Update `docs/configuration.md` with pipeline config options
+5. Create Docker usage examples
 
 ---
 
 ## Overall Progress
 
-**Total Completion**: 50% (3/6 PRs completed)
+**Total Completion**: 67% (4/6 PRs completed)
 
 ```
-[##########          ] 50% Complete
+[#############       ] 67% Complete
 ```
 
 ---
@@ -118,7 +117,7 @@ Run the collection-pipeline linter on the thai-lint codebase and fix any issues 
 | PR1 | Core Detection Engine (TDD) | Complete | 100% | Medium | P0 | 37 tests, all pass |
 | PR2 | CLI Integration | Complete | 100% | Low | P0 | `thailint pipeline`, 9 CLI tests |
 | PR3 | Configuration & Ignore Support | Complete | 100% | Medium | P1 | 21 new tests, 5-level ignore support |
-| PR4 | Dogfooding & Fixes | Not Started | 0% | Low | P1 | Run on thai-lint codebase, fix issues |
+| PR4 | Dogfooding & Fixes | Complete | 100% | Low | P1 | 11 violations fixed, 0 remaining |
 | PR5 | Documentation | Not Started | 0% | Medium | P1 | PyPI, ReadTheDocs, DockerHub |
 | PR6 | Release | Not Started | 0% | Low | P2 | Version bump, changelog, publish |
 

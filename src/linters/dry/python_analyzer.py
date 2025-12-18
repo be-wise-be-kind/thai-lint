@@ -217,24 +217,42 @@ class PythonDuplicateAnalyzer(BaseTokenAnalyzer):  # thailint: ignore[srp.violat
         lines_with_numbers = []
         in_multiline_import = False
 
-        for line_num, line in enumerate(content.split("\n"), start=1):
-            if line_num in docstring_lines:
-                continue
-
-            line = self._hasher._normalize_line(line)  # pylint: disable=protected-access
-            if not line:
-                continue
-
-            # Update multi-line import state and check if line should be skipped
-            in_multiline_import, should_skip = self._hasher._should_skip_import_line(  # pylint: disable=protected-access
+        non_docstring_lines = (
+            (line_num, line)
+            for line_num, line in enumerate(content.split("\n"), start=1)
+            if line_num not in docstring_lines
+        )
+        for line_num, line in non_docstring_lines:
+            in_multiline_import, normalized = self._normalize_and_filter_line(
                 line, in_multiline_import
             )
-            if should_skip:
-                continue
-
-            lines_with_numbers.append((line_num, line))
+            if normalized is not None:
+                lines_with_numbers.append((line_num, normalized))
 
         return lines_with_numbers
+
+    def _normalize_and_filter_line(
+        self, line: str, in_multiline_import: bool
+    ) -> tuple[bool, str | None]:
+        """Normalize line and check if it should be included.
+
+        Args:
+            line: Raw source line
+            in_multiline_import: Current multi-line import state
+
+        Returns:
+            Tuple of (new_import_state, normalized_line or None if should skip)
+        """
+        normalized = self._hasher._normalize_line(line)  # pylint: disable=protected-access
+        if not normalized:
+            return in_multiline_import, None
+
+        new_state, should_skip = self._hasher._should_skip_import_line(  # pylint: disable=protected-access
+            normalized, in_multiline_import
+        )
+        if should_skip:
+            return new_state, None
+        return new_state, normalized
 
     def _rolling_hash_with_tracking(
         self, lines_with_numbers: list[tuple[int, str]], window_size: int
@@ -640,10 +658,8 @@ class PythonDuplicateAnalyzer(BaseTokenAnalyzer):  # thailint: ignore[srp.violat
 
         def is_within_class_body(tree: ast.Module, lookback_start: int) -> bool:
             """Check if flagged range falls within a class body."""
-            for stmt in tree.body:
-                if not isinstance(stmt, ast.ClassDef):
-                    continue
-
+            class_defs = (s for s in tree.body if isinstance(s, ast.ClassDef))
+            for stmt in class_defs:
                 # Adjust line numbers: stmt.lineno is relative to context
                 # We need to convert back to original file line numbers
                 class_start_in_context = stmt.lineno

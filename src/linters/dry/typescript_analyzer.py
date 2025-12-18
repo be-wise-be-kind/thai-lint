@@ -30,7 +30,7 @@ SRP Exception: TypeScriptDuplicateAnalyzer has 20 methods and 324 lines (exceeds
     responsibility: accurately detecting duplicate TypeScript/JavaScript code while minimizing false positives.
 """
 
-from collections.abc import Generator
+from collections.abc import Generator, Iterable
 from pathlib import Path
 
 from src.analyzers.typescript_base import TREE_SITTER_AVAILABLE
@@ -84,16 +84,33 @@ class TypeScriptDuplicateAnalyzer(BaseTokenAnalyzer):  # thailint: ignore[srp.vi
         # Generate rolling hash windows
         windows = self._rolling_hash_with_tracking(lines_with_numbers, config.min_duplicate_lines)
 
+        # Filter out interface/type definitions and single statement patterns
+        valid_windows = (
+            (hash_val, start_line, end_line, snippet)
+            for hash_val, start_line, end_line, snippet in windows
+            if self._should_include_block(content, start_line, end_line)
+            and not self._is_single_statement_in_source(content, start_line, end_line)
+        )
+        return self._build_blocks(valid_windows, file_path, content)
+
+    def _build_blocks(
+        self,
+        windows: Iterable[tuple[int, int, int, str]],
+        file_path: Path,
+        content: str,
+    ) -> list[CodeBlock]:
+        """Build CodeBlock objects from valid windows, applying filters.
+
+        Args:
+            windows: Iterable of (hash_val, start_line, end_line, snippet) tuples
+            file_path: Path to source file
+            content: File content
+
+        Returns:
+            List of CodeBlock instances that pass all filters
+        """
         blocks = []
         for hash_val, start_line, end_line, snippet in windows:
-            # Filter interface/type definitions
-            if not self._should_include_block(content, start_line, end_line):
-                continue
-
-            # Filter single statement patterns
-            if self._is_single_statement_in_source(content, start_line, end_line):
-                continue
-
             block = CodeBlock(
                 file_path=file_path,
                 start_line=start_line,
@@ -101,13 +118,8 @@ class TypeScriptDuplicateAnalyzer(BaseTokenAnalyzer):  # thailint: ignore[srp.vi
                 snippet=snippet,
                 hash_value=hash_val,
             )
-
-            # Apply extensible filters (keyword arguments, imports, etc.)
-            if self._filter_registry.should_filter_block(block, content):
-                continue
-
-            blocks.append(block)
-
+            if not self._filter_registry.should_filter_block(block, content):
+                blocks.append(block)
         return blocks
 
     def _get_jsdoc_ranges_from_content(self, content: str) -> set[int]:
@@ -188,25 +200,43 @@ class TypeScriptDuplicateAnalyzer(BaseTokenAnalyzer):  # thailint: ignore[srp.vi
         lines_with_numbers = []
         in_multiline_import = False
 
-        for line_num, line in enumerate(content.split("\n"), start=1):
-            # Skip JSDoc comment lines
-            if line_num in jsdoc_lines:
-                continue
-
-            line = self._hasher._normalize_line(line)  # pylint: disable=protected-access
-            if not line:
-                continue
-
-            # Update multi-line import state and check if line should be skipped
-            in_multiline_import, should_skip = self._hasher._should_skip_import_line(  # pylint: disable=protected-access
+        # Skip JSDoc comment lines
+        non_jsdoc_lines = (
+            (line_num, line)
+            for line_num, line in enumerate(content.split("\n"), start=1)
+            if line_num not in jsdoc_lines
+        )
+        for line_num, line in non_jsdoc_lines:
+            in_multiline_import, normalized = self._normalize_and_filter_line(
                 line, in_multiline_import
             )
-            if should_skip:
-                continue
-
-            lines_with_numbers.append((line_num, line))
+            if normalized is not None:
+                lines_with_numbers.append((line_num, normalized))
 
         return lines_with_numbers
+
+    def _normalize_and_filter_line(
+        self, line: str, in_multiline_import: bool
+    ) -> tuple[bool, str | None]:
+        """Normalize line and check if it should be included.
+
+        Args:
+            line: Raw source line
+            in_multiline_import: Current multi-line import state
+
+        Returns:
+            Tuple of (new_import_state, normalized_line or None if should skip)
+        """
+        normalized = self._hasher._normalize_line(line)  # pylint: disable=protected-access
+        if not normalized:
+            return in_multiline_import, None
+
+        new_state, should_skip = self._hasher._should_skip_import_line(  # pylint: disable=protected-access
+            normalized, in_multiline_import
+        )
+        if should_skip:
+            return new_state, None
+        return new_state, normalized
 
     def _rolling_hash_with_tracking(
         self, lines_with_numbers: list[tuple[int, str]], window_size: int
