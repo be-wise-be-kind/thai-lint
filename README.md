@@ -63,6 +63,12 @@ thailint complements your existing linting stack by catching the patterns AI too
   - Configurable thresholds (lines, tokens, occurrences)
   - Language-specific detection (Python, TypeScript, JavaScript)
   - False positive filtering (keyword args, imports)
+- **Collection Pipeline Linting** - Detect for loops with embedded filtering
+  - Based on Martin Fowler's "Replace Loop with Pipeline" refactoring
+  - Detects if/continue patterns that should use generator expressions
+  - Generates refactoring suggestions with generator syntax
+  - Configurable threshold (min_continues)
+  - Python support with AST analysis
 - **Method Property Linting** - Detect methods that should be @property decorators
   - Python AST-based detection
   - get_* prefix detection (Java-style getters)
@@ -706,6 +712,109 @@ Built-in filters automatically exclude common non-duplication patterns:
 
 See [DRY Linter Guide](https://thai-lint.readthedocs.io/en/latest/dry-linter/) for comprehensive documentation, storage modes, and refactoring patterns.
 
+## Collection Pipeline Linter
+
+### Overview
+
+The collection-pipeline linter detects for loops with embedded filtering (if/continue patterns) that should be refactored to use generator expressions or other collection pipelines. Based on Martin Fowler's "Replace Loop with Pipeline" refactoring pattern.
+
+### The Anti-Pattern
+
+```python
+# Anti-pattern: Embedded filtering in loop body
+for file_path in dir_path.glob(pattern):
+    if not file_path.is_file():
+        continue
+    if ignore_parser.is_ignored(file_path):
+        continue
+    violations.extend(lint_file(file_path))
+```
+
+### The Solution
+
+```python
+# Collection pipeline: Filtering separated from processing
+valid_files = (
+    f for f in dir_path.glob(pattern)
+    if f.is_file() and not ignore_parser.is_ignored(f)
+)
+for file_path in valid_files:
+    violations.extend(lint_file(file_path))
+```
+
+### Quick Start
+
+```bash
+# Check current directory
+thailint pipeline .
+
+# Check specific directory
+thailint pipeline src/
+
+# Only flag patterns with 2+ filter conditions
+thailint pipeline --min-continues 2 src/
+
+# JSON output
+thailint pipeline --format json src/
+```
+
+### Configuration
+
+```yaml
+# .thailint.yaml
+collection-pipeline:
+  enabled: true
+  min_continues: 1  # Minimum if/continue patterns to flag
+  ignore:
+    - "tests/**"
+    - "**/legacy/**"
+```
+
+### Example Violation
+
+**Detected Pattern:**
+```python
+def process_files(paths):
+    for path in paths:
+        if not path.is_file():
+            continue
+        analyze(path)
+```
+
+**Violation Message:**
+```
+src/processor.py:3 - For loop over 'paths' has embedded filtering.
+  Consider using a generator expression:
+  for path in (path for path in paths if path.is_file()):
+```
+
+**Refactored Code:**
+```python
+def process_files(paths):
+    valid_paths = (p for p in paths if p.is_file())
+    for path in valid_paths:
+        analyze(path)
+```
+
+### Why This Matters
+
+- **Separation of concerns**: Filtering logic is separate from processing logic
+- **Readability**: Intent is clear at a glance
+- **Testability**: Filtering can be tested independently
+- **Based on**: Martin Fowler's "Replace Loop with Pipeline" refactoring
+
+### Ignoring Violations
+
+```python
+# Line-level ignore
+for item in items:  # thailint: ignore[collection-pipeline]
+    if not item.valid:
+        continue
+    process(item)
+```
+
+See [Collection Pipeline Linter Guide](docs/collection-pipeline-linter.md) for comprehensive documentation and refactoring patterns.
+
 ## Magic Numbers Linter
 
 ### Overview
@@ -1316,6 +1425,9 @@ docker run --rm -v $(pwd):/data washad/thailint:latest nesting /data/src/file1.p
 # Lint specific subdirectory
 docker run --rm -v $(pwd):/data washad/thailint:latest nesting /data/src
 
+# Collection pipeline linter
+docker run --rm -v $(pwd):/data washad/thailint:latest pipeline /data/src
+
 # With custom config
 docker run --rm -v $(pwd):/data \
     washad/thailint:latest nesting --config /data/.thailint.yaml /data
@@ -1379,6 +1491,7 @@ docker run --rm -v /path/to/workspace:/workspace \
 - **[Nesting Depth Linter](https://thai-lint.readthedocs.io/en/latest/nesting-linter/)** - Nesting depth analysis guide
 - **[SRP Linter](https://thai-lint.readthedocs.io/en/latest/srp-linter/)** - Single Responsibility Principle guide
 - **[DRY Linter](https://thai-lint.readthedocs.io/en/latest/dry-linter/)** - Duplicate code detection guide
+- **[Collection Pipeline Linter](https://thai-lint.readthedocs.io/en/latest/collection-pipeline-linter/)** - Loop filtering refactoring guide
 - **[Method Property Linter](https://thai-lint.readthedocs.io/en/latest/method-property-linter/)** - Method-to-property conversion guide
 - **[Stateless Class Linter](https://thai-lint.readthedocs.io/en/latest/stateless-class-linter/)** - Stateless class detection guide
 - **[Pre-commit Hooks](https://thai-lint.readthedocs.io/en/latest/pre-commit-hooks/)** - Automated quality checks

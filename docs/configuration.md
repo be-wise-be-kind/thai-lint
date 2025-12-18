@@ -11,6 +11,7 @@ Complete reference for configuring thailint linters with presets, ignore pattern
 - [Nesting Depth Configuration](#nesting-depth-configuration)
 - [SRP Configuration](#srp-configuration)
 - [DRY Configuration](#dry-configuration)
+- [Collection Pipeline Configuration](#collection-pipeline-configuration)
 - [File Placement Configuration](#file-placement-configuration)
 
 ## Quick Start with init-config
@@ -653,6 +654,67 @@ Filters reduce false positives:
 
 - **keyword_argument_filter**: Ignores function calls with only keyword arguments (common pattern in configs)
 - **import_group_filter**: Ignores import statement groups (naturally similar structure)
+
+### Collection Pipeline Linter Options
+
+Under the `collection-pipeline` key:
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `enabled` | boolean | `true` | Enable/disable collection-pipeline linter |
+| `min_continues` | integer | `1` | Minimum if/continue patterns to flag |
+| `suggest_filter` | boolean | `false` | Suggest filter() instead of generator expression |
+| `suggest_comprehension` | boolean | `false` | Suggest list comprehension for .append patterns |
+| `ignore` | array | `[]` | Glob patterns for files to skip |
+
+**Example:**
+
+```yaml
+collection-pipeline:
+  enabled: true
+  min_continues: 1
+  suggest_filter: false
+  ignore:
+    - "tests/**"
+    - "**/legacy/**"
+```
+
+```json
+{
+  "collection-pipeline": {
+    "enabled": true,
+    "min_continues": 1,
+    "suggest_filter": false,
+    "ignore": ["tests/**", "**/legacy/**"]
+  }
+}
+```
+
+**Configuration Behavior:**
+
+- **min_continues**: Controls how many sequential if/continue patterns are needed to trigger a violation. Set to `1` to catch all embedded filtering, or `2` to only flag more complex patterns.
+- **suggest_filter**: When `true`, suggestions use `filter()` instead of generator expressions.
+- **suggest_comprehension**: When `true`, suggests list comprehensions for patterns involving `.append()`.
+- **ignore**: File patterns using glob syntax. Test files are often ignored since they may have intentional patterns for testing.
+
+**Acceptable Contexts** (not flagged regardless of config):
+
+- **Generator expressions already**: Loops iterating over `(x for x in items if cond)`
+- **filter() already**: Loops iterating over `filter(pred, items)`
+- **Walrus operator conditions**: Conditions with side effects like `if not (result := validate(item))`
+- **If with else branch**: If/else patterns (not simple filters)
+
+**Strictness Presets:**
+
+```yaml
+# Strict - flag all embedded filtering
+collection-pipeline:
+  min_continues: 1
+
+# Lenient - only flag complex patterns
+collection-pipeline:
+  min_continues: 2
+```
 
 ### Magic Numbers Linter Options
 

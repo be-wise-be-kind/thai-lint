@@ -39,6 +39,7 @@ thai-lint complements your existing linting stack by catching the patterns AI to
 - **Nesting Depth Linting** - Detect excessive code nesting with AST analysis
 - **SRP Linting** - Detect Single Responsibility Principle violations
 - **DRY Linting** - Detect duplicate code across projects
+- **Collection Pipeline Linting** - Detect for loops with embedded filtering
 - **Pluggable Architecture** - Easy to extend with custom linters
 - **Multi-Language Support** - Python, TypeScript, JavaScript, and more
 - **Flexible Configuration** - YAML/JSON configs with pattern matching
@@ -104,6 +105,9 @@ thailint nesting src/
 # Check for duplicate code
 thailint dry .
 
+# Check for embedded filtering patterns
+thailint pipeline src/
+
 # With config file
 thailint dry --config .thailint.yaml src/
 
@@ -149,6 +153,9 @@ Detect Single Responsibility Principle violations in classes.
 
 ### [DRY Linter](dry-linter.md)
 Detect duplicate code blocks across your project.
+
+### [Collection Pipeline Linter](collection-pipeline-linter.md)
+Detect for loops with embedded filtering that should use collection pipelines.
 
 ## Documentation
 

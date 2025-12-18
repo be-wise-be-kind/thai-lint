@@ -911,6 +911,157 @@ dry:
 
 ---
 
+### pipeline
+
+Check for loop filtering that could use collection pipelines.
+
+```bash
+thai-lint pipeline [OPTIONS] [PATH...]
+```
+
+**Arguments:**
+
+| Argument | Required | Default | Description |
+|----------|----------|---------|-------------|
+| `PATH...` | No | `.` (current directory) | One or more files/directories to check |
+
+**Options:**
+
+| Option | Short | Type | Default | Description |
+|--------|-------|------|---------|-------------|
+| `--config` | `-c` | PATH | Auto-discover | Path to config file |
+| `--min-continues` | | INTEGER | `1` | Minimum if/continue patterns to flag |
+| `--format` | `-f` | CHOICE | `text` | Output format: `text`, `json`, or `sarif` |
+| `--recursive` | | FLAG | `True` | Scan directories recursively |
+| `--no-recursive` | | FLAG | | Disable recursive scanning |
+| `--project-root` | | PATH | Auto-detect | Explicit project root directory |
+
+**Examples:**
+
+**Basic usage:**
+```bash
+# Check current directory
+thai-lint pipeline
+
+# Check specific directory
+thai-lint pipeline src/
+
+# Check specific file
+thai-lint pipeline src/main.py
+
+# Check multiple files
+thai-lint pipeline src/main.py src/utils.py src/handler.py
+
+# Check multiple directories
+thai-lint pipeline src/ lib/
+```
+
+**With custom threshold:**
+```bash
+# Only flag patterns with 2+ if/continue statements
+thai-lint pipeline --min-continues 2 src/
+
+# Flag all embedded filtering patterns (default)
+thai-lint pipeline --min-continues 1 src/
+```
+
+**With configuration file:**
+```bash
+# Use specific config
+thai-lint pipeline --config .thailint.yaml src/
+
+# Short form
+thai-lint pipeline -c rules.yaml src/
+```
+
+**Output formats:**
+```bash
+# Text format (default, human-readable)
+thai-lint pipeline src/
+
+# JSON format (for parsing/CI/CD)
+thai-lint pipeline --format json src/
+
+# SARIF format (for GitHub Code Scanning, VS Code)
+thai-lint pipeline --format sarif src/ > pipeline.sarif
+```
+
+**Output Examples:**
+
+**Text format (violations found):**
+```
+Found 2 violations:
+
+src/processor.py:15
+  Rule: collection-pipeline.embedded-filter
+  Function: process_files
+  Message: For loop over 'paths' has embedded filtering.
+  Suggestion: for path in (path for path in paths if path.is_file()):
+  Severity: WARNING
+
+src/handler.py:42
+  Rule: collection-pipeline.embedded-filter
+  Function: handle_request
+  Message: For loop over 'items' has 2 filter conditions.
+  Suggestion: for item in (item for item in items if item.valid and not item.processed):
+  Severity: WARNING
+
+Exit code: 1
+```
+
+**Text format (no violations):**
+```
+No violations found
+
+Exit code: 0
+```
+
+**JSON format:**
+```json
+{
+  "violations": [
+    {
+      "file_path": "src/processor.py",
+      "line_number": 15,
+      "rule_id": "collection-pipeline.embedded-filter",
+      "message": "For loop over 'paths' has embedded filtering",
+      "suggestion": "for path in (path for path in paths if path.is_file()):",
+      "severity": "WARNING"
+    }
+  ],
+  "total": 1
+}
+```
+
+**Language Support:**
+- Python (`.py`) - Full support with AST analysis
+
+**Common Patterns:**
+
+```bash
+# Strict project-wide check
+thai-lint pipeline .
+
+# Check only source code
+thai-lint pipeline src/
+
+# CI/CD integration
+thai-lint pipeline --format json src/ > pipeline-report.json
+
+# Lenient check (only flag complex patterns)
+thai-lint pipeline --min-continues 2 src/
+
+# With verbose output
+thai-lint --verbose pipeline src/
+```
+
+**See Also:**
+- `docs/collection-pipeline-linter.md` - Comprehensive collection-pipeline linter guide
+- Martin Fowler's "Replace Loop with Pipeline" refactoring
+- Generator expression and filter() best practices
+
+---
+
 ### config
 
 Configuration management commands.
