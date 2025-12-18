@@ -30,7 +30,7 @@ This is the **PRIMARY HANDOFF DOCUMENT** for AI agents working on the Collection
 
 ## Current Status
 
-**Current PR**: PR4.5 - External Validation (Complete)
+**Current PR**: PR5 - Documentation (Complete)
 **Infrastructure State**: Ready - all prerequisites met
 **Feature Target**: Detect and report loop-with-embedded-filtering anti-patterns
 
@@ -81,10 +81,10 @@ for file_path in valid_files:
 
 ## Next PR to Implement
 
-### START HERE: PR5 - Documentation
+### START HERE: PR6 - Release
 
 **Quick Summary**:
-Create comprehensive documentation for the collection-pipeline linter across all platforms.
+Publish new version with collection-pipeline linter to PyPI.
 
 **Pre-flight Checklist**:
 - [x] PR1 complete with passing tests
@@ -92,22 +92,23 @@ Create comprehensive documentation for the collection-pipeline linter across all
 - [x] PR3 complete with config and ignore support
 - [x] PR4 complete with dogfooding done (0 violations in thai-lint codebase)
 - [x] PR4.5 complete with external validation (17 violations across 5 repos, 0 false positives)
+- [x] PR5 complete with documentation (PyPI, ReadTheDocs, DockerHub)
 
 **Implementation Steps**:
-1. Create `docs/collection-pipeline-linter.md` with usage examples
-2. Update `README.md` to add linter to list
-3. Update `docs/cli-reference.md` with `thailint pipeline` command
-4. Update `docs/configuration.md` with pipeline config options
-5. Create Docker usage examples
+1. Update `pyproject.toml` with version bump
+2. Update `CHANGELOG.md` with release notes
+3. Run `just publish` or equivalent release process
+4. Verify PyPI package published correctly
+5. Verify Docker image updated
 
 ---
 
 ## Overall Progress
 
-**Total Completion**: 71% (5/7 PRs completed)
+**Total Completion**: 86% (6/7 PRs completed)
 
 ```
-[##############      ] 71% Complete
+[#################   ] 86% Complete
 ```
 
 ---
@@ -121,7 +122,7 @@ Create comprehensive documentation for the collection-pipeline linter across all
 | PR3 | Configuration & Ignore Support | Complete | 100% | Medium | P1 | 21 new tests, 5-level ignore support |
 | PR4 | Dogfooding & Fixes | Complete | 100% | Low | P1 | 11 violations fixed, 0 remaining |
 | PR4.5 | External Validation | Complete | 100% | Low | P1 | 17 violations in 5 repos, 0 false positives |
-| PR5 | Documentation | Not Started | 0% | Medium | P1 | PyPI, ReadTheDocs, DockerHub |
+| PR5 | Documentation | Complete | 100% | Medium | P1 | docs/, README, cli-reference, configuration |
 | PR6 | Release | Not Started | 0% | Low | P2 | Version bump, changelog, publish |
 
 ### Status Legend
@@ -244,10 +245,10 @@ Files in thai-lint with potential violations:
 - [x] Inline ignore directives work (5-level ignore system)
 
 ### Documentation Metrics
-- [ ] PyPI description updated
-- [ ] ReadTheDocs page published
-- [ ] DockerHub README updated
-- [ ] Examples provided for all patterns
+- [x] PyPI description updated (README.md with collection-pipeline section)
+- [x] ReadTheDocs page published (docs/collection-pipeline-linter.md)
+- [x] DockerHub README updated (Docker examples in README.md)
+- [x] Examples provided for all patterns (in linter doc and README)
 
 ---
 
