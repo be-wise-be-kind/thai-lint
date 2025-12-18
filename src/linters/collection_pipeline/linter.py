@@ -63,7 +63,7 @@ class CollectionPipelineRule(BaseLintRule):
         if not content:
             return []
 
-        config = load_linter_config(context, "collection-pipeline", CollectionPipelineConfig)
+        config = load_linter_config(context, "collection_pipeline", CollectionPipelineConfig)
         if not config.enabled:
             return []
 

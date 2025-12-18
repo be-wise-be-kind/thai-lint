@@ -147,7 +147,7 @@ for item in items:
 """
         context = MockContext(
             file_content=code,
-            metadata={"collection-pipeline": {"enabled": False}},
+            metadata={"collection_pipeline": {"enabled": False}},
         )
         rule = CollectionPipelineRule()
         violations = rule.check(context)
@@ -165,7 +165,7 @@ for item in items:
         # Single continue, but min_continues is 2
         context = MockContext(
             file_content=code,
-            metadata={"collection-pipeline": {"min_continues": 2}},
+            metadata={"collection_pipeline": {"min_continues": 2}},
         )
         rule = CollectionPipelineRule()
         violations = rule.check(context)

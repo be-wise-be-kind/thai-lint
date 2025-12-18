@@ -30,7 +30,7 @@ This is the **PRIMARY HANDOFF DOCUMENT** for AI agents working on the Collection
 
 ## Current Status
 
-**Current PR**: PR1 - Core Detection Engine (Complete)
+**Current PR**: PR2 - CLI Integration (Complete)
 **Infrastructure State**: Ready - all prerequisites met
 **Feature Target**: Detect and report loop-with-embedded-filtering anti-patterns
 
@@ -80,30 +80,31 @@ for file_path in valid_files:
 
 ## Next PR to Implement
 
-### START HERE: PR2 - CLI Integration
+### START HERE: PR3 - Configuration & Ignore Support
 
 **Quick Summary**:
-Add `thailint pipeline` CLI command to expose the detection engine.
+Add configuration options to .thailint.yaml and inline ignore directives.
 
 **Pre-flight Checklist**:
 - [x] PR1 complete with passing tests
-- [ ] Review `src/cli.py` for existing command patterns
-- [ ] Check `justfile` for lint recipe patterns
+- [x] PR2 complete with CLI working
+- [ ] Review `.thailint.yaml` for existing config patterns
+- [ ] Check inline ignore patterns in other linters
 
 **Implementation Steps**:
-1. Add `thailint pipeline` command to `src/cli.py`
-2. Add `lint-pipeline` recipe to `justfile`
-3. Write CLI integration tests
-4. Verify SARIF output format works
+1. Add `collection_pipeline` section to `.thailint.yaml`
+2. Implement inline ignore directives (`# thailint: ignore[collection-pipeline]`)
+3. Write configuration tests
+4. Write ignore directive tests
 
 ---
 
 ## Overall Progress
 
-**Total Completion**: 17% (1/6 PRs completed)
+**Total Completion**: 33% (2/6 PRs completed)
 
 ```
-[####                ] 17% Complete
+[#######             ] 33% Complete
 ```
 
 ---
@@ -113,7 +114,7 @@ Add `thailint pipeline` CLI command to expose the detection engine.
 | PR | Title | Status | Completion | Complexity | Priority | Notes |
 |----|-------|--------|------------|------------|----------|-------|
 | PR1 | Core Detection Engine (TDD) | Complete | 100% | Medium | P0 | 37 tests, all pass |
-| PR2 | CLI Integration | Not Started | 0% | Low | P0 | Add `thailint pipeline` command |
+| PR2 | CLI Integration | Complete | 100% | Low | P0 | `thailint pipeline`, 9 CLI tests |
 | PR3 | Configuration & Ignore Support | Not Started | 0% | Medium | P1 | .thailint.yaml, inline ignores |
 | PR4 | Dogfooding & Fixes | Not Started | 0% | Low | P1 | Run on thai-lint codebase, fix issues |
 | PR5 | Documentation | Not Started | 0% | Medium | P1 | PyPI, ReadTheDocs, DockerHub |
@@ -218,7 +219,7 @@ Files in thai-lint with potential violations:
 - [x] All tests pass with 90%+ coverage for new code
 - [x] Pylint 10.00/10
 - [x] Xenon A-grade complexity
-- [ ] All 3 output formats work (text, JSON, SARIF) - CLI integration needed
+- [x] All 3 output formats work (text, JSON, SARIF)
 
 ### Feature Metrics
 - [x] Detects all pattern variants (single/multiple continue guards)
