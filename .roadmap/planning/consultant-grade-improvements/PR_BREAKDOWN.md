@@ -748,3 +748,27 @@ Add coverage badge:
 - No file-length violations in codebase
 - Pre-commit hooks prevent regressions
 - Security scans block critical CVEs
+
+---
+
+## Future Improvements (Out of Scope)
+
+### Extract Shared Ignore Logic to Base Class
+
+**Issue**: All linter rules (StatelessClassRule, CollectionPipelineRule, etc.) duplicate the same
+ignore-handling pattern - about 15+ methods for config loading, file ignore checking, and
+inline ignore directive parsing.
+
+**Current Workaround**: Each linter has `# thailint: ignore[srp,dry]` on its class definition.
+
+**Proposed Solution**: Extract shared logic to a base class or mixin:
+- Create `IgnoreAwareLintRule` base class or `IgnoreHandlerMixin`
+- Move methods: `_load_config`, `_is_file_ignored`, `_matches_pattern`, `_has_file_level_ignore`,
+  `_is_file_ignore_directive`, `_matches_rule_ignore`, `_rule_matches`, `_should_ignore_violation`,
+  `_has_inline_ignore`, `_get_line_text`, `_is_ignore_directive`
+- Have linter rules inherit from the new base or use the mixin
+
+**Benefit**: Reduces duplication across 6+ linter files, removes need for `# thailint: ignore[srp,dry]`
+directives, makes adding new linters simpler.
+
+**Effort**: Medium (2-3 hours) - Affects multiple files but is straightforward refactoring.

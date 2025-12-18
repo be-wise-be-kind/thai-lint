@@ -30,7 +30,7 @@ This is the **PRIMARY HANDOFF DOCUMENT** for AI agents working on the Collection
 
 ## Current Status
 
-**Current PR**: PR2 - CLI Integration (Complete)
+**Current PR**: PR3 - Configuration & Ignore Support (Complete)
 **Infrastructure State**: Ready - all prerequisites met
 **Feature Target**: Detect and report loop-with-embedded-filtering anti-patterns
 
@@ -80,31 +80,33 @@ for file_path in valid_files:
 
 ## Next PR to Implement
 
-### START HERE: PR3 - Configuration & Ignore Support
+### START HERE: PR4 - Dogfooding & Fixes
 
 **Quick Summary**:
-Add configuration options to .thailint.yaml and inline ignore directives.
+Run the collection-pipeline linter on the thai-lint codebase and fix any issues found.
 
 **Pre-flight Checklist**:
 - [x] PR1 complete with passing tests
 - [x] PR2 complete with CLI working
-- [ ] Review `.thailint.yaml` for existing config patterns
-- [ ] Check inline ignore patterns in other linters
+- [x] PR3 complete with config and ignore support
+- [ ] Run `thailint pipeline src/` to find violations
+- [ ] Determine which violations to fix vs ignore
 
 **Implementation Steps**:
-1. Add `collection_pipeline` section to `.thailint.yaml`
-2. Implement inline ignore directives (`# thailint: ignore[collection-pipeline]`)
-3. Write configuration tests
-4. Write ignore directive tests
+1. Run `thailint pipeline src/` on thai-lint codebase
+2. Review detected violations
+3. Fix violations that improve code quality
+4. Add ignore directives for legitimate patterns
+5. Update tests if edge cases discovered
 
 ---
 
 ## Overall Progress
 
-**Total Completion**: 33% (2/6 PRs completed)
+**Total Completion**: 50% (3/6 PRs completed)
 
 ```
-[#######             ] 33% Complete
+[##########          ] 50% Complete
 ```
 
 ---
@@ -115,7 +117,7 @@ Add configuration options to .thailint.yaml and inline ignore directives.
 |----|-------|--------|------------|------------|----------|-------|
 | PR1 | Core Detection Engine (TDD) | Complete | 100% | Medium | P0 | 37 tests, all pass |
 | PR2 | CLI Integration | Complete | 100% | Low | P0 | `thailint pipeline`, 9 CLI tests |
-| PR3 | Configuration & Ignore Support | Not Started | 0% | Medium | P1 | .thailint.yaml, inline ignores |
+| PR3 | Configuration & Ignore Support | Complete | 100% | Medium | P1 | 21 new tests, 5-level ignore support |
 | PR4 | Dogfooding & Fixes | Not Started | 0% | Low | P1 | Run on thai-lint codebase, fix issues |
 | PR5 | Documentation | Not Started | 0% | Medium | P1 | PyPI, ReadTheDocs, DockerHub |
 | PR6 | Release | Not Started | 0% | Low | P2 | Version bump, changelog, publish |
@@ -224,8 +226,8 @@ Files in thai-lint with potential violations:
 ### Feature Metrics
 - [x] Detects all pattern variants (single/multiple continue guards)
 - [x] Provides clear, actionable suggestions (generator expression syntax)
-- [ ] Configuration allows fine-tuning - needs .thailint.yaml integration
-- [ ] Inline ignore directives work - needs PR3
+- [x] Configuration allows fine-tuning via .thailint.yaml
+- [x] Inline ignore directives work (5-level ignore system)
 
 ### Documentation Metrics
 - [ ] PyPI description updated

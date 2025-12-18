@@ -157,6 +157,9 @@ dry:
     - "tests/"  # Test code often has acceptable duplication
     - "__init__.py"  # Import-only files are exempt
     - "src/cli.py"  # CLI modules contain acceptable boilerplate across command handlers
+    # Core infrastructure files contain patterns that linters legitimately implement
+    - "src/core/base.py"  # Base rule interface patterns duplicated in linter implementations
+    - "src/linter_config/ignore.py"  # Ignore logic patterns duplicated in linter implementations
     # Linter implementations share common infrastructure patterns (framework duplication)
     - "magic_numbers/linter.py"
     - "magic_numbers/config.py"
@@ -166,6 +169,8 @@ dry:
     - "print_statements/config.py"
     - "stateless_class/linter.py"
     - "stateless_class/config.py"
+    - "collection_pipeline/linter.py"
+    - "collection_pipeline/config.py"
 
   # Block filters (extensible false positive filtering)
   # These filters automatically exclude common non-duplication patterns
@@ -187,3 +192,12 @@ stateless-class:
   # Ignore patterns for files and directories
   ignore:
     - "tests/"  # Test files often use stateless helper classes intentionally
+
+# Collection pipeline linter configuration
+collection-pipeline:
+  enabled: true  # Enable embedded filtering detection
+  min_continues: 1  # Minimum if/continue patterns to flag
+
+  # Ignore patterns for files and directories
+  ignore:
+    - "tests/"  # Test files often have intentional patterns for testing
