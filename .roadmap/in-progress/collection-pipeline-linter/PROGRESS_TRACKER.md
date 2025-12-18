@@ -30,14 +30,14 @@ This is the **PRIMARY HANDOFF DOCUMENT** for AI agents working on the Collection
 
 ## Current Status
 
-**Current PR**: PR1 - Core Detection Engine (Not Started)
+**Current PR**: PR2 - CLI Integration (Complete)
 **Infrastructure State**: Ready - all prerequisites met
 **Feature Target**: Detect and report loop-with-embedded-filtering anti-patterns
 
 ## Required Documents Location
 
 ```
-.roadmap/planning/collection-pipeline-linter/
+.roadmap/in-progress/collection-pipeline-linter/
 ├── AI_CONTEXT.md          # Research findings and pattern analysis
 ├── PR_BREAKDOWN.md        # Detailed implementation steps for each PR
 ├── PROGRESS_TRACKER.md    # THIS FILE - Current progress and handoff notes
@@ -80,31 +80,31 @@ for file_path in valid_files:
 
 ## Next PR to Implement
 
-### START HERE: PR1 - Core Detection Engine (TDD)
+### START HERE: PR3 - Configuration & Ignore Support
 
 **Quick Summary**:
-Write tests first for detecting the core anti-patterns, then implement the detection engine.
+Add configuration options to .thailint.yaml and inline ignore directives.
 
 **Pre-flight Checklist**:
-- [ ] Read `.ai/docs/FILE_HEADER_STANDARDS.md` for header templates
-- [ ] Read `.ai/howtos/how-to-add-linter.md` for linter development guide
-- [ ] Read `.ai/docs/SARIF_STANDARDS.md` for output format requirements
-- [ ] Review existing linter patterns in `src/linters/nesting/` (similar AST analysis)
+- [x] PR1 complete with passing tests
+- [x] PR2 complete with CLI working
+- [ ] Review `.thailint.yaml` for existing config patterns
+- [ ] Check inline ignore patterns in other linters
 
-**TDD Approach**:
-1. Write failing tests for pattern detection
-2. Implement minimal code to pass tests
-3. Refactor while keeping tests green
-4. Repeat for each pattern variant
+**Implementation Steps**:
+1. Add `collection_pipeline` section to `.thailint.yaml`
+2. Implement inline ignore directives (`# thailint: ignore[collection-pipeline]`)
+3. Write configuration tests
+4. Write ignore directive tests
 
 ---
 
 ## Overall Progress
 
-**Total Completion**: 0% (0/6 PRs completed)
+**Total Completion**: 33% (2/6 PRs completed)
 
 ```
-[                    ] 0% Complete
+[#######             ] 33% Complete
 ```
 
 ---
@@ -113,8 +113,8 @@ Write tests first for detecting the core anti-patterns, then implement the detec
 
 | PR | Title | Status | Completion | Complexity | Priority | Notes |
 |----|-------|--------|------------|------------|----------|-------|
-| PR1 | Core Detection Engine (TDD) | Not Started | 0% | Medium | P0 | Tests first, then implementation |
-| PR2 | CLI Integration | Not Started | 0% | Low | P0 | Add `thailint pipeline` command |
+| PR1 | Core Detection Engine (TDD) | Complete | 100% | Medium | P0 | 37 tests, all pass |
+| PR2 | CLI Integration | Complete | 100% | Low | P0 | `thailint pipeline`, 9 CLI tests |
 | PR3 | Configuration & Ignore Support | Not Started | 0% | Medium | P1 | .thailint.yaml, inline ignores |
 | PR4 | Dogfooding & Fixes | Not Started | 0% | Low | P1 | Run on thai-lint codebase, fix issues |
 | PR5 | Documentation | Not Started | 0% | Medium | P1 | PyPI, ReadTheDocs, DockerHub |
@@ -216,16 +216,16 @@ Files in thai-lint with potential violations:
 ## Success Metrics
 
 ### Technical Metrics
-- [ ] All tests pass with 90%+ coverage for new code
-- [ ] Pylint 10.00/10
-- [ ] Xenon A-grade complexity
-- [ ] All 3 output formats work (text, JSON, SARIF)
+- [x] All tests pass with 90%+ coverage for new code
+- [x] Pylint 10.00/10
+- [x] Xenon A-grade complexity
+- [x] All 3 output formats work (text, JSON, SARIF)
 
 ### Feature Metrics
-- [ ] Detects all pattern variants
-- [ ] Provides clear, actionable suggestions
-- [ ] Configuration allows fine-tuning
-- [ ] Inline ignore directives work
+- [x] Detects all pattern variants (single/multiple continue guards)
+- [x] Provides clear, actionable suggestions (generator expression syntax)
+- [ ] Configuration allows fine-tuning - needs .thailint.yaml integration
+- [ ] Inline ignore directives work - needs PR3
 
 ### Documentation Metrics
 - [ ] PyPI description updated
