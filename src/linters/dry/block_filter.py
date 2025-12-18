@@ -239,14 +239,8 @@ class BlockFilterRegistry:
         Returns:
             True if block should be filtered out
         """
-        for filter_instance in self._filters:
-            if filter_instance.name not in self._enabled_filters:
-                continue
-
-            if filter_instance.should_filter(block, file_content):
-                return True
-
-        return False
+        enabled_filters = (f for f in self._filters if f.name in self._enabled_filters)
+        return any(f.should_filter(block, file_content) for f in enabled_filters)
 
     def get_enabled_filters(self) -> list[str]:
         """Get list of enabled filter names.

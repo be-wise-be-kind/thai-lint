@@ -124,20 +124,40 @@ class FilePlacementLinter:
         Returns:
             List of all violations found
         """
+        valid_files = self._get_valid_files(dir_path, recursive)
+        return self._lint_files(valid_files)
+
+    def _get_valid_files(self, dir_path: Path, recursive: bool) -> list[Path]:
+        """Get list of valid files to lint from directory.
+
+        Args:
+            dir_path: Directory to scan
+            recursive: Scan recursively
+
+        Returns:
+            List of file paths to lint
+        """
         from src.linter_config.ignore import IgnoreDirectiveParser
 
         ignore_parser = IgnoreDirectiveParser(self.project_root)
         pattern = "**/*" if recursive else "*"
 
-        violations = []
-        for file_path in dir_path.glob(pattern):
-            if not file_path.is_file():
-                continue
-            if ignore_parser.is_ignored(file_path):
-                continue
-            file_violations = self.lint_path(file_path)
-            violations.extend(file_violations)
+        return [
+            f for f in dir_path.glob(pattern) if f.is_file() and not ignore_parser.is_ignored(f)
+        ]
 
+    def _lint_files(self, file_paths: list[Path]) -> list[Violation]:
+        """Lint multiple files and collect violations.
+
+        Args:
+            file_paths: List of file paths to lint
+
+        Returns:
+            List of all violations found
+        """
+        violations = []
+        for file_path in file_paths:
+            violations.extend(self.lint_path(file_path))
         return violations
 
 

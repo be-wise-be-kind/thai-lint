@@ -20,6 +20,7 @@ Implementation: Package traversal with pkgutil, class introspection with inspect
 import importlib
 import inspect
 import pkgutil
+from types import ModuleType
 from typing import Any
 
 from .base import BaseLintRule
@@ -87,19 +88,51 @@ def _discover_from_module(module_path: str) -> list[BaseLintRule]:
     Returns:
         List of discovered rule instances
     """
-    try:
-        module = importlib.import_module(module_path)
-    except (ImportError, AttributeError):
+    module = _try_import_module(module_path)
+    if module is None:
         return []
+    return _extract_rules_from_module(module)
 
-    rules = []
-    for _name, obj in inspect.getmembers(module):
-        if not _is_rule_class(obj):
-            continue
-        rule_instance = _try_instantiate_rule(obj)
-        if rule_instance:
-            rules.append(rule_instance)
-    return rules
+
+def _try_import_module(module_path: str) -> ModuleType | None:
+    """Try to import a module, returning None on failure.
+
+    Args:
+        module_path: Full module path to import
+
+    Returns:
+        Module object or None if import fails
+    """
+    try:
+        return importlib.import_module(module_path)
+    except (ImportError, AttributeError):
+        return None
+
+
+def _extract_rules_from_module(module: ModuleType) -> list[BaseLintRule]:
+    """Extract rule instances from a module.
+
+    Args:
+        module: Imported module to scan
+
+    Returns:
+        List of discovered rule instances
+    """
+    rule_classes = [obj for _name, obj in inspect.getmembers(module) if _is_rule_class(obj)]
+    return _instantiate_rules(rule_classes)
+
+
+def _instantiate_rules(rule_classes: list[type[BaseLintRule]]) -> list[BaseLintRule]:
+    """Instantiate a list of rule classes.
+
+    Args:
+        rule_classes: List of rule classes to instantiate
+
+    Returns:
+        List of successfully instantiated rules
+    """
+    instances = (_try_instantiate_rule(cls) for cls in rule_classes)
+    return [inst for inst in instances if inst is not None]
 
 
 def _try_instantiate_rule(rule_class: type[BaseLintRule]) -> BaseLintRule | None:
