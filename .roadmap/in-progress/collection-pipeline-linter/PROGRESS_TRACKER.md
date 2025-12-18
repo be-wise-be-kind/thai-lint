@@ -30,7 +30,7 @@ This is the **PRIMARY HANDOFF DOCUMENT** for AI agents working on the Collection
 
 ## Current Status
 
-**Current PR**: PR1 - Core Detection Engine (In Progress)
+**Current PR**: PR1 - Core Detection Engine (Complete)
 **Infrastructure State**: Ready - all prerequisites met
 **Feature Target**: Detect and report loop-with-embedded-filtering anti-patterns
 
@@ -80,31 +80,30 @@ for file_path in valid_files:
 
 ## Next PR to Implement
 
-### START HERE: PR1 - Core Detection Engine (TDD)
+### START HERE: PR2 - CLI Integration
 
 **Quick Summary**:
-Write tests first for detecting the core anti-patterns, then implement the detection engine.
+Add `thailint pipeline` CLI command to expose the detection engine.
 
 **Pre-flight Checklist**:
-- [ ] Read `.ai/docs/FILE_HEADER_STANDARDS.md` for header templates
-- [ ] Read `.ai/howtos/how-to-add-linter.md` for linter development guide
-- [ ] Read `.ai/docs/SARIF_STANDARDS.md` for output format requirements
-- [ ] Review existing linter patterns in `src/linters/nesting/` (similar AST analysis)
+- [x] PR1 complete with passing tests
+- [ ] Review `src/cli.py` for existing command patterns
+- [ ] Check `justfile` for lint recipe patterns
 
-**TDD Approach**:
-1. Write failing tests for pattern detection
-2. Implement minimal code to pass tests
-3. Refactor while keeping tests green
-4. Repeat for each pattern variant
+**Implementation Steps**:
+1. Add `thailint pipeline` command to `src/cli.py`
+2. Add `lint-pipeline` recipe to `justfile`
+3. Write CLI integration tests
+4. Verify SARIF output format works
 
 ---
 
 ## Overall Progress
 
-**Total Completion**: 0% (0/6 PRs completed)
+**Total Completion**: 17% (1/6 PRs completed)
 
 ```
-[                    ] 0% Complete
+[####                ] 17% Complete
 ```
 
 ---
@@ -113,7 +112,7 @@ Write tests first for detecting the core anti-patterns, then implement the detec
 
 | PR | Title | Status | Completion | Complexity | Priority | Notes |
 |----|-------|--------|------------|------------|----------|-------|
-| PR1 | Core Detection Engine (TDD) | In Progress | 0% | Medium | P0 | Tests first, then implementation |
+| PR1 | Core Detection Engine (TDD) | Complete | 100% | Medium | P0 | 37 tests, all pass |
 | PR2 | CLI Integration | Not Started | 0% | Low | P0 | Add `thailint pipeline` command |
 | PR3 | Configuration & Ignore Support | Not Started | 0% | Medium | P1 | .thailint.yaml, inline ignores |
 | PR4 | Dogfooding & Fixes | Not Started | 0% | Low | P1 | Run on thai-lint codebase, fix issues |
@@ -216,16 +215,16 @@ Files in thai-lint with potential violations:
 ## Success Metrics
 
 ### Technical Metrics
-- [ ] All tests pass with 90%+ coverage for new code
-- [ ] Pylint 10.00/10
-- [ ] Xenon A-grade complexity
-- [ ] All 3 output formats work (text, JSON, SARIF)
+- [x] All tests pass with 90%+ coverage for new code
+- [x] Pylint 10.00/10
+- [x] Xenon A-grade complexity
+- [ ] All 3 output formats work (text, JSON, SARIF) - CLI integration needed
 
 ### Feature Metrics
-- [ ] Detects all pattern variants
-- [ ] Provides clear, actionable suggestions
-- [ ] Configuration allows fine-tuning
-- [ ] Inline ignore directives work
+- [x] Detects all pattern variants (single/multiple continue guards)
+- [x] Provides clear, actionable suggestions (generator expression syntax)
+- [ ] Configuration allows fine-tuning - needs .thailint.yaml integration
+- [ ] Inline ignore directives work - needs PR3
 
 ### Documentation Metrics
 - [ ] PyPI description updated
