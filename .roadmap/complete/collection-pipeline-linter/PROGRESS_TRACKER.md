@@ -30,8 +30,8 @@ This is the **PRIMARY HANDOFF DOCUMENT** for AI agents working on the Collection
 
 ## Current Status
 
-**Current PR**: PR5 - Documentation (Complete)
-**Infrastructure State**: Ready - all prerequisites met
+**Current PR**: PR6 - Release (Complete)
+**Infrastructure State**: SHIPPED
 **Feature Target**: Detect and report loop-with-embedded-filtering anti-patterns
 
 ## Required Documents Location
@@ -81,34 +81,27 @@ for file_path in valid_files:
 
 ## Next PR to Implement
 
-### START HERE: PR6 - Release
+### ROADMAP COMPLETE
 
-**Quick Summary**:
-Publish new version with collection-pipeline linter to PyPI.
+All PRs have been implemented and the collection-pipeline linter has been released.
 
-**Pre-flight Checklist**:
+**Final Checklist**:
 - [x] PR1 complete with passing tests
 - [x] PR2 complete with CLI working
 - [x] PR3 complete with config and ignore support
 - [x] PR4 complete with dogfooding done (0 violations in thai-lint codebase)
 - [x] PR4.5 complete with external validation (17 violations across 5 repos, 0 false positives)
 - [x] PR5 complete with documentation (PyPI, ReadTheDocs, DockerHub)
-
-**Implementation Steps**:
-1. Update `pyproject.toml` with version bump
-2. Update `CHANGELOG.md` with release notes
-3. Run `just publish` or equivalent release process
-4. Verify PyPI package published correctly
-5. Verify Docker image updated
+- [x] PR6 complete with release published
 
 ---
 
 ## Overall Progress
 
-**Total Completion**: 86% (6/7 PRs completed)
+**Total Completion**: 100% (7/7 PRs completed)
 
 ```
-[#################   ] 86% Complete
+[####################] 100% Complete - SHIPPED!
 ```
 
 ---
@@ -123,7 +116,7 @@ Publish new version with collection-pipeline linter to PyPI.
 | PR4 | Dogfooding & Fixes | Complete | 100% | Low | P1 | 11 violations fixed, 0 remaining |
 | PR4.5 | External Validation | Complete | 100% | Low | P1 | 17 violations in 5 repos, 0 false positives |
 | PR5 | Documentation | Complete | 100% | Medium | P1 | docs/, README, cli-reference, configuration |
-| PR6 | Release | Not Started | 0% | Low | P2 | Version bump, changelog, publish |
+| PR6 | Release | Complete | 100% | Low | P2 | Published to PyPI |
 
 ### Status Legend
 - Not Started
@@ -288,8 +281,10 @@ After completing each PR:
 ## Definition of Done
 
 The feature is considered complete when:
-- [ ] All 6 PRs are merged to main
-- [ ] Linter detects all documented anti-patterns
-- [ ] Thai-lint codebase passes (dogfooding complete)
-- [ ] Documentation published on PyPI, ReadTheDocs, DockerHub
-- [ ] New version released with changelog entry
+- [x] All 7 PRs are merged to main
+- [x] Linter detects all documented anti-patterns
+- [x] Thai-lint codebase passes (dogfooding complete)
+- [x] Documentation published on PyPI, ReadTheDocs, DockerHub
+- [x] New version released with changelog entry
+
+**STATUS: COMPLETE** - Collection-pipeline linter shipped!
