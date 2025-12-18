@@ -30,14 +30,14 @@ This is the **PRIMARY HANDOFF DOCUMENT** for AI agents working on the Collection
 
 ## Current Status
 
-**Current PR**: PR1 - Core Detection Engine (Not Started)
+**Current PR**: PR1 - Core Detection Engine (In Progress)
 **Infrastructure State**: Ready - all prerequisites met
 **Feature Target**: Detect and report loop-with-embedded-filtering anti-patterns
 
 ## Required Documents Location
 
 ```
-.roadmap/planning/collection-pipeline-linter/
+.roadmap/in-progress/collection-pipeline-linter/
 ├── AI_CONTEXT.md          # Research findings and pattern analysis
 ├── PR_BREAKDOWN.md        # Detailed implementation steps for each PR
 ├── PROGRESS_TRACKER.md    # THIS FILE - Current progress and handoff notes
@@ -113,7 +113,7 @@ Write tests first for detecting the core anti-patterns, then implement the detec
 
 | PR | Title | Status | Completion | Complexity | Priority | Notes |
 |----|-------|--------|------------|------------|----------|-------|
-| PR1 | Core Detection Engine (TDD) | Not Started | 0% | Medium | P0 | Tests first, then implementation |
+| PR1 | Core Detection Engine (TDD) | In Progress | 0% | Medium | P0 | Tests first, then implementation |
 | PR2 | CLI Integration | Not Started | 0% | Low | P0 | Add `thailint pipeline` command |
 | PR3 | Configuration & Ignore Support | Not Started | 0% | Medium | P1 | .thailint.yaml, inline ignores |
 | PR4 | Dogfooding & Fixes | Not Started | 0% | Low | P1 | Run on thai-lint codebase, fix issues |
