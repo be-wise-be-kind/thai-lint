@@ -30,7 +30,7 @@ This is the **PRIMARY HANDOFF DOCUMENT** for AI agents working on the Collection
 
 ## Current Status
 
-**Current PR**: PR4 - Dogfooding & Fixes (Complete)
+**Current PR**: PR4.5 - External Validation (Complete)
 **Infrastructure State**: Ready - all prerequisites met
 **Feature Target**: Detect and report loop-with-embedded-filtering anti-patterns
 
@@ -38,9 +38,10 @@ This is the **PRIMARY HANDOFF DOCUMENT** for AI agents working on the Collection
 
 ```
 .roadmap/in-progress/collection-pipeline-linter/
-├── AI_CONTEXT.md          # Research findings and pattern analysis
-├── PR_BREAKDOWN.md        # Detailed implementation steps for each PR
-├── PROGRESS_TRACKER.md    # THIS FILE - Current progress and handoff notes
+├── AI_CONTEXT.md                  # Research findings and pattern analysis
+├── PR_BREAKDOWN.md                # Detailed implementation steps for each PR
+├── PROGRESS_TRACKER.md            # THIS FILE - Current progress and handoff notes
+├── external-validation-report.md  # PR4.5 - External repo validation results
 ```
 
 ## Research Summary
@@ -90,6 +91,7 @@ Create comprehensive documentation for the collection-pipeline linter across all
 - [x] PR2 complete with CLI working
 - [x] PR3 complete with config and ignore support
 - [x] PR4 complete with dogfooding done (0 violations in thai-lint codebase)
+- [x] PR4.5 complete with external validation (17 violations across 5 repos, 0 false positives)
 
 **Implementation Steps**:
 1. Create `docs/collection-pipeline-linter.md` with usage examples
@@ -102,10 +104,10 @@ Create comprehensive documentation for the collection-pipeline linter across all
 
 ## Overall Progress
 
-**Total Completion**: 67% (4/6 PRs completed)
+**Total Completion**: 71% (5/7 PRs completed)
 
 ```
-[#############       ] 67% Complete
+[##############      ] 71% Complete
 ```
 
 ---
@@ -118,6 +120,7 @@ Create comprehensive documentation for the collection-pipeline linter across all
 | PR2 | CLI Integration | Complete | 100% | Low | P0 | `thailint pipeline`, 9 CLI tests |
 | PR3 | Configuration & Ignore Support | Complete | 100% | Medium | P1 | 21 new tests, 5-level ignore support |
 | PR4 | Dogfooding & Fixes | Complete | 100% | Low | P1 | 11 violations fixed, 0 remaining |
+| PR4.5 | External Validation | Complete | 100% | Low | P1 | 17 violations in 5 repos, 0 false positives |
 | PR5 | Documentation | Not Started | 0% | Medium | P1 | PyPI, ReadTheDocs, DockerHub |
 | PR6 | Release | Not Started | 0% | Low | P2 | Version bump, changelog, publish |
 
@@ -167,9 +170,21 @@ Create comprehensive documentation for the collection-pipeline linter across all
 - Fix: Any violations found in thai-lint codebase
 - Update: Tests if edge cases discovered
 
+### PR4.5: External Validation
+**Goal**: Validate linter accuracy on external codebases, identify false positives
+**Dependencies**: PR4
+**Key Files**:
+- Create: `external-validation-report.md` (this directory)
+**Results**:
+- Scanned 5 repos: tubebuddy (318 files), tb-automation-py (100), safeshell (56), polaris (33), tb-infra (12)
+- Total: 519 Python files scanned
+- Violations found: 17
+- False positives: 0 (100% accuracy)
+- Detailed report with corrective actions: `external-validation-report.md`
+
 ### PR5: Documentation
 **Goal**: Comprehensive documentation for all platforms
-**Dependencies**: PR4
+**Dependencies**: PR4.5
 **Key Files**:
 - Create: `docs/collection-pipeline-linter.md`
 - Update: `README.md` (add linter to list)
