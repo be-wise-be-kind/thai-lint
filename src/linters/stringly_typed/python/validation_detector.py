@@ -23,10 +23,8 @@ Implementation: AST NodeVisitor pattern with Compare node handling for In/NotIn 
 import ast
 from dataclasses import dataclass
 
+from .constants import MIN_VALUES_FOR_PATTERN
 from .variable_extractor import extract_variable_name
-
-# Minimum number of string values to consider as enum candidate
-MIN_VALUES_FOR_PATTERN = 2
 
 
 @dataclass
