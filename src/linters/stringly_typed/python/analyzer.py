@@ -5,11 +5,13 @@ Scope: Orchestrate detection of all stringly-typed patterns in Python files
 
 Overview: Provides PythonStringlyTypedAnalyzer class that coordinates detection of
     stringly-typed patterns across Python source files. Uses MembershipValidationDetector
-    to find 'x in ("a", "b")' patterns and returns unified AnalysisResult objects. Handles
-    AST parsing errors gracefully and provides a single entry point for Python analysis.
+    to find 'x in ("a", "b")' patterns and ConditionalPatternDetector to find if/elif
+    chains and match statements. Returns unified AnalysisResult objects. Handles AST
+    parsing errors gracefully and provides a single entry point for Python analysis.
     Supports configuration options for filtering and thresholds.
 
-Dependencies: ast module, MembershipValidationDetector, StringlyTypedConfig
+Dependencies: ast module, MembershipValidationDetector, ConditionalPatternDetector,
+    StringlyTypedConfig
 
 Exports: PythonStringlyTypedAnalyzer class, AnalysisResult dataclass
 
@@ -23,6 +25,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from ..config import StringlyTypedConfig
+from .conditional_detector import ConditionalPatternDetector, EqualityChainPattern
 from .validation_detector import MembershipPattern, MembershipValidationDetector
 
 
@@ -72,6 +75,7 @@ class PythonStringlyTypedAnalyzer:
         """
         self.config = config or StringlyTypedConfig()
         self._membership_detector = MembershipValidationDetector()
+        self._conditional_detector = ConditionalPatternDetector()
 
     def analyze(self, code: str, file_path: Path) -> list[AnalysisResult]:
         """Analyze Python code for stringly-typed patterns.
@@ -93,6 +97,13 @@ class PythonStringlyTypedAnalyzer:
         membership_patterns = self._membership_detector.find_patterns(tree)
         results.extend(
             self._convert_membership_pattern(pattern, file_path) for pattern in membership_patterns
+        )
+
+        # Detect equality chain patterns
+        conditional_patterns = self._conditional_detector.find_patterns(tree)
+        results.extend(
+            self._convert_conditional_pattern(pattern, file_path)
+            for pattern in conditional_patterns
         )
 
         return results
@@ -139,3 +150,49 @@ class PythonStringlyTypedAnalyzer:
             variable_name=pattern.variable_name,
             details=details,
         )
+
+    def _convert_conditional_pattern(
+        self, pattern: EqualityChainPattern, file_path: Path
+    ) -> AnalysisResult:
+        """Convert an EqualityChainPattern to unified AnalysisResult.
+
+        Args:
+            pattern: Detected equality chain pattern
+            file_path: Path to the file containing the pattern
+
+        Returns:
+            AnalysisResult representing the pattern
+        """
+        values_str = ", ".join(sorted(pattern.string_values))
+        var_info = f" on '{pattern.variable_name}'" if pattern.variable_name else ""
+        pattern_label = self._get_pattern_label(pattern.pattern_type)
+        details = (
+            f"{pattern_label}{var_info} with {len(pattern.string_values)} "
+            f"string values: {values_str}"
+        )
+
+        return AnalysisResult(
+            pattern_type=pattern.pattern_type,
+            string_values=pattern.string_values,
+            file_path=file_path,
+            line_number=pattern.line_number,
+            column=pattern.column,
+            variable_name=pattern.variable_name,
+            details=details,
+        )
+
+    def _get_pattern_label(self, pattern_type: str) -> str:
+        """Get human-readable label for a pattern type.
+
+        Args:
+            pattern_type: The pattern type string
+
+        Returns:
+            Human-readable label for the pattern
+        """
+        labels = {
+            "equality_chain": "Equality chain",
+            "or_combined": "Or-combined comparison",
+            "match_statement": "Match statement",
+        }
+        return labels.get(pattern_type, "Conditional pattern")
