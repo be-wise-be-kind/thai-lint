@@ -28,8 +28,8 @@ This is the **PRIMARY HANDOFF DOCUMENT** for AI agents working on the Consultant
 4. **Update this document** after completing each PR
 
 ## Current Status
-**Current PR**: PR2 - CLI Modularization Part 1 (Not Started)
-**Infrastructure State**: Ready - all prerequisites met
+**Current PR**: PR3 - CLI Modularization Part 2 (Not Started)
+**Infrastructure State**: Ready - PR2 complete, CLI package structure established
 **Feature Target**: Achieve A+ (or at least A) grades across all 8 consultant evaluation categories
 
 ## Required Documents Location
@@ -80,29 +80,31 @@ Rather than adding `# pylint: disable=too-many-lines` comments, we extracted foc
 
 ## Next PR to Implement
 
-### START HERE: PR2 - CLI Modularization Part 1
+### START HERE: PR3 - CLI Modularization Part 2
 
 **Quick Summary**:
-Create `src/cli/` package structure and extract configuration commands as the first modularization step. This reduces `src/cli.py` size and sets up infrastructure for PR3.
+Extract all linter commands from `src/cli_main.py` to `src/cli/linters/` package. This reduces `src/cli_main.py` to <100 lines by using a decorator-based pattern for linter commands.
 
 **Pre-flight Checklist**:
 - [ ] Read `.ai/docs/FILE_HEADER_STANDARDS.md` for header templates
-- [ ] Review existing CLI patterns in `src/cli.py`
-- [ ] Understand Click command group patterns
+- [ ] Review `src/cli/` package structure from PR2
+- [ ] Understand Click command group patterns and decorator usage
+- [ ] Review PR_BREAKDOWN.md for PR3 detailed implementation steps
 
 **Prerequisites Complete**:
 - [x] Multi-agent evaluation completed
 - [x] Roadmap documents created
 - [x] PR1 skipped - using Pylint's `max-module-lines=500` instead
 - [x] Pylint configured in `pyproject.toml` with `max-module-lines = 500`
+- [x] PR2 complete - CLI package structure established with `src/cli/` package
 
 ---
 
 ## Overall Progress
-**Total Completion**: 17% (1/6 PRs completed - PR1 skipped, using Pylint)
+**Total Completion**: 33% (2/6 PRs completed - PR1 skipped, PR2 complete)
 
 ```
-[===                 ] 17% Complete
+[======              ] 33% Complete
 ```
 
 ---
@@ -112,7 +114,7 @@ Create `src/cli/` package structure and extract configuration commands as the fi
 | PR | Title | Status | Completion | Complexity | Priority | Notes |
 |----|-------|--------|------------|------------|----------|-------|
 | PR1 | File Length Linter | Skipped | 100% | N/A | N/A | Using Pylint C0302 `max-module-lines=500` instead |
-| PR2 | CLI Modularization Part 1 | Not Started | 0% | Medium | P0 | Extract config commands |
+| PR2 | CLI Modularization Part 1 | Complete | 100% | Medium | P0 | Created `src/cli/` package with main.py, utils.py, config.py |
 | PR3 | CLI Modularization Part 2 | Not Started | 0% | High | P0 | Extract all linter commands |
 | PR4 | Performance Optimizations | Not Started | 0% | Medium | P1 | AST caching, streaming |
 | PR5 | Security Hardening | Not Started | 0% | Low | P1 | SBOM, CVE blocking |
@@ -135,15 +137,26 @@ Create `src/cli/` package structure and extract configuration commands as the fi
 **Configuration**: Added `max-module-lines = 500` to `[tool.pylint.format]` in `pyproject.toml`
 **Rationale**: Pylint already provides this functionality; no need to duplicate
 
-### PR2: CLI Modularization - Infrastructure
+### PR2: CLI Modularization - Infrastructure - COMPLETE
 **Goal**: Create `src/cli/` package and extract config commands
+**Status**: Complete
 **Dependencies**: None (PR1 skipped)
-**Key Files**:
-- Create: `src/cli/__init__.py`
-- Create: `src/cli/main.py`
-- Create: `src/cli/config.py`
-- Create: `src/cli/utils.py`
-- Modify: `src/cli.py` (reduce to re-exports)
+**Files Created**:
+- `src/cli/__init__.py` - Package entry point, re-exports from cli_main
+- `src/cli/main.py` - Main CLI group definition (cli, setup_logging)
+- `src/cli/config.py` - Config commands (config show/get/set/reset, init-config, hello)
+- `src/cli/utils.py` - Shared utilities (format_option, project root handling, path validation)
+- `src/cli/__main__.py` - Module execution support for `python -m src.cli`
+**Files Modified**:
+- `src/cli.py` → renamed to `src/cli_main.py` (linter commands remain here for PR3)
+- `pyproject.toml` - Updated entry points to use `src.cli_main:cli`
+
+**Learnings**:
+- Python prefers packages over modules when both `src/cli.py` and `src/cli/` exist
+- Renamed `src/cli.py` to `src/cli_main.py` to resolve naming conflict
+- `src/cli/__init__.py` imports from `src.cli_main` for backward compatibility
+- Added `src/cli/__main__.py` for `python -m src.cli` support
+- DRY violations in linter commands are expected (addressed in PR3)
 
 ### PR3: CLI Modularization - Linter Commands
 **Goal**: Extract all linter commands, reduce `cli.py` to <100 lines
@@ -254,9 +267,10 @@ After completing each PR:
 
 ### Critical Context
 - This roadmap addresses findings from an 8-agent consultant evaluation
-- The primary issue is `src/cli.py` at 2,014 lines (should be <500)
+- Primary issue: `src/cli_main.py` (formerly `src/cli.py`) at 1,239 lines (goal: <100 after PR3)
 - File-length enforcement now uses Pylint's `max-module-lines=500` (PR1 skipped)
-- `src/cli.py` has `# pylint: disable=too-many-lines` - remove after modularization
+- `src/cli_main.py` has `# pylint: disable=too-many-lines` - remove after PR3 modularization
+- PR2 complete: `src/cli/` package created with config commands extracted
 - All new code must follow `.ai/docs/FILE_HEADER_STANDARDS.md`
 
 ### Common Pitfalls to Avoid
@@ -267,7 +281,8 @@ After completing each PR:
 
 ### Resources
 - Linter patterns: `src/linters/srp/`, `src/linters/nesting/`
-- CLI patterns: Current `src/cli.py` (before modularization)
+- CLI package (PR2 complete): `src/cli/` (main.py, utils.py, config.py)
+- CLI linter commands: `src/cli_main.py` (to be modularized in PR3)
 - File headers: `.ai/docs/FILE_HEADER_STANDARDS.md`
 - SARIF standards: `.ai/docs/SARIF_STANDARDS.md`
 - How-to guides: `.ai/howtos/how-to-add-linter.md`

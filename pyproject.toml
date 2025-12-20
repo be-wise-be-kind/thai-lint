@@ -104,8 +104,8 @@ loguru = "^0.7.3"
 pytest-xdist = "^3.8.0"
 
 [tool.poetry.scripts]
-thailint = "src.cli:cli"
-thai-lint = "src.cli:cli"
+thailint = "src.cli_main:cli"
+thai-lint = "src.cli_main:cli"
 
 # Ruff configuration
 [tool.ruff]
