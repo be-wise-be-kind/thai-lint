@@ -24,6 +24,7 @@ ignore:
   - "*.egg-info/"
   - "dist/"
   - "build/"
+  - "node_modules/"
 
 # File placement linter configuration
 file-placement:
@@ -138,6 +139,11 @@ dry:
   min_duplicate_tokens: 30  # Minimum tokens for duplicate detection
   min_occurrences: 2  # Global default: report duplicates appearing 2+ times
 
+  # Duplicate constants detection (opt-in feature)
+  # Detects when the same constant NAME appears in multiple files
+  detect_duplicate_constants: true
+  min_constant_occurrences: 2  # Report when constant appears in 2+ files
+
   # Language-specific minimum occurrence thresholds
   # These override the global min_occurrences for specific languages
   python:
@@ -181,8 +187,10 @@ dry:
   # Block filters (extensible false positive filtering)
   # These filters automatically exclude common non-duplication patterns
   filters:
-    keyword_argument_filter: true  # Filter function call keyword arguments (e.g., param=value, ...)
+    keyword_argument_filter: true   # Filter function call keyword arguments (e.g., param=value, ...)
     import_group_filter: true       # Filter import statement groups
+    logger_call_filter: true        # Filter single-line logger calls (logger.debug, logging.info, etc.)
+    exception_reraise_filter: true  # Filter idiomatic exception re-raising (except X: raise Y from e)
 
 # Magic numbers linter configuration
 magic-numbers:

@@ -10,7 +10,8 @@ Overview: Provides an extensible architecture for filtering duplicate code block
 
 Dependencies: ast, re, typing
 
-Exports: BaseBlockFilter, BlockFilterRegistry, KeywordArgumentFilter, ImportGroupFilter
+Exports: BaseBlockFilter, BlockFilterRegistry, KeywordArgumentFilter, ImportGroupFilter,
+    LoggerCallFilter, ExceptionReraiseFilter
 
 Interfaces: BaseBlockFilter.should_filter(code_block, file_content) -> bool
 
@@ -196,6 +197,99 @@ class ImportGroupFilter(BaseBlockFilter):
         return "import_group_filter"
 
 
+class LoggerCallFilter(BaseBlockFilter):
+    """Filters single-line logger calls that are idiomatic but appear similar.
+
+    Detects patterns like:
+        logger.debug(f"Command: {cmd}")
+        logger.info("Starting process...")
+        logging.warning("...")
+
+    These are contextually different despite structural similarity.
+    """
+
+    def __init__(self) -> None:
+        """Initialize the logger call filter."""
+        # Pattern matches: logger.level(...) or logging.level(...)
+        self._logger_pattern = re.compile(
+            r"^\s*(self\.)?(logger|logging|log)\."
+            r"(debug|info|warning|error|critical|exception|log)\s*\("
+        )
+
+    def should_filter(self, block: CodeBlock, file_content: str) -> bool:
+        """Check if block is primarily single-line logger calls.
+
+        Args:
+            block: Code block to evaluate
+            file_content: Full file content
+
+        Returns:
+            True if block should be filtered
+        """
+        lines = file_content.split("\n")[block.start_line - 1 : block.end_line]
+        non_empty = [line for line in lines if line.strip()]
+
+        if not non_empty:
+            return False
+
+        # Filter if it's a single line that's a logger call
+        if len(non_empty) == 1:
+            return bool(self._logger_pattern.match(non_empty[0]))
+
+        return False
+
+    @property
+    def name(self) -> str:
+        """Filter name."""
+        return "logger_call_filter"
+
+
+class ExceptionReraiseFilter(BaseBlockFilter):
+    """Filters idiomatic exception re-raising patterns.
+
+    Detects patterns like:
+        except SomeError as e:
+            raise NewError(...) from e
+
+    These are Python best practices for exception chaining.
+    """
+
+    def __init__(self) -> None:
+        """Initialize the exception reraise filter."""
+        pass  # Stateless filter
+
+    def should_filter(self, block: CodeBlock, file_content: str) -> bool:
+        """Check if block is an exception re-raise pattern.
+
+        Args:
+            block: Code block to evaluate
+            file_content: Full file content
+
+        Returns:
+            True if block should be filtered
+        """
+        lines = file_content.split("\n")[block.start_line - 1 : block.end_line]
+        stripped_lines = [line.strip() for line in lines if line.strip()]
+
+        if len(stripped_lines) != 2:
+            return False
+
+        return self._is_except_raise_pattern(stripped_lines)
+
+    @staticmethod
+    def _is_except_raise_pattern(lines: list[str]) -> bool:
+        """Check if lines form an except/raise pattern."""
+        first, second = lines[0], lines[1]
+        is_except = first.startswith("except ") and first.endswith(":")
+        is_raise = second.startswith("raise ") and " from " in second
+        return is_except and is_raise
+
+    @property
+    def name(self) -> str:
+        """Filter name."""
+        return "exception_reraise_filter"
+
+
 class BlockFilterRegistry:
     """Registry for managing duplicate block filters."""
 
@@ -262,5 +356,7 @@ def create_default_registry() -> BlockFilterRegistry:
     # Register built-in filters
     registry.register(KeywordArgumentFilter(threshold=DEFAULT_KEYWORD_ARG_THRESHOLD))
     registry.register(ImportGroupFilter())
+    registry.register(LoggerCallFilter())
+    registry.register(ExceptionReraiseFilter())
 
     return registry

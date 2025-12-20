@@ -170,11 +170,24 @@ dry:
   filters:
     keyword_argument_filter: true   # Filter function call kwargs (e.g., param=value, ...)
     import_group_filter: true       # Filter import statement groups
+    logger_call_filter: true        # Filter single-line logger calls
+    exception_reraise_filter: true  # Filter idiomatic exception re-raising
 ```
+
+**Available Filters:**
+
+| Filter | Description | Example Filtered |
+|--------|-------------|------------------|
+| `keyword_argument_filter` | Function calls with keyword args | `name=name, value=value,` |
+| `import_group_filter` | Import statement blocks | `import os\nimport sys` |
+| `logger_call_filter` | Single-line logger calls | `logger.info("Starting...")` |
+| `exception_reraise_filter` | Exception re-raising patterns | `except X:\n  raise Y from e` |
 
 **Why Filters?**
 - Function calls with keyword arguments often look similar but aren't true duplication
 - Import groups naturally repeat across files and aren't violations
+- Logger calls are contextually different despite structural similarity
+- Exception re-raising is idiomatic Python and shouldn't be flagged
 - Extensible: New filters can be added as needed
 
 ### Ignore Patterns
@@ -464,6 +477,195 @@ import { formatError } from './utils/error-formatter';
 export function formatAdminError(error: Error): string {
   return formatError(error);
 }
+```
+
+## Duplicate Constants Detection
+
+The DRY linter includes an optional sub-feature to detect when the same constant name appears in multiple files. This catches a common AI-generated code pattern where agents duplicate constants like `API_TIMEOUT = 30` across files instead of consolidating them.
+
+### Enabling Duplicate Constants Detection
+
+```yaml
+dry:
+  enabled: true
+  detect_duplicate_constants: true  # Enabled by default
+  min_constant_occurrences: 2       # Report when constant appears in 2+ files
+```
+
+### What Counts as a Constant
+
+**Python Constants:**
+- Module-level assignments with `ALL_CAPS` names
+- Excludes private constants (leading underscore like `_PRIVATE`)
+- Excludes class-level and function-level constants
+
+```python
+# Detected as constant
+API_TIMEOUT = 30
+MAX_RETRIES = 5
+DEFAULT_HOST = "localhost"
+
+# NOT detected (lowercase, private, or nested)
+api_timeout = 30
+_PRIVATE_CONST = 100
+class Config:
+    MAX_VALUE = 50  # Class-level, not detected
+```
+
+**TypeScript Constants:**
+- Top-level `const` declarations with `UPPER_SNAKE_CASE` names
+- Excludes `let`/`var` declarations
+- Excludes camelCase or other naming conventions
+
+```typescript
+// Detected as constant
+const API_TIMEOUT = 30;
+export const MAX_RETRIES = 5;
+
+// NOT detected (not const, or not UPPER_SNAKE_CASE)
+let apiTimeout = 30;
+const apiTimeout = 30;  // camelCase
+var MAX_VALUE = 100;    // var, not const
+```
+
+### Fuzzy Matching
+
+The linter uses two fuzzy matching strategies to catch related constants that should be consolidated:
+
+#### Word-Set Matching
+
+Constants with the same words in different order are matched:
+
+```python
+# These are matched (same words: api, timeout)
+# file1.py
+API_TIMEOUT = 30
+
+# file2.py
+TIMEOUT_API = 60
+```
+
+**Violation message:**
+```
+Similar constants found: 'API_TIMEOUT' ≈ 'TIMEOUT_API' in 2 files.
+Also found in: file2.py:1 (TIMEOUT_API = 60).
+These appear to represent the same concept - consider standardizing the name.
+```
+
+#### Edit Distance Matching
+
+Constants with typos (Levenshtein distance ≤ 2) are matched:
+
+```python
+# These are matched (edit distance = 1)
+# file1.py
+MAX_RETRIES = 5
+
+# file2.py
+MAX_RETRYS = 5  # Typo
+```
+
+**Violation message:**
+```
+Similar constants found: 'MAX_RETRIES' ≈ 'MAX_RETRYS' in 2 files.
+Also found in: file2.py:1 (MAX_RETRYS = 5).
+These appear to represent the same concept - consider standardizing the name.
+```
+
+#### Single-Word Constants
+
+Single-word constants (e.g., `MAX`, `TIMEOUT`) only use exact matching to avoid false positives:
+
+```python
+# These are NOT matched (single words, different names)
+# file1.py
+MAX = 100
+
+# file2.py
+MIN = 0
+```
+
+### Exact Duplicate Constants
+
+When the same constant name appears in multiple files:
+
+```python
+# file1.py
+API_TIMEOUT = 30
+
+# file2.py
+API_TIMEOUT = 60
+
+# file3.py
+API_TIMEOUT = 45
+```
+
+**Violation message:**
+```
+Duplicate constant 'API_TIMEOUT' defined in 3 files.
+Also found in: file2.py:1 (API_TIMEOUT = 60), file3.py:1 (API_TIMEOUT = 45).
+Consider consolidating to a shared constants module.
+```
+
+### Configuration Options
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `detect_duplicate_constants` | boolean | `true` | Enable duplicate constant detection |
+| `min_constant_occurrences` | integer | `2` | Minimum files to report (2 = pairs) |
+| `python_min_constant_occurrences` | integer | `null` | Python-specific override |
+| `typescript_min_constant_occurrences` | integer | `null` | TypeScript-specific override |
+
+### Refactoring Pattern: Shared Constants Module
+
+**Before (duplicated):**
+```python
+# src/api/client.py
+API_TIMEOUT = 30
+
+# src/api/server.py
+API_TIMEOUT = 30
+
+# src/api/middleware.py
+API_TIMEOUT = 30
+```
+
+**After (consolidated):**
+```python
+# src/constants.py
+API_TIMEOUT = 30
+
+# src/api/client.py
+from src.constants import API_TIMEOUT
+
+# src/api/server.py
+from src.constants import API_TIMEOUT
+
+# src/api/middleware.py
+from src.constants import API_TIMEOUT
+```
+
+### TypeScript Example
+
+**Before (duplicated):**
+```typescript
+// src/api/client.ts
+export const API_TIMEOUT = 30;
+
+// src/api/server.ts
+export const API_TIMEOUT = 30;
+```
+
+**After (consolidated):**
+```typescript
+// src/constants.ts
+export const API_TIMEOUT = 30;
+
+// src/api/client.ts
+import { API_TIMEOUT } from '../constants';
+
+// src/api/server.ts
+import { API_TIMEOUT } from '../constants';
 ```
 
 ## Performance
@@ -847,6 +1049,52 @@ def setup_test_database():  # thailint: ignore dry - Test setup boilerplate
     pass
 ```
 
+### 8. Handle Framework Adapter Patterns
+
+Some code duplication is structural and intentional, particularly in "framework adapter" patterns like CLI command modules. When each command implements the same interface contract:
+
+```python
+# CLI commands that implement the same interface contract
+@cli.command("nesting")
+@click.argument("paths", nargs=-1, type=click.Path())
+@click.option("--config", "-c", "config_file", type=click.Path())
+@format_option
+@click.pass_context
+def nesting_command(ctx, paths, config_file, format):
+    """Execute nesting linter."""
+    _execute_lint(paths, config_file, format, "nesting")
+
+@cli.command("srp")
+@click.argument("paths", nargs=-1, type=click.Path())
+@click.option("--config", "-c", "config_file", type=click.Path())
+@format_option
+@click.pass_context
+def srp_command(ctx, paths, config_file, format):
+    """Execute SRP linter."""
+    _execute_lint(paths, config_file, format, "srp")
+```
+
+This duplication is **intentional** because:
+- Each command adapts a common framework to a specific linter
+- The variation is minimal (command name, rule ID filter)
+- Abstracting further would reduce code clarity
+
+**Solution**: Add CLI modules to the ignore list rather than expecting automatic filtering:
+
+```yaml
+dry:
+  ignore:
+    - "src/cli.py"          # CLI command handlers
+    - "src/commands/"       # Or wherever CLI modules live
+    - "**/cli/**"           # Pattern for CLI directories
+```
+
+Framework adapter patterns include:
+- CLI command handlers (Click, Typer, argparse)
+- API endpoint handlers (FastAPI, Flask, Express)
+- Event handlers with common signatures
+- Plugin implementations with shared interfaces
+
 ## API Reference
 
 ### Configuration Schema
@@ -859,10 +1107,16 @@ class DRYConfig:
     min_duplicate_tokens: int = 30
     min_occurrences: int = 2
 
-    # Language-specific overrides
+    # Language-specific overrides for duplicate code
     python_min_occurrences: int | None = None
     typescript_min_occurrences: int | None = None
     javascript_min_occurrences: int | None = None
+
+    # Duplicate constants detection
+    detect_duplicate_constants: bool = True
+    min_constant_occurrences: int = 2
+    python_min_constant_occurrences: int | None = None
+    typescript_min_constant_occurrences: int | None = None
 
     # Storage settings
     storage_mode: str = "memory"  # Options: "memory" or "tempfile"
@@ -874,6 +1128,8 @@ class DRYConfig:
     filters: dict[str, bool] = field(default_factory=lambda: {
         "keyword_argument_filter": True,
         "import_group_filter": True,
+        "logger_call_filter": True,
+        "exception_reraise_filter": True,
     })
 ```
 

@@ -40,6 +40,7 @@ help:
     @echo "  just lint-method-property [FILES...] - Method property detection (get_* methods)"
     @echo "  just lint-file-header [FILES...] - File header validation (documentation headers)"
     @echo "  just lint-dry                  - DRY principle linting (duplicate code detection)"
+    @echo "  just lint-constants [FILES...] - Duplicate constants detection (cross-file)"
     @echo "  just lint-pipeline [FILES...]  - Collection pipeline detection (embedded filtering)"
     @echo "  just clean-cache               - Clear DRY linter cache"
     @echo "  just lint-full [FILES...]      - ALL quality checks (includes magic numbers, headers, and DRY)"
@@ -304,6 +305,25 @@ lint-dry +files="src/ tests/":
             echo "{{GREEN}}✓ DRY checks passed{{NC}}"; \
         else \
             echo "{{RED}}✗ DRY checks failed{{NC}}"; \
+            exit 1; \
+        fi \
+    fi
+
+# Duplicate constants linting (detect same constant names across files)
+lint-constants +files="src/ tests/":
+    @echo ""
+    @echo "{{BLUE}}{{BOLD}}════════════════════════════════════════════════════════════{{NC}}"
+    @echo "{{BOLD}}  DUPLICATE CONSTANTS (Cross-File Detection){{NC}}"
+    @echo "{{BLUE}}{{BOLD}}════════════════════════════════════════════════════════════{{NC}}"
+    @echo ""
+    @echo "{{YELLOW}}Note: Detects when same constant NAME appears in multiple files{{NC}}"
+    @echo ""
+    @SRC_TARGETS=$(just _get-src-targets {{files}}); \
+    if [ -n "$SRC_TARGETS" ]; then \
+        if poetry run thai-lint dry $SRC_TARGETS --config .thailint.yaml 2>&1; then \
+            echo "{{GREEN}}✓ Duplicate constants checks passed{{NC}}"; \
+        else \
+            echo "{{RED}}✗ Duplicate constants checks failed{{NC}}"; \
             exit 1; \
         fi \
     fi
