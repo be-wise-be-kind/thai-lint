@@ -18,14 +18,28 @@ Implementation: Uses re.search() for pattern matching with IGNORECASE flag
 """
 
 import re
+from re import Pattern
 
 
 class PatternMatcher:
     """Handles regex pattern matching for file paths."""
 
     def __init__(self) -> None:
-        """Initialize the pattern matcher."""
-        pass  # Stateless matcher for regex patterns
+        """Initialize the pattern matcher with compiled regex cache."""
+        self._compiled_patterns: dict[str, Pattern[str]] = {}
+
+    def _get_compiled(self, pattern: str) -> Pattern[str]:
+        """Get compiled regex pattern, caching for reuse.
+
+        Args:
+            pattern: Regex pattern string
+
+        Returns:
+            Compiled regex Pattern object
+        """
+        if pattern not in self._compiled_patterns:
+            self._compiled_patterns[pattern] = re.compile(pattern, re.IGNORECASE)
+        return self._compiled_patterns[pattern]
 
     def match_deny_patterns(
         self, path_str: str, deny_patterns: list[dict[str, str]]
@@ -40,8 +54,8 @@ class PatternMatcher:
             Tuple of (is_denied, reason)
         """
         for deny_item in deny_patterns:
-            pattern = deny_item["pattern"]
-            if re.search(pattern, path_str, re.IGNORECASE):
+            compiled = self._get_compiled(deny_item["pattern"])
+            if compiled.search(path_str):
                 reason = deny_item.get("reason", "File not allowed in this location")
                 return True, reason
         return False, None
@@ -56,4 +70,4 @@ class PatternMatcher:
         Returns:
             True if path matches any pattern
         """
-        return any(re.search(pattern, path_str, re.IGNORECASE) for pattern in allow_patterns)
+        return any(self._get_compiled(pattern).search(path_str) for pattern in allow_patterns)

@@ -130,6 +130,10 @@ class TokenHasher:  # thailint: ignore[srp] - Methods support single responsibil
 
         return line
 
+    # Pre-compiled import token set for O(1) membership test
+    _IMPORT_TOKENS: frozenset[str] = frozenset(("{", "}", "} from"))
+    _IMPORT_PREFIXES: tuple[str, ...] = ("import ", "from ", "export ")
+
     def _is_import_statement(self, line: str) -> bool:
         """Check if line is an import statement.
 
@@ -139,11 +143,7 @@ class TokenHasher:  # thailint: ignore[srp] - Methods support single responsibil
         Returns:
             True if line is an import statement
         """
-        # Check all import/export patterns
-        import_prefixes = ("import ", "from ", "export ")
-        import_tokens = ("{", "}", "} from")
-
-        return line.startswith(import_prefixes) or line in import_tokens
+        return line.startswith(self._IMPORT_PREFIXES) or line in self._IMPORT_TOKENS
 
     def rolling_hash(self, lines: list[str], window_size: int) -> list[tuple[int, int, int, str]]:
         """Create rolling hash windows over code lines.

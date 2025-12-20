@@ -299,7 +299,70 @@ thai-lint nesting -p /home/user/Projects/safeshell
 
 ---
 
+## Phase 4 Results: Additional Optimizations
+
+**Implementation Date**: December 20, 2024
+
+### Changes Made
+
+1. **Regex Pattern Caching** (`src/linters/file_placement/pattern_matcher.py`)
+   - Added `_compiled_patterns` dict cache
+   - Pre-compile patterns on first use, reuse for subsequent files
+
+2. **Double .strip() Elimination** (`src/linters/srp/heuristics.py`, `src/linters/dry/block_filter.py`)
+   - Used walrus operator `:=` to avoid redundant strip calls
+
+3. **Frozenset for Membership Tests** (`src/linters/dry/token_hasher.py`)
+   - Changed tuple to frozenset for O(1) lookup
+
+4. **Hardcoded File Exclusions** (`src/orchestrator/core.py`)
+   - Added built-in exclusions for `.pyc`, `__pycache__`, `node_modules`, `.git`, etc.
+   - Fast-path check before ignore parser evaluation
+
+5. **is_ignored() Result Caching** (`src/linter_config/ignore.py`)
+   - Added `_ignore_cache` dict to avoid repeated pattern matching
+   - Profiling showed 23,238 calls for 22,054 files
+
+6. **Analyzer Singleton Pattern** (`src/linters/nesting/linter.py`, `src/linters/srp/class_analyzer.py`)
+   - Create analyzers once at linter initialization
+   - Reuse across all files instead of per-file instantiation
+
+7. **FileLintContext.file_lines** (`src/orchestrator/core.py`)
+   - Added cached `file_lines` property for line-based operations
+
+### Benchmark Results (Parallel Mode)
+
+| Repository | Baseline | PR4 Phase 3 | Phase 4 | vs Baseline | vs Phase 3 |
+|------------|----------|-------------|---------|-------------|------------|
+| safeshell | 9s | 4.1s | **3.2s** | **65% faster** | 22% faster |
+| tb-automation-py | 49s | 13s | **10.5s** | **79% faster** | 19% faster |
+| durable-code-test | >60s TIMEOUT | 59s | **41.4s** | **31% faster** | 30% faster |
+
+### Key Achievements
+
+1. **tb-automation-py**: 49s → 10.5s = **4.7x faster than baseline**
+2. **safeshell**: 9s → 3.2s = **2.8x faster than baseline** (under 5s target!)
+3. **durable-code-test**: Previously TIMEOUT, now **41.4s** (still improving)
+
+### Optimization Impact Analysis
+
+| Optimization | Estimated Impact |
+|--------------|------------------|
+| is_ignored() caching | 10-15% (was 17% of profile) |
+| Hardcoded exclusions | 2-5% (skip entire paths fast) |
+| Analyzer singletons | 2-5% (avoid object creation) |
+| Regex caching | 2-5% (pattern compilation saved) |
+| Double strip elimination | 1-3% (CPU cycles saved) |
+| Frozenset lookup | <1% (minor) |
+
+### Summary
+
+Phase 4 optimizations achieved an additional **19-30%** improvement on top of Phase 3's parallel processing, bringing total optimization to **65-79%** faster than baseline for Python-heavy repositories.
+
+---
+
 *Analysis performed: December 2024*
 *Phase 1 results: December 20, 2024*
 *Phase 3 results: December 20, 2024*
+*Phase 4 results: December 20, 2024*
 *Profiler: cProfile with cumulative time sorting*

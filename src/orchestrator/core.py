@@ -48,6 +48,66 @@ from .language_detector import detect_language
 # Default max workers for parallel processing (capped to avoid resource contention)
 DEFAULT_MAX_WORKERS = 8
 
+# Hardcoded exclusions for files/directories that should never be linted
+# These are always skipped regardless of configuration to improve performance
+_HARDCODED_EXCLUDE_EXTENSIONS: frozenset[str] = frozenset(
+    {
+        ".pyc",
+        ".pyo",
+        ".pyd",  # Python bytecode
+        ".so",
+        ".dll",
+        ".dylib",  # Compiled libraries
+        ".class",  # Java bytecode
+        ".o",
+        ".obj",  # Object files
+    }
+)
+_HARDCODED_EXCLUDE_DIRS: frozenset[str] = frozenset(
+    {
+        "__pycache__",
+        "node_modules",
+        ".git",
+        ".svn",
+        ".hg",
+        ".venv",
+        "venv",
+        ".tox",
+        ".eggs",
+        "*.egg-info",
+        ".pytest_cache",
+        ".mypy_cache",
+        ".ruff_cache",
+        "dist",
+        "build",
+        "htmlcov",
+    }
+)
+
+
+def _is_hardcoded_excluded(file_path: Path) -> bool:
+    """Check if file should be excluded based on hardcoded patterns.
+
+    Args:
+        file_path: Path to check
+
+    Returns:
+        True if file should be skipped (compiled file, cache directory, etc.)
+    """
+    # Check file extension
+    if file_path.suffix in _HARDCODED_EXCLUDE_EXTENSIONS:
+        return True
+
+    # Check if any parent directory is in the exclude list
+    for part in file_path.parts:
+        if part in _HARDCODED_EXCLUDE_DIRS:
+            return True
+        # Handle wildcard patterns like *.egg-info
+        if part.endswith(".egg-info"):
+            return True
+
+    return False
+
 
 def _lint_file_worker(args: tuple[Path, Path, dict]) -> list[dict]:
     """Worker function for parallel file linting.
@@ -90,6 +150,7 @@ class FileLintContext(BaseLintContext):
         self._path = path
         self._language = lang
         self._content = content
+        self._lines: list[str] | None = None  # Cached line split
         self.metadata = metadata or {}
 
     @property
@@ -114,6 +175,18 @@ class FileLintContext(BaseLintContext):
     def language(self) -> str:
         """Get programming language of file."""
         return self._language
+
+    @property
+    def file_lines(self) -> list[str]:
+        """Get file content as list of lines (cached).
+
+        Returns:
+            List of lines from file content, empty list if no content.
+        """
+        if self._lines is None:
+            content = self.file_content
+            self._lines = content.split("\n") if content else []
+        return self._lines
 
 
 class Orchestrator:  # thailint: ignore[srp]
@@ -166,6 +239,10 @@ class Orchestrator:  # thailint: ignore[srp]
         Returns:
             List of violations found in the file.
         """
+        # Fast path: skip compiled files and common excluded directories
+        if _is_hardcoded_excluded(file_path):
+            return []
+
         if self.ignore_parser.is_ignored(file_path):
             return []
 

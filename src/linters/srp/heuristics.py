@@ -57,8 +57,8 @@ def count_loc(class_node: ast.ClassDef, source: str) -> int:
     end_line = class_node.end_lineno or start_line
     lines = source.split("\n")[start_line - 1 : end_line]
 
-    # Filter out blank lines and comments
-    code_lines = [line for line in lines if line.strip() and not line.strip().startswith("#")]
+    # Filter out blank lines and comments (using walrus operator to avoid double strip)
+    code_lines = [s for line in lines if (s := line.strip()) and not s.startswith("#")]
     return len(code_lines)
 
 
