@@ -5,7 +5,7 @@ docstring-convention = google
 # Relax docstring rules for file headers and tests
 per-file-ignores =
     tests/*:D212,D415,D403,D301
-    src/__init__.py:D400,D415
+    src/__init__.py:D400,D415,E402
     src/cli.py:D400,D415,D301,D412,D401
     src/config.py:D400,D415
     src/core/base.py:D400,D415
