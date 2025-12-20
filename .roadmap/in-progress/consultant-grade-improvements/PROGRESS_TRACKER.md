@@ -28,50 +28,81 @@ This is the **PRIMARY HANDOFF DOCUMENT** for AI agents working on the Consultant
 4. **Update this document** after completing each PR
 
 ## Current Status
-**Current PR**: PR1 - File Length Linter (Not Started)
+**Current PR**: PR2 - CLI Modularization Part 1 (Not Started)
 **Infrastructure State**: Ready - all prerequisites met
 **Feature Target**: Achieve A+ (or at least A) grades across all 8 consultant evaluation categories
 
 ## Required Documents Location
 ```
-.roadmap/planning/consultant-grade-improvements/
+.roadmap/in-progress/consultant-grade-improvements/
 ├── AI_CONTEXT.md          # Full 8-agent evaluation report and findings
 ├── PR_BREAKDOWN.md        # Detailed implementation steps for each PR
 ├── PROGRESS_TRACKER.md    # THIS FILE - Current progress and handoff notes
 ```
 
 ## User Confirmed Decisions
-- **Max file length:** 500 lines (default)
-- **Scope:** All 6 PRs to be implemented
-- **Pre-commit:** Yes, add file-length linter to pre-push hook
+- **Max file length:** 500 lines (enforced via Pylint `max-module-lines`)
+- **Scope:** 5 PRs to be implemented (PR1 skipped - using Pylint instead)
+- **File length enforcement:** Use Pylint's built-in C0302 `too-many-lines` rule
+- **Refactoring preference:** Extract focused modules rather than adding ignore comments
+
+## Learnings from PR1 Implementation
+
+### Initial Pylint Configuration Revealed Refactoring Needs
+When `max-module-lines=500` was configured in Pylint, the pre-push hook identified 3 files exceeding the limit:
+- `src/linters/magic_numbers/linter.py` (516 lines)
+- `src/linters/dry/python_analyzer.py` (684 lines)
+- `src/linters/dry/typescript_analyzer.py` (622 lines)
+
+### Refactoring Approach: Extract Focused Modules
+Rather than adding `# pylint: disable=too-many-lines` comments, we extracted focused modules:
+
+**New utility modules created:**
+- `src/core/violation_utils.py` - Shared violation line helpers (get_violation_line, has_python_noqa, has_typescript_noqa)
+- `src/linters/dry/single_statement_detector.py` - Python AST single-statement pattern detection
+- `src/linters/dry/typescript_statement_detector.py` - TypeScript tree-sitter single-statement detection
+- `src/linters/magic_numbers/typescript_ignore_checker.py` - TypeScript ignore directive checking
+
+**Files refactored:**
+| File | Before | After | Reduction |
+|------|--------|-------|-----------|
+| `magic_numbers/linter.py` | 516 | 461 | 11% |
+| `dry/python_analyzer.py` | 684 | 281 | 59% |
+| `dry/typescript_analyzer.py` | 622 | 274 | 56% |
+
+### Key Technical Insights
+1. **DRY linter uses different ignore format**: `# dry: ignore-block` and `# dry: ignore-next` (not `# thailint: ignore[dry]`)
+2. **SRP exceptions require both header comment AND inline ignore**: Add SRP Exception section in file header AND `# thailint: ignore[srp.violation]` on class definition
+3. **Shared patterns should be utility functions**: Common patterns like `get_violation_line()` were duplicated across 3+ linters - extracting to `src/core/violation_utils.py` eliminated DRY violations
+4. **Test files need updates when refactoring**: When methods move to new classes, update test imports and fixture names
 
 ---
 
 ## Next PR to Implement
 
-### START HERE: PR1 - File Length Linter
+### START HERE: PR2 - CLI Modularization Part 1
 
 **Quick Summary**:
-Create a new `file-length` linter that enforces maximum file length limits (500 LOC default). This linter will detect violations like `src/cli.py` (2,014 lines) and prevent future large file accumulation.
+Create `src/cli/` package structure and extract configuration commands as the first modularization step. This reduces `src/cli.py` size and sets up infrastructure for PR3.
 
 **Pre-flight Checklist**:
 - [ ] Read `.ai/docs/FILE_HEADER_STANDARDS.md` for header templates
-- [ ] Read `.ai/howtos/how-to-add-linter.md` for linter development guide
-- [ ] Read `.ai/docs/SARIF_STANDARDS.md` for output format requirements
-- [ ] Review existing linter patterns in `src/linters/srp/` or `src/linters/nesting/`
+- [ ] Review existing CLI patterns in `src/cli.py`
+- [ ] Understand Click command group patterns
 
 **Prerequisites Complete**:
 - [x] Multi-agent evaluation completed
 - [x] Roadmap documents created
-- [x] User confirmed max_lines=500 and pre-commit integration
+- [x] PR1 skipped - using Pylint's `max-module-lines=500` instead
+- [x] Pylint configured in `pyproject.toml` with `max-module-lines = 500`
 
 ---
 
 ## Overall Progress
-**Total Completion**: 0% (0/6 PRs completed)
+**Total Completion**: 17% (1/6 PRs completed - PR1 skipped, using Pylint)
 
 ```
-[                    ] 0% Complete
+[===                 ] 17% Complete
 ```
 
 ---
@@ -80,7 +111,7 @@ Create a new `file-length` linter that enforces maximum file length limits (500 
 
 | PR | Title | Status | Completion | Complexity | Priority | Notes |
 |----|-------|--------|------------|------------|----------|-------|
-| PR1 | File Length Linter | Not Started | 0% | Medium | P0 | New linter + pre-commit integration |
+| PR1 | File Length Linter | Skipped | 100% | N/A | N/A | Using Pylint C0302 `max-module-lines=500` instead |
 | PR2 | CLI Modularization Part 1 | Not Started | 0% | Medium | P0 | Extract config commands |
 | PR3 | CLI Modularization Part 2 | Not Started | 0% | High | P0 | Extract all linter commands |
 | PR4 | Performance Optimizations | Not Started | 0% | Medium | P1 | AST caching, streaming |
@@ -92,28 +123,21 @@ Create a new `file-length` linter that enforces maximum file length limits (500 
 - In Progress
 - Complete
 - Blocked
-- Cancelled
+- Skipped (using existing tool)
 
 ---
 
 ## PR Details
 
-### PR1: File Length Linter
-**Goal**: Create new linter to enforce maximum file length limits
-**Dependencies**: None
-**Key Files**:
-- Create: `src/linters/file_length/__init__.py`
-- Create: `src/linters/file_length/linter.py`
-- Create: `src/linters/file_length/config.py`
-- Create: `src/linters/file_length/analyzer.py`
-- Modify: `src/cli.py` (add command)
-- Modify: `.thailint.yaml` (add config section)
-- Modify: `justfile` (add lint-file-length recipe)
-- Modify: `.pre-commit-config.yaml` (add to pre-push)
+### PR1: File Length Linter - SKIPPED
+**Goal**: ~~Create new linter to enforce maximum file length limits~~
+**Resolution**: Using Pylint's built-in C0302 `too-many-lines` rule instead
+**Configuration**: Added `max-module-lines = 500` to `[tool.pylint.format]` in `pyproject.toml`
+**Rationale**: Pylint already provides this functionality; no need to duplicate
 
 ### PR2: CLI Modularization - Infrastructure
 **Goal**: Create `src/cli/` package and extract config commands
-**Dependencies**: PR1 (file-length command exists)
+**Dependencies**: None (PR1 skipped)
 **Key Files**:
 - Create: `src/cli/__init__.py`
 - Create: `src/cli/main.py`
@@ -161,10 +185,10 @@ Create a new `file-length` linter that enforces maximum file length limits (500 
 
 ## Implementation Strategy
 
-### Phase 1: Core Infrastructure (PR1-PR3)
-1. **PR1**: Create file-length linter first - this enables detecting violations
+### Phase 1: Core Infrastructure (PR2-PR3)
+1. **PR1**: ~~Create file-length linter~~ SKIPPED - using Pylint `max-module-lines=500`
 2. **PR2**: Set up CLI module infrastructure
-3. **PR3**: Complete CLI modularization - validates file-length linter works
+3. **PR3**: Complete CLI modularization - reduce `cli.py` to <100 lines, remove `# pylint: disable=too-many-lines`
 
 ### Phase 2: Parallel Improvements (PR4-PR6)
 4. **PR4**: Performance optimizations (can run independently)
@@ -179,7 +203,7 @@ just test        # Must exit 0
 
 ### Final Validation After All PRs
 ```bash
-thailint file-length src/  # No violations
+poetry run pylint src/cli.py  # Should pass without too-many-lines warning
 # Re-run consultant evaluation
 # Verify all grades A or A+
 ```
@@ -196,8 +220,8 @@ thailint file-length src/  # No violations
 - [ ] `src/cli.py` reduced to <100 lines
 
 ### Feature Metrics
-- [ ] File-length linter detects `src/cli.py` as violation
-- [ ] Pre-push hook includes file-length check
+- [x] Pylint `max-module-lines=500` configured in `pyproject.toml`
+- [ ] `src/cli.py` reduced to <500 lines (currently has `# pylint: disable=too-many-lines`)
 - [ ] SBOM generated on every release
 - [ ] Quick reference cards published
 
@@ -231,7 +255,8 @@ After completing each PR:
 ### Critical Context
 - This roadmap addresses findings from an 8-agent consultant evaluation
 - The primary issue is `src/cli.py` at 2,014 lines (should be <500)
-- No file-length enforcement exists - SRP linter only checks class lines
+- File-length enforcement now uses Pylint's `max-module-lines=500` (PR1 skipped)
+- `src/cli.py` has `# pylint: disable=too-many-lines` - remove after modularization
 - All new code must follow `.ai/docs/FILE_HEADER_STANDARDS.md`
 
 ### Common Pitfalls to Avoid
@@ -252,10 +277,10 @@ After completing each PR:
 ## Definition of Done
 
 The roadmap is considered complete when:
-- [ ] All 6 PRs are merged to main
-- [ ] File-length linter reports no violations in `src/`
+- [ ] All 5 remaining PRs are merged to main (PR1 skipped)
+- [ ] `src/cli.py` reduced to <100 lines with no `# pylint: disable=too-many-lines`
+- [ ] Pylint reports no `C0302 too-many-lines` violations in `src/`
 - [ ] All consultant grades are A or A+
-- [ ] Pre-push hook includes file-length check
 - [ ] Documentation includes quick reference cards
 - [ ] Security workflow blocks critical CVEs
 - [ ] SBOM generated on releases

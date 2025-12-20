@@ -1,5 +1,5 @@
 """
-Purpose: Unit tests for single statement detection methods in PythonDuplicateAnalyzer
+Purpose: Unit tests for single statement detection methods in SingleStatementDetector
 
 Scope: Testing specialized detection methods for multi-line single logical statements
 
@@ -9,30 +9,30 @@ Overview: Comprehensive parameterized test suite for each detection method inclu
     identification to prevent false positive duplication violations on formatted code patterns.
     Tests boundary conditions and various formatting styles for each pattern type.
 
-Dependencies: pytest, src.linters.dry.python_analyzer.PythonDuplicateAnalyzer
+Dependencies: pytest, src.linters.dry.single_statement_detector.SingleStatementDetector
 
 Exports: TestIsPartOfDecorator, TestIsPartOfFunctionCall, TestIsPartOfListLiteral,
     TestIsPartOfDictLiteral test classes
 
 Interfaces: test methods with parameterized inputs for code samples, start_line, end_line, expected result
 
-Implementation: Uses pytest parametrization with concrete examples for each pattern, analyzer fixture
-    provides PythonDuplicateAnalyzer instance, validates detection logic for each method independently
+Implementation: Uses pytest parametrization with concrete examples for each pattern, detector fixture
+    provides SingleStatementDetector instance, validates detection logic for each method independently
 """
 
 import pytest
 
-from src.linters.dry.python_analyzer import PythonDuplicateAnalyzer
+from src.linters.dry.single_statement_detector import SingleStatementDetector
 
 
 @pytest.fixture
-def analyzer():
-    """Create a PythonDuplicateAnalyzer instance for testing."""
-    return PythonDuplicateAnalyzer()
+def detector():
+    """Create a SingleStatementDetector instance for testing."""
+    return SingleStatementDetector()
 
 
 class TestIsPartOfDecorator:
-    """Test _is_part_of_decorator method."""
+    """Test is_part_of_decorator method."""
 
     @pytest.mark.parametrize(
         "code,start_line,end_line,expected",
@@ -93,15 +93,15 @@ def foo():
             ),
         ],
     )
-    def test_decorator_detection(self, analyzer, code, start_line, end_line, expected):
+    def test_decorator_detection(self, detector, code, start_line, end_line, expected):
         """Test decorator detection with various patterns."""
         lines = code.strip().split("\n")
-        result = analyzer._is_part_of_decorator(lines, start_line, end_line)
+        result = detector.is_part_of_decorator(lines, start_line, end_line)
         assert result == expected, f"Expected {expected} for lines {start_line}-{end_line}"
 
 
 class TestIsPartOfFunctionCall:
-    """Test _is_part_of_function_call method."""
+    """Test is_part_of_function_call method."""
 
     @pytest.mark.parametrize(
         "code,start_line,end_line,expected",
@@ -157,15 +157,15 @@ z = 3
             ),
         ],
     )
-    def test_function_call_detection(self, analyzer, code, start_line, end_line, expected):
+    def test_function_call_detection(self, detector, code, start_line, end_line, expected):
         """Test function call detection with various patterns."""
         lines = code.strip().split("\n")
-        result = analyzer._is_part_of_function_call(lines, start_line, end_line)
+        result = detector.is_part_of_function_call(lines, start_line, end_line)
         assert result == expected, f"Expected {expected} for lines {start_line}-{end_line}"
 
 
 class TestIsPartOfClassBody:
-    """Test _is_part_of_class_body method."""
+    """Test is_part_of_class_body method."""
 
     @pytest.mark.parametrize(
         "code,start_line,end_line,expected",
@@ -223,15 +223,15 @@ def foo():
             ),
         ],
     )
-    def test_class_body_detection(self, analyzer, code, start_line, end_line, expected):
+    def test_class_body_detection(self, detector, code, start_line, end_line, expected):
         """Test class body detection with various patterns."""
         lines = code.strip().split("\n")
-        result = analyzer._is_part_of_class_body(lines, start_line, end_line)
+        result = detector.is_part_of_class_body(lines, start_line, end_line)
         assert result == expected, f"Expected {expected} for lines {start_line}-{end_line}"
 
 
 class TestIsStandaloneSingleStatement:
-    """Test _is_standalone_single_statement method."""
+    """Test is_standalone_single_statement method."""
 
     @pytest.mark.parametrize(
         "code,start_line,end_line,expected",
@@ -280,12 +280,12 @@ z = 3
             ),
         ],
     )
-    def test_standalone_single_statement(self, analyzer, code, start_line, end_line, expected):
+    def test_standalone_single_statement(self, detector, code, start_line, end_line, expected):
         """Test standalone single statement detection."""
         lines = code.strip().split("\n")
-        result = analyzer._is_standalone_single_statement(lines, start_line, end_line)
+        result = detector.is_standalone_single_statement(lines, start_line, end_line)
         assert result == expected, f"Expected {expected} for lines {start_line}-{end_line}"
 
 
 class TestIntegration:
-    """Integration tests using _is_single_statement_in_source (the main entry point)."""
+    """Integration tests using is_single_statement (the main entry point)."""

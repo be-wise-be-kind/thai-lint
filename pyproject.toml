@@ -228,6 +228,7 @@ disable = [
 
 [tool.pylint.format]
 max-line-length = 120
+max-module-lines = 500
 
 # Flake8 configuration (in .flake8 file, not pyproject.toml)
 # Note: Flake8 doesn't support pyproject.toml natively
