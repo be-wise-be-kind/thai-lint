@@ -137,9 +137,9 @@ class FilePlacementLinter:
         Returns:
             List of file paths to lint
         """
-        from src.linter_config.ignore import IgnoreDirectiveParser
+        from src.linter_config.ignore import get_ignore_parser
 
-        ignore_parser = IgnoreDirectiveParser(self.project_root)
+        ignore_parser = get_ignore_parser(self.project_root)
         pattern = "**/*" if recursive else "*"
 
         return [

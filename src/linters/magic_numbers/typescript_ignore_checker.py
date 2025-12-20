@@ -20,7 +20,7 @@ Implementation: Comment parsing with TypeScript-specific syntax handling, uses s
 from src.core.base import BaseLintContext
 from src.core.types import Violation
 from src.core.violation_utils import get_violation_line, has_typescript_noqa
-from src.linter_config.ignore import IgnoreDirectiveParser
+from src.linter_config.ignore import get_ignore_parser
 
 
 class TypeScriptIgnoreChecker:
@@ -28,7 +28,7 @@ class TypeScriptIgnoreChecker:
 
     def __init__(self) -> None:
         """Initialize with standard ignore parser."""
-        self._ignore_parser = IgnoreDirectiveParser()
+        self._ignore_parser = get_ignore_parser()
 
     def should_ignore(self, violation: Violation, context: BaseLintContext) -> bool:
         """Check if TypeScript violation should be ignored.

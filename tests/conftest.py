@@ -6,12 +6,13 @@ Scope: Project-wide pytest configuration and shared test utilities
 Overview: Defines shared pytest fixtures for creating mock project structures in tests.
     Provides make_project factory fixture for flexible project creation with configurable
     .git directories, .thailint.yaml configs, and file structures. Includes legacy fixtures
-    for backward compatibility. Serves as single source of truth for test project setup
-    across all test suites.
+    for backward compatibility and cache clearing for singleton patterns. Serves as single
+    source of truth for test project setup across all test suites.
 
-Dependencies: pytest, pathlib, collections.abc for fixture creation
+Dependencies: pytest, pathlib, collections.abc for fixture creation, linter_config.ignore for cache
 
-Exports: make_project factory fixture, mock_project_root fixture, mock_project_with_config fixture
+Exports: make_project factory fixture, mock_project_root fixture, mock_project_with_config fixture,
+    clear_ignore_parser_cache autouse fixture
 
 Interfaces: make_project(git, config_type, thailint_yaml, files) returns Path to project root
 
@@ -22,6 +23,24 @@ from collections.abc import Callable
 from pathlib import Path
 
 import pytest
+
+from src.linter_config.ignore import clear_ignore_parser_cache
+
+
+@pytest.fixture(autouse=True)
+def _clear_caches():
+    """Clear singleton caches before and after each test for isolation.
+
+    This fixture runs automatically for every test to ensure that:
+    1. Tests don't inherit cached state from previous tests
+    2. Tests don't leak their cached state to subsequent tests
+
+    The IgnoreDirectiveParser singleton is cleared to ensure each test
+    gets a fresh parser instance with proper project root configuration.
+    """
+    clear_ignore_parser_cache()
+    yield
+    clear_ignore_parser_cache()
 
 
 @pytest.fixture

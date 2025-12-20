@@ -28,7 +28,7 @@ from typing import Protocol
 from src.core.base import BaseLintContext, BaseLintRule
 from src.core.linter_utils import load_linter_config
 from src.core.types import Violation
-from src.linter_config.ignore import IgnoreDirectiveParser
+from src.linter_config.ignore import get_ignore_parser
 
 from .atemporal_detector import AtemporalDetector
 from .bash_parser import BashHeaderParser
@@ -73,7 +73,7 @@ class FileHeaderRule(BaseLintRule):  # thailint: ignore[srp]
     def __init__(self) -> None:
         """Initialize the file header rule."""
         self._violation_builder = ViolationBuilder(self.rule_id)
-        self._ignore_parser = IgnoreDirectiveParser()
+        self._ignore_parser = get_ignore_parser()
 
     @property
     def rule_id(self) -> str:

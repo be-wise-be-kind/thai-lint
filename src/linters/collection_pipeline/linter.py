@@ -27,7 +27,7 @@ from pathlib import Path
 
 from src.core.base import BaseLintContext, BaseLintRule
 from src.core.types import Severity, Violation
-from src.linter_config.ignore import IgnoreDirectiveParser
+from src.linter_config.ignore import get_ignore_parser
 
 from .config import CollectionPipelineConfig
 from .detector import PatternMatch, PipelinePatternDetector
@@ -38,7 +38,7 @@ class CollectionPipelineRule(BaseLintRule):  # thailint: ignore[srp,dry]
 
     def __init__(self) -> None:
         """Initialize the rule with ignore parser."""
-        self._ignore_parser = IgnoreDirectiveParser()
+        self._ignore_parser = get_ignore_parser()
 
     @property
     def rule_id(self) -> str:

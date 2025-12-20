@@ -36,6 +36,7 @@ from src.cli.utils import (
     format_option,
     get_project_root_from_context,
     handle_linting_error,
+    parallel_option,
     setup_base_orchestrator,
     validate_paths_exist,
 )
@@ -84,10 +85,10 @@ def _apply_nesting_to_languages(nesting_config: dict, max_depth: int) -> None:
 
 
 def _run_nesting_lint(
-    orchestrator: "Orchestrator", path_objs: list[Path], recursive: bool
+    orchestrator: "Orchestrator", path_objs: list[Path], recursive: bool, parallel: bool = False
 ) -> list[Violation]:
     """Execute nesting lint on files or directories."""
-    all_violations = execute_linting_on_paths(orchestrator, path_objs, recursive)
+    all_violations = execute_linting_on_paths(orchestrator, path_objs, recursive, parallel)
     return [v for v in all_violations if "nesting" in v.rule_id]
 
 
@@ -97,6 +98,7 @@ def _run_nesting_lint(
 @format_option
 @click.option("--max-depth", type=int, help="Override max nesting depth (default: 4)")
 @click.option("--recursive/--no-recursive", default=True, help="Scan directories recursively")
+@parallel_option
 @click.pass_context
 def nesting(  # pylint: disable=too-many-arguments,too-many-positional-arguments
     ctx: click.Context,
@@ -105,6 +107,7 @@ def nesting(  # pylint: disable=too-many-arguments,too-many-positional-arguments
     format: str,
     max_depth: int | None,
     recursive: bool,
+    parallel: bool,
 ) -> None:
     """Check for excessive nesting depth in code.
 
@@ -157,7 +160,7 @@ def nesting(  # pylint: disable=too-many-arguments,too-many-positional-arguments
 
     try:
         _execute_nesting_lint(
-            path_objs, config_file, format, max_depth, recursive, verbose, project_root
+            path_objs, config_file, format, max_depth, recursive, parallel, verbose, project_root
         )
     except Exception as e:
         handle_linting_error(e, verbose)
@@ -169,6 +172,7 @@ def _execute_nesting_lint(  # pylint: disable=too-many-arguments,too-many-positi
     format: str,
     max_depth: int | None,
     recursive: bool,
+    parallel: bool,
     verbose: bool,
     project_root: Path | None = None,
 ) -> NoReturn:
@@ -176,7 +180,7 @@ def _execute_nesting_lint(  # pylint: disable=too-many-arguments,too-many-positi
     validate_paths_exist(path_objs)
     orchestrator = _setup_nesting_orchestrator(path_objs, config_file, verbose, project_root)
     _apply_nesting_config_override(orchestrator, max_depth, verbose)
-    nesting_violations = _run_nesting_lint(orchestrator, path_objs, recursive)
+    nesting_violations = _run_nesting_lint(orchestrator, path_objs, recursive, parallel)
 
     if verbose:
         logger.info(f"Found {len(nesting_violations)} nesting violation(s)")

@@ -55,6 +55,17 @@ def format_option(func: F) -> F:
     )(func)
 
 
+def parallel_option(func: F) -> F:
+    """Add --parallel option to enable multi-core file processing."""
+    return click.option(
+        "--parallel",
+        "-p",
+        is_flag=True,
+        default=False,
+        help="Enable parallel file processing (uses multiple CPU cores)",
+    )(func)
+
+
 # =============================================================================
 # Project Root Determination
 # =============================================================================
@@ -327,7 +338,10 @@ def separate_files_and_dirs(path_objs: list[Path]) -> tuple[list[Path], list[Pat
 
 
 def execute_linting_on_paths(
-    orchestrator: "Orchestrator", path_objs: list[Path], recursive: bool
+    orchestrator: "Orchestrator",
+    path_objs: list[Path],
+    recursive: bool,
+    parallel: bool = False,
 ) -> list[Any]:
     """Execute linting on list of file/directory paths.
 
@@ -335,6 +349,7 @@ def execute_linting_on_paths(
         orchestrator: Orchestrator instance
         path_objs: List of Path objects (files or directories)
         recursive: Whether to scan directories recursively
+        parallel: Whether to use parallel processing for multiple files
 
     Returns:
         List of violations from all paths
@@ -345,10 +360,16 @@ def execute_linting_on_paths(
 
     # Lint files
     if files:
-        violations.extend(orchestrator.lint_files(files))
+        if parallel:
+            violations.extend(orchestrator.lint_files_parallel(files))
+        else:
+            violations.extend(orchestrator.lint_files(files))
 
     # Lint directories
     for dir_path in dirs:
-        violations.extend(orchestrator.lint_directory(dir_path, recursive=recursive))
+        if parallel:
+            violations.extend(orchestrator.lint_directory_parallel(dir_path, recursive=recursive))
+        else:
+            violations.extend(orchestrator.lint_directory(dir_path, recursive=recursive))
 
     return violations

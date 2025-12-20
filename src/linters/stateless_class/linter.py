@@ -26,7 +26,7 @@ from pathlib import Path
 
 from src.core.base import BaseLintContext, BaseLintRule
 from src.core.types import Severity, Violation
-from src.linter_config.ignore import IgnoreDirectiveParser
+from src.linter_config.ignore import get_ignore_parser
 
 from .config import StatelessClassConfig
 from .python_analyzer import ClassInfo, StatelessClassAnalyzer
@@ -37,7 +37,7 @@ class StatelessClassRule(BaseLintRule):  # thailint: ignore[srp,dry]
 
     def __init__(self) -> None:
         """Initialize the rule with analyzer and ignore parser."""
-        self._ignore_parser = IgnoreDirectiveParser()
+        self._ignore_parser = get_ignore_parser()
 
     @property
     def rule_id(self) -> str:
