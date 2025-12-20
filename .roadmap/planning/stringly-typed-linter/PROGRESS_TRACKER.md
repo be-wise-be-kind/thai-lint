@@ -20,6 +20,24 @@
 
 ---
 
+## IMPORTANT: Working Directory
+
+**ALL WORK MUST BE DONE IN THE WORKTREE DIRECTORY:**
+```
+/home/stevejackson/Projects/thai-lint-stringly-typed
+```
+
+This is a git worktree separate from the main thai-lint repo. Before starting any work:
+```bash
+cd /home/stevejackson/Projects/thai-lint-stringly-typed
+git fetch origin && git checkout main && git pull
+git checkout -b feature/stringly-typed-pr<N>-<description>
+```
+
+The main repo at `/home/stevejackson/Projects/thai-lint` is being used for other work and should NOT be modified for this feature.
+
+---
+
 ## Document Purpose
 This is the **PRIMARY HANDOFF DOCUMENT** for AI agents working on the stringly-typed linter feature. When starting work on any PR, the AI agent should:
 1. **Read this document FIRST** to understand current progress and feature requirements
