@@ -491,59 +491,118 @@ if __name__ == "__main__":
 
 ### Goal
 Address Agent4's concerns to improve B+ → A grade for performance.
+**Target**: <30s worst case, <10s ideal linting times across large codebases.
 
-### Scope
-1. Optional shared AST cache in orchestrator
-2. Streaming tokenization for large files in DRY linter
-3. Lazy command loading (if beneficial)
+### Profiling Results
+See `artifacts/PERFORMANCE_ANALYSIS.md` for detailed profiling data.
 
-### Files to Modify
+**Key Finding**: YAML config parsing repeated 9x per run consumes 44% of processing overhead.
 
-#### `src/orchestrator/orchestrator.py`
+| Repository | Files | Current | Target |
+|------------|-------|---------|--------|
+| durable-code-test | 4,105 TS | >60s | <10s |
+| tb-automation-py | 5,079 Py | 49s | <15s |
+| safeshell | 4,674 Py | 9s | <10s |
+| tubebuddy | 27K mixed | >120s | <30s |
+
+### Implementation Phases
+
+#### Phase 1: Quick Wins (1-2 days, 70% overhead reduction)
+
+**1.1 Singleton IgnoreDirectiveParser**
+
+**File**: `src/linter_config/ignore.py`
 ```python
-class Orchestrator:
-    def __init__(self, ..., cache_ast: bool = False):
-        self._ast_cache: dict[Path, ast.AST] = {} if cache_ast else None
+# Add at module level
+_CACHED_PARSER: IgnoreDirectiveParser | None = None
+_CACHED_PROJECT_ROOT: Path | None = None
 
-    def get_ast(self, path: Path, content: str) -> ast.AST:
-        """Get AST, using cache if enabled."""
-        if self._ast_cache is not None:
-            if path not in self._ast_cache:
-                self._ast_cache[path] = ast.parse(content)
-            return self._ast_cache[path]
-        return ast.parse(content)
+def get_ignore_parser(project_root: Path | None = None) -> IgnoreDirectiveParser:
+    """Get cached ignore parser instance for project root."""
+    global _CACHED_PARSER, _CACHED_PROJECT_ROOT
+    effective_root = project_root or Path.cwd()
+    if _CACHED_PARSER is None or _CACHED_PROJECT_ROOT != effective_root:
+        _CACHED_PARSER = IgnoreDirectiveParser(effective_root)
+        _CACHED_PROJECT_ROOT = effective_root
+    return _CACHED_PARSER
 
-    def clear_ast_cache(self):
-        """Clear AST cache to free memory."""
-        if self._ast_cache is not None:
-            self._ast_cache.clear()
+def clear_ignore_parser_cache() -> None:
+    """Clear the cached parser (for testing)."""
+    global _CACHED_PARSER, _CACHED_PROJECT_ROOT
+    _CACHED_PARSER = None
+    _CACHED_PROJECT_ROOT = None
 ```
 
-#### `src/linters/dry/python_analyzer.py`
+**Files to update** (replace `IgnoreDirectiveParser()` with `get_ignore_parser()`):
+- `src/linters/nesting/linter.py:40`
+- `src/linters/srp/linter.py:37`
+- `src/linters/magic_numbers/linter.py:48`
+- `src/linters/dry/linter.py:49`
+- All other linters with `self._ignore_parser = IgnoreDirectiveParser()`
+
+#### Phase 2: Core Caching (3-5 days, 50% per-file reduction)
+
+**2.1 AST Cache**
+
+**New File**: `src/core/ast_cache.py`
 ```python
-# Add streaming tokenization for files > 1MB
-LARGE_FILE_THRESHOLD = 1_000_000  # 1MB
+class ASTCache:
+    def __init__(self) -> None:
+        self._python_ast: dict[int, ast.Module | None] = {}
 
-def tokenize_file(content: str, file_size: int) -> list[Token]:
-    if file_size > LARGE_FILE_THRESHOLD:
-        return tokenize_streaming(content)
-    return tokenize_full(content)
-
-def tokenize_streaming(content: str) -> list[Token]:
-    """Memory-efficient tokenization for large files."""
-    ...
+    def get_python_ast(self, content: str) -> ast.Module | None:
+        content_hash = hash(content)
+        if content_hash not in self._python_ast:
+            try:
+                self._python_ast[content_hash] = ast.parse(content)
+            except SyntaxError:
+                self._python_ast[content_hash] = None
+        return self._python_ast[content_hash]
 ```
+
+**2.2 Line Split Caching**
+
+Add to `FileLintContext` in `src/orchestrator/core.py`:
+```python
+@property
+def file_lines(self) -> list[str]:
+    if self._lines is None and self._content is not None:
+        self._lines = self._content.split("\n")
+    return self._lines or []
+```
+
+#### Phase 3: Parallelism (5-7 days, linear scaling)
+
+**File**: `src/orchestrator/core.py`
+```python
+from concurrent.futures import ProcessPoolExecutor, as_completed
+
+def lint_files_parallel(self, file_paths: list[Path], max_workers: int = 8):
+    with ProcessPoolExecutor(max_workers=max_workers) as executor:
+        futures = {executor.submit(self._lint_file_isolated, fp): fp for fp in file_paths}
+        for future in as_completed(futures):
+            violations.extend(future.result())
+```
+
+#### Phase 4: Native Extensions (Optional, 2-4 weeks)
+
+Only if Phase 1-3 don't meet targets:
+- Rust rolling hash for DRY linter
+- Persistent file cache with mtime tracking
 
 ### Testing Requirements
-- Benchmark tests showing improvement
-- Memory usage tests for large files
+- Benchmark tests against 4 repositories
+- Verify singleton cache is cleared between test cases
+- Memory usage monitoring
 - Regression tests for existing functionality
 
 ### Success Criteria
-- [ ] Benchmark shows improvement for multi-linter runs
-- [ ] Large file handling (>1MB) doesn't cause memory issues
+- [ ] durable-code-test: <10s (from >60s timeout)
+- [ ] tb-automation-py: <15s (from 49s)
+- [ ] safeshell: <10s (from 9s - already close)
+- [ ] tubebuddy: <30s (from >120s timeout)
 - [ ] All existing tests pass
-- [ ] CLI startup time maintained
+- [ ] No memory leaks from caching
 
 ---
 
