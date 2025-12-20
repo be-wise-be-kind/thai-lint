@@ -44,6 +44,37 @@ This is the **PRIMARY HANDOFF DOCUMENT** for AI agents working on the Consultant
 - **Max file length:** 500 lines (enforced via Pylint `max-module-lines`)
 - **Scope:** 5 PRs to be implemented (PR1 skipped - using Pylint instead)
 - **File length enforcement:** Use Pylint's built-in C0302 `too-many-lines` rule
+- **Refactoring preference:** Extract focused modules rather than adding ignore comments
+
+## Learnings from PR1 Implementation
+
+### Initial Pylint Configuration Revealed Refactoring Needs
+When `max-module-lines=500` was configured in Pylint, the pre-push hook identified 3 files exceeding the limit:
+- `src/linters/magic_numbers/linter.py` (516 lines)
+- `src/linters/dry/python_analyzer.py` (684 lines)
+- `src/linters/dry/typescript_analyzer.py` (622 lines)
+
+### Refactoring Approach: Extract Focused Modules
+Rather than adding `# pylint: disable=too-many-lines` comments, we extracted focused modules:
+
+**New utility modules created:**
+- `src/core/violation_utils.py` - Shared violation line helpers (get_violation_line, has_python_noqa, has_typescript_noqa)
+- `src/linters/dry/single_statement_detector.py` - Python AST single-statement pattern detection
+- `src/linters/dry/typescript_statement_detector.py` - TypeScript tree-sitter single-statement detection
+- `src/linters/magic_numbers/typescript_ignore_checker.py` - TypeScript ignore directive checking
+
+**Files refactored:**
+| File | Before | After | Reduction |
+|------|--------|-------|-----------|
+| `magic_numbers/linter.py` | 516 | 461 | 11% |
+| `dry/python_analyzer.py` | 684 | 281 | 59% |
+| `dry/typescript_analyzer.py` | 622 | 274 | 56% |
+
+### Key Technical Insights
+1. **DRY linter uses different ignore format**: `# dry: ignore-block` and `# dry: ignore-next` (not `# thailint: ignore[dry]`)
+2. **SRP exceptions require both header comment AND inline ignore**: Add SRP Exception section in file header AND `# thailint: ignore[srp.violation]` on class definition
+3. **Shared patterns should be utility functions**: Common patterns like `get_violation_line()` were duplicated across 3+ linters - extracting to `src/core/violation_utils.py` eliminated DRY violations
+4. **Test files need updates when refactoring**: When methods move to new classes, update test imports and fixture names
 
 ---
 

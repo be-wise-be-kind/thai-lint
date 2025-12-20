@@ -29,6 +29,7 @@ from pathlib import Path
 from src.core.base import BaseLintContext, MultiLanguageLintRule
 from src.core.linter_utils import load_linter_config
 from src.core.types import Violation
+from src.core.violation_utils import get_violation_line, has_python_noqa, has_typescript_noqa
 from src.linter_config.ignore import IgnoreDirectiveParser
 
 from .config import PrintStatementConfig
@@ -255,27 +256,16 @@ class PrintStatementRule(MultiLanguageLintRule):  # thailint: ignore[srp]
         Returns:
             True if line has generic ignore directive
         """
-        line_text = self._get_violation_line(violation, context)
+        line_text = get_violation_line(violation, context)
         if line_text is None:
             return False
         return self._has_generic_ignore_directive(line_text)
-
-    def _get_violation_line(self, violation: Violation, context: BaseLintContext) -> str | None:
-        """Get the line text for a violation."""
-        if not context.file_content:
-            return None
-
-        lines = context.file_content.splitlines()
-        if violation.line <= 0 or violation.line > len(lines):
-            return None
-
-        return lines[violation.line - 1].lower()
 
     def _has_generic_ignore_directive(self, line_text: str) -> bool:
         """Check if line has generic ignore directive."""
         if self._has_generic_thailint_ignore(line_text):
             return True
-        return self._has_noqa_directive(line_text)
+        return has_python_noqa(line_text)
 
     def _has_generic_thailint_ignore(self, line_text: str) -> bool:
         """Check for generic thailint: ignore (no brackets)."""
@@ -283,10 +273,6 @@ class PrintStatementRule(MultiLanguageLintRule):  # thailint: ignore[srp]
             return False
         after_ignore = line_text.split("# thailint: ignore")[1].split("#")[0]
         return "[" not in after_ignore
-
-    def _has_noqa_directive(self, line_text: str) -> bool:
-        """Check for noqa-style comments."""
-        return "# noqa" in line_text
 
     def _check_typescript(
         self, context: BaseLintContext, config: PrintStatementConfig
@@ -400,7 +386,7 @@ class PrintStatementRule(MultiLanguageLintRule):  # thailint: ignore[srp]
         Returns:
             True if line has ignore directive
         """
-        line_text = self._get_violation_line(violation, context)
+        line_text = get_violation_line(violation, context)
         if line_text is None:
             return False
         return self._has_typescript_ignore_directive(line_text)
@@ -422,7 +408,4 @@ class PrintStatementRule(MultiLanguageLintRule):  # thailint: ignore[srp]
             if "[" not in after_ignore:
                 return True
 
-        if "// noqa" in line_text:
-            return True
-
-        return False
+        return has_typescript_noqa(line_text)
