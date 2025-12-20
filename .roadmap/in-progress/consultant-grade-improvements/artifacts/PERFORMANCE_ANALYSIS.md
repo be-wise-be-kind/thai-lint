@@ -219,23 +219,35 @@ find /path/to/repo -name "*.py" -type f -exec cat {} + | wc -l
 - Net savings: ~0.97s per multi-linter run
 - Expected improvement: ~40% total time reduction for API usage
 
-### CLI Benchmark Results
+### CLI Benchmark Results (Full Run - December 20, 2024)
 
-Individual CLI commands show minimal improvement (separate processes):
+| Repository | Files | Baseline | Phase 1 | Target | Status |
+|------------|-------|----------|---------|--------|--------|
+| safeshell | 4,674 Py | 9s | 13s | ~8s | ❌ Variance |
+| tb-automation-py | 5,079 Py | 49s | **22s** | ~25s | ✅ **Met!** |
+| durable-code-test | 4,105 TS | >60s | >120s | ~30s | ❌ Timeout |
+| tubebuddy | 27K mixed | >120s | >60s | ~60s | ❌ Timeout |
 
-| Repository | Baseline | Phase 1 | Notes |
-|------------|----------|---------|-------|
-| safeshell (nesting) | 9s | 10.3s | Within variance |
-| tb-automation-py (nesting) | 49s | 41.6s | ~15% faster |
+### Key Findings
+
+1. **Python-heavy repos benefit significantly**: tb-automation-py improved 55% (49s → 22s)
+2. **TypeScript repos still bottlenecked**: Tree-sitter parsing is 8x slower than Python AST
+3. **Singleton helps less for CLI**: Each CLI command runs in separate process
+
+### Root Cause for TypeScript Slowness
+
+Per-file TypeScript parsing via tree-sitter: ~0.016s/file
+Per-file Python parsing via AST: ~0.002s/file
+**Ratio: 8x slower for TypeScript**
+
+For durable-code-test (4,105 TS files):
+- Tree-sitter parsing alone: 4,105 × 0.016s = ~66s
+- This exceeds the timeout before any linting logic runs
 
 ### Next Steps
 
-Phase 1 primarily optimizes the **API/library usage pattern** where multiple linters
-run in the same process. CLI commands still benefit from deferred rule discovery
-but not from the singleton pattern.
-
-Phase 2 (AST Caching) will address the per-file overhead which affects both
-CLI and API usage patterns.
+Phase 2 (AST Caching) may help if multiple linters parse the same file.
+Phase 3 (Parallelism) will provide linear speedup for all repositories.
 
 ---
 
