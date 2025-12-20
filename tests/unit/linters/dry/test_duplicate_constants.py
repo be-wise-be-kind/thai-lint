@@ -427,27 +427,27 @@ class TestSingleLetterConstantFiltering:
 class TestConfiguration:
     """Tests for duplicate constants configuration."""
 
-    def test_disabled_by_default(self, tmp_path: Path):
-        """Duplicate constants detection should be disabled by default."""
+    def test_enabled_by_default(self, tmp_path: Path):
+        """Duplicate constants detection should be enabled by default."""
         file1 = tmp_path / "module1.py"
         file1.write_text("API_TIMEOUT = 30\n")
 
         file2 = tmp_path / "module2.py"
         file2.write_text("API_TIMEOUT = 60\n")
 
-        # Config without detect_duplicate_constants
+        # Config without detect_duplicate_constants - should still detect
         config = tmp_path / ".thailint.yaml"
         config.write_text("dry:\n  enabled: true\n  cache_enabled: false")
 
         linter = Linter(config_file=config, project_root=tmp_path)
         violations = linter.lint(tmp_path, rules=["dry.duplicate-code"])
 
-        # Feature is disabled by default, should not detect constants
+        # Feature is enabled by default, should detect constants
         constant_violations = [v for v in violations if "constant" in v.message.lower()]
-        assert len(constant_violations) == 0
+        assert len(constant_violations) >= 1
 
-    def test_enabled_via_config_flag(self, tmp_path: Path):
-        """Duplicate constants detection should work when enabled."""
+    def test_disabled_via_config_flag(self, tmp_path: Path):
+        """Duplicate constants detection can be disabled via config."""
         file1 = tmp_path / "module1.py"
         file1.write_text("API_TIMEOUT = 30\n")
 
@@ -456,14 +456,15 @@ class TestConfiguration:
 
         config = tmp_path / ".thailint.yaml"
         config.write_text(
-            "dry:\n  enabled: true\n  detect_duplicate_constants: true\n  cache_enabled: false"
+            "dry:\n  enabled: true\n  detect_duplicate_constants: false\n  cache_enabled: false"
         )
 
         linter = Linter(config_file=config, project_root=tmp_path)
         violations = linter.lint(tmp_path, rules=["dry.duplicate-code"])
 
-        assert len(violations) >= 1
-        assert any("API_TIMEOUT" in v.message for v in violations)
+        # Feature is explicitly disabled, should not detect constants
+        constant_violations = [v for v in violations if "constant" in v.message.lower()]
+        assert len(constant_violations) == 0
 
     def test_respects_min_occurrences_threshold(self, tmp_path: Path):
         """Should respect min_constant_occurrences threshold."""

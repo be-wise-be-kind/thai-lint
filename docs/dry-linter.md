@@ -170,11 +170,24 @@ dry:
   filters:
     keyword_argument_filter: true   # Filter function call kwargs (e.g., param=value, ...)
     import_group_filter: true       # Filter import statement groups
+    logger_call_filter: true        # Filter single-line logger calls
+    exception_reraise_filter: true  # Filter idiomatic exception re-raising
 ```
+
+**Available Filters:**
+
+| Filter | Description | Example Filtered |
+|--------|-------------|------------------|
+| `keyword_argument_filter` | Function calls with keyword args | `name=name, value=value,` |
+| `import_group_filter` | Import statement blocks | `import os\nimport sys` |
+| `logger_call_filter` | Single-line logger calls | `logger.info("Starting...")` |
+| `exception_reraise_filter` | Exception re-raising patterns | `except X:\n  raise Y from e` |
 
 **Why Filters?**
 - Function calls with keyword arguments often look similar but aren't true duplication
 - Import groups naturally repeat across files and aren't violations
+- Logger calls are contextually different despite structural similarity
+- Exception re-raising is idiomatic Python and shouldn't be flagged
 - Extensible: New filters can be added as needed
 
 ### Ignore Patterns
@@ -475,7 +488,7 @@ The DRY linter includes an optional sub-feature to detect when the same constant
 ```yaml
 dry:
   enabled: true
-  detect_duplicate_constants: true  # Opt-in feature
+  detect_duplicate_constants: true  # Enabled by default
   min_constant_occurrences: 2       # Report when constant appears in 2+ files
 ```
 
@@ -598,7 +611,7 @@ Consider consolidating to a shared constants module.
 
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
-| `detect_duplicate_constants` | boolean | `false` | Enable duplicate constant detection |
+| `detect_duplicate_constants` | boolean | `true` | Enable duplicate constant detection |
 | `min_constant_occurrences` | integer | `2` | Minimum files to report (2 = pairs) |
 | `python_min_constant_occurrences` | integer | `null` | Python-specific override |
 | `typescript_min_constant_occurrences` | integer | `null` | TypeScript-specific override |
@@ -1036,6 +1049,52 @@ def setup_test_database():  # thailint: ignore dry - Test setup boilerplate
     pass
 ```
 
+### 8. Handle Framework Adapter Patterns
+
+Some code duplication is structural and intentional, particularly in "framework adapter" patterns like CLI command modules. When each command implements the same interface contract:
+
+```python
+# CLI commands that implement the same interface contract
+@cli.command("nesting")
+@click.argument("paths", nargs=-1, type=click.Path())
+@click.option("--config", "-c", "config_file", type=click.Path())
+@format_option
+@click.pass_context
+def nesting_command(ctx, paths, config_file, format):
+    """Execute nesting linter."""
+    _execute_lint(paths, config_file, format, "nesting")
+
+@cli.command("srp")
+@click.argument("paths", nargs=-1, type=click.Path())
+@click.option("--config", "-c", "config_file", type=click.Path())
+@format_option
+@click.pass_context
+def srp_command(ctx, paths, config_file, format):
+    """Execute SRP linter."""
+    _execute_lint(paths, config_file, format, "srp")
+```
+
+This duplication is **intentional** because:
+- Each command adapts a common framework to a specific linter
+- The variation is minimal (command name, rule ID filter)
+- Abstracting further would reduce code clarity
+
+**Solution**: Add CLI modules to the ignore list rather than expecting automatic filtering:
+
+```yaml
+dry:
+  ignore:
+    - "src/cli.py"          # CLI command handlers
+    - "src/commands/"       # Or wherever CLI modules live
+    - "**/cli/**"           # Pattern for CLI directories
+```
+
+Framework adapter patterns include:
+- CLI command handlers (Click, Typer, argparse)
+- API endpoint handlers (FastAPI, Flask, Express)
+- Event handlers with common signatures
+- Plugin implementations with shared interfaces
+
 ## API Reference
 
 ### Configuration Schema
@@ -1053,8 +1112,8 @@ class DRYConfig:
     typescript_min_occurrences: int | None = None
     javascript_min_occurrences: int | None = None
 
-    # Duplicate constants detection (opt-in)
-    detect_duplicate_constants: bool = False
+    # Duplicate constants detection
+    detect_duplicate_constants: bool = True
     min_constant_occurrences: int = 2
     python_min_constant_occurrences: int | None = None
     typescript_min_constant_occurrences: int | None = None
@@ -1069,6 +1128,8 @@ class DRYConfig:
     filters: dict[str, bool] = field(default_factory=lambda: {
         "keyword_argument_filter": True,
         "import_group_filter": True,
+        "logger_call_filter": True,
+        "exception_reraise_filter": True,
     })
 ```
 

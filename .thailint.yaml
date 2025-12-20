@@ -181,8 +181,10 @@ dry:
   # Block filters (extensible false positive filtering)
   # These filters automatically exclude common non-duplication patterns
   filters:
-    keyword_argument_filter: true  # Filter function call keyword arguments (e.g., param=value, ...)
+    keyword_argument_filter: true   # Filter function call keyword arguments (e.g., param=value, ...)
     import_group_filter: true       # Filter import statement groups
+    logger_call_filter: true        # Filter single-line logger calls (logger.debug, logging.info, etc.)
+    exception_reraise_filter: true  # Filter idiomatic exception re-raising (except X: raise Y from e)
 
 # Magic numbers linter configuration
 magic-numbers:

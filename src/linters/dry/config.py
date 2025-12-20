@@ -23,6 +23,7 @@ from typing import Any
 # Default configuration constants
 DEFAULT_MIN_DUPLICATE_LINES = 3
 DEFAULT_MIN_DUPLICATE_TOKENS = 30
+DEFAULT_DETECT_DUPLICATE_CONSTANTS = True
 
 
 @dataclass
@@ -60,8 +61,8 @@ class DRYConfig:  # pylint: disable=too-many-instance-attributes
         }
     )
 
-    # Duplicate constants detection (opt-in feature)
-    detect_duplicate_constants: bool = False  # Must be explicitly enabled
+    # Duplicate constants detection
+    detect_duplicate_constants: bool = DEFAULT_DETECT_DUPLICATE_CONSTANTS
     min_constant_occurrences: int = 2  # Minimum files with same constant to report
 
     # Language-specific overrides for constant detection
@@ -161,7 +162,9 @@ class DRYConfig:  # pylint: disable=too-many-instance-attributes
             storage_mode=config.get("storage_mode", "memory"),
             ignore_patterns=config.get("ignore", []),
             filters=filters,
-            detect_duplicate_constants=config.get("detect_duplicate_constants", False),
+            detect_duplicate_constants=config.get(
+                "detect_duplicate_constants", DEFAULT_DETECT_DUPLICATE_CONSTANTS
+            ),
             min_constant_occurrences=config.get("min_constant_occurrences", 2),
             python_min_constant_occurrences=python_config.get("min_constant_occurrences"),
             typescript_min_constant_occurrences=typescript_config.get("min_constant_occurrences"),
