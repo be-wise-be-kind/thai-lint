@@ -34,6 +34,7 @@ Implementation: Directory glob pattern matching for traversal (** for recursive,
 from __future__ import annotations
 
 import multiprocessing
+import os
 from concurrent.futures import Future, ProcessPoolExecutor, as_completed
 from pathlib import Path
 
@@ -107,6 +108,39 @@ def _is_hardcoded_excluded(file_path: Path) -> bool:
             return True
 
     return False
+
+
+def _should_include_dir(dirname: str) -> bool:
+    """Check if directory should be traversed (not excluded)."""
+    return dirname not in _HARDCODED_EXCLUDE_DIRS and not dirname.endswith(".egg-info")
+
+
+def _collect_files_from_walk(root: str, filenames: list[str]) -> list[Path]:
+    """Collect non-excluded files from a single directory."""
+    root_path = Path(root)
+    return [root_path / f for f in filenames if Path(f).suffix not in _HARDCODED_EXCLUDE_EXTENSIONS]
+
+
+def _collect_files_fast(dir_path: Path, recursive: bool = True) -> list[Path]:
+    """Collect files, skipping excluded directories entirely.
+
+    Uses os.walk() instead of glob to avoid traversing into excluded
+    directories like .venv, node_modules, __pycache__, etc.
+
+    Args:
+        dir_path: Directory to collect files from.
+        recursive: Whether to traverse subdirectories.
+
+    Returns:
+        List of file paths, excluding hardcoded exclusions.
+    """
+    files: list[Path] = []
+    for root, dirs, filenames in os.walk(dir_path):
+        dirs[:] = [d for d in dirs if _should_include_dir(d)]
+        files.extend(_collect_files_from_walk(root, filenames))
+        if not recursive:
+            break
+    return files
 
 
 def _lint_file_worker(args: tuple[Path, Path, dict]) -> list[dict]:
@@ -315,11 +349,11 @@ class Orchestrator:  # thailint: ignore[srp]
             List of all violations found across all files.
         """
         violations = []
-        pattern = "**/*" if recursive else "*"
+        # Use fast file collection that skips excluded directories entirely
+        file_paths = _collect_files_fast(dir_path, recursive)
 
-        for file_path in dir_path.glob(pattern):
-            if file_path.is_file():
-                violations.extend(self.lint_file(file_path))
+        for file_path in file_paths:
+            violations.extend(self.lint_file(file_path))
 
         # Call finalize() on all rules after processing all files
         for rule in self.registry.list_all():
@@ -400,8 +434,8 @@ class Orchestrator:  # thailint: ignore[srp]
         Returns:
             List of all violations found across all files.
         """
-        pattern = "**/*" if recursive else "*"
-        file_paths = [fp for fp in dir_path.glob(pattern) if fp.is_file()]
+        # Use fast file collection that skips excluded directories entirely
+        file_paths = _collect_files_fast(dir_path, recursive)
         return self.lint_files_parallel(file_paths, max_workers=max_workers)
 
     def _ensure_rules_discovered(self) -> None:

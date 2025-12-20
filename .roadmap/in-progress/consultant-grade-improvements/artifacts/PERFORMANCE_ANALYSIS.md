@@ -361,8 +361,88 @@ Phase 4 optimizations achieved an additional **19-30%** improvement on top of Ph
 
 ---
 
+## Phase 5 Results: Fast Directory Traversal
+
+**Implementation Date**: December 20, 2024
+
+### Problem Identified
+
+Glob-based file collection (`**/*`) was traversing ALL directories including `.venv`, `node_modules`, etc., even though files were filtered later. For TubeBuddy:
+- Glob found **98,126 files in 1.98s**
+- After filtering: only **1,666 files** needed to be linted
+
+### Changes Made
+
+1. Added `_collect_files_fast()` function using `os.walk()` instead of glob
+2. Filters excluded directories in-place to prevent traversal into:
+   - `.venv`, `venv`, `node_modules`, `__pycache__`
+   - `.git`, `.svn`, `.hg`
+   - `dist`, `build`, `.tox`, `.eggs`, `*.egg-info`
+   - `.pytest_cache`, `.mypy_cache`, `.ruff_cache`, `htmlcov`
+3. Updated `lint_directory()` and `lint_directory_parallel()` to use fast collection
+
+### Measured Improvements
+
+| Metric | Before | After | Improvement |
+|--------|--------|-------|-------------|
+| TubeBuddy file collection | 1.98s (98K files) | 0.09s (1.7K files) | **22x faster** |
+| TubeBuddy total lint time | >120s TIMEOUT | **7.58s** | Completes! |
+
+### Benchmark Results (All Repositories)
+
+| Repository | Baseline | Phase 4 | Phase 5 | vs Baseline |
+|------------|----------|---------|---------|-------------|
+| safeshell | 9s | 3.2s | **3.2s** | 65% faster |
+| tb-automation-py | 49s | 10.5s | **10.5s** | 79% faster |
+| durable-code-test | >60s | 41.4s | **41.4s** | 31% faster |
+| tubebuddy | >120s TIMEOUT | >120s TIMEOUT | **7.58s** | ✅ **Completes!** |
+
+### Key Findings
+
+1. **TubeBuddy success**: Previously always timed out, now completes in 7.58s
+2. **File collection optimization**: 22x faster for large repos with many artifacts
+3. **No impact on already-fast repos**: safeshell/tb-automation unchanged (already excluded)
+
+### Important Usage Note
+
+When linting external directories, use `--project-root` to ensure correct config loading:
+
+```bash
+# Correct: loads tubebuddy's config
+thai-lint nesting --parallel --project-root /path/to/tubebuddy /path/to/tubebuddy
+
+# May load wrong config if run from different directory
+thai-lint nesting --parallel /path/to/tubebuddy
+```
+
+---
+
+## Final Performance Summary
+
+| Repository | Files | Baseline | Final | Improvement | Status |
+|------------|-------|----------|-------|-------------|--------|
+| safeshell | 4,674 Py | 9s | **3.2s** | 65% faster | ✅ Under 5s target |
+| tb-automation-py | 5,079 Py | 49s | **10.5s** | 79% faster | ✅ Under 15s target |
+| durable-code-test | 4,105 TS | >60s | **41.4s** | 31% faster | Improved |
+| tubebuddy | 1,196 src | >120s | **7.58s** | N/A | ✅ Now works! |
+
+### Optimization Techniques Applied
+
+1. **Singleton IgnoreDirectiveParser** - 9x fewer YAML parses
+2. **Parallel ProcessPoolExecutor** - Linear scaling with CPU cores
+3. **Regex pattern caching** - Avoid recompilation per file
+4. **Walrus operator** - Eliminate double .strip() calls
+5. **Frozenset lookups** - O(1) instead of O(n)
+6. **Hardcoded exclusions** - Fast-path file skipping
+7. **is_ignored() caching** - Avoid repeated pattern matching
+8. **Analyzer singletons** - Reuse across files
+9. **os.walk() traversal** - Skip excluded directories entirely
+
+---
+
 *Analysis performed: December 2024*
 *Phase 1 results: December 20, 2024*
 *Phase 3 results: December 20, 2024*
 *Phase 4 results: December 20, 2024*
+*Phase 5 results: December 20, 2024*
 *Profiler: cProfile with cumulative time sorting*
