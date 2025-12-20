@@ -30,7 +30,7 @@ from src.core.base import BaseLintContext, MultiLanguageLintRule
 from src.core.linter_utils import load_linter_config
 from src.core.types import Violation
 from src.core.violation_utils import get_violation_line, has_python_noqa, has_typescript_noqa
-from src.linter_config.ignore import IgnoreDirectiveParser
+from src.linter_config.ignore import get_ignore_parser
 
 from .config import PrintStatementConfig
 from .python_analyzer import PythonPrintStatementAnalyzer
@@ -43,7 +43,7 @@ class PrintStatementRule(MultiLanguageLintRule):  # thailint: ignore[srp]
 
     def __init__(self) -> None:
         """Initialize the print statements rule."""
-        self._ignore_parser = IgnoreDirectiveParser()
+        self._ignore_parser = get_ignore_parser()
         self._violation_builder = ViolationBuilder(self.rule_id)
 
     @property

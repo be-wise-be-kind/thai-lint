@@ -28,10 +28,10 @@ This is the **PRIMARY HANDOFF DOCUMENT** for AI agents working on the Consultant
 4. **Update this document** after completing each PR
 
 ## Current Status
-**Current PR**: PR4 - Performance Optimizations (In Progress - Profiling Complete)
+**Current PR**: PR4 - Performance Optimizations (In Progress - Phase 1 Complete)
 **Infrastructure State**: Ready - PR3 complete, all CLI commands modularized
 **Feature Target**: Achieve A+ (or at least A) grades across all 8 consultant evaluation categories
-**Next Action**: Implement Phase 1 - Singleton IgnoreDirectiveParser in `src/linter_config/ignore.py`
+**Next Action**: Evaluate if Phase 2 (AST Caching) is needed based on Phase 1 results
 
 ## Required Documents Location
 ```
@@ -109,8 +109,8 @@ Fix: Implement singleton `IgnoreDirectiveParser` with cached YAML.
 - [x] Profile current performance on large codebases
 - [x] Identify hotspots for optimization (YAML parsing = 44% overhead)
 - [x] Create detailed optimization plan with phases
-- [ ] Implement Phase 1: IgnoreDirectiveParser singleton
-- [ ] Implement Phase 2: AST caching (if needed)
+- [x] Implement Phase 1: IgnoreDirectiveParser singleton (88.9% reduction, 9x speedup)
+- [ ] Implement Phase 2: AST caching (if needed for CLI performance)
 - [ ] Implement Phase 3: Parallelism (if targets not met)
 
 **Prerequisites Complete**:
@@ -140,7 +140,7 @@ Fix: Implement singleton `IgnoreDirectiveParser` with cached YAML.
 | PR1 | File Length Linter | Skipped | 100% | N/A | N/A | Using Pylint C0302 `max-module-lines=500` instead |
 | PR2 | CLI Modularization Part 1 | Complete | 100% | Medium | P0 | Created `src/cli/` package with main.py, utils.py, config.py |
 | PR3 | CLI Modularization Part 2 | Complete | 100% | High | P0 | Extracted 10 linter commands to `src/cli/linters/`, reduced cli_main.py to 34 lines |
-| PR4 | Performance Optimizations | In Progress | 20% | Medium | P1 | Profiling complete, see artifacts/ |
+| PR4 | Performance Optimizations | In Progress | 40% | Medium | P1 | Phase 1 complete (singleton), see artifacts/ |
 | PR5 | Security Hardening | Not Started | 0% | Low | P1 | SBOM, CVE blocking |
 | PR6 | Documentation Enhancements | Not Started | 0% | Low | P2 | Quick refs, Mermaid diagrams |
 

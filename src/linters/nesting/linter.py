@@ -24,7 +24,7 @@ from typing import Any
 from src.core.base import BaseLintContext, MultiLanguageLintRule
 from src.core.linter_utils import load_linter_config
 from src.core.types import Violation
-from src.linter_config.ignore import IgnoreDirectiveParser
+from src.linter_config.ignore import get_ignore_parser
 
 from .config import NestingConfig
 from .python_analyzer import PythonNestingAnalyzer
@@ -37,7 +37,7 @@ class NestingDepthRule(MultiLanguageLintRule):
 
     def __init__(self) -> None:
         """Initialize the nesting depth rule."""
-        self._ignore_parser = IgnoreDirectiveParser()
+        self._ignore_parser = get_ignore_parser()
         self._violation_builder = NestingViolationBuilder(self.rule_id)
 
     @property

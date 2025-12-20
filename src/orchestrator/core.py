@@ -33,7 +33,7 @@ from pathlib import Path
 from src.core.base import BaseLintContext, BaseLintRule
 from src.core.registry import RuleRegistry
 from src.core.types import Violation
-from src.linter_config.ignore import IgnoreDirectiveParser
+from src.linter_config.ignore import get_ignore_parser
 from src.linter_config.loader import LinterConfigLoader
 
 from .language_detector import detect_language
@@ -99,7 +99,7 @@ class Orchestrator:
         self.project_root = project_root or Path.cwd()
         self.registry = RuleRegistry()
         self.config_loader = LinterConfigLoader()
-        self.ignore_parser = IgnoreDirectiveParser(self.project_root)
+        self.ignore_parser = get_ignore_parser(self.project_root)
 
         # Performance optimization: Defer rule discovery until first file is linted
         # This eliminates ~0.077s overhead for commands that don't need rules (--help, config, etc.)

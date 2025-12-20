@@ -473,3 +473,24 @@ class IgnoreDirectiveParser:
 
 # Alias for backwards compatibility
 IgnoreParser = IgnoreDirectiveParser
+
+# Singleton pattern for performance: YAML parsing repeated 9x consumed 44% overhead
+_CACHED_PARSER: IgnoreDirectiveParser | None = None
+_CACHED_PROJECT_ROOT: Path | None = None
+
+
+def get_ignore_parser(project_root: Path | None = None) -> IgnoreDirectiveParser:
+    """Get cached ignore parser instance (singleton pattern for performance)."""
+    global _CACHED_PARSER, _CACHED_PROJECT_ROOT  # pylint: disable=global-statement
+    effective_root = project_root or Path.cwd()
+    if _CACHED_PARSER is None or _CACHED_PROJECT_ROOT != effective_root:
+        _CACHED_PARSER = IgnoreDirectiveParser(effective_root)
+        _CACHED_PROJECT_ROOT = effective_root
+    return _CACHED_PARSER
+
+
+def clear_ignore_parser_cache() -> None:
+    """Clear cached parser for test isolation or project root changes."""
+    global _CACHED_PARSER, _CACHED_PROJECT_ROOT  # pylint: disable=global-statement
+    _CACHED_PARSER = None
+    _CACHED_PROJECT_ROOT = None

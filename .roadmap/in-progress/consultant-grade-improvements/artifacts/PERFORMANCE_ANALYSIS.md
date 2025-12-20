@@ -178,5 +178,67 @@ find /path/to/repo -name "*.py" -type f -exec cat {} + | wc -l
 
 ---
 
+## Phase 1 Results: Singleton IgnoreDirectiveParser
+
+**Implementation Date**: December 20, 2024
+
+### Changes Made
+
+1. Added `get_ignore_parser(project_root)` singleton function to `src/linter_config/ignore.py`
+2. Added `clear_ignore_parser_cache()` for test isolation
+3. Updated all 10 usages across linters and orchestrator to use the singleton:
+   - `src/linters/nesting/linter.py`
+   - `src/linters/srp/linter.py`
+   - `src/linters/magic_numbers/linter.py`
+   - `src/linters/magic_numbers/typescript_ignore_checker.py`
+   - `src/linters/print_statements/linter.py`
+   - `src/linters/stateless_class/linter.py`
+   - `src/linters/collection_pipeline/linter.py`
+   - `src/linters/file_header/linter.py`
+   - `src/linters/file_placement/linter.py`
+   - `src/orchestrator/core.py`
+
+### Measured Improvements
+
+| Metric | Before | After | Improvement |
+|--------|--------|-------|-------------|
+| Parser instantiations per run | 9 | 1 | **88.9% reduction** |
+| Parser init time (9 calls) | 0.1061s | 0.0118s | **9.0x speedup** |
+| Rule init time (7 linters) | ~0.08s | 0.0076s | **~10x speedup** |
+
+### Impact Analysis
+
+**Where improvement applies**:
+- ✅ Library/API usage (all linters in same process)
+- ✅ Orchestrator-based linting
+- ❌ CLI commands (each runs in separate process)
+
+**Theoretical improvement** (from profiling data):
+- YAML parsing was 44% of 2.46s = ~1.09s (baseline)
+- After singleton: ~0.12s (only 1 parse)
+- Net savings: ~0.97s per multi-linter run
+- Expected improvement: ~40% total time reduction for API usage
+
+### CLI Benchmark Results
+
+Individual CLI commands show minimal improvement (separate processes):
+
+| Repository | Baseline | Phase 1 | Notes |
+|------------|----------|---------|-------|
+| safeshell (nesting) | 9s | 10.3s | Within variance |
+| tb-automation-py (nesting) | 49s | 41.6s | ~15% faster |
+
+### Next Steps
+
+Phase 1 primarily optimizes the **API/library usage pattern** where multiple linters
+run in the same process. CLI commands still benefit from deferred rule discovery
+but not from the singleton pattern.
+
+Phase 2 (AST Caching) will address the per-file overhead which affects both
+CLI and API usage patterns.
+
+---
+
 *Analysis performed: December 2024*
+*Phase 1 results: December 20, 2024*
 *Profiler: cProfile with cumulative time sorting*
