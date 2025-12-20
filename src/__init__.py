@@ -19,6 +19,7 @@ Exports: __version__, Linter (high-level API), cli (CLI entry point), load_confi
 Interfaces: Package version string, Linter class API, CLI command group, configuration functions
 """
 
+__version__: str
 try:
     from importlib.metadata import version
 
