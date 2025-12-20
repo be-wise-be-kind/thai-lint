@@ -60,22 +60,33 @@ class DRYConfig:  # pylint: disable=too-many-instance-attributes
         }
     )
 
+    # Duplicate constants detection (opt-in feature)
+    detect_duplicate_constants: bool = False  # Must be explicitly enabled
+    min_constant_occurrences: int = 2  # Minimum files with same constant to report
+
+    # Language-specific overrides for constant detection
+    python_min_constant_occurrences: int | None = None
+    typescript_min_constant_occurrences: int | None = None
+
     def __post_init__(self) -> None:
         """Validate configuration values."""
-        if self.min_duplicate_lines <= 0:
-            raise ValueError(
-                f"min_duplicate_lines must be positive, got {self.min_duplicate_lines}"
-            )
-        if self.min_duplicate_tokens <= 0:
-            raise ValueError(
-                f"min_duplicate_tokens must be positive, got {self.min_duplicate_tokens}"
-            )
-        if self.min_occurrences <= 0:
-            raise ValueError(f"min_occurrences must be positive, got {self.min_occurrences}")
+        self._validate_positive_fields()
         if self.storage_mode not in ("memory", "tempfile"):
             raise ValueError(
                 f"storage_mode must be 'memory' or 'tempfile', got '{self.storage_mode}'"
             )
+
+    def _validate_positive_fields(self) -> None:
+        """Validate that required fields are positive."""
+        positive_fields = [
+            ("min_duplicate_lines", self.min_duplicate_lines),
+            ("min_duplicate_tokens", self.min_duplicate_tokens),
+            ("min_occurrences", self.min_occurrences),
+            ("min_constant_occurrences", self.min_constant_occurrences),
+        ]
+        for name, value in positive_fields:
+            if value <= 0:
+                raise ValueError(f"{name} must be positive, got {value}")
 
     def get_min_occurrences_for_language(self, language: str) -> int:
         """Get minimum occurrences threshold for a specific language.
@@ -96,6 +107,25 @@ class DRYConfig:  # pylint: disable=too-many-instance-attributes
 
         override = language_overrides.get(language_lower)
         return override if override is not None else self.min_occurrences
+
+    def get_min_constant_occurrences_for_language(self, language: str) -> int:
+        """Get minimum constant occurrences threshold for a specific language.
+
+        Args:
+            language: Language identifier (e.g., "python", "typescript")
+
+        Returns:
+            Minimum constant occurrences threshold for the language, or global default
+        """
+        language_lower = language.lower()
+
+        language_overrides = {
+            "python": self.python_min_constant_occurrences,
+            "typescript": self.typescript_min_constant_occurrences,
+        }
+
+        override = language_overrides.get(language_lower)
+        return override if override is not None else self.min_constant_occurrences
 
     @classmethod
     def from_dict(cls, config: dict[str, Any]) -> "DRYConfig":
@@ -131,4 +161,8 @@ class DRYConfig:  # pylint: disable=too-many-instance-attributes
             storage_mode=config.get("storage_mode", "memory"),
             ignore_patterns=config.get("ignore", []),
             filters=filters,
+            detect_duplicate_constants=config.get("detect_duplicate_constants", False),
+            min_constant_occurrences=config.get("min_constant_occurrences", 2),
+            python_min_constant_occurrences=python_config.get("min_constant_occurrences"),
+            typescript_min_constant_occurrences=typescript_config.get("min_constant_occurrences"),
         )

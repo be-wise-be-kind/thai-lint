@@ -1,31 +1,39 @@
 """
 Purpose: SQLite storage manager for DRY linter duplicate detection
 
-Scope: Code block storage and duplicate detection queries
+Scope: Code block storage, constant storage, and duplicate detection queries
 
-Overview: Implements in-memory or temporary-file SQLite storage for duplicate code detection.
-    Stores code blocks with hash values, file locations, and metadata during a single linter run.
+Overview: Implements in-memory or temporary-file SQLite storage for duplicate code detection
+    and duplicate constants detection. Stores code blocks with hash values and constants with
+    name/value pairs, enabling cross-file duplicate detection during a single linter run.
     Supports both :memory: mode (fast, RAM-only) and tempfile mode (disk-backed for large projects).
     No persistence between runs - storage is cleared when linter completes. Includes indexes for
-    fast hash lookups enabling cross-file duplicate detection with minimal overhead.
+    fast hash lookups and constant name lookups enabling efficient cross-file detection.
 
 Dependencies: Python sqlite3 module (stdlib), tempfile module (stdlib), pathlib.Path, dataclasses
 
 Exports: CodeBlock dataclass, DRYCache class
 
 Interfaces: DRYCache.__init__(storage_mode), add_blocks(file_path, blocks),
-    find_duplicates_by_hash(hash_value), get_duplicate_hashes(), close()
+    find_duplicates_by_hash(hash_value), duplicate_hashes, add_constants(file_path, constants),
+    all_constants, get_duplicate_constant_names(), close()
 
-Implementation: SQLite with two tables (files, code_blocks), indexed on hash_value for performance,
+Implementation: SQLite with three tables (files, code_blocks, constants), indexed for performance,
     storage_mode determines :memory: vs tempfile location, ACID transactions for reliability
 """
+
+from __future__ import annotations
 
 import sqlite3
 import tempfile
 from dataclasses import dataclass
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 from .cache_query import CacheQueryService
+
+if TYPE_CHECKING:
+    from .constant import ConstantInfo
 
 
 @dataclass
@@ -92,6 +100,19 @@ class DRYCache:
 
         self.db.execute("CREATE INDEX IF NOT EXISTS idx_hash_value ON code_blocks(hash_value)")
         self.db.execute("CREATE INDEX IF NOT EXISTS idx_file_path ON code_blocks(file_path)")
+
+        # Constants table for duplicate constant detection
+        self.db.execute(
+            """CREATE TABLE IF NOT EXISTS constants (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                file_path TEXT NOT NULL,
+                name TEXT NOT NULL,
+                line_number INTEGER NOT NULL,
+                value TEXT,
+                FOREIGN KEY (file_path) REFERENCES files(file_path) ON DELETE CASCADE
+            )"""
+        )
+        self.db.execute("CREATE INDEX IF NOT EXISTS idx_constant_name ON constants(name)")
 
         self.db.commit()
 
@@ -165,6 +186,73 @@ class DRYCache:
             List of hash values with 2 or more occurrences
         """
         return self._query_service.get_duplicate_hashes(self.db)
+
+    def add_constants(
+        self,
+        file_path: Path,
+        constants: list[ConstantInfo],
+    ) -> None:
+        """Add constants to storage.
+
+        Args:
+            file_path: Path to source file
+            constants: List of ConstantInfo instances to store
+        """
+        if not constants:
+            return
+
+        for const in constants:
+            self.db.execute(
+                """INSERT INTO constants
+                   (file_path, name, line_number, value)
+                   VALUES (?, ?, ?, ?)""",
+                (
+                    str(file_path),
+                    const.name,
+                    const.line_number,
+                    const.value,
+                ),
+            )
+
+        self.db.commit()
+
+    @property
+    def all_constants(self) -> list[tuple[str, str, int, str | None]]:
+        """All constants from storage.
+
+        Returns:
+            List of tuples: (file_path, name, line_number, value)
+        """
+        cursor = self.db.execute("SELECT file_path, name, line_number, value FROM constants")
+        return cursor.fetchall()
+
+    def get_duplicate_constant_names(self) -> list[str]:
+        """Get constant names that appear in 2+ files.
+
+        Returns:
+            List of constant names appearing in multiple files
+        """
+        cursor = self.db.execute(
+            """SELECT name FROM constants
+               GROUP BY name
+               HAVING COUNT(DISTINCT file_path) >= 2"""
+        )
+        return [row[0] for row in cursor.fetchall()]
+
+    def get_constants_by_name(self, name: str) -> list[tuple[str, int, str | None]]:
+        """Get all locations of a constant by name.
+
+        Args:
+            name: The constant name to search for
+
+        Returns:
+            List of tuples: (file_path, line_number, value)
+        """
+        cursor = self.db.execute(
+            "SELECT file_path, line_number, value FROM constants WHERE name = ?",
+            (name,),
+        )
+        return cursor.fetchall()
 
     def close(self) -> None:
         """Close database connection and cleanup tempfile if used."""

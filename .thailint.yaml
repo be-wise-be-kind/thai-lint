@@ -24,6 +24,7 @@ ignore:
   - "*.egg-info/"
   - "dist/"
   - "build/"
+  - "node_modules/"
 
 # File placement linter configuration
 file-placement:
@@ -137,6 +138,11 @@ dry:
   min_duplicate_lines: 4  # Minimum lines for duplicate detection
   min_duplicate_tokens: 30  # Minimum tokens for duplicate detection
   min_occurrences: 2  # Global default: report duplicates appearing 2+ times
+
+  # Duplicate constants detection (opt-in feature)
+  # Detects when the same constant NAME appears in multiple files
+  detect_duplicate_constants: true
+  min_constant_occurrences: 2  # Report when constant appears in 2+ files
 
   # Language-specific minimum occurrence thresholds
   # These override the global min_occurrences for specific languages
