@@ -81,3 +81,16 @@ class Violation:
             "severity": self.severity.value,
             "suggestion": self.suggestion,
         }
+
+    @classmethod
+    def from_dict(cls, data: dict) -> "Violation":
+        """Reconstruct Violation from dictionary (for parallel processing)."""
+        return cls(
+            rule_id=data["rule_id"],
+            file_path=data["file_path"],
+            line=data["line"],
+            column=data["column"],
+            message=data["message"],
+            severity=Severity(data["severity"]),
+            suggestion=data.get("suggestion"),
+        )
