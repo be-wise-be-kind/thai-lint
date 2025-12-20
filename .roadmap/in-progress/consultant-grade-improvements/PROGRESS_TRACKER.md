@@ -28,9 +28,10 @@ This is the **PRIMARY HANDOFF DOCUMENT** for AI agents working on the Consultant
 4. **Update this document** after completing each PR
 
 ## Current Status
-**Current PR**: PR4 - Performance Optimizations (Not Started)
+**Current PR**: PR4 - Performance Optimizations (In Progress - Profiling Complete)
 **Infrastructure State**: Ready - PR3 complete, all CLI commands modularized
 **Feature Target**: Achieve A+ (or at least A) grades across all 8 consultant evaluation categories
+**Next Action**: Implement Phase 1 - Singleton IgnoreDirectiveParser in `src/linter_config/ignore.py`
 
 ## Required Documents Location
 ```
@@ -38,6 +39,9 @@ This is the **PRIMARY HANDOFF DOCUMENT** for AI agents working on the Consultant
 ├── AI_CONTEXT.md          # Full 8-agent evaluation report and findings
 ├── PR_BREAKDOWN.md        # Detailed implementation steps for each PR
 ├── PROGRESS_TRACKER.md    # THIS FILE - Current progress and handoff notes
+└── artifacts/             # Performance analysis and optimization artifacts
+    ├── PERFORMANCE_ANALYSIS.md  # Benchmark results and profiling data
+    └── OPTIMIZATION_PLAN.md     # Detailed optimization implementation plan
 ```
 
 ## User Confirmed Decisions
@@ -83,13 +87,31 @@ Rather than adding `# pylint: disable=too-many-lines` comments, we extracted foc
 ### START HERE: PR4 - Performance Optimizations
 
 **Quick Summary**:
-Implement AST caching and streaming improvements to improve the Performance grade from B+ to A.
+Implement profiling-driven optimizations to achieve <30s worst case, <10s ideal linting times.
+
+**Key Artifacts** (READ THESE FIRST):
+- `artifacts/PERFORMANCE_ANALYSIS.md` - Benchmark results showing primary bottleneck
+- `artifacts/OPTIMIZATION_PLAN.md` - 4-phase implementation plan with code examples
+
+**Primary Bottleneck Identified**:
+YAML config parsing repeated 9x per run (once per linter rule) consumes 44% of processing overhead.
+Fix: Implement singleton `IgnoreDirectiveParser` with cached YAML.
+
+**Benchmark Results**:
+| Repository | Files | Current Time | Target |
+|------------|-------|--------------|--------|
+| durable-code-test | 4,105 TS | >60s TIMEOUT | <10s |
+| tb-automation-py | 5,079 Py | 49s | <15s |
+| safeshell | 4,674 Py | 9s | <10s |
+| tubebuddy | 27K mixed | >120s TIMEOUT | <30s |
 
 **Pre-flight Checklist**:
-- [ ] Review PR_BREAKDOWN.md for PR4 detailed implementation steps
-- [ ] Understand current orchestrator and AST handling patterns
-- [ ] Profile current performance on large codebases
-- [ ] Identify hotspots for optimization
+- [x] Profile current performance on large codebases
+- [x] Identify hotspots for optimization (YAML parsing = 44% overhead)
+- [x] Create detailed optimization plan with phases
+- [ ] Implement Phase 1: IgnoreDirectiveParser singleton
+- [ ] Implement Phase 2: AST caching (if needed)
+- [ ] Implement Phase 3: Parallelism (if targets not met)
 
 **Prerequisites Complete**:
 - [x] Multi-agent evaluation completed
@@ -98,6 +120,7 @@ Implement AST caching and streaming improvements to improve the Performance grad
 - [x] Pylint configured in `pyproject.toml` with `max-module-lines = 500`
 - [x] PR2 complete - CLI package structure established with `src/cli/` package
 - [x] PR3 complete - All 10 linter commands modularized, `src/cli_main.py` reduced to 34 lines
+- [x] Performance profiling completed - artifacts created
 
 ---
 
@@ -117,7 +140,7 @@ Implement AST caching and streaming improvements to improve the Performance grad
 | PR1 | File Length Linter | Skipped | 100% | N/A | N/A | Using Pylint C0302 `max-module-lines=500` instead |
 | PR2 | CLI Modularization Part 1 | Complete | 100% | Medium | P0 | Created `src/cli/` package with main.py, utils.py, config.py |
 | PR3 | CLI Modularization Part 2 | Complete | 100% | High | P0 | Extracted 10 linter commands to `src/cli/linters/`, reduced cli_main.py to 34 lines |
-| PR4 | Performance Optimizations | Not Started | 0% | Medium | P1 | AST caching, streaming |
+| PR4 | Performance Optimizations | In Progress | 20% | Medium | P1 | Profiling complete, see artifacts/ |
 | PR5 | Security Hardening | Not Started | 0% | Low | P1 | SBOM, CVE blocking |
 | PR6 | Documentation Enhancements | Not Started | 0% | Low | P2 | Quick refs, Mermaid diagrams |
 
@@ -184,12 +207,26 @@ Implement AST caching and streaming improvements to improve the Performance grad
 - TYPE_CHECKING guard needed for Orchestrator import to avoid circular imports
 - NoReturn type annotation for functions that call sys.exit()
 
-### PR4: Performance Optimizations
-**Goal**: Improve B+ → A grade for performance
-**Dependencies**: PR3 (modular CLI)
-**Key Files**:
-- Modify: `src/orchestrator/orchestrator.py` (AST cache)
-- Modify: `src/linters/dry/python_analyzer.py` (streaming)
+### PR4: Performance Optimizations - IN PROGRESS
+**Goal**: Improve B+ → A grade for performance; achieve <30s worst case, <10s ideal
+**Status**: In Progress (profiling complete, implementation pending)
+**Dependencies**: PR3 (modular CLI) - complete
+**Artifacts**: See `artifacts/PERFORMANCE_ANALYSIS.md` and `artifacts/OPTIMIZATION_PLAN.md`
+
+**Root Cause Identified**: YAML config parsing repeated 9x per run (44% of overhead)
+
+**Implementation Phases**:
+1. **Phase 1** (Quick Wins): Singleton IgnoreDirectiveParser - 70% overhead reduction
+2. **Phase 2** (Caching): AST cache, line split cache - 50% per-file reduction
+3. **Phase 3** (Parallelism): ProcessPoolExecutor - linear scaling
+4. **Phase 4** (Optional): Rust extensions if targets not met
+
+**Key Files to Modify**:
+- `src/linter_config/ignore.py` - Add singleton pattern (P0)
+- `src/orchestrator/core.py` - Config caching, AST cache (P0-P1)
+- `src/linters/dry/python_analyzer.py` - Use cached AST (P1)
+- `src/linters/dry/block_filter.py` - Use cached lines (P1)
+- `src/linters/nesting/linter.py` - Use cached AST (P1)
 
 ### PR5: Security Hardening
 **Goal**: Improve A- → A+ grade for security

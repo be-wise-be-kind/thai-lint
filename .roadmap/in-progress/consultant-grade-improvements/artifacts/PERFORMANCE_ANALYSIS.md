@@ -1,0 +1,182 @@
+# Performance Analysis Report
+
+**Purpose**: Document benchmark results and profiling data for thai-lint performance optimization
+
+**Scope**: Analysis of linting performance across 4 real-world repositories
+
+**Overview**: Comprehensive performance analysis using cProfile and timing benchmarks to identify
+    bottlenecks in thai-lint. Tested against repositories ranging from 8K to 404K LOC. Key finding:
+    YAML config parsing is repeated 9x per run, consuming 44% of processing overhead.
+
+**Dependencies**: cProfile, time command, benchmark repositories
+
+**Related**: OPTIMIZATION_PLAN.md for implementation details, PROGRESS_TRACKER.md for status
+
+---
+
+## Benchmark Repositories
+
+| Repository | Python Files | TypeScript Files | Total LOC | Description |
+|------------|--------------|------------------|-----------|-------------|
+| **durable-code-test** | 49 | 4,105 | ~8,400 | TypeScript-heavy project |
+| **tb-automation-py** | 5,079 | 0 | ~151,500 | Python automation tooling |
+| **safeshell** | 4,674 | 0 | ~277,200 | Python shell security tool |
+| **tubebuddy** | 15,078 | 12,494 | ~404,300 | Large mixed codebase |
+
+---
+
+## Benchmark Results
+
+### Nesting Linter Timings
+
+| Repository | Files | Baseline Time | Status |
+|------------|-------|---------------|--------|
+| durable-code-test | 4,154 | **>60s** | TIMEOUT |
+| tb-automation-py | 5,079 | **49s** | Slow |
+| safeshell | 4,674 | **9s** | Acceptable |
+| tubebuddy | 27,572 | **>120s** | TIMEOUT |
+
+### Key Observation
+
+Python-only repositories (safeshell) are **8x faster** per file than TypeScript repositories:
+- Python: 0.002s/file (safeshell: 9s / 4,674 files)
+- TypeScript: 0.016s/file (100 TS files: 1.6s)
+
+---
+
+## Profiling Analysis
+
+### Profile: 10 TypeScript Files (0.57s total)
+
+```
+         692554 function calls in 0.569 seconds
+
+   ncalls  tottime  cumtime  filename:lineno(function)
+       10    0.035    0.350  core.py:119(lint_file)
+       10    0.032    0.324  __init__.py:74(load)  # YAML parsing!
+        1    0.031    0.313  registry.py:73(discover_rules)
+        9    0.033    0.296  ignore.py:60(_load_repo_ignores)
+```
+
+### Profile: 100 TypeScript Files (2.46s total)
+
+```
+         811566 function calls in 2.458 seconds
+
+   ncalls  tottime  cumtime  filename:lineno(function)
+      100    0.016    1.603  core.py:119(lint_file)
+       10    0.120    1.197  __init__.py:74(load)  # YAML parsing
+        1    0.114    1.142  registry.py:73(discover_rules)
+        9    0.122    1.096  ignore.py:51(__init__)
+        9    0.121    1.090  ignore.py:95(_parse_config_file)  # 9x!
+```
+
+### Breakdown by Component
+
+| Component | Time | % of 2.46s | Issue |
+|-----------|------|------------|-------|
+| Rule discovery | 1.14s | 46% | One-time startup cost |
+| **YAML config parsing** | **1.09s** | **44%** | **Parsed 9x per run!** |
+| Actual linting | 0.16s | 7% | Per-file processing |
+| Other imports | 0.07s | 3% | Module loading |
+
+---
+
+## Root Cause Analysis
+
+### Problem 1: Repeated YAML Parsing (44% of overhead)
+
+**Location**: `src/linter_config/ignore.py:95` - `_parse_config_file`
+
+**Evidence**: Called 9 times (once per linter rule):
+```
+src/linters/nesting/linter.py:40:        self._ignore_parser = IgnoreDirectiveParser()
+src/linters/srp/linter.py:37:           self._ignore_parser = IgnoreDirectiveParser()
+src/linters/magic_numbers/linter.py:48: self._ignore_parser = IgnoreDirectiveParser()
+src/linters/dry/linter.py:49:           self._ignore_parser = IgnoreDirectiveParser()
+src/linters/print_statements/linter.py  self._ignore_parser = IgnoreDirectiveParser()
+src/linters/method_property/linter.py   self._ignore_parser = IgnoreDirectiveParser()
+src/linters/stateless_class/linter.py   self._ignore_parser = IgnoreDirectiveParser()
+src/linters/file_header/linter.py       self._ignore_parser = IgnoreDirectiveParser()
+src/linters/pipeline/linter.py          self._ignore_parser = IgnoreDirectiveParser()
+```
+
+**Impact**: 1.09s wasted per run (~0.12s × 9 parses)
+
+### Problem 2: Multiple AST Parses Per File
+
+**Locations**:
+- `src/linters/dry/python_analyzer.py:148` - `ast.parse(content)`
+- `src/linters/dry/python_analyzer.py:279` - `ast.parse(content)` (again!)
+- `src/linters/dry/block_filter.py:113` - `ast.parse(file_content)`
+- `src/linters/nesting/linter.py:107` - `ast.parse(context.file_content)`
+- `src/linters/srp/class_analyzer.py:94` - `ast.parse(context.file_content)`
+
+**Impact**: 2-5x redundant parsing per Python file
+
+### Problem 3: Tree-Sitter Re-Parsing for TypeScript
+
+**Locations**:
+- `src/linters/dry/typescript_analyzer.py:81` - `_get_jsdoc_ranges_from_content`
+- `src/linters/dry/typescript_analyzer.py:142` - `parse_typescript(content)`
+
+**Impact**: 2-3x redundant parsing per TypeScript file
+
+### Problem 4: Repeated String Splits
+
+**Locations** (30+ occurrences):
+```
+src/linters/dry/block_filter.py:95:   lines = file_content.split("\n")
+src/linters/dry/block_filter.py:183:  lines = file_content.split("\n")
+src/linters/dry/block_filter.py:229:  lines = file_content.split("\n")
+src/linters/dry/block_filter.py:271:  lines = file_content.split("\n")
+```
+
+**Impact**: Repeated O(n) string operations per file
+
+---
+
+## Performance Targets
+
+| Repository | Current | Target (Phase 1) | Target (Phase 2) | Target (Phase 3) |
+|------------|---------|------------------|------------------|------------------|
+| durable-code-test | >60s | ~30s | ~15s | <10s |
+| tb-automation-py | 49s | ~25s | ~15s | <10s |
+| safeshell | 9s | ~8s | ~6s | <5s |
+| tubebuddy | >120s | ~60s | ~35s | <30s |
+
+---
+
+## Test Commands Used
+
+```bash
+# Timing benchmark
+time poetry run python -m src.cli nesting /path/to/repo
+
+# cProfile analysis
+poetry run python -m cProfile -s cumtime -m src.cli nesting /path/to/files | head -50
+
+# File counts
+find /path/to/repo -name "*.py" -type f | wc -l
+find /path/to/repo -name "*.ts" -type f | wc -l
+find /path/to/repo -name "*.py" -type f -exec cat {} + | wc -l
+```
+
+---
+
+## Conclusions
+
+1. **Primary bottleneck**: YAML config parsing repeated 9x consumes 44% of processing time
+2. **Secondary bottleneck**: AST parsing duplicated across multiple linters
+3. **TypeScript overhead**: 8x slower than Python due to tree-sitter initialization
+4. **Scaling issue**: No parallelism means linear time with file count
+
+**Recommended Priority**:
+1. Fix YAML singleton (90% reduction in 44% overhead = 40% total improvement)
+2. Add AST caching (50% reduction in per-file time)
+3. Add parallelism (linear scaling with CPU cores)
+
+---
+
+*Analysis performed: December 2024*
+*Profiler: cProfile with cumulative time sorting*
