@@ -160,6 +160,12 @@ dry:
     # Core infrastructure files contain patterns that linters legitimately implement
     - "src/core/base.py"  # Base rule interface patterns duplicated in linter implementations
     - "src/linter_config/ignore.py"  # Ignore logic patterns duplicated in linter implementations
+    # CLI linter commands share common Click framework patterns (framework adapter duplication)
+    - "src/cli/linters/structure_quality.py"
+    - "src/cli/linters/code_smells.py"
+    - "src/cli/linters/code_patterns.py"
+    - "src/cli/linters/structure.py"
+    - "src/cli/linters/documentation.py"
     # Linter implementations share common infrastructure patterns (framework duplication)
     - "magic_numbers/linter.py"
     - "magic_numbers/config.py"
