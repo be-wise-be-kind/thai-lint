@@ -227,7 +227,7 @@ class LoggerCallFilter(BaseBlockFilter):
             True if block should be filtered
         """
         lines = file_content.split("\n")[block.start_line - 1 : block.end_line]
-        non_empty = [line for line in lines if line.strip()]
+        non_empty = [s for line in lines if (s := line.strip())]
 
         if not non_empty:
             return False
@@ -269,7 +269,7 @@ class ExceptionReraiseFilter(BaseBlockFilter):
             True if block should be filtered
         """
         lines = file_content.split("\n")[block.start_line - 1 : block.end_line]
-        stripped_lines = [line.strip() for line in lines if line.strip()]
+        stripped_lines = [s for line in lines if (s := line.strip())]
 
         if len(stripped_lines) != 2:
             return False

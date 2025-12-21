@@ -32,8 +32,10 @@ class ClassAnalyzer:
     """Coordinates class analysis for Python and TypeScript."""
 
     def __init__(self) -> None:
-        """Initialize the class analyzer."""
-        pass  # Coordinates analysis between language-specific analyzers
+        """Initialize the class analyzer with singleton analyzers."""
+        # Singleton analyzers for performance (avoid recreating per-file)
+        self._python_analyzer = PythonSRPAnalyzer()
+        self._typescript_analyzer = TypeScriptSRPAnalyzer()
 
     def analyze_python(
         self, context: BaseLintContext, config: SRPConfig
@@ -51,10 +53,9 @@ class ClassAnalyzer:
         if isinstance(tree, list):  # Syntax error violations
             return tree
 
-        analyzer = PythonSRPAnalyzer()
-        classes = analyzer.find_all_classes(tree)
+        classes = self._python_analyzer.find_all_classes(tree)
         return [
-            analyzer.analyze_class(class_node, context.file_content or "", config)
+            self._python_analyzer.analyze_class(class_node, context.file_content or "", config)
             for class_node in classes
         ]
 
@@ -70,14 +71,13 @@ class ClassAnalyzer:
         Returns:
             List of class metrics dicts
         """
-        analyzer = TypeScriptSRPAnalyzer()
-        root_node = analyzer.parse_typescript(context.file_content or "")
+        root_node = self._typescript_analyzer.parse_typescript(context.file_content or "")
         if not root_node:
             return []
 
-        classes = analyzer.find_all_classes(root_node)
+        classes = self._typescript_analyzer.find_all_classes(root_node)
         return [
-            analyzer.analyze_class(class_node, context.file_content or "", config)
+            self._typescript_analyzer.analyze_class(class_node, context.file_content or "", config)
             for class_node in classes
         ]
 

@@ -56,6 +56,7 @@ class IgnoreDirectiveParser:
         """
         self.project_root = project_root or Path.cwd()
         self.repo_patterns = self._load_repo_ignores()
+        self._ignore_cache: dict[str, bool] = {}  # Cache for is_ignored results
 
     def _load_repo_ignores(self) -> list[str]:
         """Load global ignore patterns from .thailintignore or .thailint.yaml."""
@@ -112,26 +113,20 @@ class IgnoreDirectiveParser:
         return []
 
     def is_ignored(self, file_path: Path) -> bool:
-        """Check if file matches repository-level ignore patterns.
+        """Check if file matches repository-level ignore patterns (cached)."""
+        path_str = str(file_path)
+        if path_str in self._ignore_cache:
+            return self._ignore_cache[path_str]
 
-        Args:
-            file_path: Path to check against ignore patterns.
-
-        Returns:
-            True if file should be ignored.
-        """
-        # Convert to string relative to project root if possible
+        # Convert to relative path for pattern matching
         try:
-            relative_path = file_path.relative_to(self.project_root)
-            path_str = str(relative_path)
+            check_path = str(file_path.relative_to(self.project_root))
         except ValueError:
-            # Path is not relative to project root
-            path_str = str(file_path)
+            check_path = path_str
 
-        for pattern in self.repo_patterns:
-            if self._matches_pattern(path_str, pattern):
-                return True
-        return False
+        result = any(self._matches_pattern(check_path, p) for p in self.repo_patterns)
+        self._ignore_cache[path_str] = result
+        return result
 
     def _matches_pattern(self, path: str, pattern: str) -> bool:
         """Check if path matches gitignore-style pattern.

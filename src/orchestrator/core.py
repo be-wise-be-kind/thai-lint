@@ -34,6 +34,7 @@ Implementation: Directory glob pattern matching for traversal (** for recursive,
 from __future__ import annotations
 
 import multiprocessing
+import os
 from concurrent.futures import Future, ProcessPoolExecutor, as_completed
 from pathlib import Path
 
@@ -47,6 +48,99 @@ from .language_detector import detect_language
 
 # Default max workers for parallel processing (capped to avoid resource contention)
 DEFAULT_MAX_WORKERS = 8
+
+# Hardcoded exclusions for files/directories that should never be linted
+# These are always skipped regardless of configuration to improve performance
+_HARDCODED_EXCLUDE_EXTENSIONS: frozenset[str] = frozenset(
+    {
+        ".pyc",
+        ".pyo",
+        ".pyd",  # Python bytecode
+        ".so",
+        ".dll",
+        ".dylib",  # Compiled libraries
+        ".class",  # Java bytecode
+        ".o",
+        ".obj",  # Object files
+    }
+)
+_HARDCODED_EXCLUDE_DIRS: frozenset[str] = frozenset(
+    {
+        "__pycache__",
+        "node_modules",
+        ".git",
+        ".svn",
+        ".hg",
+        ".venv",
+        "venv",
+        ".tox",
+        ".eggs",
+        "*.egg-info",
+        ".pytest_cache",
+        ".mypy_cache",
+        ".ruff_cache",
+        "dist",
+        "build",
+        "htmlcov",
+    }
+)
+
+
+def _is_hardcoded_excluded(file_path: Path) -> bool:
+    """Check if file should be excluded based on hardcoded patterns.
+
+    Args:
+        file_path: Path to check
+
+    Returns:
+        True if file should be skipped (compiled file, cache directory, etc.)
+    """
+    # Check file extension
+    if file_path.suffix in _HARDCODED_EXCLUDE_EXTENSIONS:
+        return True
+
+    # Check if any parent directory is in the exclude list
+    for part in file_path.parts:
+        if part in _HARDCODED_EXCLUDE_DIRS:
+            return True
+        # Handle wildcard patterns like *.egg-info
+        if part.endswith(".egg-info"):
+            return True
+
+    return False
+
+
+def _should_include_dir(dirname: str) -> bool:
+    """Check if directory should be traversed (not excluded)."""
+    return dirname not in _HARDCODED_EXCLUDE_DIRS and not dirname.endswith(".egg-info")
+
+
+def _collect_files_from_walk(root: str, filenames: list[str]) -> list[Path]:
+    """Collect non-excluded files from a single directory."""
+    root_path = Path(root)
+    return [root_path / f for f in filenames if Path(f).suffix not in _HARDCODED_EXCLUDE_EXTENSIONS]
+
+
+def _collect_files_fast(dir_path: Path, recursive: bool = True) -> list[Path]:
+    """Collect files, skipping excluded directories entirely.
+
+    Uses os.walk() instead of glob to avoid traversing into excluded
+    directories like .venv, node_modules, __pycache__, etc.
+
+    Args:
+        dir_path: Directory to collect files from.
+        recursive: Whether to traverse subdirectories.
+
+    Returns:
+        List of file paths, excluding hardcoded exclusions.
+    """
+    files: list[Path] = []
+    for root, dirs, filenames in os.walk(dir_path):
+        dirs[:] = [d for d in dirs if _should_include_dir(d)]
+        files.extend(_collect_files_from_walk(root, filenames))
+        if not recursive:
+            break
+    return files
 
 
 def _lint_file_worker(args: tuple[Path, Path, dict]) -> list[dict]:
@@ -90,6 +184,7 @@ class FileLintContext(BaseLintContext):
         self._path = path
         self._language = lang
         self._content = content
+        self._lines: list[str] | None = None  # Cached line split
         self.metadata = metadata or {}
 
     @property
@@ -114,6 +209,18 @@ class FileLintContext(BaseLintContext):
     def language(self) -> str:
         """Get programming language of file."""
         return self._language
+
+    @property
+    def file_lines(self) -> list[str]:
+        """Get file content as list of lines (cached).
+
+        Returns:
+            List of lines from file content, empty list if no content.
+        """
+        if self._lines is None:
+            content = self.file_content
+            self._lines = content.split("\n") if content else []
+        return self._lines
 
 
 class Orchestrator:  # thailint: ignore[srp]
@@ -166,6 +273,10 @@ class Orchestrator:  # thailint: ignore[srp]
         Returns:
             List of violations found in the file.
         """
+        # Fast path: skip compiled files and common excluded directories
+        if _is_hardcoded_excluded(file_path):
+            return []
+
         if self.ignore_parser.is_ignored(file_path):
             return []
 
@@ -238,11 +349,11 @@ class Orchestrator:  # thailint: ignore[srp]
             List of all violations found across all files.
         """
         violations = []
-        pattern = "**/*" if recursive else "*"
+        # Use fast file collection that skips excluded directories entirely
+        file_paths = _collect_files_fast(dir_path, recursive)
 
-        for file_path in dir_path.glob(pattern):
-            if file_path.is_file():
-                violations.extend(self.lint_file(file_path))
+        for file_path in file_paths:
+            violations.extend(self.lint_file(file_path))
 
         # Call finalize() on all rules after processing all files
         for rule in self.registry.list_all():
@@ -323,8 +434,8 @@ class Orchestrator:  # thailint: ignore[srp]
         Returns:
             List of all violations found across all files.
         """
-        pattern = "**/*" if recursive else "*"
-        file_paths = [fp for fp in dir_path.glob(pattern) if fp.is_file()]
+        # Use fast file collection that skips excluded directories entirely
+        file_paths = _collect_files_fast(dir_path, recursive)
         return self.lint_files_parallel(file_paths, max_workers=max_workers)
 
     def _ensure_rules_discovered(self) -> None:

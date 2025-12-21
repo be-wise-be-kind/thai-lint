@@ -39,6 +39,9 @@ class NestingDepthRule(MultiLanguageLintRule):
         """Initialize the nesting depth rule."""
         self._ignore_parser = get_ignore_parser()
         self._violation_builder = NestingViolationBuilder(self.rule_id)
+        # Singleton analyzers for performance (avoid recreating per-file)
+        self._python_analyzer = PythonNestingAnalyzer()
+        self._typescript_analyzer = TypeScriptNestingAnalyzer()
 
     @property
     def rule_id(self) -> str:
@@ -108,9 +111,8 @@ class NestingDepthRule(MultiLanguageLintRule):
         except SyntaxError as e:
             return [self._violation_builder.create_syntax_error_violation(e, context)]
 
-        analyzer = PythonNestingAnalyzer()
-        functions = analyzer.find_all_functions(tree)
-        return self._process_python_functions(functions, analyzer, config, context)
+        functions = self._python_analyzer.find_all_functions(tree)
+        return self._process_python_functions(functions, self._python_analyzer, config, context)
 
     def _process_typescript_functions(
         self, functions: list, analyzer: Any, config: NestingConfig, context: BaseLintContext
@@ -149,13 +151,14 @@ class NestingDepthRule(MultiLanguageLintRule):
         Returns:
             List of violations found in TypeScript code
         """
-        analyzer = TypeScriptNestingAnalyzer()
-        root_node = analyzer.parse_typescript(context.file_content or "")
+        root_node = self._typescript_analyzer.parse_typescript(context.file_content or "")
         if root_node is None:
             return []
 
-        functions = analyzer.find_all_functions(root_node)
-        return self._process_typescript_functions(functions, analyzer, config, context)
+        functions = self._typescript_analyzer.find_all_functions(root_node)
+        return self._process_typescript_functions(
+            functions, self._typescript_analyzer, config, context
+        )
 
     def _should_ignore(self, violation: Violation, context: BaseLintContext) -> bool:
         """Check if violation should be ignored based on inline directives.
