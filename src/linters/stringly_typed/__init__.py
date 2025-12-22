@@ -4,20 +4,29 @@ Purpose: Stringly-typed linter package exports
 Scope: Public API for stringly-typed linter module
 
 Overview: Provides the public interface for the stringly-typed linter package. Exports
-    StringlyTypedConfig for configuration of the linter. The stringly-typed linter detects
-    code patterns where plain strings are used instead of proper enums or typed alternatives,
-    helping identify potential type safety improvements. This module serves as the entry
-    point for users of the stringly-typed linter.
+    StringlyTypedConfig for configuration and StringlyTypedRule for linting. The stringly-typed
+    linter detects code patterns where plain strings are used instead of proper enums or typed
+    alternatives, helping identify potential type safety improvements. Supports cross-file
+    detection to find repeated string patterns across the codebase.
 
-Dependencies: .config for StringlyTypedConfig
+Dependencies: .config for StringlyTypedConfig, .linter for StringlyTypedRule,
+    .storage for StringlyTypedStorage
 
-Exports: StringlyTypedConfig dataclass
+Exports: StringlyTypedConfig, StringlyTypedRule, StringlyTypedStorage, StoredPattern
 
-Interfaces: Configuration loading via StringlyTypedConfig.from_dict()
+Interfaces: Configuration loading via StringlyTypedConfig.from_dict(),
+    StringlyTypedRule.check() and finalize() for linting
 
 Implementation: Module-level exports with __all__ definition
 """
 
 from src.linters.stringly_typed.config import StringlyTypedConfig
+from src.linters.stringly_typed.linter import StringlyTypedRule
+from src.linters.stringly_typed.storage import StoredPattern, StringlyTypedStorage
 
-__all__ = ["StringlyTypedConfig"]
+__all__ = [
+    "StringlyTypedConfig",
+    "StringlyTypedRule",
+    "StringlyTypedStorage",
+    "StoredPattern",
+]
