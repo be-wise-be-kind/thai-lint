@@ -46,8 +46,8 @@ This is the **PRIMARY HANDOFF DOCUMENT** for AI agents working on the stringly-t
 4. **Update this document** after completing each PR
 
 ## Current Status
-**Current PR**: PR4 - TypeScript Single-File Detection (Not Started)
-**Infrastructure State**: Module structure, config, membership validation, and equality chain detection complete
+**Current PR**: PR6 - Function Call Tracking (Not Started)
+**Infrastructure State**: Module structure, config, Python/TypeScript detection, and cross-file storage complete
 **Feature Target**: Detect stringly-typed code and suggest enum alternatives
 
 ## Required Documents Location
@@ -60,23 +60,43 @@ This is the **PRIMARY HANDOFF DOCUMENT** for AI agents working on the stringly-t
 
 ## Next PR to Implement
 
-### START HERE: PR4 - TypeScript Single-File Detection
+### START HERE: PR6 - Function Call Tracking
 
 **Quick Summary**:
-Detect stringly-typed patterns in TypeScript files using tree-sitter.
+Track function/method calls that consistently receive the same string arguments, suggesting enum usage for those parameters.
 
 **Pre-flight Checklist**:
-- [ ] Verify branch `feature/stringly-typed-pr4-typescript` is created
-- [ ] Review existing `src/linters/stringly_typed/python/` structure for reference
+- [ ] Verify branch `feature/stringly-typed-pr6-function-calls` is created
+- [ ] Review existing analyzers for function call detection patterns
 - [ ] Review PR_BREAKDOWN.md for detailed implementation steps
-- [ ] Study tree-sitter usage in existing TypeScript analyzers
+- [ ] Analyze how to track parameter positions and values
 
 **Prerequisites Complete**:
-- [x] PR1 complete - module structure and config ready
-- [x] PR2 complete - membership validation detection working
-- [x] PR3 complete - equality chain detection working
-- [x] StringlyTypedConfig dataclass with all fields
-- [x] Test fixtures and analyzer structure in place
+- [x] PR1-PR5 complete - full infrastructure and cross-file detection ready
+- [x] SQLite storage for cross-file pattern aggregation
+- [x] Violation generator with cross-file references
+- [x] Python and TypeScript single-file analyzers
+
+**Completed PR5 - Cross-File Storage & Detection**:
+- [x] Created `src/linters/stringly_typed/storage.py` with SQLite wrapper
+- [x] Created `src/linters/stringly_typed/storage_initializer.py` for factory pattern
+- [x] Created `src/linters/stringly_typed/violation_generator.py` for violation generation
+- [x] Created `src/linters/stringly_typed/ignore_utils.py` for shared utilities
+- [x] Updated `src/linters/stringly_typed/linter.py` with StringlyTypedRule
+- [x] Implemented two-phase pattern: check() stores data, finalize() generates violations
+- [x] Cross-file duplicate detection via SQLite hash queries
+- [x] Violation messages with cross-file references
+- [x] 24 unit tests for storage, 17 integration tests for cross-file detection
+- [x] All 924 project tests passing
+- [x] Pylint 10.00/10, Xenon A-grade
+- [x] All 9 quality checks passing
+
+**Completed PR4 - TypeScript Single-File Detection**:
+- [x] Created `src/linters/stringly_typed/typescript/` analyzer structure
+- [x] Tree-sitter based pattern detection for TypeScript
+- [x] Membership validation and equality chain patterns
+- [x] Integration with existing analyzer framework
+- [x] All quality checks passing
 
 **Completed PR3 - Python Pattern 2 - Equality Chains**:
 - [x] Created `src/linters/stringly_typed/python/conditional_detector.py` with AST visitor
@@ -105,10 +125,10 @@ Detect stringly-typed patterns in TypeScript files using tree-sitter.
 ---
 
 ## Overall Progress
-**Total Completion**: 30% (3/10 PRs completed)
+**Total Completion**: 50% (5/10 PRs completed)
 
 ```
-[###.......] 30% Complete
+[#####.....] 50% Complete
 ```
 
 ---
@@ -120,8 +140,8 @@ Detect stringly-typed patterns in TypeScript files using tree-sitter.
 | PR1 | Infrastructure & Test Framework | Complete | 100% | Low | P0 | Config dataclass + tests |
 | PR2 | Python Pattern 1 - Membership Validation | Complete | 100% | Medium | P0 | AST visitor + 29 tests |
 | PR3 | Python Pattern 2 - Equality Chains | Complete | 100% | Medium | P1 | If/elif chains, match stmts + 20 tests |
-| PR4 | TypeScript Single-File Detection | Not Started | 0% | Medium | P1 | |
-| PR5 | Cross-File Storage & Detection | Not Started | 0% | High | P0 | |
+| PR4 | TypeScript Single-File Detection | Complete | 100% | Medium | P1 | Tree-sitter analyzer |
+| PR5 | Cross-File Storage & Detection | Complete | 100% | High | P0 | SQLite storage + finalize() hook + 41 tests |
 | PR6 | Function Call Tracking | Not Started | 0% | High | P1 | |
 | PR7 | CLI Integration & Output Formats | Not Started | 0% | Medium | P0 | |
 | PR8 | False Positive Filtering | Not Started | 0% | Medium | P1 | |
