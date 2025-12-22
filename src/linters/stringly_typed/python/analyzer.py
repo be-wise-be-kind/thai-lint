@@ -5,17 +5,20 @@ Scope: Orchestrate detection of all stringly-typed patterns in Python files
 
 Overview: Provides PythonStringlyTypedAnalyzer class that coordinates detection of
     stringly-typed patterns across Python source files. Uses MembershipValidationDetector
-    to find 'x in ("a", "b")' patterns and ConditionalPatternDetector to find if/elif
-    chains and match statements. Returns unified AnalysisResult objects. Handles AST
-    parsing errors gracefully and provides a single entry point for Python analysis.
-    Supports configuration options for filtering and thresholds.
+    to find 'x in ("a", "b")' patterns, ConditionalPatternDetector to find if/elif chains
+    and match statements, and FunctionCallTracker to find function calls with string
+    arguments. Returns unified AnalysisResult objects for validation patterns and
+    FunctionCallResult objects for function calls. Handles AST parsing errors gracefully
+    and provides a single entry point for Python analysis. Supports configuration options
+    for filtering and thresholds.
 
 Dependencies: ast module, MembershipValidationDetector, ConditionalPatternDetector,
-    StringlyTypedConfig
+    FunctionCallTracker, StringlyTypedConfig
 
-Exports: PythonStringlyTypedAnalyzer class, AnalysisResult dataclass
+Exports: PythonStringlyTypedAnalyzer class, AnalysisResult dataclass, FunctionCallResult dataclass
 
-Interfaces: PythonStringlyTypedAnalyzer.analyze(code, file_path) -> list[AnalysisResult]
+Interfaces: PythonStringlyTypedAnalyzer.analyze(code, file_path) -> list[AnalysisResult],
+    PythonStringlyTypedAnalyzer.analyze_function_calls(code, file_path) -> list[FunctionCallResult]
 
 Implementation: Facade pattern coordinating multiple detectors with unified result format
 """
@@ -25,6 +28,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from ..config import StringlyTypedConfig
+from .call_tracker import FunctionCallPattern, FunctionCallTracker
 from .conditional_detector import ConditionalPatternDetector, EqualityChainPattern
 from .validation_detector import MembershipPattern, MembershipValidationDetector
 
@@ -59,11 +63,39 @@ class AnalysisResult:
     """Human-readable description of the detected pattern."""
 
 
+@dataclass
+class FunctionCallResult:
+    """Represents a function call with a string argument.
+
+    Provides information about a single function call with a string literal
+    argument, enabling aggregation across files to detect limited value sets.
+    """
+
+    function_name: str
+    """Fully qualified function name (e.g., 'process' or 'obj.method')."""
+
+    param_index: int
+    """Index of the parameter receiving the string value (0-indexed)."""
+
+    string_value: str
+    """The string literal value passed to the function."""
+
+    file_path: Path
+    """Path to the file containing the call."""
+
+    line_number: int
+    """Line number where the call occurs (1-indexed)."""
+
+    column: int
+    """Column number where the call starts (0-indexed)."""
+
+
 class PythonStringlyTypedAnalyzer:
     """Analyzes Python code for stringly-typed patterns.
 
     Coordinates detection of various stringly-typed patterns including membership
-    validation ('x in ("a", "b")') and equality chains ('if x == "a" elif x == "b"').
+    validation ('x in ("a", "b")'), equality chains ('if x == "a" elif x == "b"'),
+    and function calls with string arguments ('process("active")').
     Provides configuration-aware analysis with filtering support.
     """
 
@@ -76,6 +108,7 @@ class PythonStringlyTypedAnalyzer:
         self.config = config or StringlyTypedConfig()
         self._membership_detector = MembershipValidationDetector()
         self._conditional_detector = ConditionalPatternDetector()
+        self._call_tracker = FunctionCallTracker()
 
     def analyze(self, code: str, file_path: Path) -> list[AnalysisResult]:
         """Analyze Python code for stringly-typed patterns.
@@ -196,3 +229,41 @@ class PythonStringlyTypedAnalyzer:
             "match_statement": "Match statement",
         }
         return labels.get(pattern_type, "Conditional pattern")
+
+    def analyze_function_calls(self, code: str, file_path: Path) -> list[FunctionCallResult]:
+        """Analyze Python code for function calls with string arguments.
+
+        Args:
+            code: Python source code to analyze
+            file_path: Path to the file being analyzed
+
+        Returns:
+            List of FunctionCallResult instances for each detected call
+        """
+        tree = self._parse_code(code)
+        if tree is None:
+            return []
+
+        call_patterns = self._call_tracker.find_patterns(tree)
+        return [self._convert_call_pattern(pattern, file_path) for pattern in call_patterns]
+
+    def _convert_call_pattern(
+        self, pattern: FunctionCallPattern, file_path: Path
+    ) -> FunctionCallResult:
+        """Convert a FunctionCallPattern to FunctionCallResult.
+
+        Args:
+            pattern: Detected function call pattern
+            file_path: Path to the file containing the call
+
+        Returns:
+            FunctionCallResult representing the call
+        """
+        return FunctionCallResult(
+            function_name=pattern.function_name,
+            param_index=pattern.param_index,
+            string_value=pattern.string_value,
+            file_path=file_path,
+            line_number=pattern.line_number,
+            column=pattern.column,
+        )
