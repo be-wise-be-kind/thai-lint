@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<!--
+Purpose: Quick reference documentation hub for thai-lint users
+
+Scope: Landing page linking to CLI cheatsheet and configuration reference cards
+
+Overview: Entry point for quick reference documentation. Provides navigation to
+    CLI command cheatsheet and configuration reference cards. Designed for users
+    who need fast access to common commands and settings without reading full
+    documentation. Supports both screen viewing and printing for desk reference.
+
+Dependencies: cli-cheatsheet.html, config-reference.html
+
+Exports: Navigation to quick reference cards
+
+Related: docs/cli-reference.md, docs/configuration.md for full documentation
+
+Implementation: Static HTML with embedded CSS for portability
+-->
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>thai-lint Quick Reference</title>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-dark: #1d4ed8;
+            --gray-50: #f9fafb;
+            --gray-100: #f3f4f6;
+            --gray-200: #e5e7eb;
+            --gray-600: #4b5563;
+            --gray-800: #1f2937;
+            --gray-900: #111827;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            color: var(--gray-800);
+            background: var(--gray-50);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 2rem;
+        }
+
+        .container {
+            max-width: 800px;
+            width: 100%;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            color: var(--gray-900);
+            margin-bottom: 0.5rem;
+        }
+
+        .subtitle {
+            font-size: 1.125rem;
+            color: var(--gray-600);
+        }
+
+        .cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 3rem;
+        }
+
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 2rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1), 0 1px 2px rgba(0,0,0,0.06);
+            text-decoration: none;
+            color: inherit;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px rgba(0,0,0,0.1), 0 4px 6px rgba(0,0,0,0.05);
+        }
+
+        .card h2 {
+            font-size: 1.5rem;
+            color: var(--primary);
+            margin-bottom: 0.75rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .card p {
+            color: var(--gray-600);
+            margin-bottom: 1rem;
+        }
+
+        .card ul {
+            list-style: none;
+            font-size: 0.875rem;
+            color: var(--gray-600);
+        }
+
+        .card li {
+            padding: 0.25rem 0;
+            padding-left: 1.25rem;
+            position: relative;
+        }
+
+        .card li::before {
+            content: ">";
+            position: absolute;
+            left: 0;
+            color: var(--primary);
+            font-weight: bold;
+        }
+
+        .version {
+            text-align: center;
+            color: var(--gray-600);
+            font-size: 0.875rem;
+        }
+
+        .version a {
+            color: var(--primary);
+            text-decoration: none;
+        }
+
+        .version a:hover {
+            text-decoration: underline;
+        }
+
+        @media print {
+            body { background: white; }
+            .card { break-inside: avoid; box-shadow: none; border: 1px solid var(--gray-200); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>thai-lint</h1>
+            <p class="subtitle">Quick Reference Documentation</p>
+        </header>
+
+        <div class="cards">
+            <a href="cli-cheatsheet.html" class="card">
+                <h2>CLI Cheatsheet</h2>
+                <p>Command-line interface quick reference with all commands and common options.</p>
+                <ul>
+                    <li>10 linting commands</li>
+                    <li>Global options</li>
+                    <li>Output formats</li>
+                    <li>Exit codes</li>
+                </ul>
+            </a>
+
+            <a href="config-reference.html" class="card">
+                <h2>Configuration Reference</h2>
+                <p>All configuration options for .thailint.yaml with defaults and examples.</p>
+                <ul>
+                    <li>8 linter configurations</li>
+                    <li>Language-specific thresholds</li>
+                    <li>Ignore patterns</li>
+                    <li>Filter options</li>
+                </ul>
+            </a>
+        </div>
+
+        <p class="version">
+            thai-lint &bull;
+            <a href="https://github.com/steve-e-jackson/thai-lint">GitHub</a> &bull;
+            <a href="https://pypi.org/project/thailint/">PyPI</a> &bull;
+            <a href="../index.md">Full Documentation</a>
+        </p>
+    </div>
+</body>
+</html>

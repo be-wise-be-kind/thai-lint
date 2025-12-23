@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<!--
+Purpose: CLI command quick reference for thai-lint users
+
+Scope: All CLI commands, global options, output formats, and exit codes in a single printable page
+
+Overview: Comprehensive CLI cheatsheet designed for quick lookup of commands and options.
+    Covers all 10 linting commands with their specific options, global flags that apply
+    to all commands, output format specifications, and exit code meanings. Optimized
+    for both screen viewing and printing as a desk reference card.
+
+Dependencies: None (standalone HTML)
+
+Exports: CLI command documentation
+
+Related: docs/cli-reference.md for detailed documentation with examples
+
+Implementation: Static HTML with embedded CSS, print-optimized layout
+-->
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>thai-lint CLI Cheatsheet</title>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-light: #dbeafe;
+            --success: #059669;
+            --success-light: #d1fae5;
+            --warning: #d97706;
+            --warning-light: #fef3c7;
+            --error: #dc2626;
+            --error-light: #fee2e2;
+            --gray-50: #f9fafb;
+            --gray-100: #f3f4f6;
+            --gray-200: #e5e7eb;
+            --gray-300: #d1d5db;
+            --gray-600: #4b5563;
+            --gray-800: #1f2937;
+            --gray-900: #111827;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.5;
+            color: var(--gray-800);
+            background: var(--gray-50);
+            padding: 1.5rem;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 2px solid var(--gray-200);
+        }
+
+        h1 {
+            font-size: 1.75rem;
+            color: var(--gray-900);
+        }
+
+        .back-link {
+            color: var(--primary);
+            text-decoration: none;
+            font-size: 0.875rem;
+        }
+
+        .back-link:hover {
+            text-decoration: underline;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 1.25rem;
+        }
+
+        .section {
+            background: white;
+            border-radius: 8px;
+            padding: 1.25rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+        }
+
+        .section h2 {
+            font-size: 1rem;
+            color: var(--primary);
+            margin-bottom: 0.75rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid var(--gray-200);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .command-syntax {
+            background: var(--gray-900);
+            color: #e5e7eb;
+            padding: 0.75rem 1rem;
+            border-radius: 6px;
+            font-family: 'SF Mono', Monaco, 'Cascadia Code', monospace;
+            font-size: 0.8rem;
+            margin-bottom: 1rem;
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.8rem;
+        }
+
+        th, td {
+            text-align: left;
+            padding: 0.5rem 0.5rem;
+            border-bottom: 1px solid var(--gray-100);
+        }
+
+        th {
+            font-weight: 600;
+            color: var(--gray-600);
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        code {
+            background: var(--gray-100);
+            padding: 0.125rem 0.375rem;
+            border-radius: 4px;
+            font-family: 'SF Mono', Monaco, 'Cascadia Code', monospace;
+            font-size: 0.75rem;
+            color: var(--gray-800);
+        }
+
+        .cmd {
+            font-weight: 600;
+            color: var(--gray-900);
+        }
+
+        .flag {
+            color: var(--primary);
+        }
+
+        .desc {
+            color: var(--gray-600);
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 0.125rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            font-weight: 600;
+        }
+
+        .badge-success { background: var(--success-light); color: var(--success); }
+        .badge-warning { background: var(--warning-light); color: var(--warning); }
+        .badge-error { background: var(--error-light); color: var(--error); }
+        .badge-info { background: var(--primary-light); color: var(--primary); }
+
+        .note {
+            background: var(--primary-light);
+            border-left: 3px solid var(--primary);
+            padding: 0.5rem 0.75rem;
+            font-size: 0.8rem;
+            margin-top: 0.75rem;
+            border-radius: 0 4px 4px 0;
+        }
+
+        .full-width {
+            grid-column: 1 / -1;
+        }
+
+        @media print {
+            body {
+                background: white;
+                padding: 0.5rem;
+                font-size: 9pt;
+            }
+            .section {
+                box-shadow: none;
+                border: 1px solid var(--gray-200);
+                break-inside: avoid;
+                padding: 0.75rem;
+            }
+            .grid {
+                gap: 0.75rem;
+            }
+            header {
+                margin-bottom: 0.75rem;
+            }
+            .back-link { display: none; }
+        }
+
+        @media (max-width: 768px) {
+            .grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>thai-lint CLI Cheatsheet</h1>
+            <a href="index.html" class="back-link">&larr; Back to Quick Reference</a>
+        </header>
+
+        <div class="grid">
+            <!-- Command Syntax -->
+            <div class="section">
+                <h2>Command Syntax</h2>
+                <div class="command-syntax">
+                    thailint [GLOBAL_OPTIONS] COMMAND [OPTIONS] [PATH...]
+                </div>
+                <p class="desc" style="font-size: 0.8rem;">
+                    All commands accept multiple paths (files or directories). Defaults to current directory if no path specified.
+                </p>
+            </div>
+
+            <!-- Global Options -->
+            <div class="section">
+                <h2>Global Options</h2>
+                <table>
+                    <tr>
+                        <td><code class="flag">--version</code></td>
+                        <td class="desc">Show version and exit</td>
+                    </tr>
+                    <tr>
+                        <td><code class="flag">--verbose, -v</code></td>
+                        <td class="desc">Enable debug output</td>
+                    </tr>
+                    <tr>
+                        <td><code class="flag">--config, -c PATH</code></td>
+                        <td class="desc">Specify config file path</td>
+                    </tr>
+                    <tr>
+                        <td><code class="flag">--project-root PATH</code></td>
+                        <td class="desc">Explicit project root (Docker/monorepo)</td>
+                    </tr>
+                    <tr>
+                        <td><code class="flag">--help</code></td>
+                        <td class="desc">Show help message</td>
+                    </tr>
+                </table>
+            </div>
+
+            <!-- Linting Commands -->
+            <div class="section full-width">
+                <h2>Linting Commands</h2>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Command</th>
+                            <th>Purpose</th>
+                            <th>Key Options</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><code class="cmd">nesting</code></td>
+                            <td class="desc">Detect excessive nesting depth</td>
+                            <td><code>--max-depth N</code>, <code>--parallel</code></td>
+                        </tr>
+                        <tr>
+                            <td><code class="cmd">srp</code></td>
+                            <td class="desc">Single Responsibility Principle violations</td>
+                            <td><code>--max-methods N</code>, <code>--max-loc N</code>, <code>--parallel</code></td>
+                        </tr>
+                        <tr>
+                            <td><code class="cmd">dry</code></td>
+                            <td class="desc">Detect duplicate code (DRY violations)</td>
+                            <td><code>--min-lines N</code>, <code>--min-occurrences N</code></td>
+                        </tr>
+                        <tr>
+                            <td><code class="cmd">magic-numbers</code></td>
+                            <td class="desc">Detect unnamed numeric literals</td>
+                            <td><code>--allowed-numbers LIST</code></td>
+                        </tr>
+                        <tr>
+                            <td><code class="cmd">file-placement</code></td>
+                            <td class="desc">Check file organization rules</td>
+                            <td><code>--recursive/--no-recursive</code></td>
+                        </tr>
+                        <tr>
+                            <td><code class="cmd">file-header</code></td>
+                            <td class="desc">Validate file headers</td>
+                            <td><code>--recursive/--no-recursive</code></td>
+                        </tr>
+                        <tr>
+                            <td><code class="cmd">print-statements</code></td>
+                            <td class="desc">Detect print/console.log statements</td>
+                            <td><code>--recursive/--no-recursive</code></td>
+                        </tr>
+                        <tr>
+                            <td><code class="cmd">method-property</code></td>
+                            <td class="desc">Methods that should be @property</td>
+                            <td><code>--recursive/--no-recursive</code></td>
+                        </tr>
+                        <tr>
+                            <td><code class="cmd">stateless-class</code></td>
+                            <td class="desc">Classes without instance state</td>
+                            <td><code>--min-methods N</code></td>
+                        </tr>
+                        <tr>
+                            <td><code class="cmd">pipeline</code></td>
+                            <td class="desc">For loops with embedded filtering</td>
+                            <td><code>--min-continues N</code></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Common Options -->
+            <div class="section">
+                <h2>Common Command Options</h2>
+                <table>
+                    <tr>
+                        <td><code class="flag">--format, -f</code></td>
+                        <td class="desc"><code>text</code> | <code>json</code> | <code>sarif</code></td>
+                    </tr>
+                    <tr>
+                        <td><code class="flag">--recursive</code></td>
+                        <td class="desc">Scan directories recursively (default)</td>
+                    </tr>
+                    <tr>
+                        <td><code class="flag">--no-recursive</code></td>
+                        <td class="desc">Only scan top-level files</td>
+                    </tr>
+                    <tr>
+                        <td><code class="flag">--parallel, -p</code></td>
+                        <td class="desc">Enable multi-core processing</td>
+                    </tr>
+                </table>
+                <div class="note">
+                    <strong>Tip:</strong> Use <code>--format sarif</code> for CI/CD integration with GitHub Code Scanning.
+                </div>
+            </div>
+
+            <!-- Output Formats -->
+            <div class="section">
+                <h2>Output Formats</h2>
+                <table>
+                    <tr>
+                        <td><code>text</code></td>
+                        <td class="desc">Human-readable console output (default)</td>
+                    </tr>
+                    <tr>
+                        <td><code>json</code></td>
+                        <td class="desc">Machine-readable JSON array</td>
+                    </tr>
+                    <tr>
+                        <td><code>sarif</code></td>
+                        <td class="desc">SARIF v2.1.0 for GitHub/CI integration</td>
+                    </tr>
+                </table>
+            </div>
+
+            <!-- Exit Codes -->
+            <div class="section">
+                <h2>Exit Codes</h2>
+                <table>
+                    <tr>
+                        <td><span class="badge badge-success">0</span></td>
+                        <td class="desc">Success - no violations found</td>
+                    </tr>
+                    <tr>
+                        <td><span class="badge badge-warning">1</span></td>
+                        <td class="desc">Violations found</td>
+                    </tr>
+                    <tr>
+                        <td><span class="badge badge-error">2</span></td>
+                        <td class="desc">Error (invalid args, config, etc.)</td>
+                    </tr>
+                </table>
+            </div>
+
+            <!-- Quick Examples -->
+            <div class="section">
+                <h2>Quick Examples</h2>
+                <div class="command-syntax" style="margin-bottom: 0.5rem;">
+# Lint current directory
+thailint nesting .
+                </div>
+                <div class="command-syntax" style="margin-bottom: 0.5rem;">
+# Multiple paths with JSON output
+thailint srp -f json src/ lib/
+                </div>
+                <div class="command-syntax" style="margin-bottom: 0.5rem;">
+# SARIF for GitHub Actions
+thailint magic-numbers -f sarif src/ > results.sarif
+                </div>
+                <div class="command-syntax" style="margin-bottom: 0.5rem;">
+# Parallel processing for large repos
+thailint nesting --parallel src/
+                </div>
+                <div class="command-syntax">
+# Docker with explicit project root
+docker run -v $(pwd):/code thailint \
+  --project-root /code nesting /code/src/
+                </div>
+            </div>
+
+            <!-- Config Commands -->
+            <div class="section">
+                <h2>Configuration Commands</h2>
+                <table>
+                    <tr>
+                        <td><code class="cmd">init-config</code></td>
+                        <td class="desc">Create .thailint.yaml with defaults</td>
+                    </tr>
+                    <tr>
+                        <td><code class="cmd">config show</code></td>
+                        <td class="desc">Display current configuration</td>
+                    </tr>
+                    <tr>
+                        <td><code class="cmd">config get KEY</code></td>
+                        <td class="desc">Get specific config value</td>
+                    </tr>
+                    <tr>
+                        <td><code class="cmd">config set KEY VAL</code></td>
+                        <td class="desc">Set config value</td>
+                    </tr>
+                    <tr>
+                        <td><code class="cmd">config reset</code></td>
+                        <td class="desc">Reset to defaults</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

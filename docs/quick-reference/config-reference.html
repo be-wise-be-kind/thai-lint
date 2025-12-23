@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<!--
+Purpose: Configuration quick reference for thai-lint .thailint.yaml files
+
+Scope: All linter configuration options, defaults, and language-specific thresholds
+
+Overview: Comprehensive configuration reference designed for quick lookup of all
+    .thailint.yaml options. Covers global ignore patterns, all 8 linter configurations
+    with their specific options, language-specific thresholds (Python, TypeScript,
+    JavaScript), and filter settings. Optimized for both screen viewing and printing.
+
+Dependencies: None (standalone HTML)
+
+Exports: Configuration documentation
+
+Related: docs/configuration.md for detailed documentation with examples
+
+Implementation: Static HTML with embedded CSS, print-optimized layout
+-->
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>thai-lint Configuration Reference</title>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-light: #dbeafe;
+            --success: #059669;
+            --success-light: #d1fae5;
+            --warning: #d97706;
+            --warning-light: #fef3c7;
+            --purple: #7c3aed;
+            --purple-light: #ede9fe;
+            --gray-50: #f9fafb;
+            --gray-100: #f3f4f6;
+            --gray-200: #e5e7eb;
+            --gray-300: #d1d5db;
+            --gray-600: #4b5563;
+            --gray-800: #1f2937;
+            --gray-900: #111827;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.5;
+            color: var(--gray-800);
+            background: var(--gray-50);
+            padding: 1.5rem;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 2px solid var(--gray-200);
+        }
+
+        h1 {
+            font-size: 1.75rem;
+            color: var(--gray-900);
+        }
+
+        .back-link {
+            color: var(--primary);
+            text-decoration: none;
+            font-size: 0.875rem;
+        }
+
+        .back-link:hover {
+            text-decoration: underline;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 1.25rem;
+        }
+
+        .section {
+            background: white;
+            border-radius: 8px;
+            padding: 1.25rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+        }
+
+        .section h2 {
+            font-size: 1rem;
+            color: var(--primary);
+            margin-bottom: 0.75rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid var(--gray-200);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .section h3 {
+            font-size: 0.85rem;
+            color: var(--gray-800);
+            margin: 0.75rem 0 0.5rem 0;
+        }
+
+        .config-file {
+            background: var(--gray-900);
+            color: #e5e7eb;
+            padding: 0.75rem 1rem;
+            border-radius: 6px;
+            font-family: 'SF Mono', Monaco, 'Cascadia Code', monospace;
+            font-size: 0.75rem;
+            margin-bottom: 1rem;
+            overflow-x: auto;
+            white-space: pre;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.8rem;
+        }
+
+        th, td {
+            text-align: left;
+            padding: 0.4rem 0.5rem;
+            border-bottom: 1px solid var(--gray-100);
+        }
+
+        th {
+            font-weight: 600;
+            color: var(--gray-600);
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        code {
+            background: var(--gray-100);
+            padding: 0.125rem 0.375rem;
+            border-radius: 4px;
+            font-family: 'SF Mono', Monaco, 'Cascadia Code', monospace;
+            font-size: 0.75rem;
+            color: var(--gray-800);
+        }
+
+        .key {
+            font-weight: 600;
+            color: var(--gray-900);
+        }
+
+        .type {
+            color: var(--purple);
+            font-size: 0.7rem;
+        }
+
+        .default {
+            color: var(--success);
+        }
+
+        .desc {
+            color: var(--gray-600);
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 0.125rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.65rem;
+            font-weight: 600;
+        }
+
+        .badge-lang { background: var(--purple-light); color: var(--purple); }
+
+        .note {
+            background: var(--primary-light);
+            border-left: 3px solid var(--primary);
+            padding: 0.5rem 0.75rem;
+            font-size: 0.8rem;
+            margin-top: 0.75rem;
+            border-radius: 0 4px 4px 0;
+        }
+
+        .full-width {
+            grid-column: 1 / -1;
+        }
+
+        .lang-table {
+            margin-top: 0.5rem;
+        }
+
+        .lang-table th {
+            background: var(--gray-50);
+        }
+
+        @media print {
+            body {
+                background: white;
+                padding: 0.5rem;
+                font-size: 9pt;
+            }
+            .section {
+                box-shadow: none;
+                border: 1px solid var(--gray-200);
+                break-inside: avoid;
+                padding: 0.75rem;
+            }
+            .grid {
+                gap: 0.75rem;
+            }
+            header {
+                margin-bottom: 0.75rem;
+            }
+            .back-link { display: none; }
+        }
+
+        @media (max-width: 768px) {
+            .grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>thai-lint Configuration Reference</h1>
+            <a href="index.html" class="back-link">&larr; Back to Quick Reference</a>
+        </header>
+
+        <div class="grid">
+            <!-- Config File Location -->
+            <div class="section">
+                <h2>Config File</h2>
+                <div class="config-file">.thailint.yaml   # or .thailint.json</div>
+                <p class="desc" style="font-size: 0.8rem;">
+                    Place in project root. Use <code>thailint init-config</code> to create with defaults.
+                </p>
+            </div>
+
+            <!-- Global Ignore -->
+            <div class="section">
+                <h2>Global Ignore Patterns</h2>
+                <div class="config-file">ignore:
+  - "__pycache__/"
+  - "*.pyc"
+  - ".git/"
+  - ".venv/"
+  - "node_modules/"
+  - "dist/"
+  - "build/"</div>
+                <p class="desc" style="font-size: 0.8rem;">
+                    Glob patterns applied to all linters. Directories should end with <code>/</code>.
+                </p>
+            </div>
+
+            <!-- Nesting Config -->
+            <div class="section">
+                <h2>nesting</h2>
+                <table>
+                    <tr>
+                        <td class="key">enabled</td>
+                        <td class="type">bool</td>
+                        <td class="default">true</td>
+                    </tr>
+                    <tr>
+                        <td class="key">max_nesting_depth</td>
+                        <td class="type">int</td>
+                        <td class="default">3</td>
+                    </tr>
+                </table>
+                <h3>Language-Specific <span class="badge badge-lang">override</span></h3>
+                <table class="lang-table">
+                    <thead>
+                        <tr><th>Language</th><th>max_nesting_depth</th></tr>
+                    </thead>
+                    <tbody>
+                        <tr><td>python</td><td class="default">3</td></tr>
+                        <tr><td>typescript</td><td class="default">4</td></tr>
+                        <tr><td>javascript</td><td class="default">3</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- SRP Config -->
+            <div class="section">
+                <h2>srp</h2>
+                <table>
+                    <tr>
+                        <td class="key">enabled</td>
+                        <td class="type">bool</td>
+                        <td class="default">true</td>
+                    </tr>
+                    <tr>
+                        <td class="key">max_methods</td>
+                        <td class="type">int</td>
+                        <td class="default">8</td>
+                    </tr>
+                    <tr>
+                        <td class="key">max_loc</td>
+                        <td class="type">int</td>
+                        <td class="default">200</td>
+                    </tr>
+                    <tr>
+                        <td class="key">check_keywords</td>
+                        <td class="type">bool</td>
+                        <td class="default">true</td>
+                    </tr>
+                    <tr>
+                        <td class="key">keywords</td>
+                        <td class="type">list</td>
+                        <td class="desc">Manager, Handler, Processor, Utility, Helper</td>
+                    </tr>
+                </table>
+                <h3>Language-Specific <span class="badge badge-lang">override</span></h3>
+                <table class="lang-table">
+                    <thead>
+                        <tr><th>Language</th><th>max_methods</th><th>max_loc</th></tr>
+                    </thead>
+                    <tbody>
+                        <tr><td>python</td><td class="default">8</td><td class="default">200</td></tr>
+                        <tr><td>typescript</td><td class="default">10</td><td class="default">250</td></tr>
+                        <tr><td>javascript</td><td class="default">10</td><td class="default">225</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- DRY Config -->
+            <div class="section">
+                <h2>dry</h2>
+                <table>
+                    <tr>
+                        <td class="key">enabled</td>
+                        <td class="type">bool</td>
+                        <td class="default">true</td>
+                    </tr>
+                    <tr>
+                        <td class="key">min_duplicate_lines</td>
+                        <td class="type">int</td>
+                        <td class="default">4</td>
+                    </tr>
+                    <tr>
+                        <td class="key">min_duplicate_tokens</td>
+                        <td class="type">int</td>
+                        <td class="default">30</td>
+                    </tr>
+                    <tr>
+                        <td class="key">min_occurrences</td>
+                        <td class="type">int</td>
+                        <td class="default">2</td>
+                    </tr>
+                    <tr>
+                        <td class="key">detect_duplicate_constants</td>
+                        <td class="type">bool</td>
+                        <td class="default">true</td>
+                    </tr>
+                    <tr>
+                        <td class="key">storage_mode</td>
+                        <td class="type">str</td>
+                        <td class="default">"memory"</td>
+                    </tr>
+                </table>
+                <h3>Filters</h3>
+                <table>
+                    <tr>
+                        <td class="key">keyword_argument_filter</td>
+                        <td class="default">true</td>
+                    </tr>
+                    <tr>
+                        <td class="key">import_group_filter</td>
+                        <td class="default">true</td>
+                    </tr>
+                    <tr>
+                        <td class="key">logger_call_filter</td>
+                        <td class="default">true</td>
+                    </tr>
+                    <tr>
+                        <td class="key">exception_reraise_filter</td>
+                        <td class="default">true</td>
+                    </tr>
+                </table>
+            </div>
+
+            <!-- Magic Numbers Config -->
+            <div class="section">
+                <h2>magic-numbers</h2>
+                <table>
+                    <tr>
+                        <td class="key">enabled</td>
+                        <td class="type">bool</td>
+                        <td class="default">true</td>
+                    </tr>
+                    <tr>
+                        <td class="key">allowed_numbers</td>
+                        <td class="type">list</td>
+                        <td class="default">[-1, 0, 1, 2, 3, 4, 5, 10, 100, 1000]</td>
+                    </tr>
+                    <tr>
+                        <td class="key">max_small_integer</td>
+                        <td class="type">int</td>
+                        <td class="default">10</td>
+                    </tr>
+                </table>
+                <div class="note">
+                    <strong>Note:</strong> <code>max_small_integer</code> allows numbers up to this value in <code>range()</code> and <code>enumerate()</code> calls.
+                </div>
+            </div>
+
+            <!-- File Placement Config -->
+            <div class="section">
+                <h2>file-placement</h2>
+                <div class="config-file">file-placement:
+  global_patterns:
+    deny:
+      - pattern: '^(?!src/).*\.py$'
+        message: "Python files go in src/"
+  directories:
+    src:
+      allow: ['.*\.py$']
+      deny: ['test_.*\.py$']
+    tests:
+      allow: ['test_.*\.py$']</div>
+                <p class="desc" style="font-size: 0.8rem;">
+                    Uses regex patterns. <code>allow</code> permits matching files, <code>deny</code> blocks them.
+                </p>
+            </div>
+
+            <!-- Other Linters -->
+            <div class="section">
+                <h2>stateless-class</h2>
+                <table>
+                    <tr>
+                        <td class="key">enabled</td>
+                        <td class="type">bool</td>
+                        <td class="default">true</td>
+                    </tr>
+                    <tr>
+                        <td class="key">min_methods</td>
+                        <td class="type">int</td>
+                        <td class="default">2</td>
+                    </tr>
+                    <tr>
+                        <td class="key">ignore</td>
+                        <td class="type">list</td>
+                        <td class="default">["tests/"]</td>
+                    </tr>
+                </table>
+            </div>
+
+            <div class="section">
+                <h2>collection-pipeline</h2>
+                <table>
+                    <tr>
+                        <td class="key">enabled</td>
+                        <td class="type">bool</td>
+                        <td class="default">true</td>
+                    </tr>
+                    <tr>
+                        <td class="key">min_continues</td>
+                        <td class="type">int</td>
+                        <td class="default">1</td>
+                    </tr>
+                    <tr>
+                        <td class="key">ignore</td>
+                        <td class="type">list</td>
+                        <td class="default">["tests/"]</td>
+                    </tr>
+                </table>
+            </div>
+
+            <!-- Ignore Syntax -->
+            <div class="section full-width">
+                <h2>Inline Ignore Syntax</h2>
+                <table>
+                    <thead>
+                        <tr><th>Linter</th><th>Ignore Line</th><th>Ignore Block</th></tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>All (except DRY)</td>
+                            <td><code># thailint: ignore[rule-id]</code></td>
+                            <td><code># thailint: ignore-file[rule-id]</code></td>
+                        </tr>
+                        <tr>
+                            <td>DRY only</td>
+                            <td><code># dry: ignore-next</code></td>
+                            <td><code># dry: ignore-block</code> ... <code># dry: end-ignore</code></td>
+                        </tr>
+                        <tr>
+                            <td>TypeScript/JS</td>
+                            <td><code>// thailint: ignore[rule-id]</code></td>
+                            <td><code>/* thailint: ignore-file[rule-id] */</code></td>
+                        </tr>
+                    </tbody>
+                </table>
+                <div class="note">
+                    <strong>Example:</strong> <code># thailint: ignore[srp.violation]</code> on a class definition ignores SRP for that class.
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
