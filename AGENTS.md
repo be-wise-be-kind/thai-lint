@@ -58,9 +58,10 @@ The AI Linter - Lint and governance for AI-generated code across multiple langua
 ## Navigation
 
 ### Critical Documents
-- **Project Context**: `.ai/docs/PROJECT_CONTEXT.md` - Architecture and philosophy
+- **AI Context**: `.ai/ai-context.md` - Development context and patterns
+- **AI Rules**: `.ai/ai-rules.md` - Quality gates and mandatory rules
+- **Project Context**: `.ai/docs/PROJECT_CONTEXT.md` - Deep dive architecture
 - **Index**: `.ai/index.yaml` - Repository structure and navigation
-- **Layout**: `.ai/layout.yaml` - Directory organization
 
 ### How-To Guides
 See `.ai/howtos/` for step-by-step guides on common tasks.
