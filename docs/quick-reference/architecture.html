@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<!--
+Purpose: Architecture documentation for thai-lint internals
+
+Scope: System components, design patterns, class relationships, and architectural decisions
+
+Overview: Comprehensive architecture documentation for developers and contributors.
+    Explains the plugin architecture, registry pattern, orchestrator design, and
+    configuration system. Includes SVG diagrams showing component relationships
+    and execution flow. Essential for understanding how thai-lint works internally.
+
+Dependencies: None (standalone HTML with embedded SVG)
+
+Exports: Architecture documentation
+
+Related: linter-flow.html for execution details, plugin-guide.html for extension guide
+
+Implementation: Static HTML with embedded SVG diagrams
+-->
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>thai-lint Architecture</title>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-light: #dbeafe;
+            --secondary: #7c3aed;
+            --secondary-light: #ede9fe;
+            --success: #059669;
+            --success-light: #d1fae5;
+            --warning: #d97706;
+            --gray-50: #f9fafb;
+            --gray-100: #f3f4f6;
+            --gray-200: #e5e7eb;
+            --gray-600: #4b5563;
+            --gray-800: #1f2937;
+            --gray-900: #111827;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.6;
+            color: var(--gray-800);
+            background: var(--gray-50);
+            padding: 2rem;
+        }
+
+        .container { max-width: 1000px; margin: 0 auto; }
+
+        header {
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+            border-bottom: 2px solid var(--gray-200);
+        }
+
+        h1 { font-size: 2rem; color: var(--gray-900); margin-bottom: 0.5rem; }
+        .subtitle { color: var(--gray-600); }
+
+        nav {
+            background: white;
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 2rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        nav a {
+            color: var(--primary);
+            text-decoration: none;
+            margin-right: 1.5rem;
+        }
+
+        nav a:hover { text-decoration: underline; }
+
+        .section {
+            background: white;
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        h2 {
+            font-size: 1.25rem;
+            color: var(--primary);
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid var(--gray-200);
+        }
+
+        h3 {
+            font-size: 1rem;
+            color: var(--gray-800);
+            margin: 1.25rem 0 0.75rem 0;
+        }
+
+        p { margin-bottom: 1rem; }
+
+        .diagram {
+            background: var(--gray-50);
+            border: 1px solid var(--gray-200);
+            border-radius: 8px;
+            padding: 1rem;
+            margin: 1rem 0;
+            overflow-x: auto;
+        }
+
+        svg { display: block; margin: 0 auto; }
+
+        code {
+            background: var(--gray-100);
+            padding: 0.125rem 0.375rem;
+            border-radius: 4px;
+            font-family: 'SF Mono', Monaco, monospace;
+            font-size: 0.85rem;
+        }
+
+        pre {
+            background: var(--gray-900);
+            color: #e5e7eb;
+            padding: 1rem;
+            border-radius: 6px;
+            overflow-x: auto;
+            font-size: 0.8rem;
+            margin: 1rem 0;
+        }
+
+        .pattern-box {
+            background: var(--primary-light);
+            border-left: 4px solid var(--primary);
+            padding: 1rem;
+            margin: 1rem 0;
+            border-radius: 0 6px 6px 0;
+        }
+
+        .pattern-box h4 {
+            color: var(--primary);
+            margin-bottom: 0.5rem;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1rem 0;
+            font-size: 0.9rem;
+        }
+
+        th, td {
+            padding: 0.75rem;
+            text-align: left;
+            border-bottom: 1px solid var(--gray-200);
+        }
+
+        th {
+            background: var(--gray-50);
+            font-weight: 600;
+            color: var(--gray-600);
+        }
+
+        .back-link {
+            color: var(--primary);
+            text-decoration: none;
+        }
+
+        @media print {
+            body { background: white; padding: 0.5rem; }
+            .section { box-shadow: none; border: 1px solid var(--gray-200); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <a href="index.html" class="back-link">&larr; Back to Quick Reference</a>
+            <h1>thai-lint Architecture</h1>
+            <p class="subtitle">System design, components, and patterns</p>
+        </header>
+
+        <nav>
+            <a href="#overview">Overview</a>
+            <a href="#components">Components</a>
+            <a href="#patterns">Patterns</a>
+            <a href="#classes">Class Hierarchy</a>
+            <a href="linter-flow.html">Execution Flow &rarr;</a>
+        </nav>
+
+        <!-- System Overview -->
+        <section id="overview" class="section">
+            <h2>System Overview</h2>
+            <p>thai-lint is a plugin-based linting framework with auto-discovery of rules, multi-language support, and a 5-level ignore system.</p>
+
+            <div class="diagram">
+                <svg width="800" height="400" viewBox="0 0 800 400">
+                    <!-- Background layers -->
+                    <rect x="10" y="10" width="780" height="80" rx="8" fill="#dbeafe" stroke="#2563eb" stroke-width="2"/>
+                    <text x="400" y="35" text-anchor="middle" font-weight="bold" fill="#1e40af">Entry Points</text>
+
+                    <rect x="10" y="110" width="780" height="100" rx="8" fill="#ede9fe" stroke="#7c3aed" stroke-width="2"/>
+                    <text x="400" y="135" text-anchor="middle" font-weight="bold" fill="#5b21b6">Core Engine</text>
+
+                    <rect x="10" y="230" width="780" height="80" rx="8" fill="#d1fae5" stroke="#059669" stroke-width="2"/>
+                    <text x="400" y="255" text-anchor="middle" font-weight="bold" fill="#047857">Rules Layer</text>
+
+                    <rect x="10" y="330" width="780" height="60" rx="8" fill="#fef3c7" stroke="#d97706" stroke-width="2"/>
+                    <text x="400" y="355" text-anchor="middle" font-weight="bold" fill="#92400e">Configuration</text>
+
+                    <!-- Entry Point boxes -->
+                    <rect x="50" y="45" width="120" height="35" rx="4" fill="white" stroke="#2563eb"/>
+                    <text x="110" y="68" text-anchor="middle" font-size="12">CLI (Click)</text>
+
+                    <rect x="200" y="45" width="120" height="35" rx="4" fill="white" stroke="#2563eb"/>
+                    <text x="260" y="68" text-anchor="middle" font-size="12">API (Linter)</text>
+
+                    <rect x="350" y="45" width="120" height="35" rx="4" fill="white" stroke="#2563eb"/>
+                    <text x="410" y="68" text-anchor="middle" font-size="12">Direct Import</text>
+
+                    <!-- Core Engine boxes -->
+                    <rect x="50" y="150" width="150" height="50" rx="4" fill="white" stroke="#7c3aed"/>
+                    <text x="125" y="172" text-anchor="middle" font-size="12" font-weight="bold">Orchestrator</text>
+                    <text x="125" y="188" text-anchor="middle" font-size="10" fill="#666">Coordinates execution</text>
+
+                    <rect x="230" y="150" width="150" height="50" rx="4" fill="white" stroke="#7c3aed"/>
+                    <text x="305" y="172" text-anchor="middle" font-size="12" font-weight="bold">RuleRegistry</text>
+                    <text x="305" y="188" text-anchor="middle" font-size="10" fill="#666">Rule storage/lookup</text>
+
+                    <rect x="410" y="150" width="150" height="50" rx="4" fill="white" stroke="#7c3aed"/>
+                    <text x="485" y="172" text-anchor="middle" font-size="12" font-weight="bold">RuleDiscovery</text>
+                    <text x="485" y="188" text-anchor="middle" font-size="10" fill="#666">Auto-finds rules</text>
+
+                    <rect x="590" y="150" width="150" height="50" rx="4" fill="white" stroke="#7c3aed"/>
+                    <text x="665" y="172" text-anchor="middle" font-size="12" font-weight="bold">IgnoreParser</text>
+                    <text x="665" y="188" text-anchor="middle" font-size="10" fill="#666">5-level suppression</text>
+
+                    <!-- Rules Layer boxes -->
+                    <rect x="50" y="265" width="100" height="35" rx="4" fill="white" stroke="#059669"/>
+                    <text x="100" y="287" text-anchor="middle" font-size="11">NestingRule</text>
+
+                    <rect x="170" y="265" width="100" height="35" rx="4" fill="white" stroke="#059669"/>
+                    <text x="220" y="287" text-anchor="middle" font-size="11">SRPRule</text>
+
+                    <rect x="290" y="265" width="100" height="35" rx="4" fill="white" stroke="#059669"/>
+                    <text x="340" y="287" text-anchor="middle" font-size="11">DRYRule</text>
+
+                    <rect x="410" y="265" width="100" height="35" rx="4" fill="white" stroke="#059669"/>
+                    <text x="460" y="287" text-anchor="middle" font-size="11">MagicNumbers</text>
+
+                    <rect x="530" y="265" width="100" height="35" rx="4" fill="white" stroke="#059669"/>
+                    <text x="580" y="287" text-anchor="middle" font-size="11">FilePlacement</text>
+
+                    <rect x="650" y="265" width="100" height="35" rx="4" fill="white" stroke="#059669"/>
+                    <text x="700" y="287" text-anchor="middle" font-size="11">+ 5 more...</text>
+
+                    <!-- Config boxes -->
+                    <rect x="150" y="355" width="150" height="30" rx="4" fill="white" stroke="#d97706"/>
+                    <text x="225" y="375" text-anchor="middle" font-size="11">.thailint.yaml</text>
+
+                    <rect x="330" y="355" width="150" height="30" rx="4" fill="white" stroke="#d97706"/>
+                    <text x="405" y="375" text-anchor="middle" font-size="11">.thailintignore</text>
+
+                    <rect x="510" y="355" width="150" height="30" rx="4" fill="white" stroke="#d97706"/>
+                    <text x="585" y="375" text-anchor="middle" font-size="11">Inline Directives</text>
+
+                    <!-- Arrows -->
+                    <defs>
+                        <marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+                            <path d="M0,0 L0,6 L9,3 z" fill="#666"/>
+                        </marker>
+                    </defs>
+
+                    <line x1="110" y1="80" x2="110" y2="145" stroke="#666" stroke-width="1.5" marker-end="url(#arrow)"/>
+                    <line x1="260" y1="80" x2="200" y2="145" stroke="#666" stroke-width="1.5" marker-end="url(#arrow)"/>
+                    <line x1="125" y1="200" x2="125" y2="260" stroke="#666" stroke-width="1.5" marker-end="url(#arrow)"/>
+                    <line x1="305" y1="150" x2="305" y2="145" stroke="#666" stroke-width="1.5"/>
+                    <line x1="200" y1="175" x2="225" y2="175" stroke="#666" stroke-width="1.5" marker-end="url(#arrow)"/>
+                    <line x1="380" y1="175" x2="405" y2="175" stroke="#666" stroke-width="1.5" marker-end="url(#arrow)"/>
+                </svg>
+            </div>
+        </section>
+
+        <!-- Core Components -->
+        <section id="components" class="section">
+            <h2>Core Components</h2>
+
+            <h3>Orchestrator</h3>
+            <p>Central coordinator for linting operations. Manages rule discovery, file traversal, and violation collection.</p>
+            <pre>class Orchestrator:
+    def lint_file(path: Path) -> list[Violation]
+    def lint_directory(path: Path, recursive: bool) -> list[Violation]
+    def lint_files_parallel(paths: list[Path]) -> list[Violation]</pre>
+
+            <h3>RuleRegistry</h3>
+            <p>Dictionary-based registry with O(1) lookup by rule_id. Supports auto-discovery from packages.</p>
+            <pre>class RuleRegistry:
+    def register(rule: BaseLintRule) -> None
+    def get(rule_id: str) -> BaseLintRule | None
+    def discover_rules(package: str) -> int  # Returns count discovered</pre>
+
+            <h3>RuleDiscovery</h3>
+            <p>Uses <code>pkgutil</code> and <code>inspect</code> to find all concrete <code>BaseLintRule</code> subclasses.</p>
+
+            <h3>FileLintContext</h3>
+            <p>Carries file information and metadata to rules. Lazy-loads content on first access.</p>
+            <pre>class FileLintContext(BaseLintContext):
+    file_path: Path          # Path to file
+    file_content: str        # Lazy-loaded content
+    language: str            # Detected language
+    metadata: dict           # Config + project_root</pre>
+        </section>
+
+        <!-- Design Patterns -->
+        <section id="patterns" class="section">
+            <h2>Design Patterns</h2>
+
+            <div class="pattern-box">
+                <h4>1. Plugin Architecture (Registry + Auto-Discovery)</h4>
+                <p>Rules are discovered automatically from <code>src/linters/</code>. Just create a class extending <code>BaseLintRule</code> and it's registered.</p>
+            </div>
+
+            <div class="pattern-box">
+                <h4>2. Template Method Pattern (MultiLanguageLintRule)</h4>
+                <p>Base class handles language dispatch; subclasses implement <code>_check_python()</code> and <code>_check_typescript()</code>.</p>
+            </div>
+
+            <div class="pattern-box">
+                <h4>3. Strategy Pattern (Language Analyzers)</h4>
+                <p>Each linter delegates to specialized analyzers: <code>PythonNestingAnalyzer</code>, <code>TypeScriptNestingAnalyzer</code>, etc.</p>
+            </div>
+
+            <div class="pattern-box">
+                <h4>4. Context Object Pattern</h4>
+                <p><code>BaseLintContext</code> encapsulates file info, config, and metadata. Passed to all rule checks.</p>
+            </div>
+
+            <div class="pattern-box">
+                <h4>5. Lazy Initialization</h4>
+                <p>Rules aren't discovered until first lint operation. Saves ~77ms on commands like <code>--help</code>.</p>
+            </div>
+        </section>
+
+        <!-- Class Hierarchy -->
+        <section id="classes" class="section">
+            <h2>Class Hierarchy</h2>
+
+            <div class="diagram">
+                <svg width="700" height="320" viewBox="0 0 700 320">
+                    <!-- BaseLintRule hierarchy -->
+                    <rect x="250" y="10" width="200" height="40" rx="4" fill="#dbeafe" stroke="#2563eb" stroke-width="2"/>
+                    <text x="350" y="35" text-anchor="middle" font-weight="bold" font-size="13">BaseLintRule (ABC)</text>
+
+                    <line x1="350" y1="50" x2="350" y2="70" stroke="#666" stroke-width="1.5"/>
+                    <line x1="150" y1="70" x2="550" y2="70" stroke="#666" stroke-width="1.5"/>
+
+                    <line x1="150" y1="70" x2="150" y2="90" stroke="#666" stroke-width="1.5"/>
+                    <line x1="350" y1="70" x2="350" y2="90" stroke="#666" stroke-width="1.5"/>
+                    <line x1="550" y1="70" x2="550" y2="90" stroke="#666" stroke-width="1.5"/>
+
+                    <rect x="50" y="90" width="200" height="40" rx="4" fill="#ede9fe" stroke="#7c3aed" stroke-width="2"/>
+                    <text x="150" y="115" text-anchor="middle" font-weight="bold" font-size="12">MultiLanguageLintRule</text>
+
+                    <rect x="250" y="90" width="200" height="40" rx="4" fill="#d1fae5" stroke="#059669" stroke-width="2"/>
+                    <text x="350" y="115" text-anchor="middle" font-size="12">FilePlacementRule</text>
+
+                    <rect x="450" y="90" width="200" height="40" rx="4" fill="#d1fae5" stroke="#059669" stroke-width="2"/>
+                    <text x="550" y="115" text-anchor="middle" font-size="12">FileHeaderRule</text>
+
+                    <!-- MultiLanguageLintRule children -->
+                    <line x1="150" y1="130" x2="150" y2="150" stroke="#666" stroke-width="1.5"/>
+                    <line x1="50" y1="150" x2="250" y2="150" stroke="#666" stroke-width="1.5"/>
+
+                    <line x1="50" y1="150" x2="50" y2="170" stroke="#666" stroke-width="1.5"/>
+                    <line x1="150" y1="150" x2="150" y2="170" stroke="#666" stroke-width="1.5"/>
+                    <line x1="250" y1="150" x2="250" y2="170" stroke="#666" stroke-width="1.5"/>
+
+                    <rect x="10" y="170" width="80" height="35" rx="4" fill="white" stroke="#059669"/>
+                    <text x="50" y="192" text-anchor="middle" font-size="11">Nesting</text>
+
+                    <rect x="110" y="170" width="80" height="35" rx="4" fill="white" stroke="#059669"/>
+                    <text x="150" y="192" text-anchor="middle" font-size="11">SRP</text>
+
+                    <rect x="210" y="170" width="80" height="35" rx="4" fill="white" stroke="#059669"/>
+                    <text x="250" y="192" text-anchor="middle" font-size="11">DRY</text>
+
+                    <!-- BaseLintContext hierarchy -->
+                    <rect x="400" y="180" width="180" height="40" rx="4" fill="#dbeafe" stroke="#2563eb" stroke-width="2"/>
+                    <text x="490" y="205" text-anchor="middle" font-weight="bold" font-size="12">BaseLintContext (ABC)</text>
+
+                    <line x1="490" y1="220" x2="490" y2="250" stroke="#666" stroke-width="1.5"/>
+
+                    <rect x="400" y="250" width="180" height="40" rx="4" fill="#d1fae5" stroke="#059669" stroke-width="2"/>
+                    <text x="490" y="275" text-anchor="middle" font-size="12">FileLintContext</text>
+
+                    <!-- Legend -->
+                    <rect x="10" y="260" width="15" height="15" fill="#dbeafe" stroke="#2563eb"/>
+                    <text x="30" y="272" font-size="11">Abstract Base Class</text>
+
+                    <rect x="10" y="280" width="15" height="15" fill="#ede9fe" stroke="#7c3aed"/>
+                    <text x="30" y="292" font-size="11">Template Method Base</text>
+
+                    <rect x="10" y="300" width="15" height="15" fill="#d1fae5" stroke="#059669"/>
+                    <text x="30" y="312" font-size="11">Concrete Implementation</text>
+                </svg>
+            </div>
+
+            <h3>Key Interfaces</h3>
+            <table>
+                <tr>
+                    <th>Method</th>
+                    <th>Class</th>
+                    <th>Purpose</th>
+                </tr>
+                <tr>
+                    <td><code>check(context)</code></td>
+                    <td>BaseLintRule</td>
+                    <td>Analyze single file, return violations</td>
+                </tr>
+                <tr>
+                    <td><code>finalize()</code></td>
+                    <td>BaseLintRule</td>
+                    <td>Cross-file analysis (e.g., DRY)</td>
+                </tr>
+                <tr>
+                    <td><code>_check_python()</code></td>
+                    <td>MultiLanguageLintRule</td>
+                    <td>Python-specific analysis</td>
+                </tr>
+                <tr>
+                    <td><code>_check_typescript()</code></td>
+                    <td>MultiLanguageLintRule</td>
+                    <td>TypeScript-specific analysis</td>
+                </tr>
+                <tr>
+                    <td><code>from_dict()</code></td>
+                    <td>Config classes</td>
+                    <td>Load config with language overrides</td>
+                </tr>
+            </table>
+        </section>
+
+        <!-- Directory Structure -->
+        <section class="section">
+            <h2>Directory Structure</h2>
+            <pre>src/
+├── api.py                 # Public Linter API
+├── cli_main.py            # CLI entry point (34 lines)
+├── cli/                   # CLI commands (Click)
+│   ├── main.py            # CLI group + logging
+│   ├── config.py          # Config commands
+│   ├── utils.py           # Shared utilities
+│   └── linters/           # Linter command modules
+├── core/                  # Core abstractions
+│   ├── base.py            # BaseLintRule, BaseLintContext
+│   ├── registry.py        # RuleRegistry
+│   ├── rule_discovery.py  # Auto-discovery
+│   └── types.py           # Violation, Severity
+├── orchestrator/          # Execution engine
+│   └── core.py            # Orchestrator, FileLintContext
+├── linter_config/         # Configuration
+│   ├── loader.py          # Config loading
+│   └── ignore.py          # 5-level ignore system
+├── linters/               # Rule implementations
+│   ├── nesting/           # Nesting depth rule
+│   ├── srp/               # Single Responsibility
+│   ├── dry/               # Don't Repeat Yourself
+│   └── ...                # 7 more linters
+└── formatters/            # Output formats
+    ├── sarif.py           # SARIF v2.1.0
+    └── json_formatter.py  # JSON output</pre>
+        </section>
+    </div>
+</body>
+</html>

@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<!--
+Purpose: Guide for extending thai-lint with new linters
+
+Scope: Step-by-step instructions for adding new lint rules
+
+Overview: Developer guide for creating new linting rules in thai-lint. Covers
+    the plugin architecture, required interfaces, configuration patterns, and
+    best practices. Includes complete code examples and directory structure.
+
+Dependencies: None (standalone HTML)
+
+Exports: Extension guide documentation
+
+Related: architecture.html for system design, linter-flow.html for execution details
+
+Implementation: Static HTML with code examples
+-->
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>thai-lint Plugin Guide</title>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-light: #dbeafe;
+            --secondary: #7c3aed;
+            --secondary-light: #ede9fe;
+            --success: #059669;
+            --success-light: #d1fae5;
+            --warning: #d97706;
+            --gray-50: #f9fafb;
+            --gray-100: #f3f4f6;
+            --gray-200: #e5e7eb;
+            --gray-600: #4b5563;
+            --gray-800: #1f2937;
+            --gray-900: #111827;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.6;
+            color: var(--gray-800);
+            background: var(--gray-50);
+            padding: 2rem;
+        }
+
+        .container { max-width: 900px; margin: 0 auto; }
+
+        header {
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+            border-bottom: 2px solid var(--gray-200);
+        }
+
+        h1 { font-size: 2rem; color: var(--gray-900); margin-bottom: 0.5rem; }
+        .subtitle { color: var(--gray-600); }
+
+        nav {
+            background: white;
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 2rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        nav a {
+            color: var(--primary);
+            text-decoration: none;
+            margin-right: 1.5rem;
+        }
+
+        .section {
+            background: white;
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        h2 {
+            font-size: 1.25rem;
+            color: var(--primary);
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid var(--gray-200);
+        }
+
+        h3 {
+            font-size: 1rem;
+            color: var(--gray-800);
+            margin: 1.25rem 0 0.75rem 0;
+        }
+
+        p { margin-bottom: 1rem; }
+
+        code {
+            background: var(--gray-100);
+            padding: 0.125rem 0.375rem;
+            border-radius: 4px;
+            font-family: 'SF Mono', Monaco, monospace;
+            font-size: 0.85rem;
+        }
+
+        pre {
+            background: var(--gray-900);
+            color: #e5e7eb;
+            padding: 1rem;
+            border-radius: 6px;
+            overflow-x: auto;
+            font-size: 0.8rem;
+            margin: 1rem 0;
+        }
+
+        .highlight { color: #93c5fd; }
+        .comment { color: #6b7280; }
+        .string { color: #86efac; }
+        .keyword { color: #c4b5fd; }
+
+        .tip {
+            background: var(--success-light);
+            border-left: 4px solid var(--success);
+            padding: 1rem;
+            margin: 1rem 0;
+            border-radius: 0 6px 6px 0;
+        }
+
+        .warning {
+            background: #fef3c7;
+            border-left: 4px solid var(--warning);
+            padding: 1rem;
+            margin: 1rem 0;
+            border-radius: 0 6px 6px 0;
+        }
+
+        .checklist {
+            list-style: none;
+            margin: 1rem 0;
+        }
+
+        .checklist li {
+            padding: 0.5rem 0 0.5rem 2rem;
+            position: relative;
+        }
+
+        .checklist li::before {
+            content: "☐";
+            position: absolute;
+            left: 0;
+            color: var(--primary);
+        }
+
+        .back-link {
+            color: var(--primary);
+            text-decoration: none;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1rem 0;
+            font-size: 0.9rem;
+        }
+
+        th, td {
+            padding: 0.75rem;
+            text-align: left;
+            border-bottom: 1px solid var(--gray-200);
+        }
+
+        th {
+            background: var(--gray-50);
+            font-weight: 600;
+        }
+
+        @media print {
+            body { background: white; padding: 0.5rem; }
+            .section { box-shadow: none; border: 1px solid var(--gray-200); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <a href="index.html" class="back-link">&larr; Back to Quick Reference</a>
+            <h1>Adding New Linters</h1>
+            <p class="subtitle">Step-by-step guide for extending thai-lint</p>
+        </header>
+
+        <nav>
+            <a href="architecture.html">&larr; Architecture</a>
+            <a href="linter-flow.html">&larr; Execution Flow</a>
+            <a href="#quick-start">Quick Start</a>
+            <a href="#full-example">Full Example</a>
+            <a href="#checklist">Checklist</a>
+        </nav>
+
+        <!-- Quick Start -->
+        <section id="quick-start" class="section">
+            <h2>Quick Start</h2>
+            <p>To add a new linter, create a package in <code>src/linters/</code> with a class extending <code>BaseLintRule</code>. It will be auto-discovered.</p>
+
+            <h3>Minimal Example</h3>
+            <pre><span class="comment"># src/linters/my_rule/__init__.py</span>
+<span class="keyword">from</span> .linter <span class="keyword">import</span> MyRule
+
+__all__ = [<span class="string">"MyRule"</span>]</pre>
+
+            <pre><span class="comment"># src/linters/my_rule/linter.py</span>
+<span class="keyword">from</span> src.core.base <span class="keyword">import</span> BaseLintRule, BaseLintContext
+<span class="keyword">from</span> src.core.types <span class="keyword">import</span> Violation, Severity
+
+<span class="keyword">class</span> <span class="highlight">MyRule</span>(BaseLintRule):
+    <span class="string">"""Detects something bad in code."""</span>
+
+    @property
+    <span class="keyword">def</span> <span class="highlight">rule_id</span>(self) -> str:
+        <span class="keyword">return</span> <span class="string">"my-category.my-rule"</span>
+
+    @property
+    <span class="keyword">def</span> <span class="highlight">rule_name</span>(self) -> str:
+        <span class="keyword">return</span> <span class="string">"My Rule Name"</span>
+
+    @property
+    <span class="keyword">def</span> <span class="highlight">description</span>(self) -> str:
+        <span class="keyword">return</span> <span class="string">"Explains what this rule checks for."</span>
+
+    <span class="keyword">def</span> <span class="highlight">check</span>(self, context: BaseLintContext) -> list[Violation]:
+        violations = []
+        <span class="comment"># Your analysis logic here</span>
+        <span class="keyword">if</span> something_bad:
+            violations.append(Violation(
+                rule_id=self.rule_id,
+                file_path=str(context.file_path),
+                line=42,
+                column=0,
+                message=<span class="string">"Something bad found"</span>,
+                severity=Severity.ERROR,
+                suggestion=<span class="string">"Do this instead"</span>
+            ))
+        <span class="keyword">return</span> violations</pre>
+
+            <div class="tip">
+                <strong>That's it!</strong> Your rule is now auto-discovered and will run with <code>thailint lint src/</code>.
+            </div>
+        </section>
+
+        <!-- Directory Structure -->
+        <section class="section">
+            <h2>Directory Structure</h2>
+            <p>Recommended structure for a multi-language linter:</p>
+
+            <pre>src/linters/my_rule/
+├── __init__.py              <span class="comment"># Package exports + lint() convenience function</span>
+├── linter.py                <span class="comment"># Main rule class (MyRule)</span>
+├── config.py                <span class="comment"># Configuration dataclass (MyConfig)</span>
+├── violation_builder.py     <span class="comment"># Violation factory (optional)</span>
+├── python_analyzer.py       <span class="comment"># Python-specific analysis</span>
+└── typescript_analyzer.py   <span class="comment"># TypeScript-specific analysis</span></pre>
+        </section>
+
+        <!-- Full Example -->
+        <section id="full-example" class="section">
+            <h2>Full Multi-Language Example</h2>
+            <p>For linters supporting multiple languages, extend <code>MultiLanguageLintRule</code>:</p>
+
+            <h3>1. Configuration (config.py)</h3>
+            <pre><span class="keyword">from</span> dataclasses <span class="keyword">import</span> dataclass
+<span class="keyword">from</span> typing <span class="keyword">import</span> Any
+
+@dataclass
+<span class="keyword">class</span> <span class="highlight">MyConfig</span>:
+    enabled: bool = True
+    threshold: int = 5  <span class="comment"># Your configurable value</span>
+
+    <span class="keyword">def</span> __post_init__(self):
+        <span class="keyword">if</span> self.threshold < 1:
+            <span class="keyword">raise</span> ValueError(<span class="string">"threshold must be >= 1"</span>)
+
+    @classmethod
+    <span class="keyword">def</span> <span class="highlight">from_dict</span>(
+        cls,
+        config: dict[str, Any],
+        language: str | None = None
+    ) -> <span class="string">"MyConfig"</span>:
+        <span class="comment"># Support language-specific overrides</span>
+        base = {
+            <span class="string">"enabled"</span>: config.get(<span class="string">"enabled"</span>, True),
+            <span class="string">"threshold"</span>: config.get(<span class="string">"threshold"</span>, 5),
+        }
+        <span class="keyword">if</span> language <span class="keyword">and</span> language <span class="keyword">in</span> config:
+            base.update(config[language])
+        <span class="keyword">return</span> cls(**base)</pre>
+
+            <h3>2. Rule Class (linter.py)</h3>
+            <pre><span class="keyword">from</span> src.core.base <span class="keyword">import</span> MultiLanguageLintRule, BaseLintContext
+<span class="keyword">from</span> src.core.types <span class="keyword">import</span> Violation
+<span class="keyword">from</span> src.core.linter_utils <span class="keyword">import</span> load_linter_config
+<span class="keyword">from</span> .config <span class="keyword">import</span> MyConfig
+
+<span class="keyword">class</span> <span class="highlight">MyRule</span>(MultiLanguageLintRule):
+    <span class="string">"""Multi-language rule example."""</span>
+
+    @property
+    <span class="keyword">def</span> rule_id(self) -> str:
+        <span class="keyword">return</span> <span class="string">"my-category.my-rule"</span>
+
+    @property
+    <span class="keyword">def</span> rule_name(self) -> str:
+        <span class="keyword">return</span> <span class="string">"My Rule"</span>
+
+    @property
+    <span class="keyword">def</span> description(self) -> str:
+        <span class="keyword">return</span> <span class="string">"Checks for something in Python and TypeScript."</span>
+
+    <span class="keyword">def</span> <span class="highlight">_load_config</span>(self, context: BaseLintContext) -> MyConfig:
+        <span class="comment"># Load from .thailint.yaml with language overrides</span>
+        <span class="keyword">return</span> load_linter_config(context, <span class="string">"my-rule"</span>, MyConfig)
+
+    <span class="keyword">def</span> <span class="highlight">_check_python</span>(
+        self,
+        context: BaseLintContext,
+        config: MyConfig
+    ) -> list[Violation]:
+        <span class="keyword">import</span> ast
+        tree = ast.parse(context.file_content)
+        <span class="comment"># Analyze Python AST...</span>
+        <span class="keyword">return</span> []
+
+    <span class="keyword">def</span> <span class="highlight">_check_typescript</span>(
+        self,
+        context: BaseLintContext,
+        config: MyConfig
+    ) -> list[Violation]:
+        <span class="comment"># Use tree-sitter for TypeScript...</span>
+        <span class="keyword">return</span> []</pre>
+
+            <h3>3. Configuration in .thailint.yaml</h3>
+            <pre><span class="comment"># .thailint.yaml</span>
+my-rule:
+  enabled: true
+  threshold: 5
+  python:
+    threshold: 3  <span class="comment"># Stricter for Python</span>
+  typescript:
+    threshold: 7  <span class="comment"># More lenient for TypeScript</span></pre>
+        </section>
+
+        <!-- Adding CLI Command -->
+        <section class="section">
+            <h2>Adding a CLI Command</h2>
+            <p>Add a dedicated CLI command in <code>src/cli/linters/</code>:</p>
+
+            <pre><span class="comment"># src/cli/linters/my_commands.py</span>
+<span class="keyword">import</span> click
+<span class="keyword">from</span> src.cli.main <span class="keyword">import</span> cli
+<span class="keyword">from</span> src.cli.utils <span class="keyword">import</span> format_option, handle_paths
+<span class="keyword">from</span> src.orchestrator.core <span class="keyword">import</span> Orchestrator
+
+@cli.command(<span class="string">"my-rule"</span>)
+@click.argument(<span class="string">"path"</span>, nargs=-1, type=click.Path(exists=True))
+@format_option
+@click.option(<span class="string">"--threshold"</span>, type=int, default=5, help=<span class="string">"Detection threshold"</span>)
+<span class="keyword">def</span> <span class="highlight">my_rule_command</span>(path, format, threshold):
+    <span class="string">"""Check for my-rule violations."""</span>
+    orchestrator = Orchestrator()
+    violations = orchestrator.lint_files(handle_paths(path))
+
+    <span class="comment"># Filter to just our rule</span>
+    violations = [v <span class="keyword">for</span> v <span class="keyword">in</span> violations <span class="keyword">if</span> v.rule_id.startswith(<span class="string">"my-category"</span>)]
+
+    <span class="comment"># Output formatting...</span>
+    <span class="keyword">if</span> violations:
+        <span class="keyword">raise</span> SystemExit(1)</pre>
+
+            <p>Register in <code>src/cli/linters/__init__.py</code>:</p>
+            <pre><span class="keyword">from</span> . <span class="keyword">import</span> my_commands  <span class="comment"># Add this import</span></pre>
+        </section>
+
+        <!-- Key Interfaces -->
+        <section class="section">
+            <h2>Key Interfaces</h2>
+
+            <table>
+                <tr>
+                    <th>Interface</th>
+                    <th>Purpose</th>
+                    <th>When to Implement</th>
+                </tr>
+                <tr>
+                    <td><code>BaseLintRule</code></td>
+                    <td>Base class with <code>check()</code></td>
+                    <td>Single-language or custom dispatch</td>
+                </tr>
+                <tr>
+                    <td><code>MultiLanguageLintRule</code></td>
+                    <td>Auto language dispatch</td>
+                    <td>Python + TypeScript support</td>
+                </tr>
+                <tr>
+                    <td><code>finalize()</code></td>
+                    <td>Cross-file analysis</td>
+                    <td>DRY-style duplicate detection</td>
+                </tr>
+                <tr>
+                    <td><code>Config.from_dict()</code></td>
+                    <td>Load from YAML</td>
+                    <td>Configurable thresholds</td>
+                </tr>
+            </table>
+        </section>
+
+        <!-- Checklist -->
+        <section id="checklist" class="section">
+            <h2>Implementation Checklist</h2>
+
+            <ul class="checklist">
+                <li>Create <code>src/linters/my_rule/</code> package</li>
+                <li>Implement rule class extending <code>BaseLintRule</code> or <code>MultiLanguageLintRule</code></li>
+                <li>Define unique <code>rule_id</code> (format: <code>category.rule-name</code>)</li>
+                <li>Return <code>list[Violation]</code> from <code>check()</code></li>
+                <li>Add configuration class with <code>from_dict()</code></li>
+                <li>Support ignore directives (<code># thailint: ignore[rule-id]</code>)</li>
+                <li>Add unit tests in <code>tests/unit/linters/my_rule/</code></li>
+                <li>Support all 3 output formats: text, json, sarif</li>
+                <li>Add CLI command (optional)</li>
+                <li>Document in <code>docs/my-rule-linter.md</code></li>
+            </ul>
+
+            <div class="warning">
+                <strong>Quality Requirements:</strong>
+                <ul style="margin: 0.5rem 0 0 1.5rem;">
+                    <li>Pylint score: 10.00/10</li>
+                    <li>Xenon complexity: A-grade</li>
+                    <li>MyPy: No type errors</li>
+                    <li>Tests: Maintain 87%+ coverage</li>
+                </ul>
+            </div>
+        </section>
+
+        <!-- Best Practices -->
+        <section class="section">
+            <h2>Best Practices</h2>
+
+            <h3>1. Delegate to Analyzers</h3>
+            <p>Keep rule classes thin. Delegate complex logic to analyzer classes:</p>
+            <pre><span class="comment"># Good: Rule delegates to analyzer</span>
+<span class="keyword">def</span> _check_python(self, context, config):
+    <span class="keyword">return</span> self._python_analyzer.analyze(context, config)
+
+<span class="comment"># Bad: All logic in rule class</span>
+<span class="keyword">def</span> _check_python(self, context, config):
+    <span class="comment"># 200 lines of analysis code...</span></pre>
+
+            <h3>2. Use Violation Builders</h3>
+            <p>Centralize violation creation for consistency:</p>
+            <pre><span class="keyword">class</span> <span class="highlight">MyViolationBuilder</span>:
+    <span class="keyword">def</span> __init__(self, rule_id: str):
+        self.rule_id = rule_id
+
+    <span class="keyword">def</span> create(self, context, line, message) -> Violation:
+        <span class="keyword">return</span> Violation(
+            rule_id=self.rule_id,
+            file_path=str(context.file_path),
+            line=line,
+            <span class="comment"># ... consistent formatting</span>
+        )</pre>
+
+            <h3>3. Check Ignore Directives</h3>
+            <p>Respect inline ignores:</p>
+            <pre><span class="keyword">from</span> src.linter_config.ignore <span class="keyword">import</span> get_ignore_parser
+
+<span class="keyword">class</span> MyRule:
+    <span class="keyword">def</span> __init__(self):
+        self._ignore = get_ignore_parser()
+
+    <span class="keyword">def</span> check(self, context):
+        violations = self._analyze(context)
+        <span class="keyword">return</span> [v <span class="keyword">for</span> v <span class="keyword">in</span> violations
+                <span class="keyword">if not</span> self._ignore.should_ignore(v, context.file_content)]</pre>
+
+            <h3>4. Cache Expensive Operations</h3>
+            <pre><span class="comment"># Singleton analyzers in __init__</span>
+<span class="keyword">def</span> __init__(self):
+    self._python_analyzer = PythonAnalyzer()  <span class="comment"># Reused across files</span></pre>
+        </section>
+    </div>
+</body>
+</html>

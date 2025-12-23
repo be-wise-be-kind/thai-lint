@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<!--
+Purpose: Linter execution flow documentation for thai-lint
+
+Scope: Step-by-step execution flow from CLI input to violation output
+
+Overview: Detailed execution flow documentation showing how files are processed
+    from CLI input through orchestration, rule execution, and violation collection.
+    Includes SVG flow diagrams and code snippets showing the actual execution path.
+
+Dependencies: None (standalone HTML with embedded SVG)
+
+Exports: Execution flow documentation
+
+Related: architecture.html for system design, plugin-guide.html for extension guide
+
+Implementation: Static HTML with embedded SVG flow diagrams
+-->
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>thai-lint Execution Flow</title>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-light: #dbeafe;
+            --secondary: #7c3aed;
+            --secondary-light: #ede9fe;
+            --success: #059669;
+            --success-light: #d1fae5;
+            --warning: #d97706;
+            --warning-light: #fef3c7;
+            --error: #dc2626;
+            --error-light: #fee2e2;
+            --gray-50: #f9fafb;
+            --gray-100: #f3f4f6;
+            --gray-200: #e5e7eb;
+            --gray-600: #4b5563;
+            --gray-800: #1f2937;
+            --gray-900: #111827;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.6;
+            color: var(--gray-800);
+            background: var(--gray-50);
+            padding: 2rem;
+        }
+
+        .container { max-width: 1000px; margin: 0 auto; }
+
+        header {
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+            border-bottom: 2px solid var(--gray-200);
+        }
+
+        h1 { font-size: 2rem; color: var(--gray-900); margin-bottom: 0.5rem; }
+        .subtitle { color: var(--gray-600); }
+
+        nav {
+            background: white;
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 2rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        nav a {
+            color: var(--primary);
+            text-decoration: none;
+            margin-right: 1.5rem;
+        }
+
+        .section {
+            background: white;
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        h2 {
+            font-size: 1.25rem;
+            color: var(--primary);
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid var(--gray-200);
+        }
+
+        h3 {
+            font-size: 1rem;
+            color: var(--gray-800);
+            margin: 1.25rem 0 0.75rem 0;
+        }
+
+        p { margin-bottom: 1rem; }
+
+        .diagram {
+            background: var(--gray-50);
+            border: 1px solid var(--gray-200);
+            border-radius: 8px;
+            padding: 1rem;
+            margin: 1rem 0;
+            overflow-x: auto;
+        }
+
+        code {
+            background: var(--gray-100);
+            padding: 0.125rem 0.375rem;
+            border-radius: 4px;
+            font-family: 'SF Mono', Monaco, monospace;
+            font-size: 0.85rem;
+        }
+
+        pre {
+            background: var(--gray-900);
+            color: #e5e7eb;
+            padding: 1rem;
+            border-radius: 6px;
+            overflow-x: auto;
+            font-size: 0.8rem;
+            margin: 1rem 0;
+        }
+
+        .step {
+            display: flex;
+            gap: 1rem;
+            margin: 1rem 0;
+            padding: 1rem;
+            background: var(--gray-50);
+            border-radius: 8px;
+            border-left: 4px solid var(--primary);
+        }
+
+        .step-num {
+            background: var(--primary);
+            color: white;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 0.85rem;
+            flex-shrink: 0;
+        }
+
+        .step-content { flex: 1; }
+        .step-content h4 { margin-bottom: 0.25rem; color: var(--gray-900); }
+        .step-content p { margin: 0; color: var(--gray-600); font-size: 0.9rem; }
+
+        .back-link {
+            color: var(--primary);
+            text-decoration: none;
+        }
+
+        @media print {
+            body { background: white; padding: 0.5rem; }
+            .section { box-shadow: none; border: 1px solid var(--gray-200); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <a href="index.html" class="back-link">&larr; Back to Quick Reference</a>
+            <h1>Linter Execution Flow</h1>
+            <p class="subtitle">How files are processed from input to violations</p>
+        </header>
+
+        <nav>
+            <a href="architecture.html">&larr; Architecture</a>
+            <a href="#main-flow">Main Flow</a>
+            <a href="#file-processing">File Processing</a>
+            <a href="#ignore-system">Ignore System</a>
+            <a href="plugin-guide.html">Plugin Guide &rarr;</a>
+        </nav>
+
+        <!-- Main Execution Flow -->
+        <section id="main-flow" class="section">
+            <h2>Main Execution Flow</h2>
+
+            <div class="diagram">
+                <svg width="800" height="500" viewBox="0 0 800 500">
+                    <defs>
+                        <marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+                            <path d="M0,0 L0,6 L9,3 z" fill="#666"/>
+                        </marker>
+                    </defs>
+
+                    <!-- CLI Input -->
+                    <rect x="300" y="10" width="200" height="45" rx="22" fill="#dbeafe" stroke="#2563eb" stroke-width="2"/>
+                    <text x="400" y="38" text-anchor="middle" font-weight="bold">thailint nesting src/</text>
+
+                    <line x1="400" y1="55" x2="400" y2="85" stroke="#666" stroke-width="2" marker-end="url(#arrow)"/>
+
+                    <!-- Parse CLI Options -->
+                    <rect x="280" y="90" width="240" height="40" rx="4" fill="white" stroke="#2563eb" stroke-width="2"/>
+                    <text x="400" y="115" text-anchor="middle">Parse CLI options (Click)</text>
+
+                    <line x1="400" y1="130" x2="400" y2="160" stroke="#666" stroke-width="2" marker-end="url(#arrow)"/>
+
+                    <!-- Create Orchestrator -->
+                    <rect x="280" y="165" width="240" height="40" rx="4" fill="#ede9fe" stroke="#7c3aed" stroke-width="2"/>
+                    <text x="400" y="190" text-anchor="middle">Create Orchestrator</text>
+
+                    <line x1="400" y1="205" x2="400" y2="235" stroke="#666" stroke-width="2" marker-end="url(#arrow)"/>
+
+                    <!-- Lazy Discovery -->
+                    <rect x="280" y="240" width="240" height="40" rx="4" fill="#fef3c7" stroke="#d97706" stroke-width="2"/>
+                    <text x="400" y="265" text-anchor="middle">Lazy Rule Discovery</text>
+                    <text x="540" y="265" font-size="11" fill="#92400e">(first lint only)</text>
+
+                    <line x1="400" y1="280" x2="400" y2="310" stroke="#666" stroke-width="2" marker-end="url(#arrow)"/>
+
+                    <!-- Collect Files -->
+                    <rect x="280" y="315" width="240" height="40" rx="4" fill="white" stroke="#2563eb" stroke-width="2"/>
+                    <text x="400" y="340" text-anchor="middle">Collect files (os.walk)</text>
+
+                    <line x1="400" y1="355" x2="400" y2="385" stroke="#666" stroke-width="2" marker-end="url(#arrow)"/>
+
+                    <!-- For Each File Loop -->
+                    <rect x="250" y="390" width="300" height="50" rx="4" fill="#d1fae5" stroke="#059669" stroke-width="2"/>
+                    <text x="400" y="410" text-anchor="middle" font-weight="bold">For each file:</text>
+                    <text x="400" y="428" text-anchor="middle" font-size="12">lint_file() → Violations</text>
+
+                    <line x1="400" y1="440" x2="400" y2="470" stroke="#666" stroke-width="2" marker-end="url(#arrow)"/>
+
+                    <!-- Output -->
+                    <rect x="300" y="475" width="200" height="45" rx="22" fill="#d1fae5" stroke="#059669" stroke-width="2"/>
+                    <text x="400" y="503" text-anchor="middle" font-weight="bold">Return Violations</text>
+
+                    <!-- Side annotations -->
+                    <rect x="580" y="165" width="180" height="30" rx="4" fill="#f3f4f6" stroke="#d1d5db"/>
+                    <text x="670" y="185" text-anchor="middle" font-size="11">+ RuleRegistry</text>
+
+                    <rect x="580" y="240" width="180" height="30" rx="4" fill="#f3f4f6" stroke="#d1d5db"/>
+                    <text x="670" y="260" text-anchor="middle" font-size="11">pkgutil.iter_modules</text>
+
+                    <rect x="580" y="315" width="180" height="30" rx="4" fill="#f3f4f6" stroke="#d1d5db"/>
+                    <text x="670" y="335" text-anchor="middle" font-size="11">Skip __pycache__, .venv</text>
+
+                    <line x1="520" y1="185" x2="575" y2="185" stroke="#d1d5db" stroke-dasharray="4"/>
+                    <line x1="520" y1="260" x2="575" y2="260" stroke="#d1d5db" stroke-dasharray="4"/>
+                    <line x1="520" y1="335" x2="575" y2="335" stroke="#d1d5db" stroke-dasharray="4"/>
+                </svg>
+            </div>
+        </section>
+
+        <!-- File Processing -->
+        <section id="file-processing" class="section">
+            <h2>Single File Processing</h2>
+            <p>What happens inside <code>lint_file()</code> for each file:</p>
+
+            <div class="step">
+                <div class="step-num">1</div>
+                <div class="step-content">
+                    <h4>Check Exclusions</h4>
+                    <p>Skip <code>.pyc</code>, <code>__pycache__</code>, <code>node_modules</code>, and files matching <code>.thailintignore</code></p>
+                </div>
+            </div>
+
+            <div class="step">
+                <div class="step-num">2</div>
+                <div class="step-content">
+                    <h4>Detect Language</h4>
+                    <p>Check file extension (<code>.py</code> → Python, <code>.ts</code> → TypeScript) or shebang</p>
+                </div>
+            </div>
+
+            <div class="step">
+                <div class="step-num">3</div>
+                <div class="step-content">
+                    <h4>Create Context</h4>
+                    <p>Build <code>FileLintContext</code> with path, language, lazy content loader, and config metadata</p>
+                </div>
+            </div>
+
+            <div class="step">
+                <div class="step-num">4</div>
+                <div class="step-content">
+                    <h4>Execute Rules</h4>
+                    <p>For each rule, call <code>rule.check(context)</code> and collect violations</p>
+                </div>
+            </div>
+
+            <div class="step">
+                <div class="step-num">5</div>
+                <div class="step-content">
+                    <h4>Filter Ignores</h4>
+                    <p>Check 5-level ignore hierarchy for each violation</p>
+                </div>
+            </div>
+
+            <div class="step">
+                <div class="step-num">6</div>
+                <div class="step-content">
+                    <h4>Return Violations</h4>
+                    <p>Return list of non-ignored violations</p>
+                </div>
+            </div>
+
+            <h3>Code Path</h3>
+            <pre># CLI command calls orchestrator
+violations = orchestrator.lint_directory(path, recursive=True)
+
+# Orchestrator processes each file
+def lint_file(self, file_path: Path) -> list[Violation]:
+    # 1. Check exclusions
+    if self._is_excluded(file_path):
+        return []
+
+    # 2. Detect language
+    language = detect_language(file_path)
+
+    # 3. Create context
+    context = FileLintContext(
+        path=file_path,
+        lang=language,
+        metadata={"_project_root": self.project_root, **self.config}
+    )
+
+    # 4. Execute rules
+    violations = []
+    for rule in self.registry.list_all():
+        violations.extend(rule.check(context))
+
+    # 5. Filter ignores
+    return [v for v in violations
+            if not self.ignore_parser.should_ignore(v)]</pre>
+        </section>
+
+        <!-- Rule Execution -->
+        <section class="section">
+            <h2>Rule Execution Detail</h2>
+            <p>Inside a <code>MultiLanguageLintRule.check()</code> call:</p>
+
+            <div class="diagram">
+                <svg width="700" height="350" viewBox="0 0 700 350">
+                    <defs>
+                        <marker id="arrow2" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+                            <path d="M0,0 L0,6 L9,3 z" fill="#666"/>
+                        </marker>
+                    </defs>
+
+                    <!-- Entry -->
+                    <rect x="250" y="10" width="200" height="40" rx="4" fill="#dbeafe" stroke="#2563eb" stroke-width="2"/>
+                    <text x="350" y="35" text-anchor="middle" font-weight="bold">rule.check(context)</text>
+
+                    <line x1="350" y1="50" x2="350" y2="80" stroke="#666" stroke-width="2" marker-end="url(#arrow2)"/>
+
+                    <!-- Load config -->
+                    <rect x="250" y="85" width="200" height="35" rx="4" fill="white" stroke="#7c3aed"/>
+                    <text x="350" y="108" text-anchor="middle" font-size="12">_load_config(context)</text>
+
+                    <line x1="350" y1="120" x2="350" y2="145" stroke="#666" stroke-width="2" marker-end="url(#arrow2)"/>
+
+                    <!-- Decision diamond -->
+                    <polygon points="350,150 420,185 350,220 280,185" fill="#fef3c7" stroke="#d97706" stroke-width="2"/>
+                    <text x="350" y="190" text-anchor="middle" font-size="11">language?</text>
+
+                    <!-- Python branch -->
+                    <line x1="280" y1="185" x2="150" y2="185" stroke="#666" stroke-width="2"/>
+                    <line x1="150" y1="185" x2="150" y2="240" stroke="#666" stroke-width="2" marker-end="url(#arrow2)"/>
+                    <text x="200" y="175" font-size="11" fill="#666">python</text>
+
+                    <rect x="50" y="245" width="200" height="35" rx="4" fill="#d1fae5" stroke="#059669"/>
+                    <text x="150" y="268" text-anchor="middle" font-size="12">_check_python(ctx, cfg)</text>
+
+                    <!-- TypeScript branch -->
+                    <line x1="420" y1="185" x2="550" y2="185" stroke="#666" stroke-width="2"/>
+                    <line x1="550" y1="185" x2="550" y2="240" stroke="#666" stroke-width="2" marker-end="url(#arrow2)"/>
+                    <text x="475" y="175" font-size="11" fill="#666">typescript</text>
+
+                    <rect x="450" y="245" width="200" height="35" rx="4" fill="#d1fae5" stroke="#059669"/>
+                    <text x="550" y="268" text-anchor="middle" font-size="12">_check_typescript(ctx, cfg)</text>
+
+                    <!-- Merge -->
+                    <line x1="150" y1="280" x2="150" y2="310" stroke="#666" stroke-width="2"/>
+                    <line x1="550" y1="280" x2="550" y2="310" stroke="#666" stroke-width="2"/>
+                    <line x1="150" y1="310" x2="550" y2="310" stroke="#666" stroke-width="2"/>
+                    <line x1="350" y1="310" x2="350" y2="335" stroke="#666" stroke-width="2" marker-end="url(#arrow2)"/>
+
+                    <!-- Return -->
+                    <rect x="250" y="340" width="200" height="35" rx="4" fill="#dbeafe" stroke="#2563eb"/>
+                    <text x="350" y="363" text-anchor="middle" font-size="12">return list[Violation]</text>
+                </svg>
+            </div>
+        </section>
+
+        <!-- Ignore System -->
+        <section id="ignore-system" class="section">
+            <h2>5-Level Ignore System</h2>
+            <p>Violations are checked against 5 levels of ignore directives:</p>
+
+            <div class="diagram">
+                <svg width="700" height="280" viewBox="0 0 700 280">
+                    <!-- Level boxes -->
+                    <rect x="50" y="20" width="600" height="45" rx="4" fill="#fee2e2" stroke="#dc2626"/>
+                    <text x="80" y="48" font-weight="bold" fill="#991b1b">Level 1: Repository</text>
+                    <text x="350" y="48" font-size="12">.thailintignore, .thailint.yaml ignore patterns</text>
+
+                    <rect x="50" y="75" width="600" height="45" rx="4" fill="#fef3c7" stroke="#d97706"/>
+                    <text x="80" y="103" font-weight="bold" fill="#92400e">Level 2: File</text>
+                    <text x="350" y="103" font-size="12"># thailint: ignore-file[rule-id] (first 10 lines)</text>
+
+                    <rect x="50" y="130" width="600" height="45" rx="4" fill="#d1fae5" stroke="#059669"/>
+                    <text x="80" y="158" font-weight="bold" fill="#047857">Level 3: Block</text>
+                    <text x="350" y="158" font-size="12"># thailint: ignore[rule-id] on line before code</text>
+
+                    <rect x="50" y="185" width="600" height="45" rx="4" fill="#dbeafe" stroke="#2563eb"/>
+                    <text x="80" y="213" font-weight="bold" fill="#1e40af">Level 4: Inline</text>
+                    <text x="350" y="213" font-size="12">code # thailint: ignore[rule-id] (end of line)</text>
+
+                    <rect x="50" y="240" width="600" height="45" rx="4" fill="#ede9fe" stroke="#7c3aed"/>
+                    <text x="80" y="268" font-weight="bold" fill="#5b21b6">Level 5: Wildcard</text>
+                    <text x="350" y="268" font-size="12"># thailint: ignore[literals.*] matches literals.magic-number</text>
+                </svg>
+            </div>
+
+            <h3>Ignore Syntax Examples</h3>
+            <pre># Python
+# thailint: ignore-file[nesting.excessive-depth]  # Level 2: whole file
+# thailint: ignore[srp.violation]                  # Level 3: next line
+code_here()  # thailint: ignore[magic-numbers]     # Level 4: this line
+
+# TypeScript/JavaScript
+// thailint: ignore[nesting.excessive-depth]
+/* thailint: ignore-file[srp.violation] */
+
+# DRY linter has different syntax
+# dry: ignore-next
+# dry: ignore-block
+# dry: end-ignore</pre>
+        </section>
+
+        <!-- Parallel Processing -->
+        <section class="section">
+            <h2>Parallel Processing</h2>
+            <p>When <code>--parallel</code> flag is used:</p>
+
+            <pre>def lint_files_parallel(file_paths, max_workers=None):
+    workers = min(8, cpu_count())
+
+    # Small file count? Fall back to sequential
+    if len(file_paths) &lt; workers * 2:
+        return self.lint_files(file_paths)
+
+    # Spawn worker processes
+    with ProcessPoolExecutor(max_workers=workers) as executor:
+        futures = {
+            executor.submit(_lint_file_worker, (path, root, config))
+            for path in file_paths
+        }
+
+        # Collect results
+        violations = []
+        for future in as_completed(futures):
+            violations.extend(Violation.from_dict(v) for v in future.result())
+
+    # Cross-file analysis (e.g., DRY)
+    violations.extend(self._finalize_rules())
+    return violations</pre>
+
+            <p><strong>Key points:</strong></p>
+            <ul style="margin-left: 1.5rem;">
+                <li>Uses <code>ProcessPoolExecutor</code> (not threads, to bypass GIL)</li>
+                <li>Each worker creates its own Orchestrator instance</li>
+                <li>Violations serialized as dicts for IPC</li>
+                <li>Cross-file rules (DRY) finalize after parallel phase</li>
+            </ul>
+        </section>
+    </div>
+</body>
+</html>

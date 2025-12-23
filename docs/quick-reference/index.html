@@ -1,17 +1,18 @@
 <!DOCTYPE html>
 <!--
-Purpose: Quick reference documentation hub for thai-lint users
+Purpose: Quick reference documentation hub for thai-lint
 
-Scope: Landing page linking to CLI cheatsheet and configuration reference cards
+Scope: Landing page linking to architecture docs, execution flow, plugin guide, and reference cards
 
 Overview: Entry point for quick reference documentation. Provides navigation to
-    CLI command cheatsheet and configuration reference cards. Designed for users
-    who need fast access to common commands and settings without reading full
-    documentation. Supports both screen viewing and printing for desk reference.
+    architecture documentation with SVG diagrams, linter execution flow, plugin
+    development guide, CLI command cheatsheet, and configuration reference.
+    Designed for developers and users who need fast access to internals and
+    common commands. Supports both screen viewing and printing.
 
-Dependencies: cli-cheatsheet.html, config-reference.html
+Dependencies: architecture.html, linter-flow.html, plugin-guide.html, cli-cheatsheet.html, config-reference.html
 
-Exports: Navigation to quick reference cards
+Exports: Navigation to all quick reference documentation
 
 Related: docs/cli-reference.md, docs/configuration.md for full documentation
 
@@ -158,6 +159,39 @@ Implementation: Static HTML with embedded CSS for portability
         </header>
 
         <div class="cards">
+            <a href="architecture.html" class="card">
+                <h2>Architecture Overview</h2>
+                <p>System design, components, and design patterns with SVG diagrams.</p>
+                <ul>
+                    <li>Plugin architecture</li>
+                    <li>Registry pattern</li>
+                    <li>Class hierarchy</li>
+                    <li>Component relationships</li>
+                </ul>
+            </a>
+
+            <a href="linter-flow.html" class="card">
+                <h2>Execution Flow</h2>
+                <p>How files are processed from CLI input to violation output.</p>
+                <ul>
+                    <li>Main execution flow</li>
+                    <li>File processing steps</li>
+                    <li>5-level ignore system</li>
+                    <li>Parallel processing</li>
+                </ul>
+            </a>
+
+            <a href="plugin-guide.html" class="card">
+                <h2>Plugin Guide</h2>
+                <p>Step-by-step guide for adding new linting rules.</p>
+                <ul>
+                    <li>Quick start example</li>
+                    <li>Multi-language support</li>
+                    <li>Configuration patterns</li>
+                    <li>Best practices</li>
+                </ul>
+            </a>
+
             <a href="cli-cheatsheet.html" class="card">
                 <h2>CLI Cheatsheet</h2>
                 <p>Command-line interface quick reference with all commands and common options.</p>
