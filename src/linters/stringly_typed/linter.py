@@ -36,6 +36,7 @@ from .ignore_utils import is_ignored
 from .python.analyzer import AnalysisResult, FunctionCallResult, PythonStringlyTypedAnalyzer
 from .storage import StoredFunctionCall, StoredPattern, StringlyTypedStorage
 from .storage_initializer import StorageInitializer
+from .typescript.analyzer import TypeScriptStringlyTypedAnalyzer
 from .violation_generator import ViolationGenerator
 
 
@@ -103,6 +104,7 @@ class StringlyTypedComponents:
     storage_initializer: StorageInitializer
     violation_generator: ViolationGenerator
     python_analyzer: PythonStringlyTypedAnalyzer
+    typescript_analyzer: TypeScriptStringlyTypedAnalyzer
 
 
 class StringlyTypedRule(MultiLanguageLintRule):  # thailint: ignore srp
@@ -124,6 +126,7 @@ class StringlyTypedRule(MultiLanguageLintRule):  # thailint: ignore srp
             storage_initializer=StorageInitializer(),
             violation_generator=ViolationGenerator(),
             python_analyzer=PythonStringlyTypedAnalyzer(),
+            typescript_analyzer=TypeScriptStringlyTypedAnalyzer(),
         )
 
     @property
@@ -179,13 +182,28 @@ class StringlyTypedRule(MultiLanguageLintRule):  # thailint: ignore srp
 
         Returns:
             Empty list (violations generated in finalize)
-
-        Note:
-            TypeScript analyzer integration is pending PR4 merge.
         """
         self._ensure_storage_initialized(context, config)
-        # TypeScript analyzer will be integrated when PR4 is merged
+        self._analyze_typescript_file(context, config)
         return []
+
+    def _analyze_typescript_file(
+        self, context: BaseLintContext, config: StringlyTypedConfig
+    ) -> None:
+        """Analyze TypeScript file and store patterns.
+
+        Args:
+            context: Lint context with file content
+            config: Stringly-typed configuration
+        """
+        if not self._should_analyze(context, config):
+            return
+
+        file_path = Path(context.file_path)  # type: ignore[arg-type]
+        file_content = context.file_content or ""
+        self._helpers.typescript_analyzer.config = config
+
+        self._store_typescript_function_calls(file_content, file_path)
 
     def _ensure_storage_initialized(
         self, context: BaseLintContext, config: StringlyTypedConfig
@@ -251,6 +269,19 @@ class StringlyTypedRule(MultiLanguageLintRule):  # thailint: ignore srp
             file_path: Path to file
         """
         call_results = self._helpers.python_analyzer.analyze_function_calls(file_content, file_path)
+        stored_calls = [_convert_to_stored_function_call(r) for r in call_results]
+        self._storage.add_function_calls(stored_calls)  # type: ignore[union-attr]
+
+    def _store_typescript_function_calls(self, file_content: str, file_path: Path) -> None:
+        """Analyze and store TypeScript function call patterns.
+
+        Args:
+            file_content: TypeScript source code
+            file_path: Path to file
+        """
+        call_results = self._helpers.typescript_analyzer.analyze_function_calls(
+            file_content, file_path
+        )
         stored_calls = [_convert_to_stored_function_call(r) for r in call_results]
         self._storage.add_function_calls(stored_calls)  # type: ignore[union-attr]
 
