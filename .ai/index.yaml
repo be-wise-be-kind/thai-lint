@@ -12,6 +12,11 @@ project:
   status: in-development
   version: "0.1.0"
 
+core_documents:
+  - ai-context.md       # Development context and patterns
+  - ai-rules.md         # Quality gates and mandatory rules
+  - index.yaml          # This file - repository navigation
+
 structure:
   source:
     location: src/
