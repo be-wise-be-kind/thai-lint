@@ -1,26 +1,28 @@
 """
 Purpose: SQLite storage manager for stringly-typed pattern detection
 
-Scope: String validation pattern storage and cross-file duplicate detection queries
+Scope: String validation pattern storage, function call tracking, and cross-file detection
 
 Overview: Implements in-memory or temporary-file SQLite storage for stringly-typed pattern
     detection. Stores string validation patterns with hash values computed from the string
-    values, enabling cross-file duplicate detection during a single linter run. Supports both
-    :memory: mode (fast, RAM-only) and tempfile mode (disk-backed for large projects). No
-    persistence between runs - storage is cleared when linter completes. Includes indexes
+    values, enabling cross-file duplicate detection during a single linter run. Also tracks
+    function calls with string arguments to detect parameters that should be enums. Supports
+    both :memory: mode (fast, RAM-only) and tempfile mode (disk-backed for large projects).
+    No persistence between runs - storage is cleared when linter completes. Includes indexes
     for fast hash lookups enabling efficient cross-file detection.
 
 Dependencies: Python sqlite3 module (stdlib), tempfile module (stdlib), pathlib.Path,
     dataclasses, json module (stdlib)
 
-Exports: StoredPattern dataclass, StringlyTypedStorage class
+Exports: StoredPattern dataclass, StoredFunctionCall dataclass, StringlyTypedStorage class
 
 Interfaces: StringlyTypedStorage.__init__(storage_mode), add_pattern(pattern),
     add_patterns(patterns), get_duplicate_hashes(min_files), get_patterns_by_hash(hash_value),
-    clear(), close()
+    add_function_call(call), add_function_calls(calls), get_limited_value_functions(min_values,
+    max_values, min_files), get_calls_by_function(function_name, param_index), clear(), close()
 
-Implementation: SQLite with string_validations table, indexed on string_set_hash for
-    performance, storage_mode determines :memory: vs tempfile location
+Implementation: SQLite with string_validations and function_calls tables, indexed on
+    string_set_hash and function_name+param_index for performance
 """
 
 from __future__ import annotations
@@ -61,6 +63,61 @@ _CREATE_HASH_INDEX_SQL = (
 
 _CREATE_FILE_INDEX_SQL = "CREATE INDEX IF NOT EXISTS idx_file_path ON string_validations(file_path)"
 
+# Function calls table schema
+_CREATE_FUNCTION_CALLS_TABLE_SQL = """CREATE TABLE IF NOT EXISTS function_calls (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    file_path TEXT NOT NULL,
+    line_number INTEGER NOT NULL,
+    column_number INTEGER NOT NULL,
+    function_name TEXT NOT NULL,
+    param_index INTEGER NOT NULL,
+    string_value TEXT NOT NULL
+)"""
+
+_CREATE_FUNCTION_PARAM_INDEX_SQL = (
+    "CREATE INDEX IF NOT EXISTS idx_function_param ON function_calls(function_name, param_index)"
+)
+
+_CREATE_FUNCTION_FILE_INDEX_SQL = (
+    "CREATE INDEX IF NOT EXISTS idx_function_file ON function_calls(file_path)"
+)
+
+# Row index constants for function_calls query results
+_CALL_COL_FILE_PATH = 0
+_CALL_COL_LINE_NUMBER = 1
+_CALL_COL_COLUMN = 2
+_CALL_COL_FUNCTION_NAME = 3
+_CALL_COL_PARAM_INDEX = 4
+_CALL_COL_STRING_VALUE = 5
+
+
+@dataclass
+class StoredFunctionCall:
+    """Represents a function call with a string argument stored in SQLite.
+
+    Captures information about a function or method call where a string literal
+    is passed as an argument, enabling cross-file analysis to detect limited
+    value sets that should be enums.
+    """
+
+    file_path: Path
+    """Path to the file containing the call."""
+
+    line_number: int
+    """Line number where the call occurs (1-indexed)."""
+
+    column: int
+    """Column number where the call starts (0-indexed)."""
+
+    function_name: str
+    """Fully qualified function name (e.g., 'process' or 'obj.method')."""
+
+    param_index: int
+    """Index of the parameter receiving the string value (0-indexed)."""
+
+    string_value: str
+    """The string literal value passed to the function."""
+
 
 def _row_to_pattern(row: tuple) -> StoredPattern:
     """Convert a database row tuple to StoredPattern.
@@ -80,6 +137,25 @@ def _row_to_pattern(row: tuple) -> StoredPattern:
         string_values=json.loads(row[_COL_STRING_VALUES]),
         pattern_type=row[_COL_PATTERN_TYPE],
         details=row[_COL_DETAILS],
+    )
+
+
+def _row_to_function_call(row: tuple) -> StoredFunctionCall:
+    """Convert a database row tuple to StoredFunctionCall.
+
+    Args:
+        row: Tuple from SQLite query result
+
+    Returns:
+        StoredFunctionCall instance
+    """
+    return StoredFunctionCall(
+        file_path=Path(row[_CALL_COL_FILE_PATH]),
+        line_number=row[_CALL_COL_LINE_NUMBER],
+        column=row[_CALL_COL_COLUMN],
+        function_name=row[_CALL_COL_FUNCTION_NAME],
+        param_index=row[_CALL_COL_PARAM_INDEX],
+        string_value=row[_CALL_COL_STRING_VALUE],
     )
 
 
@@ -119,7 +195,7 @@ class StoredPattern:
     """Human-readable description of the detected pattern."""
 
 
-class StringlyTypedStorage:
+class StringlyTypedStorage:  # thailint: ignore srp
     """SQLite-backed storage for stringly-typed pattern detection.
 
     Stores patterns from analyzed files and provides queries to find patterns
@@ -151,6 +227,9 @@ class StringlyTypedStorage:
         self._db.execute(_CREATE_TABLE_SQL)
         self._db.execute(_CREATE_HASH_INDEX_SQL)
         self._db.execute(_CREATE_FILE_INDEX_SQL)
+        self._db.execute(_CREATE_FUNCTION_CALLS_TABLE_SQL)
+        self._db.execute(_CREATE_FUNCTION_PARAM_INDEX_SQL)
+        self._db.execute(_CREATE_FUNCTION_FILE_INDEX_SQL)
         self._db.commit()
 
     def add_pattern(self, pattern: StoredPattern) -> None:
@@ -242,9 +321,116 @@ class StringlyTypedStorage:
 
         return [_row_to_pattern(row) for row in cursor.fetchall()]
 
+    def add_function_call(self, call: StoredFunctionCall) -> None:
+        """Add a single function call to storage.
+
+        Args:
+            call: StoredFunctionCall instance to store
+        """
+        self.add_function_calls([call])
+
+    def add_function_calls(self, calls: list[StoredFunctionCall]) -> None:
+        """Add multiple function calls to storage in a batch.
+
+        Args:
+            calls: List of StoredFunctionCall instances to store
+        """
+        if not calls:
+            return
+
+        for call in calls:
+            self._db.execute(
+                """INSERT INTO function_calls
+                   (file_path, line_number, column_number, function_name,
+                    param_index, string_value)
+                   VALUES (?, ?, ?, ?, ?, ?)""",
+                (
+                    str(call.file_path),
+                    call.line_number,
+                    call.column,
+                    call.function_name,
+                    call.param_index,
+                    call.string_value,
+                ),
+            )
+
+        self._db.commit()
+
+    def get_limited_value_functions(
+        self, min_values: int, max_values: int, min_files: int = 1
+    ) -> list[tuple[str, int, set[str]]]:
+        """Get function+param combinations with limited unique string values.
+
+        Finds function parameters that are called with a limited set of string
+        values, suggesting they should be enums.
+
+        Args:
+            min_values: Minimum unique values to consider (default: 2)
+            max_values: Maximum unique values to consider (default: 6)
+            min_files: Minimum files the pattern must appear in (default: 1)
+
+        Returns:
+            List of (function_name, param_index, unique_values) tuples
+        """
+        cursor = self._db.execute(
+            """SELECT function_name, param_index, GROUP_CONCAT(DISTINCT string_value)
+               FROM function_calls
+               GROUP BY function_name, param_index
+               HAVING COUNT(DISTINCT string_value) >= ?
+                  AND COUNT(DISTINCT string_value) <= ?
+                  AND COUNT(DISTINCT file_path) >= ?""",
+            (min_values, max_values, min_files),
+        )
+
+        results: list[tuple[str, int, set[str]]] = []
+        for row in cursor.fetchall():
+            values = set(row[2].split(",")) if row[2] else set()
+            results.append((row[0], row[1], values))
+
+        return results
+
+    def get_calls_by_function(
+        self, function_name: str, param_index: int
+    ) -> list[StoredFunctionCall]:
+        """Get all calls for a specific function and parameter.
+
+        Args:
+            function_name: Name of the function
+            param_index: Index of the parameter
+
+        Returns:
+            List of StoredFunctionCall instances for this function+param
+        """
+        cursor = self._db.execute(
+            """SELECT file_path, line_number, column_number, function_name,
+                      param_index, string_value
+               FROM function_calls
+               WHERE function_name = ? AND param_index = ?
+               ORDER BY file_path, line_number""",
+            (function_name, param_index),
+        )
+
+        return [_row_to_function_call(row) for row in cursor.fetchall()]
+
+    def get_all_function_calls(self) -> list[StoredFunctionCall]:
+        """Get all stored function calls.
+
+        Returns:
+            List of all StoredFunctionCall instances in storage
+        """
+        cursor = self._db.execute(
+            """SELECT file_path, line_number, column_number, function_name,
+                      param_index, string_value
+               FROM function_calls
+               ORDER BY file_path, line_number"""
+        )
+
+        return [_row_to_function_call(row) for row in cursor.fetchall()]
+
     def clear(self) -> None:
-        """Clear all stored patterns."""
+        """Clear all stored patterns and function calls."""
         self._db.execute("DELETE FROM string_validations")
+        self._db.execute("DELETE FROM function_calls")
         self._db.commit()
 
     def close(self) -> None:

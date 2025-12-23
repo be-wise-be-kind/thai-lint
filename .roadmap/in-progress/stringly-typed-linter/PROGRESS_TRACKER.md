@@ -46,8 +46,8 @@ This is the **PRIMARY HANDOFF DOCUMENT** for AI agents working on the stringly-t
 4. **Update this document** after completing each PR
 
 ## Current Status
-**Current PR**: PR6 - Function Call Tracking (Not Started)
-**Infrastructure State**: Module structure, config, Python/TypeScript detection, and cross-file storage complete
+**Current PR**: PR7 - CLI Integration & Output Formats (Not Started)
+**Infrastructure State**: Module structure, config, Python/TypeScript detection, cross-file storage, and function call tracking complete
 **Feature Target**: Detect stringly-typed code and suggest enum alternatives
 
 ## Required Documents Location
@@ -60,16 +60,27 @@ This is the **PRIMARY HANDOFF DOCUMENT** for AI agents working on the stringly-t
 
 ## Next PR to Implement
 
-### START HERE: PR6 - Function Call Tracking
+### START HERE: PR7 - CLI Integration & Output Formats
 
 **Quick Summary**:
-Track function/method calls that consistently receive the same string arguments, suggesting enum usage for those parameters.
+Add CLI command for stringly-typed linter with text, JSON, and SARIF output format support.
 
-**Pre-flight Checklist**:
-- [ ] Verify branch `feature/stringly-typed-pr6-function-calls` is created
-- [ ] Review existing analyzers for function call detection patterns
-- [ ] Review PR_BREAKDOWN.md for detailed implementation steps
-- [ ] Analyze how to track parameter positions and values
+**Completed PR6 - Function Call Tracking**:
+- [x] Created `src/linters/stringly_typed/python/call_tracker.py` with FunctionCallTracker AST visitor
+- [x] Added `function_calls` table to storage.py with appropriate indexes
+- [x] Added FunctionCallResult dataclass to analyzer.py
+- [x] Integrated function call analysis into Python analyzer
+- [x] Created `src/linters/stringly_typed/function_call_violation_builder.py`
+- [x] Updated violation generator with function call violation generation
+- [x] Updated linter.py to store and detect function call patterns
+- [x] 23 new tests for Python function call tracking
+- [x] Created `src/linters/stringly_typed/typescript/call_tracker.py` with TypeScriptCallTracker
+- [x] Created `src/linters/stringly_typed/typescript/analyzer.py` with TypeScriptStringlyTypedAnalyzer
+- [x] Integrated TypeScript analyzer with linter.py
+- [x] 24 new tests for TypeScript function call tracking
+- [x] All 971 project tests passing
+- [x] Pylint 10.00/10, Xenon A-grade (added SRP suppressions with justifications)
+- [x] All 9 quality checks passing
 
 **Prerequisites Complete**:
 - [x] PR1-PR5 complete - full infrastructure and cross-file detection ready
@@ -125,10 +136,10 @@ Track function/method calls that consistently receive the same string arguments,
 ---
 
 ## Overall Progress
-**Total Completion**: 50% (5/10 PRs completed)
+**Total Completion**: 60% (6/10 PRs completed)
 
 ```
-[#####.....] 50% Complete
+[######....] 60% Complete
 ```
 
 ---
@@ -142,7 +153,7 @@ Track function/method calls that consistently receive the same string arguments,
 | PR3 | Python Pattern 2 - Equality Chains | Complete | 100% | Medium | P1 | If/elif chains, match stmts + 20 tests |
 | PR4 | TypeScript Single-File Detection | Complete | 100% | Medium | P1 | Tree-sitter analyzer |
 | PR5 | Cross-File Storage & Detection | Complete | 100% | High | P0 | SQLite storage + finalize() hook + 41 tests |
-| PR6 | Function Call Tracking | Not Started | 0% | High | P1 | |
+| PR6 | Function Call Tracking | Complete | 100% | High | P1 | Python 23 tests + TypeScript 24 tests |
 | PR7 | CLI Integration & Output Formats | Not Started | 0% | Medium | P0 | |
 | PR8 | False Positive Filtering | Not Started | 0% | Medium | P1 | |
 | PR9 | Ignore Directives | Not Started | 0% | Low | P2 | |

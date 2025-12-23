@@ -33,9 +33,10 @@ from src.core.types import Violation
 
 from .config import StringlyTypedConfig
 from .ignore_utils import is_ignored
-from .python.analyzer import AnalysisResult, PythonStringlyTypedAnalyzer
-from .storage import StoredPattern, StringlyTypedStorage
+from .python.analyzer import AnalysisResult, FunctionCallResult, PythonStringlyTypedAnalyzer
+from .storage import StoredFunctionCall, StoredPattern, StringlyTypedStorage
 from .storage_initializer import StorageInitializer
+from .typescript.analyzer import TypeScriptStringlyTypedAnalyzer
 from .violation_generator import ViolationGenerator
 
 
@@ -77,6 +78,25 @@ def _convert_to_stored_pattern(result: AnalysisResult) -> StoredPattern:
     )
 
 
+def _convert_to_stored_function_call(result: FunctionCallResult) -> StoredFunctionCall:
+    """Convert FunctionCallResult to StoredFunctionCall.
+
+    Args:
+        result: Function call result from language analyzer
+
+    Returns:
+        StoredFunctionCall for storage
+    """
+    return StoredFunctionCall(
+        file_path=result.file_path,
+        line_number=result.line_number,
+        column=result.column,
+        function_name=result.function_name,
+        param_index=result.param_index,
+        string_value=result.string_value,
+    )
+
+
 @dataclass
 class StringlyTypedComponents:
     """Component dependencies for stringly-typed linter."""
@@ -84,9 +104,10 @@ class StringlyTypedComponents:
     storage_initializer: StorageInitializer
     violation_generator: ViolationGenerator
     python_analyzer: PythonStringlyTypedAnalyzer
+    typescript_analyzer: TypeScriptStringlyTypedAnalyzer
 
 
-class StringlyTypedRule(MultiLanguageLintRule):
+class StringlyTypedRule(MultiLanguageLintRule):  # thailint: ignore srp
     """Detects stringly-typed patterns across project files.
 
     Uses two-phase pattern:
@@ -105,6 +126,7 @@ class StringlyTypedRule(MultiLanguageLintRule):
             storage_initializer=StorageInitializer(),
             violation_generator=ViolationGenerator(),
             python_analyzer=PythonStringlyTypedAnalyzer(),
+            typescript_analyzer=TypeScriptStringlyTypedAnalyzer(),
         )
 
     @property
@@ -160,13 +182,28 @@ class StringlyTypedRule(MultiLanguageLintRule):
 
         Returns:
             Empty list (violations generated in finalize)
-
-        Note:
-            TypeScript analyzer integration is pending PR4 merge.
         """
         self._ensure_storage_initialized(context, config)
-        # TypeScript analyzer will be integrated when PR4 is merged
+        self._analyze_typescript_file(context, config)
         return []
+
+    def _analyze_typescript_file(
+        self, context: BaseLintContext, config: StringlyTypedConfig
+    ) -> None:
+        """Analyze TypeScript file and store patterns.
+
+        Args:
+            context: Lint context with file content
+            config: Stringly-typed configuration
+        """
+        if not self._should_analyze(context, config):
+            return
+
+        file_path = Path(context.file_path)  # type: ignore[arg-type]
+        file_content = context.file_content or ""
+        self._helpers.typescript_analyzer.config = config
+
+        self._store_typescript_function_calls(file_content, file_path)
 
     def _ensure_storage_initialized(
         self, context: BaseLintContext, config: StringlyTypedConfig
@@ -189,16 +226,64 @@ class StringlyTypedRule(MultiLanguageLintRule):
             context: Lint context with file content
             config: Stringly-typed configuration
         """
-        if not _is_ready_for_analysis(context, self._storage):
+        if not self._should_analyze(context, config):
             return
 
         file_path = Path(context.file_path)  # type: ignore[arg-type]
-        if is_ignored(file_path, config.ignore):
-            return
-
+        file_content = context.file_content or ""
         self._helpers.python_analyzer.config = config
-        results = self._helpers.python_analyzer.analyze(context.file_content or "", file_path)
+
+        self._store_validation_patterns(file_content, file_path)
+        self._store_function_calls(file_content, file_path)
+
+    def _should_analyze(self, context: BaseLintContext, config: StringlyTypedConfig) -> bool:
+        """Check if file should be analyzed.
+
+        Args:
+            context: Lint context
+            config: Configuration
+
+        Returns:
+            True if file should be analyzed
+        """
+        if not _is_ready_for_analysis(context, self._storage):
+            return False
+        file_path = Path(context.file_path)  # type: ignore[arg-type]
+        return not is_ignored(file_path, config.ignore)
+
+    def _store_validation_patterns(self, file_content: str, file_path: Path) -> None:
+        """Analyze and store validation patterns.
+
+        Args:
+            file_content: Python source code
+            file_path: Path to file
+        """
+        results = self._helpers.python_analyzer.analyze(file_content, file_path)
         self._storage.add_patterns([_convert_to_stored_pattern(r) for r in results])  # type: ignore[union-attr]
+
+    def _store_function_calls(self, file_content: str, file_path: Path) -> None:
+        """Analyze and store function call patterns.
+
+        Args:
+            file_content: Python source code
+            file_path: Path to file
+        """
+        call_results = self._helpers.python_analyzer.analyze_function_calls(file_content, file_path)
+        stored_calls = [_convert_to_stored_function_call(r) for r in call_results]
+        self._storage.add_function_calls(stored_calls)  # type: ignore[union-attr]
+
+    def _store_typescript_function_calls(self, file_content: str, file_path: Path) -> None:
+        """Analyze and store TypeScript function call patterns.
+
+        Args:
+            file_content: TypeScript source code
+            file_path: Path to file
+        """
+        call_results = self._helpers.typescript_analyzer.analyze_function_calls(
+            file_content, file_path
+        )
+        stored_calls = [_convert_to_stored_function_call(r) for r in call_results]
+        self._storage.add_function_calls(stored_calls)  # type: ignore[union-attr]
 
     def finalize(self) -> list[Violation]:
         """Generate violations after all files processed.
