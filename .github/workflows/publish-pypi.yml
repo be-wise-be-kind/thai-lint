@@ -65,7 +65,7 @@ jobs:
           poetry run coverage report --fail-under=80
 
   build:
-    name: Build Package
+    name: Build Package and Generate SBOM
     needs: test
     runs-on: ubuntu-latest
 
@@ -83,6 +83,9 @@ jobs:
           curl -sSL https://install.python-poetry.org | python3 -
           echo "$HOME/.local/bin" >> $GITHUB_PATH
 
+      - name: Install dependencies
+        run: poetry install --with dev
+
       - name: Build package
         run: poetry build
 
@@ -90,6 +93,19 @@ jobs:
         run: |
           tar -tzf dist/*.tar.gz | head -20
           unzip -l dist/*.whl | head -20
+
+      - name: Generate SBOM (CycloneDX)
+        run: |
+          # Install cyclonedx-bom CLI
+          pip install cyclonedx-bom
+
+          # Generate SBOM from Poetry environment
+          cyclonedx-py environment \
+            --output-format json \
+            --output-file dist/thailint-sbom.cdx.json
+
+          echo "SBOM generated successfully"
+          ls -la dist/
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
@@ -172,6 +188,7 @@ jobs:
           files: |
             dist/*.tar.gz
             dist/*.whl
+            dist/*.cdx.json
           draft: false
           prerelease: false
         env:

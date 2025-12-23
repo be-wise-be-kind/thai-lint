@@ -94,37 +94,53 @@ Rather than adding `# pylint: disable=too-many-lines` comments, we extracted foc
 
 ## Next PR to Implement
 
-### START HERE: PR4 - Performance Optimizations
+### START HERE: PR6 - Documentation Enhancements
 
 **Quick Summary**:
-Implement profiling-driven optimizations to achieve <30s worst case, <10s ideal linting times.
+Add quick reference cards and Mermaid diagrams to improve documentation grade from A → A+.
 
-**Key Artifacts** (READ THESE FIRST):
-- `artifacts/PERFORMANCE_ANALYSIS.md` - Benchmark results showing primary bottleneck
-- `artifacts/OPTIMIZATION_PLAN.md` - 4-phase implementation plan with code examples
-
-**Primary Bottleneck Identified**:
-YAML config parsing repeated 9x per run (once per linter rule) consumes 44% of processing overhead.
-Fix: Implement singleton `IgnoreDirectiveParser` with cached YAML.
-
-**Benchmark Results** (Updated after Phase 3):
-| Repository | Files | Baseline | Phase 3 (Parallel) | Target | Status |
-|------------|-------|----------|-------------------|--------|--------|
-| safeshell | 4,674 Py | 9s | **4.1s** | <10s | ✅ Met! |
-| tb-automation-py | 5,079 Py | 49s | **13s** | <15s | ✅ Met! |
-| durable-code-test | 4,105 TS | >60s TIMEOUT | **59s** | <10s | ⚠️ Completes |
-| tubebuddy | 27K mixed | >120s TIMEOUT | >90s | <30s | ❌ Still slow |
+**Key Deliverables**:
+- Create `docs/quick-reference/README.md`
+- Create `docs/quick-reference/cli-cheatsheet.md`
+- Create `docs/quick-reference/configuration-cheatsheet.md`
+- Add Mermaid diagrams to AGENTS.md
+- Add coverage badge to README.md
 
 **Pre-flight Checklist**:
-- [x] Profile current performance on large codebases
-- [x] Identify hotspots for optimization (YAML parsing = 44% overhead)
-- [x] Create detailed optimization plan with phases
-- [x] Implement Phase 1: IgnoreDirectiveParser singleton (88.9% reduction, 9x speedup)
-- [x] Benchmark Phase 1: Python repos improved, TypeScript still slow
-- [x] Implement Phase 3: Parallelism (ProcessPoolExecutor, --parallel flag)
-- [x] Benchmark Phase 3: safeshell 4.1s, tb-automation-py 13s, durable-code-test 59s
-- [ ] Fix lint issues (complexity B-grade, SRP exception needed)
-- [ ] Commit and merge Phase 3 changes
+- [ ] Create quick reference directory structure
+- [ ] Create CLI cheatsheet with common commands
+- [ ] Create configuration reference card
+- [ ] Add two-phase linting Mermaid diagram to AGENTS.md
+- [ ] Update README with coverage badge
+
+---
+
+## Completed PRs
+
+### PR4 - Performance Optimizations (COMPLETE)
+
+**Benchmark Results**:
+| Repository | Files | Baseline | After | Target | Status |
+|------------|-------|----------|-------|--------|--------|
+| safeshell | 4,674 Py | 9s | **4.1s** | <10s | ✅ Met! |
+| tb-automation-py | 5,079 Py | 49s | **13s** | <15s | ✅ Met! |
+| durable-code-test | 4,105 TS | >60s | **59s** | <10s | ⚠️ Improved |
+| tubebuddy | 27K mixed | >120s | >90s | <30s | ⚠️ Improved |
+
+### PR5 - Security Hardening (COMPLETE)
+
+**Implemented**:
+- Created `scripts/check_critical_cves.py` - CVE checking script with configurable ignore list
+- Created `.security-ignore` - Document acceptable dev-dependency vulnerabilities
+- Updated `.github/workflows/security.yml` - Added CVE blocking with pip-audit
+- Updated `.github/workflows/publish-pypi.yml` - Added SBOM generation (CycloneDX)
+- Updated `justfile` - Added `lint-security-strict` recipe
+
+**Features**:
+- Vulnerabilities block CI unless explicitly documented in `.security-ignore`
+- SBOM (CycloneDX JSON) generated on every release
+- SBOM attached to GitHub releases
+- Security scan results uploaded as artifacts
 
 **Prerequisites Complete**:
 - [x] Multi-agent evaluation completed
@@ -133,15 +149,16 @@ Fix: Implement singleton `IgnoreDirectiveParser` with cached YAML.
 - [x] Pylint configured in `pyproject.toml` with `max-module-lines = 500`
 - [x] PR2 complete - CLI package structure established with `src/cli/` package
 - [x] PR3 complete - All 10 linter commands modularized, `src/cli_main.py` reduced to 34 lines
-- [x] Performance profiling completed - artifacts created
+- [x] PR4 complete - Performance optimizations (singleton + parallel)
+- [x] PR5 complete - Security hardening (SBOM + CVE blocking)
 
 ---
 
 ## Overall Progress
-**Total Completion**: 50% (3/6 PRs completed - PR1 skipped, PR2 complete, PR3 complete)
+**Total Completion**: 83% (5/6 PRs completed - PR1 skipped, PR2-PR5 complete)
 
 ```
-[==========          ] 50% Complete
+[================    ] 83% Complete
 ```
 
 ---
@@ -153,8 +170,8 @@ Fix: Implement singleton `IgnoreDirectiveParser` with cached YAML.
 | PR1 | File Length Linter | Skipped | 100% | N/A | N/A | Using Pylint C0302 `max-module-lines=500` instead |
 | PR2 | CLI Modularization Part 1 | Complete | 100% | Medium | P0 | Created `src/cli/` package with main.py, utils.py, config.py |
 | PR3 | CLI Modularization Part 2 | Complete | 100% | High | P0 | Extracted 10 linter commands to `src/cli/linters/`, reduced cli_main.py to 34 lines |
-| PR4 | Performance Optimizations | Complete | 100% | Medium | P1 | Singleton + parallel, 2/4 targets met, PR #96 |
-| PR5 | Security Hardening | Not Started | 0% | Low | P1 | SBOM, CVE blocking |
+| PR4 | Performance Optimizations | Complete | 100% | Medium | P1 | Singleton + parallel, 2/4 targets met |
+| PR5 | Security Hardening | Complete | 100% | Low | P1 | SBOM generation + CVE blocking |
 | PR6 | Documentation Enhancements | Not Started | 0% | Low | P2 | Quick refs, Mermaid diagrams |
 
 ### Status Legend
@@ -365,11 +382,11 @@ The roadmap is considered complete when:
 - [x] PR2 complete - CLI package infrastructure
 - [x] PR3 complete - All linter commands modularized, `src/cli_main.py` at 34 lines
 - [x] PR4 complete - Performance optimizations (singleton + parallel, 2/4 targets met)
-- [ ] PR5 complete - Security hardening (SBOM, CVE blocking)
+- [x] PR5 complete - Security hardening (SBOM, CVE blocking)
 - [ ] PR6 complete - Documentation enhancements (quick refs, Mermaid diagrams)
 - [x] `src/cli_main.py` reduced to <100 lines (34 lines, no `# pylint: disable=too-many-lines`)
 - [x] Pylint reports no `C0302 too-many-lines` violations in `src/`
 - [ ] All consultant grades are A or A+
 - [ ] Documentation includes quick reference cards
-- [ ] Security workflow blocks critical CVEs
-- [ ] SBOM generated on releases
+- [x] Security workflow blocks critical CVEs
+- [x] SBOM generated on releases
