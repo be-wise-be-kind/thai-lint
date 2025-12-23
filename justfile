@@ -32,7 +32,8 @@ help:
     @echo "Linting & Quality:"
     @echo "  just lint [FILES...]           - Fast linting (Ruff)"
     @echo "  just lint-all [FILES...]       - Comprehensive linting (Ruff + Pylint + Flake8 + MyPy)"
-    @echo "  just lint-security [FILES...]  - Security scanning (Bandit + Safety + pip-audit)"
+    @echo "  just lint-security [FILES...]  - Security scanning (Bandit + pip-audit, non-blocking)"
+    @echo "  just lint-security-strict      - Strict security (blocks on unignored vulnerabilities)"
     @echo "  just lint-complexity [FILES...] - Complexity analysis (Radon + Xenon + Nesting)"
     @echo "  just lint-placement [PATH]     - File placement linting (dogfooding our own linter)"
     @echo "  just lint-solid [FILES...]     - SOLID principle linting (SRP)"
@@ -194,6 +195,33 @@ lint-security +files="src/ tests/":
         else \
             echo "{{YELLOW}}⚠ pip-audit found issues (non-blocking){{NC}}"; \
         fi \
+    fi
+
+# Strict security scanning (blocks on vulnerabilities not in .security-ignore)
+lint-security-strict +files="src/ tests/":
+    @echo ""
+    @echo "{{BLUE}}{{BOLD}}════════════════════════════════════════════════════════════{{NC}}"
+    @echo "{{BOLD}}  STRICT SECURITY SCANNING{{NC}}"
+    @echo "{{BLUE}}{{BOLD}}════════════════════════════════════════════════════════════{{NC}}"
+    @echo ""
+    @echo "{{BOLD}}[1/2] Bandit (security linter){{NC}}"
+    @SRC_TARGETS=$(just _get-src-targets {{files}}); \
+    if [ -n "$SRC_TARGETS" ]; then \
+        if poetry run bandit -r $SRC_TARGETS -c pyproject.toml -q 2>&1; then \
+            echo "{{GREEN}}✓ Bandit passed{{NC}}"; \
+        else \
+            echo "{{RED}}✗ Bandit failed{{NC}}"; \
+            exit 1; \
+        fi \
+    fi
+    @echo ""
+    @echo "{{BOLD}}[2/2] pip-audit + CVE blocking{{NC}}"
+    @poetry run pip-audit --format=json 2>/dev/null > /tmp/pip-audit-results.json || true
+    @if poetry run python scripts/check_critical_cves.py /tmp/pip-audit-results.json --ignore-file .security-ignore; then \
+        echo "{{GREEN}}✓ No blocking vulnerabilities{{NC}}"; \
+    else \
+        echo "{{RED}}✗ Blocking vulnerabilities found{{NC}}"; \
+        exit 1; \
     fi
 
 # Check dependencies for vulnerabilities (Safety - requires API)

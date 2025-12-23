@@ -1,0 +1,31 @@
+# Security Vulnerability Ignore List
+# Purpose: Document accepted vulnerabilities for dev dependencies
+# Scope: Development-only dependencies with acceptable risk
+#
+# Each line is a vulnerability ID (GHSA-* or CVE-*) to ignore.
+# Add comments above each ID explaining why it's acceptable.
+
+# pip: Symlink handling in tar extraction (CVE-2025-8869)
+# Risk: Dev environment only, no untrusted sources
+# Mitigation: Use Python 3.11+ with PEP 706 support
+GHSA-4xh5-x5gv-qwph
+
+# filelock: TOCTOU race condition (CVE-2025-68146)
+# Risk: Dev environment only, local attacks
+# Mitigation: Virtualenv creates lock files in controlled directories
+GHSA-w853-jp5j-5j7f
+
+# marshmallow: DoS with Schema.load(many=True) (CVE-2025-68480)
+# Risk: Internal linter, no external input
+# Mitigation: Upgrade when fix available in stable release
+GHSA-428g-f7cq-pgp5
+
+# urllib3: Unlimited decompression chains (CVE-2025-66418)
+# Risk: Dev environment only, testing HTTP calls
+# Mitigation: Upgrade when fix propagates to dependencies
+GHSA-gm62-xv2j-4w53
+
+# urllib3: Streaming decompression DoS (CVE-2025-66471)
+# Risk: Dev environment only, testing HTTP calls
+# Mitigation: Upgrade when fix propagates to dependencies
+GHSA-2xpw-w6gg-jr37
