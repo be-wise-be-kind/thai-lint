@@ -341,3 +341,116 @@ def _execute_magic_numbers_lint(  # pylint: disable=too-many-arguments,too-many-
 
     format_violations(magic_numbers_violations, format)
     sys.exit(1 if magic_numbers_violations else 0)
+
+
+# =============================================================================
+# Stringly-Typed Command
+# =============================================================================
+
+
+def _setup_stringly_typed_orchestrator(
+    path_objs: list[Path], config_file: str | None, verbose: bool, project_root: Path | None = None
+) -> "Orchestrator":
+    """Set up orchestrator for stringly-typed command."""
+    return setup_base_orchestrator(path_objs, config_file, verbose, project_root)
+
+
+def _run_stringly_typed_lint(
+    orchestrator: "Orchestrator", path_objs: list[Path], recursive: bool
+) -> list[Violation]:
+    """Execute stringly-typed lint on files or directories."""
+    all_violations = execute_linting_on_paths(orchestrator, path_objs, recursive)
+    return [v for v in all_violations if v.rule_id.startswith("stringly-typed.")]
+
+
+@cli.command("stringly-typed")
+@click.argument("paths", nargs=-1, type=click.Path())
+@click.option("--config", "-c", "config_file", type=click.Path(), help="Path to config file")
+@format_option
+@click.option("--recursive/--no-recursive", default=True, help="Scan directories recursively")
+@click.pass_context
+def stringly_typed(
+    ctx: click.Context,
+    paths: tuple[str, ...],
+    config_file: str | None,
+    format: str,
+    recursive: bool,
+) -> None:
+    """Check for stringly-typed patterns in code.
+
+    Detects code patterns where strings are used instead of proper enums or
+    type unions. Identifies repeated string validation patterns across files
+    and function parameters that receive a limited set of string values.
+
+    PATHS: Files or directories to lint (defaults to current directory if none provided)
+
+    Examples:
+
+        \b
+        # Check current directory (all files recursively)
+        thai-lint stringly-typed
+
+        \b
+        # Check specific directory
+        thai-lint stringly-typed src/
+
+        \b
+        # Check single file
+        thai-lint stringly-typed src/app.py
+
+        \b
+        # Check multiple files
+        thai-lint stringly-typed src/app.py src/utils.py tests/test_app.py
+
+        \b
+        # Check mix of files and directories
+        thai-lint stringly-typed src/app.py tests/
+
+        \b
+        # Get JSON output
+        thai-lint stringly-typed --format json .
+
+        \b
+        # Get SARIF output for CI/CD integration
+        thai-lint stringly-typed --format sarif .
+
+        \b
+        # Use custom config file
+        thai-lint stringly-typed --config .thailint.yaml src/
+    """
+    verbose: bool = ctx.obj.get("verbose", False)
+    project_root = get_project_root_from_context(ctx)
+
+    if not paths:
+        paths = (".",)
+
+    path_objs = [Path(p) for p in paths]
+
+    try:
+        _execute_stringly_typed_lint(
+            path_objs, config_file, format, recursive, verbose, project_root
+        )
+    except Exception as e:
+        handle_linting_error(e, verbose)
+
+
+def _execute_stringly_typed_lint(  # pylint: disable=too-many-arguments,too-many-positional-arguments
+    path_objs: list[Path],
+    config_file: str | None,
+    format: str,
+    recursive: bool,
+    verbose: bool,
+    project_root: Path | None = None,
+) -> NoReturn:
+    # Justification for Pylint disables:
+    # - too-many-arguments/positional: CLI requires 1 list + 5 params = 6 params (standard CLI pattern)
+    """Execute stringly-typed lint."""
+    validate_paths_exist(path_objs)
+    orchestrator = _setup_stringly_typed_orchestrator(path_objs, config_file, verbose, project_root)
+    stringly_typed_violations = _run_stringly_typed_lint(orchestrator, path_objs, recursive)
+
+    if verbose:
+        logger.info(f"Found {len(stringly_typed_violations)} stringly-typed violation(s)")
+
+    format_violations(stringly_typed_violations, format)
+    sys.exit(1 if stringly_typed_violations else 0)

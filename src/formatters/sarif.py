@@ -149,6 +149,7 @@ class SarifFormatter:
             "magic-numbers": "Magic number violation",
             "file-header": "File header violation",
             "print-statements": "Print statement violation",
+            "stringly-typed": "Stringly-typed pattern violation",
         }
 
         description = descriptions.get(category, f"Rule: {violation.rule_id}")
