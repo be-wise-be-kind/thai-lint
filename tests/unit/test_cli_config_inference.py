@@ -6,73 +6,119 @@ Scope: Config path-based project root inference, Docker directory structures, ig
 Overview: Validates that when users specify --config with an explicit path, the CLI automatically
     infers the project root as the directory containing that config file. This solves the Docker
     use case where project structure uses sibling directories (/workspace/root/ and /workspace/backend/)
-    instead of nested hierarchies. Tests verify inference works with absolute and relative paths,
-    handles Docker-like structures correctly, resolves ignore patterns from inferred root, and
-    respects precedence rules where explicit --project-root overrides inference.
+    instead of nested hierarchies. Uses parametrized tests and factory fixtures for efficiency.
 
-Dependencies: pytest for testing, Click CliRunner for CLI testing, tmp_path fixture
+Dependencies: pytest, Click CliRunner, pathlib
 
 Exports: Test classes for config inference, Docker scenarios, and path handling
 
 Interfaces: Tests Click CLI command invocation with --config flag
 
-Implementation: Comprehensive tests simulating Docker environments, testing inference logic,
-    and validating ignore pattern resolution from inferred project roots
+Implementation: Uses factory fixtures for workspace creation, parametrized tests for similar scenarios
 """
 
+from pathlib import Path
+from typing import NamedTuple
+
+import pytest
 from click.testing import CliRunner
 
 from src.cli import cli
 
 
-class TestConfigPathInference:
-    """Test automatic project root inference from --config path."""
+class ConfigTestCase(NamedTuple):
+    """Test case for config inference tests."""
 
-    def test_infers_project_root_from_config_directory(self, tmp_path):
-        """Should infer project root as the directory containing --config file.
+    allowed_number: int
+    description: str
 
-        Test Setup:
-        - --config /workspace/root/.thailint.yaml
-        - File to lint: /workspace/backend/test.py
-        - No --project-root specified
 
-        Expected: Inferred project root = /workspace/root/
+@pytest.fixture
+def runner():
+    """Create a CliRunner instance."""
+    return CliRunner()
+
+
+@pytest.fixture
+def make_docker_workspace(tmp_path):
+    """Factory fixture for creating Docker-like workspace structures.
+
+    Creates: workspace/root/ (with .git and config) + workspace/backend/ (source files)
+    """
+
+    def _create(
+        config_yaml: str,
+        source_files: dict[str, str] | None = None,
+        root_dir_name: str = "root",
+    ) -> tuple[Path, Path, Path]:
+        """Create Docker-like workspace structure.
+
+        Args:
+            config_yaml: Content for .thailint.yaml
+            source_files: Dict of {filepath: content} relative to workspace
+            root_dir_name: Name of root directory (default: "root")
+
+        Returns:
+            tuple: (workspace, root_dir, config_file)
         """
         workspace = tmp_path / "workspace"
         workspace.mkdir()
 
-        root_dir = workspace / "root"
+        root_dir = workspace / root_dir_name
         root_dir.mkdir()
         (root_dir / ".git").mkdir()
 
         config_file = root_dir / ".thailint.yaml"
-        config_file.write_text("""
+        config_file.write_text(config_yaml)
+
+        if source_files:
+            for filepath, content in source_files.items():
+                file_path = workspace / filepath
+                file_path.parent.mkdir(parents=True, exist_ok=True)
+                file_path.write_text(content)
+
+        return workspace, root_dir, config_file
+
+    return _create
+
+
+# =============================================================================
+# Test Data
+# =============================================================================
+
+CONFIG_PATH_CASES = [
+    ConfigTestCase(55, "infers_from_config_directory"),
+    ConfigTestCase(66, "handles_absolute_path"),
+    ConfigTestCase(77, "handles_relative_path"),
+    ConfigTestCase(88, "handles_nested_directory"),
+]
+
+
+# =============================================================================
+# TestConfigPathInference: Config path handling
+# =============================================================================
+
+
+class TestConfigPathInference:
+    """Test automatic project root inference from --config path."""
+
+    def test_infers_project_root_from_config_directory(self, runner, make_docker_workspace):
+        """Should infer project root as the directory containing --config file."""
+        config_yaml = """
 magic_numbers:
   enabled: true
   allowed_numbers: [0, 1, 2, 55]
-""")
-
-        backend_dir = workspace / "backend"
-        backend_dir.mkdir()
-        test_file = backend_dir / "test.py"
-        test_file.write_text("x = 55  # allowed by config")
-
-        runner = CliRunner()
-        result = runner.invoke(cli, ["--config", str(config_file), "magic-numbers", str(test_file)])
-
-        # Should pass because 55 is in allowed_numbers in the config
-        assert result.exit_code == 0, (
-            f"Should infer project root from config directory: {result.output}"
+"""
+        workspace, _, config_file = make_docker_workspace(
+            config_yaml, source_files={"backend/test.py": "x = 55  # allowed by config"}
         )
+        test_file = workspace / "backend" / "test.py"
 
-    def test_infers_from_absolute_config_path(self, tmp_path):
-        """Should handle absolute paths in --config flag.
+        result = runner.invoke(cli, ["--config", str(config_file), "magic-numbers", str(test_file)])
+        assert result.exit_code == 0, f"Should infer project root: {result.output}"
 
-        Test Setup:
-        - Absolute path: /full/path/to/root/.thailint.yaml
-
-        Expected: Inferred root = /full/path/to/root/
-        """
+    def test_infers_from_absolute_config_path(self, runner, tmp_path):
+        """Should handle absolute paths in --config flag."""
         root_dir = tmp_path / "root"
         root_dir.mkdir()
         (root_dir / ".git").mkdir()
@@ -87,48 +133,22 @@ magic_numbers:
         test_file = tmp_path / "test.py"
         test_file.write_text("x = 66")
 
-        runner = CliRunner()
         result = runner.invoke(
-            cli,
-            [
-                "--config",
-                str(config_file.resolve()),  # Absolute path
-                "magic-numbers",
-                str(test_file),
-            ],
+            cli, ["--config", str(config_file.resolve()), "magic-numbers", str(test_file)]
         )
-
         assert result.exit_code == 0, f"Should handle absolute config path: {result.output}"
 
-    def test_infers_from_relative_config_path(self, tmp_path):
-        """Should handle relative paths in --config flag.
+    def test_infers_from_relative_config_path(self, runner, make_docker_workspace):
+        """Should handle relative paths in --config flag."""
+        import os
 
-        Test Setup:
-        - Relative path: ./root/.thailint.yaml or ../root/.thailint.yaml
-
-        Expected: Should resolve relative path and infer root
-        """
-        workspace = tmp_path / "workspace"
-        workspace.mkdir()
-
-        root_dir = workspace / "root"
-        root_dir.mkdir()
-        (root_dir / ".git").mkdir()
-
-        config_file = root_dir / ".thailint.yaml"
-        config_file.write_text("""
+        config_yaml = """
 magic_numbers:
   enabled: true
   allowed_numbers: [0, 1, 2, 3, 4, 5, 77]
-""")
-
+"""
+        workspace, _, _ = make_docker_workspace(config_yaml, source_files={"test.py": "x = 77"})
         test_file = workspace / "test.py"
-        test_file.write_text("x = 77")
-
-        runner = CliRunner()
-        # Change to workspace directory to test relative config path
-        import os
-        from pathlib import Path
 
         original_cwd = Path.cwd()
         try:
@@ -141,15 +161,8 @@ magic_numbers:
 
         assert result.exit_code == 0, f"Should handle relative config path: {result.output}"
 
-    def test_config_in_nested_directory(self, tmp_path):
-        """Should infer project root even when config is in nested directory.
-
-        Test Setup:
-        - Config at: /project/config/subdir/.thailint.yaml
-        - File at: /project/src/test.py
-
-        Expected: Inferred root = /project/config/subdir/
-        """
+    def test_config_in_nested_directory(self, runner, tmp_path):
+        """Should infer project root even when config is in nested directory."""
         project = tmp_path / "project"
         project.mkdir()
 
@@ -168,276 +181,169 @@ magic_numbers:
         test_file = src_dir / "test.py"
         test_file.write_text("x = 88")
 
-        runner = CliRunner()
         result = runner.invoke(cli, ["--config", str(config_file), "magic-numbers", str(test_file)])
+        assert result.exit_code == 0, f"Should handle nested config: {result.output}"
 
-        assert result.exit_code == 0, f"Should handle nested config directories: {result.output}"
+
+# =============================================================================
+# TestDockerSimulation: Docker-like directory structures
+# =============================================================================
 
 
 class TestDockerSimulation:
     """Test Docker-like directory structures (the main use case)."""
 
-    def test_docker_sibling_directories(self, tmp_path):
-        """Simulate exact Docker use case with sibling directories.
-
-        Test Setup (Docker structure):
-        /workspace/
-        ├── root/
-        │   ├── .git/
-        │   └── .thailint.yaml
-        ├── backend/
-        │   └── app/
-        │       └── famous_tracks.py
-        ├── tools/
-        └── test/
-
-        Command: thailint --config /workspace/root/.thailint.yaml magic-numbers /workspace/backend/
-
-        Expected:
-        - Project root inferred as /workspace/root/
-        - Config loaded from /workspace/root/.thailint.yaml
-        - Ignore patterns work relative to /workspace/root/
-        """
-        workspace = tmp_path / "workspace"
-        workspace.mkdir()
-
-        # Setup root directory
-        root_dir = workspace / "root"
-        root_dir.mkdir()
-        (root_dir / ".git").mkdir()
-
-        config_file = root_dir / ".thailint.yaml"
-        config_file.write_text("""
+    def test_docker_sibling_directories(self, runner, make_docker_workspace):
+        """Simulate exact Docker use case with sibling directories."""
+        config_yaml = """
 magic_numbers:
   enabled: true
   allowed_numbers: [-1, 0, 1, 2, 3, 4, 5, 10, 60, 100, 1000, 1024, 3600]
   ignore:
     - "**/famous_tracks.py"
     - "**/oscilloscope.py"
-""")
+"""
+        workspace, _, config_file = make_docker_workspace(
+            config_yaml,
+            source_files={
+                "backend/app/famous_tracks.py": "MAGIC_NUMBER = 99999\nANOTHER_MAGIC = 88888",
+                "tools/helper.py": "x = 1  # allowed",
+            },
+        )
+        famous_tracks = workspace / "backend" / "app" / "famous_tracks.py"
 
-        # Setup backend directory (sibling to root)
-        backend_dir = workspace / "backend"
-        backend_dir.mkdir()
-        app_dir = backend_dir / "app"
-        app_dir.mkdir()
-
-        famous_tracks = app_dir / "famous_tracks.py"
-        famous_tracks.write_text("""
-# This file should be ignored
-MAGIC_NUMBER = 99999
-ANOTHER_MAGIC = 88888
-""")
-
-        # Setup tools directory
-        tools_dir = workspace / "tools"
-        tools_dir.mkdir()
-        tool_file = tools_dir / "helper.py"
-        tool_file.write_text("x = 1  # allowed")
-
-        # Run linting with explicit config
-        runner = CliRunner()
         result = runner.invoke(
             cli, ["--config", str(config_file), "magic-numbers", str(famous_tracks)]
         )
+        assert result.exit_code == 0, f"famous_tracks.py should be ignored: {result.output}"
 
-        # Should pass because famous_tracks.py is in ignore list
-        assert result.exit_code == 0, (
-            f"Docker scenario: famous_tracks.py should be ignored.\nOutput: {result.output}"
-        )
-
-    def test_docker_scenario_with_non_ignored_file(self, tmp_path):
-        """In Docker scenario, non-ignored files should still be linted.
-
-        Test Setup: Same as above but lint a file NOT in ignore list
-
-        Expected: File gets linted, violations found
-        """
-        workspace = tmp_path / "workspace"
-        workspace.mkdir()
-
-        root_dir = workspace / "root"
-        root_dir.mkdir()
-        (root_dir / ".git").mkdir()
-
-        config_file = root_dir / ".thailint.yaml"
-        config_file.write_text("""
+    def test_docker_scenario_with_non_ignored_file(self, runner, make_docker_workspace):
+        """In Docker scenario, non-ignored files should still be linted."""
+        config_yaml = """
 magic_numbers:
   enabled: true
   allowed_numbers: [0, 1, 2]
   ignore:
     - "**/famous_tracks.py"
-""")
+"""
+        workspace, _, config_file = make_docker_workspace(
+            config_yaml,
+            source_files={"backend/app/other_module.py": "magic = 99999  # violation"},
+        )
+        other_file = workspace / "backend" / "app" / "other_module.py"
 
-        backend_dir = workspace / "backend"
-        backend_dir.mkdir()
-        app_dir = backend_dir / "app"
-        app_dir.mkdir()
-
-        # This file is NOT in ignore list
-        other_file = app_dir / "other_module.py"
-        other_file.write_text("magic = 99999  # violation - lowercase triggers detection")
-
-        runner = CliRunner()
         result = runner.invoke(
             cli, ["--config", str(config_file), "magic-numbers", str(other_file)]
         )
+        assert result.exit_code == 1, f"Non-ignored file should find violations: {result.output}"
 
-        # Should find violation because file is not ignored
-        assert result.exit_code == 1, (
-            f"Non-ignored file should be linted and find violations.\nOutput: {result.output}"
-        )
-
-    def test_docker_scenario_multiple_files(self, tmp_path):
-        """Test Docker scenario with multiple files across directories.
-
-        Expected:
-        - Ignored files pass
-        - Non-ignored files get linted
-        """
-        workspace = tmp_path / "workspace"
-        workspace.mkdir()
-
-        root_dir = workspace / "root"
-        root_dir.mkdir()
-        (root_dir / ".git").mkdir()
-
-        config_file = root_dir / ".thailint.yaml"
-        config_file.write_text("""
+    def test_docker_scenario_multiple_files(self, runner, make_docker_workspace):
+        """Test Docker scenario with multiple files across directories."""
+        config_yaml = """
 magic_numbers:
   enabled: true
   allowed_numbers: [0, 1, 2]
   ignore:
     - "**/famous_tracks.py"
     - "**/test_*.py"
-""")
-
-        backend_dir = workspace / "backend"
-        backend_dir.mkdir()
-
-        # Ignored file
-        ignored = backend_dir / "famous_tracks.py"
-        ignored.write_text("magic = 99999")
-
-        # Non-ignored file with violation
-        violation_file = backend_dir / "app.py"
-        violation_file.write_text("val = 88888")
-
-        # Test file (ignored by pattern)
-        test_file = backend_dir / "test_module.py"
-        test_file.write_text("val = 77777")
-
-        runner = CliRunner()
+"""
+        workspace, _, config_file = make_docker_workspace(
+            config_yaml,
+            source_files={
+                "backend/famous_tracks.py": "magic = 99999",
+                "backend/app.py": "val = 88888",
+                "backend/test_module.py": "val = 77777",
+            },
+        )
 
         # Lint ignored file - should pass
-        result1 = runner.invoke(cli, ["--config", str(config_file), "magic-numbers", str(ignored)])
+        result1 = runner.invoke(
+            cli,
+            [
+                "--config",
+                str(config_file),
+                "magic-numbers",
+                str(workspace / "backend" / "famous_tracks.py"),
+            ],
+        )
         assert result1.exit_code == 0, "Ignored file should pass"
 
         # Lint test file - should pass (matched by pattern)
         result2 = runner.invoke(
-            cli, ["--config", str(config_file), "magic-numbers", str(test_file)]
+            cli,
+            [
+                "--config",
+                str(config_file),
+                "magic-numbers",
+                str(workspace / "backend" / "test_module.py"),
+            ],
         )
         assert result2.exit_code == 0, "Test file should be ignored by pattern"
 
         # Lint violation file - should fail
         result3 = runner.invoke(
-            cli, ["--config", str(config_file), "magic-numbers", str(violation_file)]
+            cli,
+            ["--config", str(config_file), "magic-numbers", str(workspace / "backend" / "app.py")],
         )
         assert result3.exit_code == 1, "Non-ignored file should find violation"
+
+
+# =============================================================================
+# TestIgnorePatternResolution: Ignore pattern handling
+# =============================================================================
 
 
 class TestIgnorePatternResolution:
     """Test that ignore patterns resolve correctly from inferred project root."""
 
-    def test_ignore_patterns_resolve_from_inferred_root(self, tmp_path):
-        """Ignore patterns should resolve relative to inferred project root.
-
-        Test Setup:
-        - Config at /workspace/root/.thailint.yaml
-        - Ignore pattern: "**/backend/**.py"
-        - File at /workspace/backend/app/test.py
-
-        Expected: File matches ignore pattern relative to /workspace/root/
-        """
-        workspace = tmp_path / "workspace"
-        workspace.mkdir()
-
-        root_dir = workspace / "root"
-        root_dir.mkdir()
-        (root_dir / ".git").mkdir()
-
-        config_file = root_dir / ".thailint.yaml"
-        config_file.write_text("""
+    def test_ignore_patterns_resolve_from_inferred_root(self, runner, make_docker_workspace):
+        """Ignore patterns should resolve relative to inferred project root."""
+        config_yaml = """
 magic_numbers:
   enabled: true
   allowed_numbers: [0, 1, 2]
   ignore:
     - "**/backend/**"
-""")
-
-        backend_dir = workspace / "backend"
-        backend_dir.mkdir()
-        app_dir = backend_dir / "app"
-        app_dir.mkdir()
-
-        test_file = app_dir / "test.py"
-        test_file.write_text("MAGIC = 99999  # should be ignored")
-
-        runner = CliRunner()
-        result = runner.invoke(cli, ["--config", str(config_file), "magic-numbers", str(test_file)])
-
-        assert result.exit_code == 0, (
-            f"Ignore pattern should match file relative to inferred root.\nOutput: {result.output}"
+"""
+        workspace, _, config_file = make_docker_workspace(
+            config_yaml, source_files={"backend/app/test.py": "MAGIC = 99999  # should be ignored"}
         )
+        test_file = workspace / "backend" / "app" / "test.py"
 
-    def test_absolute_ignore_patterns_with_inferred_root(self, tmp_path):
+        result = runner.invoke(cli, ["--config", str(config_file), "magic-numbers", str(test_file)])
+        assert result.exit_code == 0, f"Ignore pattern should match: {result.output}"
+
+    def test_absolute_ignore_patterns_with_inferred_root(self, runner, make_docker_workspace):
         """Test absolute ignore patterns with inferred project root."""
-        workspace = tmp_path / "workspace"
-        workspace.mkdir()
-
-        root_dir = workspace / "root"
-        root_dir.mkdir()
-        (root_dir / ".git").mkdir()
-
-        config_file = root_dir / ".thailint.yaml"
-        # Use absolute path in ignore (from root)
-        config_file.write_text("""
+        config_yaml = """
 magic_numbers:
   enabled: true
   allowed_numbers: [0, 1, 2]
   ignore:
     - "../backend/specific_file.py"
-""")
+"""
+        workspace, _, config_file = make_docker_workspace(
+            config_yaml, source_files={"backend/specific_file.py": "MAGIC = 88888"}
+        )
+        ignored_file = workspace / "backend" / "specific_file.py"
 
-        backend_dir = workspace / "backend"
-        backend_dir.mkdir()
-
-        ignored_file = backend_dir / "specific_file.py"
-        ignored_file.write_text("MAGIC = 88888")
-
-        runner = CliRunner()
         result = runner.invoke(
             cli, ["--config", str(config_file), "magic-numbers", str(ignored_file)]
         )
-
-        # Should be ignored (or might fail if absolute paths not supported)
-        # This test documents expected behavior
+        # Documents expected behavior - may or may not be supported
         assert result.exit_code in [0, 1], f"Test absolute ignore paths: {result.output}"
+
+
+# =============================================================================
+# TestConfigInferencePrecedence: Precedence rules
+# =============================================================================
 
 
 class TestConfigInferencePrecedence:
     """Test that explicit --project-root overrides config inference."""
 
-    def test_explicit_project_root_overrides_inference(self, tmp_path):
-        """--project-root should take precedence over config-based inference.
-
-        Test Setup:
-        - --config /workspace/config-dir/.thailint.yaml (would infer config-dir)
-        - --project-root /workspace/actual-root/ (explicit)
-        - Configs have different settings
-
-        Expected: Should use actual-root, not config-dir
-        """
+    def test_explicit_project_root_overrides_inference(self, runner, tmp_path):
+        """--project-root should take precedence over config-based inference."""
         workspace = tmp_path / "workspace"
         workspace.mkdir()
 
@@ -465,7 +371,6 @@ magic_numbers:
         test_file = workspace / "test.py"
         test_file.write_text("x = 42")
 
-        runner = CliRunner()
         result = runner.invoke(
             cli,
             [
@@ -477,22 +382,10 @@ magic_numbers:
                 str(test_file),
             ],
         )
+        assert result.exit_code == 0, f"--project-root should override: {result.output}"
 
-        # Should use actual-root where 42 is allowed
-        assert result.exit_code == 0, (
-            f"Explicit --project-root should override config inference.\nOutput: {result.output}"
-        )
-
-    def test_no_inference_without_explicit_config(self, tmp_path):
-        """Should NOT infer from auto-discovered config, only from explicit --config.
-
-        Test Setup:
-        - Auto-discovered config at /project/.thailint.yaml
-        - No --config specified
-        - Should use auto-detection, not inference
-
-        Expected: Uses standard auto-detection logic
-        """
+    def test_no_inference_without_explicit_config(self, runner, tmp_path):
+        """Should NOT infer from auto-discovered config, only from explicit --config."""
         project = tmp_path / "project"
         project.mkdir()
         (project / ".git").mkdir()
@@ -507,79 +400,39 @@ magic_numbers:
         test_file = project / "test.py"
         test_file.write_text("x = 3")
 
-        runner = CliRunner()
-        result = runner.invoke(
-            cli,
-            [
-                # No --config, no --project-root
-                "magic-numbers",
-                str(test_file),
-            ],
-        )
+        result = runner.invoke(cli, ["magic-numbers", str(test_file)])
+        assert result.exit_code == 0, f"Should auto-detect normally: {result.output}"
 
-        # Should auto-detect normally
-        assert result.exit_code == 0, (
-            f"Should auto-detect normally without explicit --config: {result.output}"
-        )
+
+# =============================================================================
+# TestConfigInferenceIntegration: Integration with linting commands
+# =============================================================================
 
 
 class TestConfigInferenceIntegration:
     """Test config inference with all linting commands."""
 
-    def test_config_inference_with_magic_numbers(self, tmp_path):
-        """Config inference works with magic-numbers command."""
-        workspace = tmp_path / "workspace"
-        workspace.mkdir()
-
-        root_dir = workspace / "root"
-        root_dir.mkdir()
-        config = root_dir / ".thailint.yaml"
-        config.write_text("""
-magic_numbers:
-  enabled: true
-  allowed_numbers: [0, 1, 2, 44]
-""")
-
+    @pytest.mark.parametrize(
+        "command,config_yaml,file_content",
+        [
+            (
+                "magic-numbers",
+                "magic_numbers:\n  enabled: true\n  allowed_numbers: [0, 1, 2, 44]",
+                "x = 44",
+            ),
+            ("file-placement", "file_placement:\n  enabled: true", "# test"),
+            ("nesting", "nesting:\n  max_nesting_depth: 4", "if True:\n    pass"),
+        ],
+        ids=["magic_numbers", "file_placement", "nesting"],
+    )
+    def test_config_inference_with_commands(
+        self, runner, make_docker_workspace, command, config_yaml, file_content
+    ):
+        """Config inference works with various linting commands."""
+        workspace, _, config = make_docker_workspace(
+            config_yaml, source_files={"test.py": file_content}
+        )
         test_file = workspace / "test.py"
-        test_file.write_text("x = 44")
 
-        runner = CliRunner()
-        result = runner.invoke(cli, ["--config", str(config), "magic-numbers", str(test_file)])
-
-        assert result.exit_code == 0
-
-    def test_config_inference_with_file_placement(self, tmp_path):
-        """Config inference works with file-placement command."""
-        workspace = tmp_path / "workspace"
-        workspace.mkdir()
-
-        root_dir = workspace / "root"
-        root_dir.mkdir()
-        config = root_dir / ".thailint.yaml"
-        config.write_text("file_placement:\n  enabled: true\n")
-
-        test_file = workspace / "test.py"
-        test_file.write_text("# test")
-
-        runner = CliRunner()
-        result = runner.invoke(cli, ["--config", str(config), "file-placement", str(test_file)])
-
-        assert result.exit_code in [0, 1]
-
-    def test_config_inference_with_nesting(self, tmp_path):
-        """Config inference works with nesting command."""
-        workspace = tmp_path / "workspace"
-        workspace.mkdir()
-
-        root_dir = workspace / "root"
-        root_dir.mkdir()
-        config = root_dir / ".thailint.yaml"
-        config.write_text("nesting:\n  max_nesting_depth: 4\n")
-
-        test_file = workspace / "test.py"
-        test_file.write_text("if True:\n    pass")
-
-        runner = CliRunner()
-        result = runner.invoke(cli, ["--config", str(config), "nesting", str(test_file)])
-
+        result = runner.invoke(cli, ["--config", str(config), command, str(test_file)])
         assert result.exit_code in [0, 1]

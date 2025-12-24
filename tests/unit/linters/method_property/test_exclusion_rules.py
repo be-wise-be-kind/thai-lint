@@ -7,141 +7,126 @@ Overview: Comprehensive test suite for exclusion rules in method-should-be-prope
     Validates that the linter correctly excludes methods with parameters, side effects, loops,
     try/except blocks, external function calls, decorators (@staticmethod, @classmethod,
     @abstractmethod, @property), complex bodies, dunder methods, test files, methods returning
-    None, and async methods. Ensures the linter minimizes false positives by properly respecting
-    all exclusion criteria defined in the feature specification.
+    None, and async methods. Uses parametrized tests for efficiency.
 
 Dependencies: pytest, pathlib.Path, unittest.mock.Mock,
     src.linters.method_property.linter.MethodPropertyRule
 
-Exports: TestParameterExclusions, TestSideEffectExclusions, TestDecoratorExclusions,
-    TestComplexBodyExclusions, TestSpecialCases test classes
+Exports: Test classes for each exclusion category
 
-Interfaces: test methods validating MethodPropertyRule.check(context) returns no violations
-    for excluded patterns
+Interfaces: Parametrized test methods validating MethodPropertyRule.check(context)
 
-Implementation: Uses Mock objects for context creation, inline Python code strings as test
-    fixtures, validates zero violations for each exclusion scenario
+Implementation: Uses factory fixtures for context creation, parametrized tests for code samples,
+    validates zero violations for exclusion scenarios and specific counts for mixed patterns
 """
 
 from pathlib import Path
+from typing import NamedTuple
 from unittest.mock import Mock
 
+import pytest
 
-class TestParameterExclusions:
-    """Methods with parameters should NOT be flagged."""
+from src.linters.method_property.linter import MethodPropertyRule
 
-    def test_ignores_method_with_required_param(self):
-        """Should NOT flag method with required parameter beyond self."""
-        code = """
+
+class ExclusionTestCase(NamedTuple):
+    """Test case for exclusion rule testing."""
+
+    code: str
+    filename: str
+    description: str
+
+
+@pytest.fixture
+def rule():
+    """Create a MethodPropertyRule instance."""
+    return MethodPropertyRule()
+
+
+@pytest.fixture
+def create_context():
+    """Factory fixture for creating mock contexts."""
+
+    def _create(code: str, filename: str = "test.py") -> Mock:
+        context = Mock()
+        context.file_path = Path(filename)
+        context.file_content = code
+        context.language = "python"
+        return context
+
+    return _create
+
+
+# =============================================================================
+# Test Data: Code samples for exclusion tests
+# =============================================================================
+
+PARAMETER_EXCLUSION_CASES = [
+    ExclusionTestCase(
+        code="""
 class Container:
     def __init__(self):
         self._items = []
 
     def get_item(self, index):
         return self._items[index]
-"""
-        from src.linters.method_property.linter import MethodPropertyRule
-
-        rule = MethodPropertyRule()
-        context = Mock()
-        context.file_path = Path("container.py")
-        context.file_content = code
-        context.language = "python"
-
-        violations = rule.check(context)
-        assert len(violations) == 0
-
-    def test_ignores_method_with_default_param(self):
-        """Should NOT flag method with default parameter."""
-        code = """
+""",
+        filename="container.py",
+        description="method_with_required_param",
+    ),
+    ExclusionTestCase(
+        code="""
 class ValueHolder:
     def __init__(self):
         self._value = None
 
     def get_value(self, default=None):
         return self._value or default
-"""
-        from src.linters.method_property.linter import MethodPropertyRule
-
-        rule = MethodPropertyRule()
-        context = Mock()
-        context.file_path = Path("holder.py")
-        context.file_content = code
-        context.language = "python"
-
-        violations = rule.check(context)
-        assert len(violations) == 0
-
-    def test_ignores_method_with_args(self):
-        """Should NOT flag method with *args."""
-        code = """
+""",
+        filename="holder.py",
+        description="method_with_default_param",
+    ),
+    ExclusionTestCase(
+        code="""
 class Aggregator:
     def __init__(self):
         self._items = []
 
     def get_items(self, *args):
         return self._items
-"""
-        from src.linters.method_property.linter import MethodPropertyRule
-
-        rule = MethodPropertyRule()
-        context = Mock()
-        context.file_path = Path("aggregator.py")
-        context.file_content = code
-        context.language = "python"
-
-        violations = rule.check(context)
-        assert len(violations) == 0
-
-    def test_ignores_method_with_kwargs(self):
-        """Should NOT flag method with **kwargs."""
-        code = """
+""",
+        filename="aggregator.py",
+        description="method_with_args",
+    ),
+    ExclusionTestCase(
+        code="""
 class Config:
     def __init__(self):
         self._settings = {}
 
     def get_settings(self, **kwargs):
         return self._settings
-"""
-        from src.linters.method_property.linter import MethodPropertyRule
-
-        rule = MethodPropertyRule()
-        context = Mock()
-        context.file_path = Path("config.py")
-        context.file_content = code
-        context.language = "python"
-
-        violations = rule.check(context)
-        assert len(violations) == 0
-
-    def test_ignores_method_with_multiple_params(self):
-        """Should NOT flag method with multiple parameters."""
-        code = """
+""",
+        filename="config.py",
+        description="method_with_kwargs",
+    ),
+    ExclusionTestCase(
+        code="""
 class DataStore:
     def __init__(self):
         self._data = {}
 
     def get_range(self, start, end, step=1):
         return self._data
-"""
-        from src.linters.method_property.linter import MethodPropertyRule
+""",
+        filename="store.py",
+        description="method_with_multiple_params",
+    ),
+]
 
-        rule = MethodPropertyRule()
-        context = Mock()
-        context.file_path = Path("store.py")
-        context.file_content = code
-        context.language = "python"
-
-        violations = rule.check(context)
-        assert len(violations) == 0
-
-
-class TestSideEffectExclusions:
-    """Methods with side effects should NOT be flagged."""
-
-    def test_ignores_method_with_assignment(self):
-        """Should NOT flag method with assignment statement."""
-        code = """
+SIDE_EFFECT_EXCLUSION_CASES = [
+    ExclusionTestCase(
+        code="""
 class Cache:
     def __init__(self):
         self._cached = False
@@ -150,21 +135,12 @@ class Cache:
     def cached_value(self):
         self._cached = True
         return self._value
-"""
-        from src.linters.method_property.linter import MethodPropertyRule
-
-        rule = MethodPropertyRule()
-        context = Mock()
-        context.file_path = Path("cache.py")
-        context.file_content = code
-        context.language = "python"
-
-        violations = rule.check(context)
-        assert len(violations) == 0
-
-    def test_ignores_method_with_augmented_assignment(self):
-        """Should NOT flag method with augmented assignment (+=, -=, etc.)."""
-        code = """
+""",
+        filename="cache.py",
+        description="method_with_assignment",
+    ),
+    ExclusionTestCase(
+        code="""
 class Counter:
     def __init__(self):
         self._count = 0
@@ -172,21 +148,12 @@ class Counter:
     def increment_and_get(self):
         self._count += 1
         return self._count
-"""
-        from src.linters.method_property.linter import MethodPropertyRule
-
-        rule = MethodPropertyRule()
-        context = Mock()
-        context.file_path = Path("counter.py")
-        context.file_content = code
-        context.language = "python"
-
-        violations = rule.check(context)
-        assert len(violations) == 0
-
-    def test_ignores_method_with_for_loop(self):
-        """Should NOT flag method with for loop."""
-        code = """
+""",
+        filename="counter.py",
+        description="method_with_augmented_assignment",
+    ),
+    ExclusionTestCase(
+        code="""
 class DataProcessor:
     def __init__(self):
         self._data = [1, 2, 3]
@@ -194,21 +161,12 @@ class DataProcessor:
     def items(self):
         for item in self._data:
             yield item
-"""
-        from src.linters.method_property.linter import MethodPropertyRule
-
-        rule = MethodPropertyRule()
-        context = Mock()
-        context.file_path = Path("processor.py")
-        context.file_content = code
-        context.language = "python"
-
-        violations = rule.check(context)
-        assert len(violations) == 0
-
-    def test_ignores_method_with_while_loop(self):
-        """Should NOT flag method with while loop."""
-        code = """
+""",
+        filename="processor.py",
+        description="method_with_for_loop",
+    ),
+    ExclusionTestCase(
+        code="""
 class Iterator:
     def __init__(self):
         self._items = []
@@ -218,21 +176,12 @@ class Iterator:
         while self._index < len(self._items):
             self._index += 1
         return self._items
-"""
-        from src.linters.method_property.linter import MethodPropertyRule
-
-        rule = MethodPropertyRule()
-        context = Mock()
-        context.file_path = Path("iterator.py")
-        context.file_content = code
-        context.language = "python"
-
-        violations = rule.check(context)
-        assert len(violations) == 0
-
-    def test_ignores_method_with_list_comprehension_assignment(self):
-        """Should NOT flag method with list comprehension that assigns."""
-        code = """
+""",
+        filename="iterator.py",
+        description="method_with_while_loop",
+    ),
+    ExclusionTestCase(
+        code="""
 class Filter:
     def __init__(self):
         self._data = [1, 2, 3, 4, 5]
@@ -240,26 +189,15 @@ class Filter:
     def filtered_values(self):
         result = [v for v in self._data if v > 0]
         return result
-"""
-        from src.linters.method_property.linter import MethodPropertyRule
+""",
+        filename="filter.py",
+        description="method_with_list_comprehension_assignment",
+    ),
+]
 
-        rule = MethodPropertyRule()
-        context = Mock()
-        context.file_path = Path("filter.py")
-        context.file_content = code
-        context.language = "python"
-
-        violations = rule.check(context)
-        # This has an assignment statement so should not be flagged
-        assert len(violations) == 0
-
-
-class TestTryExceptExclusions:
-    """Methods with try/except should NOT be flagged."""
-
-    def test_ignores_method_with_try_except(self):
-        """Should NOT flag method with try/except block."""
-        code = """
+TRY_EXCEPT_EXCLUSION_CASES = [
+    ExclusionTestCase(
+        code="""
 class SafeContainer:
     def __init__(self):
         self._value = None
@@ -269,21 +207,12 @@ class SafeContainer:
             return self._value
         except AttributeError:
             return None
-"""
-        from src.linters.method_property.linter import MethodPropertyRule
-
-        rule = MethodPropertyRule()
-        context = Mock()
-        context.file_path = Path("safe.py")
-        context.file_content = code
-        context.language = "python"
-
-        violations = rule.check(context)
-        assert len(violations) == 0
-
-    def test_ignores_method_with_try_finally(self):
-        """Should NOT flag method with try/finally block."""
-        code = """
+""",
+        filename="safe.py",
+        description="method_with_try_except",
+    ),
+    ExclusionTestCase(
+        code="""
 class Resource:
     def __init__(self):
         self._resource = None
@@ -294,25 +223,15 @@ class Resource:
             return self._resource
         finally:
             self._lock = False
-"""
-        from src.linters.method_property.linter import MethodPropertyRule
+""",
+        filename="resource.py",
+        description="method_with_try_finally",
+    ),
+]
 
-        rule = MethodPropertyRule()
-        context = Mock()
-        context.file_path = Path("resource.py")
-        context.file_content = code
-        context.language = "python"
-
-        violations = rule.check(context)
-        assert len(violations) == 0
-
-
-class TestExternalCallExclusions:
-    """Methods with external function calls should NOT be flagged."""
-
-    def test_ignores_method_with_external_function_call(self):
-        """Should NOT flag method that calls external function."""
-        code = """
+EXTERNAL_CALL_EXCLUSION_CASES = [
+    ExclusionTestCase(
+        code="""
 def format_date(date):
     return str(date)
 
@@ -322,21 +241,12 @@ class Formatter:
 
     def formatted_date(self):
         return format_date(self._date)
-"""
-        from src.linters.method_property.linter import MethodPropertyRule
-
-        rule = MethodPropertyRule()
-        context = Mock()
-        context.file_path = Path("formatter.py")
-        context.file_content = code
-        context.language = "python"
-
-        violations = rule.check(context)
-        assert len(violations) == 0
-
-    def test_ignores_method_with_side_effect_call(self):
-        """Should NOT flag method that calls function with side effects."""
-        code = """
+""",
+        filename="formatter.py",
+        description="method_with_external_function_call",
+    ),
+    ExclusionTestCase(
+        code="""
 def validate(value):
     pass
 
@@ -347,21 +257,12 @@ class Validator:
     def validated_value(self):
         validate(self._value)
         return self._value
-"""
-        from src.linters.method_property.linter import MethodPropertyRule
-
-        rule = MethodPropertyRule()
-        context = Mock()
-        context.file_path = Path("validator.py")
-        context.file_content = code
-        context.language = "python"
-
-        violations = rule.check(context)
-        assert len(violations) == 0
-
-    def test_ignores_method_with_builtin_that_has_side_effects(self):
-        """Should NOT flag method that calls print()."""
-        code = """
+""",
+        filename="validator.py",
+        description="method_with_side_effect_call",
+    ),
+    ExclusionTestCase(
+        code="""
 class Logger:
     def __init__(self):
         self._message = "test"
@@ -369,84 +270,47 @@ class Logger:
     def log_and_get(self):
         print(self._message)
         return self._message
-"""
-        from src.linters.method_property.linter import MethodPropertyRule
+""",
+        filename="logger.py",
+        description="method_with_builtin_side_effect",
+    ),
+]
 
-        rule = MethodPropertyRule()
-        context = Mock()
-        context.file_path = Path("logger.py")
-        context.file_content = code
-        context.language = "python"
-
-        violations = rule.check(context)
-        assert len(violations) == 0
-
-
-class TestDecoratorExclusions:
-    """Decorated methods should NOT be flagged."""
-
-    def test_ignores_staticmethod(self):
-        """Should NOT flag @staticmethod."""
-        code = """
+DECORATOR_EXCLUSION_CASES = [
+    ExclusionTestCase(
+        code="""
 class Factory:
     @staticmethod
     def create_default():
         return Factory()
-"""
-        from src.linters.method_property.linter import MethodPropertyRule
-
-        rule = MethodPropertyRule()
-        context = Mock()
-        context.file_path = Path("factory.py")
-        context.file_content = code
-        context.language = "python"
-
-        violations = rule.check(context)
-        assert len(violations) == 0
-
-    def test_ignores_classmethod(self):
-        """Should NOT flag @classmethod."""
-        code = """
+""",
+        filename="factory.py",
+        description="staticmethod",
+    ),
+    ExclusionTestCase(
+        code="""
 class Builder:
     @classmethod
     def from_dict(cls, data):
         return cls()
-"""
-        from src.linters.method_property.linter import MethodPropertyRule
-
-        rule = MethodPropertyRule()
-        context = Mock()
-        context.file_path = Path("builder.py")
-        context.file_content = code
-        context.language = "python"
-
-        violations = rule.check(context)
-        assert len(violations) == 0
-
-    def test_ignores_abstractmethod(self):
-        """Should NOT flag @abstractmethod."""
-        code = """
+""",
+        filename="builder.py",
+        description="classmethod",
+    ),
+    ExclusionTestCase(
+        code="""
 from abc import abstractmethod, ABC
 
 class Base(ABC):
     @abstractmethod
     def compute(self):
         pass
-"""
-        from src.linters.method_property.linter import MethodPropertyRule
-
-        rule = MethodPropertyRule()
-        context = Mock()
-        context.file_path = Path("base.py")
-        context.file_content = code
-        context.language = "python"
-
-        violations = rule.check(context)
-        assert len(violations) == 0
-
-    def test_ignores_property_already(self):
-        """Should NOT flag method already decorated with @property."""
-        code = """
+""",
+        filename="base.py",
+        description="abstractmethod",
+    ),
+    ExclusionTestCase(
+        code="""
 class User:
     def __init__(self, name):
         self._name = name
@@ -454,21 +318,12 @@ class User:
     @property
     def name(self):
         return self._name
-"""
-        from src.linters.method_property.linter import MethodPropertyRule
-
-        rule = MethodPropertyRule()
-        context = Mock()
-        context.file_path = Path("user.py")
-        context.file_content = code
-        context.language = "python"
-
-        violations = rule.check(context)
-        assert len(violations) == 0
-
-    def test_ignores_cached_property(self):
-        """Should NOT flag @functools.cached_property."""
-        code = """
+""",
+        filename="user.py",
+        description="property_already",
+    ),
+    ExclusionTestCase(
+        code="""
 import functools
 
 class Expensive:
@@ -478,21 +333,12 @@ class Expensive:
     @functools.cached_property
     def expensive_value(self):
         return self._value * 100
-"""
-        from src.linters.method_property.linter import MethodPropertyRule
-
-        rule = MethodPropertyRule()
-        context = Mock()
-        context.file_path = Path("expensive.py")
-        context.file_content = code
-        context.language = "python"
-
-        violations = rule.check(context)
-        assert len(violations) == 0
-
-    def test_ignores_custom_decorator(self):
-        """Should NOT flag method with custom decorator."""
-        code = """
+""",
+        filename="expensive.py",
+        description="cached_property",
+    ),
+    ExclusionTestCase(
+        code="""
 def cache(func):
     return func
 
@@ -503,25 +349,15 @@ class Service:
     @cache
     def data(self):
         return self._data
-"""
-        from src.linters.method_property.linter import MethodPropertyRule
+""",
+        filename="service.py",
+        description="custom_decorator",
+    ),
+]
 
-        rule = MethodPropertyRule()
-        context = Mock()
-        context.file_path = Path("service.py")
-        context.file_content = code
-        context.language = "python"
-
-        violations = rule.check(context)
-        assert len(violations) == 0
-
-
-class TestComplexBodyExclusions:
-    """Complex method bodies should NOT be flagged."""
-
-    def test_ignores_body_over_3_statements(self):
-        """Should NOT flag method with more than 3 statements."""
-        code = """
+COMPLEX_BODY_EXCLUSION_CASES = [
+    ExclusionTestCase(
+        code="""
 class Processor:
     def __init__(self):
         self._raw_value = "  Test-Value  "
@@ -532,21 +368,12 @@ class Processor:
         value = value.lower()
         value = value.replace("-", "_")
         return value
-"""
-        from src.linters.method_property.linter import MethodPropertyRule
-
-        rule = MethodPropertyRule()
-        context = Mock()
-        context.file_path = Path("processor.py")
-        context.file_content = code
-        context.language = "python"
-
-        violations = rule.check(context)
-        assert len(violations) == 0
-
-    def test_ignores_method_with_if_statement(self):
-        """Should NOT flag method with if/else statement (adds complexity)."""
-        code = """
+""",
+        filename="processor.py",
+        description="body_over_3_statements",
+    ),
+    ExclusionTestCase(
+        code="""
 class Conditional:
     def __init__(self):
         self._value = None
@@ -555,25 +382,15 @@ class Conditional:
         if self._value is None:
             return "default"
         return self._value
-"""
-        from src.linters.method_property.linter import MethodPropertyRule
+""",
+        filename="conditional.py",
+        description="method_with_if_statement",
+    ),
+]
 
-        rule = MethodPropertyRule()
-        context = Mock()
-        context.file_path = Path("conditional.py")
-        context.file_content = code
-        context.language = "python"
-
-        violations = rule.check(context)
-        assert len(violations) == 0
-
-
-class TestSpecialCases:
-    """Special cases that should NOT be flagged."""
-
-    def test_ignores_dunder_methods(self):
-        """Should NOT flag dunder methods like __str__."""
-        code = """
+SPECIAL_CASE_EXCLUSION_CASES = [
+    ExclusionTestCase(
+        code="""
 class Entity:
     def __init__(self, name):
         self._name = name
@@ -586,63 +403,36 @@ class Entity:
 
     def __len__(self):
         return len(self._name)
-"""
-        from src.linters.method_property.linter import MethodPropertyRule
-
-        rule = MethodPropertyRule()
-        context = Mock()
-        context.file_path = Path("entity.py")
-        context.file_content = code
-        context.language = "python"
-
-        violations = rule.check(context)
-        assert len(violations) == 0
-
-    def test_ignores_test_files(self):
-        """Should NOT flag methods in test files."""
-        code = """
+""",
+        filename="entity.py",
+        description="dunder_methods",
+    ),
+    ExclusionTestCase(
+        code="""
 class TestUser:
     def __init__(self):
         self._mock_data = []
 
     def get_mock_value(self):
         return self._mock_data
-"""
-        from src.linters.method_property.linter import MethodPropertyRule
-
-        rule = MethodPropertyRule()
-        context = Mock()
-        context.file_path = Path("test_user.py")  # Test file naming
-        context.file_content = code
-        context.language = "python"
-
-        violations = rule.check(context)
-        assert len(violations) == 0
-
-    def test_ignores_test_files_suffix(self):
-        """Should NOT flag methods in *_test.py files."""
-        code = """
+""",
+        filename="test_user.py",
+        description="test_files_prefix",
+    ),
+    ExclusionTestCase(
+        code="""
 class UserTest:
     def __init__(self):
         self._mock_data = []
 
     def get_mock_value(self):
         return self._mock_data
-"""
-        from src.linters.method_property.linter import MethodPropertyRule
-
-        rule = MethodPropertyRule()
-        context = Mock()
-        context.file_path = Path("user_test.py")  # Test file naming
-        context.file_content = code
-        context.language = "python"
-
-        violations = rule.check(context)
-        assert len(violations) == 0
-
-    def test_ignores_returns_none(self):
-        """Should NOT flag methods that return None."""
-        code = """
+""",
+        filename="user_test.py",
+        description="test_files_suffix",
+    ),
+    ExclusionTestCase(
+        code="""
 class Initializer:
     def __init__(self):
         self._value = 42
@@ -650,21 +440,12 @@ class Initializer:
     def log_value(self):
         print(self._value)
         return None
-"""
-        from src.linters.method_property.linter import MethodPropertyRule
-
-        rule = MethodPropertyRule()
-        context = Mock()
-        context.file_path = Path("init.py")
-        context.file_content = code
-        context.language = "python"
-
-        violations = rule.check(context)
-        assert len(violations) == 0
-
-    def test_ignores_no_return(self):
-        """Should NOT flag methods with no return statement."""
-        code = """
+""",
+        filename="init.py",
+        description="returns_none",
+    ),
+    ExclusionTestCase(
+        code="""
 class Setup:
     def __init__(self):
         self._value = 42
@@ -674,25 +455,15 @@ class Setup:
 
     def setup(self):
         return
-"""
-        from src.linters.method_property.linter import MethodPropertyRule
+""",
+        filename="setup.py",
+        description="no_return",
+    ),
+]
 
-        rule = MethodPropertyRule()
-        context = Mock()
-        context.file_path = Path("setup.py")
-        context.file_content = code
-        context.language = "python"
-
-        violations = rule.check(context)
-        assert len(violations) == 0
-
-
-class TestAsyncExclusions:
-    """Async methods should NOT be flagged."""
-
-    def test_ignores_async_method(self):
-        """Should NOT flag async method with await."""
-        code = """
+ASYNC_EXCLUSION_CASES = [
+    ExclusionTestCase(
+        code="""
 class AsyncService:
     def __init__(self):
         self._data = None
@@ -702,81 +473,174 @@ class AsyncService:
 
     async def _fetch_data(self):
         return self._data
-"""
-        from src.linters.method_property.linter import MethodPropertyRule
-
-        rule = MethodPropertyRule()
-        context = Mock()
-        context.file_path = Path("async_service.py")
-        context.file_content = code
-        context.language = "python"
-
-        violations = rule.check(context)
-        assert len(violations) == 0
-
-    def test_ignores_async_def_without_await(self):
-        """Should NOT flag async def even without explicit await."""
-        code = """
+""",
+        filename="async_service.py",
+        description="async_method_with_await",
+    ),
+    ExclusionTestCase(
+        code="""
 class AsyncContainer:
     def __init__(self):
         self._value = 42
 
     async def value(self):
         return self._value
-"""
-        from src.linters.method_property.linter import MethodPropertyRule
+""",
+        filename="async_container.py",
+        description="async_def_without_await",
+    ),
+]
 
-        rule = MethodPropertyRule()
-        context = Mock()
-        context.file_path = Path("async_container.py")
-        context.file_content = code
-        context.language = "python"
 
+# =============================================================================
+# Parametrized Tests: Zero Violations Expected
+# =============================================================================
+
+
+class TestParameterExclusions:
+    """Methods with parameters should NOT be flagged."""
+
+    @pytest.mark.parametrize(
+        "case",
+        PARAMETER_EXCLUSION_CASES,
+        ids=[c.description for c in PARAMETER_EXCLUSION_CASES],
+    )
+    def test_ignores_methods_with_parameters(self, rule, create_context, case):
+        """Should NOT flag methods with parameters beyond self."""
+        context = create_context(case.code, case.filename)
         violations = rule.check(context)
         assert len(violations) == 0
+
+
+class TestSideEffectExclusions:
+    """Methods with side effects should NOT be flagged."""
+
+    @pytest.mark.parametrize(
+        "case",
+        SIDE_EFFECT_EXCLUSION_CASES,
+        ids=[c.description for c in SIDE_EFFECT_EXCLUSION_CASES],
+    )
+    def test_ignores_methods_with_side_effects(self, rule, create_context, case):
+        """Should NOT flag methods with assignments, loops, or generators."""
+        context = create_context(case.code, case.filename)
+        violations = rule.check(context)
+        assert len(violations) == 0
+
+
+class TestTryExceptExclusions:
+    """Methods with try/except should NOT be flagged."""
+
+    @pytest.mark.parametrize(
+        "case",
+        TRY_EXCEPT_EXCLUSION_CASES,
+        ids=[c.description for c in TRY_EXCEPT_EXCLUSION_CASES],
+    )
+    def test_ignores_methods_with_try_except(self, rule, create_context, case):
+        """Should NOT flag methods with try/except or try/finally blocks."""
+        context = create_context(case.code, case.filename)
+        violations = rule.check(context)
+        assert len(violations) == 0
+
+
+class TestExternalCallExclusions:
+    """Methods with external function calls should NOT be flagged."""
+
+    @pytest.mark.parametrize(
+        "case",
+        EXTERNAL_CALL_EXCLUSION_CASES,
+        ids=[c.description for c in EXTERNAL_CALL_EXCLUSION_CASES],
+    )
+    def test_ignores_methods_with_external_calls(self, rule, create_context, case):
+        """Should NOT flag methods that call external or builtin functions."""
+        context = create_context(case.code, case.filename)
+        violations = rule.check(context)
+        assert len(violations) == 0
+
+
+class TestDecoratorExclusions:
+    """Decorated methods should NOT be flagged."""
+
+    @pytest.mark.parametrize(
+        "case",
+        DECORATOR_EXCLUSION_CASES,
+        ids=[c.description for c in DECORATOR_EXCLUSION_CASES],
+    )
+    def test_ignores_decorated_methods(self, rule, create_context, case):
+        """Should NOT flag methods with decorators."""
+        context = create_context(case.code, case.filename)
+        violations = rule.check(context)
+        assert len(violations) == 0
+
+
+class TestComplexBodyExclusions:
+    """Complex method bodies should NOT be flagged."""
+
+    @pytest.mark.parametrize(
+        "case",
+        COMPLEX_BODY_EXCLUSION_CASES,
+        ids=[c.description for c in COMPLEX_BODY_EXCLUSION_CASES],
+    )
+    def test_ignores_complex_bodies(self, rule, create_context, case):
+        """Should NOT flag methods with complex bodies."""
+        context = create_context(case.code, case.filename)
+        violations = rule.check(context)
+        assert len(violations) == 0
+
+
+class TestSpecialCases:
+    """Special cases that should NOT be flagged."""
+
+    @pytest.mark.parametrize(
+        "case",
+        SPECIAL_CASE_EXCLUSION_CASES,
+        ids=[c.description for c in SPECIAL_CASE_EXCLUSION_CASES],
+    )
+    def test_ignores_special_cases(self, rule, create_context, case):
+        """Should NOT flag dunder methods, test files, or void methods."""
+        context = create_context(case.code, case.filename)
+        violations = rule.check(context)
+        assert len(violations) == 0
+
+
+class TestAsyncExclusions:
+    """Async methods should NOT be flagged."""
+
+    @pytest.mark.parametrize(
+        "case",
+        ASYNC_EXCLUSION_CASES,
+        ids=[c.description for c in ASYNC_EXCLUSION_CASES],
+    )
+    def test_ignores_async_methods(self, rule, create_context, case):
+        """Should NOT flag async methods."""
+        context = create_context(case.code, case.filename)
+        violations = rule.check(context)
+        assert len(violations) == 0
+
+
+# =============================================================================
+# Mixed Pattern Tests: Specific Violation Counts
+# =============================================================================
 
 
 class TestMixedPatterns:
     """Test files with mix of flaggable and non-flaggable methods."""
 
-    def test_flags_exactly_two_candidates(self, mixed_methods_code):
+    def test_flags_exactly_two_candidates(self, rule, create_context, mixed_methods_code):
         """Should flag exactly two property candidates in mixed code."""
-        from src.linters.method_property.linter import MethodPropertyRule
-
-        rule = MethodPropertyRule()
-        context = Mock()
-        context.file_path = Path("mixed.py")
-        context.file_content = mixed_methods_code
-        context.language = "python"
-
+        context = create_context(mixed_methods_code, "mixed.py")
         violations = rule.check(context)
-        # Should flag 'name' and 'get_value' only
         assert len(violations) == 2
 
-    def test_flags_name_method_in_mixed(self, mixed_methods_code):
+    def test_flags_name_method_in_mixed(self, rule, create_context, mixed_methods_code):
         """Should flag 'name' method in mixed code."""
-        from src.linters.method_property.linter import MethodPropertyRule
-
-        rule = MethodPropertyRule()
-        context = Mock()
-        context.file_path = Path("mixed.py")
-        context.file_content = mixed_methods_code
-        context.language = "python"
-
+        context = create_context(mixed_methods_code, "mixed.py")
         violations = rule.check(context)
         combined = " ".join(v.message for v in violations)
         assert "name" in combined
 
-    def test_flags_get_value_method_in_mixed(self, mixed_methods_code):
+    def test_flags_get_value_method_in_mixed(self, rule, create_context, mixed_methods_code):
         """Should flag 'get_value' method in mixed code."""
-        from src.linters.method_property.linter import MethodPropertyRule
-
-        rule = MethodPropertyRule()
-        context = Mock()
-        context.file_path = Path("mixed.py")
-        context.file_content = mixed_methods_code
-        context.language = "python"
-
+        context = create_context(mixed_methods_code, "mixed.py")
         violations = rule.check(context)
         combined = " ".join(v.message for v in violations)
         assert "get_value" in combined
