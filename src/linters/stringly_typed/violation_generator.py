@@ -73,9 +73,12 @@ class ViolationGenerator:  # thailint: ignore srp
             List of violations for patterns appearing in multiple files
         """
         violations: list[Violation] = []
-        violations.extend(self._generate_pattern_violations(storage, rule_id, config))
+        pattern_violations, covered_vars = self._generate_pattern_violations(
+            storage, rule_id, config
+        )
+        violations.extend(pattern_violations)
         violations.extend(self._generate_function_call_violations(storage, config))
-        violations.extend(self._generate_comparison_violations(storage, config))
+        violations.extend(self._generate_comparison_violations(storage, config, covered_vars))
 
         # Apply path-based ignore patterns from config
         violations = _filter_by_ignore(violations, config.ignore)
@@ -90,18 +93,38 @@ class ViolationGenerator:  # thailint: ignore srp
         storage: StringlyTypedStorage,
         rule_id: str,
         config: StringlyTypedConfig,
-    ) -> list[Violation]:
-        """Generate violations for duplicate validation patterns."""
+    ) -> tuple[list[Violation], set[str]]:
+        """Generate violations for duplicate validation patterns.
+
+        Returns:
+            Tuple of (violations list, set of variable names covered by these violations)
+        """
         duplicate_hashes = storage.get_duplicate_hashes(min_files=config.min_occurrences)
         violations: list[Violation] = []
+        covered_variables: set[str] = set()
 
         for hash_value in duplicate_hashes:
             patterns = storage.get_patterns_by_hash(hash_value)
-            if self._should_skip_patterns(patterns, config):
-                continue
-            violations.extend(self._build_violation(p, patterns, rule_id) for p in patterns)
+            self._process_pattern_group(patterns, config, rule_id, violations, covered_variables)
 
-        return violations
+        return violations, covered_variables
+
+    def _process_pattern_group(  # pylint: disable=too-many-arguments,too-many-positional-arguments
+        self,
+        patterns: list[StoredPattern],
+        config: StringlyTypedConfig,
+        rule_id: str,
+        violations: list[Violation],
+        covered_variables: set[str],
+    ) -> None:
+        """Process a group of patterns with the same hash."""
+        if self._should_skip_patterns(patterns, config):
+            return
+        violations.extend(self._build_violation(p, patterns, rule_id) for p in patterns)
+        # Track variable names to avoid duplicate comparison violations
+        for pattern in patterns:
+            if pattern.variable_name:
+                covered_variables.add(pattern.variable_name)
 
     def _generate_function_call_violations(
         self,
@@ -209,13 +232,20 @@ class ViolationGenerator:  # thailint: ignore srp
         self,
         storage: StringlyTypedStorage,
         config: StringlyTypedConfig,
+        covered_variables: set[str] | None = None,
     ) -> list[Violation]:
         """Generate violations for scattered string comparisons.
 
         Finds variables that are compared to multiple unique string values across
         files (e.g., `if env == "production"` in one file and `if env == "staging"`
         in another), suggesting they should use enums instead.
+
+        Args:
+            storage: Pattern storage instance
+            config: Stringly-typed configuration
+            covered_variables: Variable names already flagged by pattern violations (to deduplicate)
         """
+        covered_variables = covered_variables or set()
         min_files = config.min_occurrences if config.require_cross_file else 1
         variables = storage.get_variables_with_multiple_values(
             min_values=config.min_values_for_enum,
@@ -224,14 +254,31 @@ class ViolationGenerator:  # thailint: ignore srp
 
         violations: list[Violation] = []
         for variable_name, unique_values in variables:
-            if self._should_skip_comparison(unique_values, config):
-                continue
-            comparisons = storage.get_comparisons_by_variable(variable_name)
-            violations.extend(
-                self._build_comparison_violation(c, comparisons, unique_values) for c in comparisons
+            self._process_variable_comparisons(
+                variable_name, unique_values, storage, config, covered_variables, violations
             )
 
         return violations
+
+    def _process_variable_comparisons(  # pylint: disable=too-many-arguments,too-many-positional-arguments
+        self,
+        variable_name: str,
+        unique_values: set[str],
+        storage: StringlyTypedStorage,
+        config: StringlyTypedConfig,
+        covered_variables: set[str],
+        violations: list[Violation],
+    ) -> None:
+        """Process comparisons for a single variable."""
+        # Skip if already covered by equality chain or validation pattern
+        if variable_name in covered_variables:
+            return
+        if self._should_skip_comparison(unique_values, config):
+            return
+        comparisons = storage.get_comparisons_by_variable(variable_name)
+        violations.extend(
+            self._build_comparison_violation(c, comparisons, unique_values) for c in comparisons
+        )
 
     def _should_skip_comparison(self, unique_values: set[str], config: StringlyTypedConfig) -> bool:
         """Check if a comparison pattern should be skipped based on config."""

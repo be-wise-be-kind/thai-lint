@@ -33,8 +33,13 @@ from src.core.types import Violation
 
 from .config import StringlyTypedConfig
 from .ignore_utils import is_ignored
-from .python.analyzer import AnalysisResult, FunctionCallResult, PythonStringlyTypedAnalyzer
-from .storage import StoredFunctionCall, StoredPattern, StringlyTypedStorage
+from .python.analyzer import (
+    AnalysisResult,
+    ComparisonResult,
+    FunctionCallResult,
+    PythonStringlyTypedAnalyzer,
+)
+from .storage import StoredComparison, StoredFunctionCall, StoredPattern, StringlyTypedStorage
 from .storage_initializer import StorageInitializer
 from .typescript.analyzer import TypeScriptStringlyTypedAnalyzer
 from .violation_generator import ViolationGenerator
@@ -94,6 +99,25 @@ def _convert_to_stored_function_call(result: FunctionCallResult) -> StoredFuncti
         function_name=result.function_name,
         param_index=result.param_index,
         string_value=result.string_value,
+    )
+
+
+def _convert_to_stored_comparison(result: ComparisonResult) -> StoredComparison:
+    """Convert ComparisonResult to StoredComparison.
+
+    Args:
+        result: Comparison result from language analyzer
+
+    Returns:
+        StoredComparison for storage
+    """
+    return StoredComparison(
+        file_path=result.file_path,
+        line_number=result.line_number,
+        column=result.column,
+        variable_name=result.variable_name,
+        compared_value=result.compared_value,
+        operator=result.operator,
     )
 
 
@@ -204,6 +228,7 @@ class StringlyTypedRule(MultiLanguageLintRule):  # thailint: ignore srp
         self._helpers.typescript_analyzer.config = config
 
         self._store_typescript_function_calls(file_content, file_path)
+        self._store_typescript_comparisons(file_content, file_path)
 
     def _ensure_storage_initialized(
         self, context: BaseLintContext, config: StringlyTypedConfig
@@ -235,6 +260,7 @@ class StringlyTypedRule(MultiLanguageLintRule):  # thailint: ignore srp
 
         self._store_validation_patterns(file_content, file_path)
         self._store_function_calls(file_content, file_path)
+        self._store_comparisons(file_content, file_path)
 
     def _should_analyze(self, context: BaseLintContext, config: StringlyTypedConfig) -> bool:
         """Check if file should be analyzed.
@@ -284,6 +310,32 @@ class StringlyTypedRule(MultiLanguageLintRule):  # thailint: ignore srp
         )
         stored_calls = [_convert_to_stored_function_call(r) for r in call_results]
         self._storage.add_function_calls(stored_calls)  # type: ignore[union-attr]
+
+    def _store_comparisons(self, file_content: str, file_path: Path) -> None:
+        """Analyze and store Python comparison patterns.
+
+        Args:
+            file_content: Python source code
+            file_path: Path to file
+        """
+        comparison_results = self._helpers.python_analyzer.analyze_comparisons(
+            file_content, file_path
+        )
+        stored_comparisons = [_convert_to_stored_comparison(r) for r in comparison_results]
+        self._storage.add_comparisons(stored_comparisons)  # type: ignore[union-attr]
+
+    def _store_typescript_comparisons(self, file_content: str, file_path: Path) -> None:
+        """Analyze and store TypeScript comparison patterns.
+
+        Args:
+            file_content: TypeScript source code
+            file_path: Path to file
+        """
+        comparison_results = self._helpers.typescript_analyzer.analyze_comparisons(
+            file_content, file_path
+        )
+        stored_comparisons = [_convert_to_stored_comparison(r) for r in comparison_results]
+        self._storage.add_comparisons(stored_comparisons)  # type: ignore[union-attr]
 
     def finalize(self) -> list[Violation]:
         """Generate violations after all files processed.
