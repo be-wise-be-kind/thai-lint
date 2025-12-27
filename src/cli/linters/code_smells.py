@@ -1,18 +1,18 @@
 """
-Purpose: CLI commands for code smell linters (dry, magic-numbers)
+Purpose: CLI commands for code smell linters (dry, magic-numbers, stringly-typed)
 
-Scope: Commands that detect code smells like duplicate code and magic numbers
+Scope: Commands that detect code smells like duplicate code, magic numbers, and stringly-typed patterns
 
 Overview: Provides CLI commands for code smell detection: dry finds duplicate code blocks using
-    token-based hashing with SQLite caching, and magic-numbers detects unnamed numeric literals that
-    should be extracted as named constants. Each command supports standard options (config, format,
-    recursive) plus linter-specific options (min-lines, no-cache, clear-cache) and integrates with
-    the orchestrator for execution.
+    token-based hashing with SQLite caching, magic-numbers detects unnamed numeric literals that
+    should be extracted as named constants, and stringly-typed detects string patterns that should
+    use enums. Each command supports standard options (config, format, recursive) plus linter-specific
+    options and integrates with the orchestrator for execution.
 
 Dependencies: click for CLI framework, src.cli.main for CLI group, src.cli.utils for shared utilities,
     src.cli.linters.shared for linter-specific helpers, yaml for config loading
 
-Exports: dry command, magic_numbers command
+Exports: dry command, magic_numbers command, stringly_typed command
 
 Interfaces: Click CLI commands registered to main CLI group
 
@@ -341,3 +341,110 @@ def _execute_magic_numbers_lint(  # pylint: disable=too-many-arguments,too-many-
 
     format_violations(magic_numbers_violations, format)
     sys.exit(1 if magic_numbers_violations else 0)
+
+
+# =============================================================================
+# Stringly-Typed Command
+# =============================================================================
+
+
+def _setup_stringly_typed_orchestrator(
+    path_objs: list[Path], config_file: str | None, verbose: bool, project_root: Path | None = None
+) -> "Orchestrator":
+    """Set up orchestrator for stringly-typed command."""
+    return setup_base_orchestrator(path_objs, config_file, verbose, project_root)
+
+
+def _run_stringly_typed_lint(
+    orchestrator: "Orchestrator", path_objs: list[Path], recursive: bool
+) -> list[Violation]:
+    """Execute stringly-typed lint on files or directories."""
+    all_violations = execute_linting_on_paths(orchestrator, path_objs, recursive)
+    return [v for v in all_violations if "stringly-typed" in v.rule_id]
+
+
+@cli.command("stringly-typed")
+@click.argument("paths", nargs=-1, type=click.Path())
+@click.option("--config", "-c", "config_file", type=click.Path(), help="Path to config file")
+@format_option
+@click.option("--recursive/--no-recursive", default=True, help="Scan directories recursively")
+@click.pass_context
+def stringly_typed(  # pylint: disable=too-many-arguments,too-many-positional-arguments
+    ctx: click.Context,
+    paths: tuple[str, ...],
+    config_file: str | None,
+    format: str,
+    recursive: bool,
+) -> None:
+    """Check for stringly-typed patterns in code.
+
+    Detects string patterns in Python and TypeScript/JavaScript code that should
+    use enums or typed alternatives. Finds membership validation, equality chains,
+    and function calls with limited string values across multiple files.
+
+    PATHS: Files or directories to lint (defaults to current directory if none provided)
+
+    Examples:
+
+        \b
+        # Check current directory (all files recursively)
+        thai-lint stringly-typed
+
+        \b
+        # Check specific directory
+        thai-lint stringly-typed src/
+
+        \b
+        # Check single file
+        thai-lint stringly-typed src/handlers.py
+
+        \b
+        # Check multiple files
+        thai-lint stringly-typed src/handlers.py src/services.py
+
+        \b
+        # Get JSON output
+        thai-lint stringly-typed --format json .
+
+        \b
+        # Get SARIF output for IDE integration
+        thai-lint stringly-typed --format sarif .
+
+        \b
+        # Use custom config file
+        thai-lint stringly-typed --config .thailint.yaml src/
+    """
+    verbose: bool = ctx.obj.get("verbose", False)
+    project_root = get_project_root_from_context(ctx)
+
+    if not paths:
+        paths = (".",)
+
+    path_objs = [Path(p) for p in paths]
+
+    try:
+        _execute_stringly_typed_lint(
+            path_objs, config_file, format, recursive, verbose, project_root
+        )
+    except Exception as e:
+        handle_linting_error(e, verbose)
+
+
+def _execute_stringly_typed_lint(  # pylint: disable=too-many-arguments,too-many-positional-arguments
+    path_objs: list[Path],
+    config_file: str | None,
+    format: str,
+    recursive: bool,
+    verbose: bool,
+    project_root: Path | None = None,
+) -> NoReturn:
+    """Execute stringly-typed lint."""
+    validate_paths_exist(path_objs)
+    orchestrator = _setup_stringly_typed_orchestrator(path_objs, config_file, verbose, project_root)
+    stringly_violations = _run_stringly_typed_lint(orchestrator, path_objs, recursive)
+
+    if verbose:
+        logger.info(f"Found {len(stringly_violations)} stringly-typed violation(s)")
+
+    format_violations(stringly_violations, format)
+    sys.exit(1 if stringly_violations else 0)
