@@ -7,17 +7,19 @@ Overview: Handles violation generation for stringly-typed patterns that appear a
     files. Queries storage for duplicate hashes, retrieves patterns for each hash, builds
     violations with cross-references to other files, and filters patterns based on enum value
     thresholds. Delegates function call violation generation to FunctionCallViolationBuilder.
+    Applies inline ignore directives via IgnoreChecker to filter suppressed violations.
     Separates violation generation logic from main linter rule to maintain SRP compliance.
 
 Dependencies: StringlyTypedStorage, StoredPattern, StringlyTypedConfig, Violation, Severity,
-    FunctionCallViolationBuilder
+    FunctionCallViolationBuilder, IgnoreChecker
 
 Exports: ViolationGenerator class
 
 Interfaces: ViolationGenerator.generate_violations(storage, rule_id, config) -> list[Violation]
 
 Implementation: Queries storage, validates pattern thresholds, builds violations with
-    cross-file references, delegates function call violations to builder
+    cross-file references, delegates function call violations to builder, filters by
+    ignore directives
 """
 
 from src.core.types import Severity, Violation
@@ -25,6 +27,7 @@ from src.core.types import Severity, Violation
 from .config import StringlyTypedConfig
 from .context_filter import FunctionCallFilter
 from .function_call_violation_builder import FunctionCallViolationBuilder
+from .ignore_checker import IgnoreChecker
 from .ignore_utils import is_ignored
 from .storage import StoredPattern, StringlyTypedStorage
 
@@ -48,6 +51,7 @@ class ViolationGenerator:  # thailint: ignore srp
         """Initialize with helper builders and filters."""
         self._call_builder = FunctionCallViolationBuilder()
         self._call_filter = FunctionCallFilter()
+        self._ignore_checker = IgnoreChecker()
 
     def generate_violations(
         self,
@@ -69,7 +73,13 @@ class ViolationGenerator:  # thailint: ignore srp
         violations.extend(self._generate_pattern_violations(storage, rule_id, config))
         violations.extend(self._generate_function_call_violations(storage, config))
 
-        return _filter_by_ignore(violations, config.ignore)
+        # Apply path-based ignore patterns from config
+        violations = _filter_by_ignore(violations, config.ignore)
+
+        # Apply inline ignore directives (# thailint: ignore[stringly-typed])
+        violations = self._ignore_checker.filter_violations(violations)
+
+        return violations
 
     def _generate_pattern_violations(
         self,

@@ -81,6 +81,12 @@ thailint complements your existing linting stack by catching the patterns AI too
   - No instance state (self.attr) detection
   - Excludes ABC, Protocol, and decorated classes
   - Helpful refactoring suggestions
+- **Stringly-Typed Linting** - Detect string patterns that should use enums
+  - Python and TypeScript support
+  - Cross-file detection with SQLite storage
+  - Detects membership validation, equality chains, function call patterns
+  - False positive filtering (200+ exclusion patterns)
+  - Inline ignore directive support
 - **Pluggable Architecture** - Easy to extend with custom linters
 - **Multi-Language Support** - Python, TypeScript, JavaScript, and more
 - **Flexible Configuration** - YAML/JSON configs with pattern matching

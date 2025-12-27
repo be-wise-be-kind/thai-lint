@@ -561,6 +561,167 @@ docs/stringly-typed.md
 
 ---
 
+## PR11: Scattered String Comparison Detection
+
+**Scope**: Detect `var == "string"` comparisons scattered across files that suggest missing enums
+
+**Complexity**: Medium
+
+**Priority**: P0 - Core gap in detection
+
+**Problem Statement**:
+Currently the linter misses a major anti-pattern:
+```python
+# file1.py
+if env == "production":  # NOT CAUGHT
+    deploy()
+
+# file2.py
+if env == "staging":     # NOT CAUGHT
+    test()
+```
+
+These scattered comparisons are dangerous because:
+- Silent typos: `"prodution"` compiles fine
+- No discoverability of valid values
+- Impossible refactoring
+- No IDE autocomplete or type safety
+
+**Files to Create**:
+```
+src/linters/stringly_typed/python/
+└── comparison_tracker.py
+
+src/linters/stringly_typed/typescript/
+└── comparison_tracker.py
+
+tests/unit/linters/stringly_typed/
+├── test_scattered_comparison_python.py
+└── test_scattered_comparison_typescript.py
+```
+
+**Files to Modify**:
+- `src/linters/stringly_typed/python/analyzer.py` - Integrate comparison tracking
+- `src/linters/stringly_typed/typescript/analyzer.py` - Integrate comparison tracking
+- `src/linters/stringly_typed/storage.py` - Add comparison storage table
+- `src/linters/stringly_typed/violation_generator.py` - Generate violations from comparisons
+
+**Implementation Steps**:
+
+### Step 1: Write Tests First
+1. Create `test_scattered_comparison_python.py`:
+   - Test single `==` comparison NOT flagged alone
+   - Test same variable compared to 2+ values across files IS flagged
+   - Test same variable in same file with 2+ values IS flagged
+   - Test different variables NOT aggregated
+   - Test `!=` comparisons also tracked
+   - Test case sensitivity handling
+
+2. Create `test_scattered_comparison_typescript.py`:
+   - Test `===` and `==` comparisons
+   - Test same patterns as Python
+   - Test TypeScript-specific syntax (template literals excluded)
+
+### Step 2: Add Storage
+1. Add `string_comparisons` table to `storage.py`:
+   ```python
+   # Schema
+   CREATE TABLE string_comparisons (
+       id INTEGER PRIMARY KEY,
+       file_path TEXT,
+       line_number INTEGER,
+       column INTEGER,
+       variable_name TEXT,
+       compared_value TEXT,
+       operator TEXT  -- '==', '!=', '===', '!=='
+   )
+   ```
+2. Add methods:
+   - `add_comparison(file_path, line, col, var_name, value, operator)`
+   - `get_variables_with_multiple_values(min_values=2, min_files=1)`
+   - `get_comparisons_by_variable(variable_name)`
+
+### Step 3: Python Comparison Tracker
+1. Create `comparison_tracker.py` with AST visitor:
+   - Visit `Compare` nodes
+   - Extract variable name from left side
+   - Extract string value from right side (or vice versa)
+   - Handle `==` and `!=` operators
+   - Exclude comparisons inside:
+     - `if __name__ == "__main__"`
+     - Dictionary/TypedDict contexts
+     - Format strings
+
+### Step 4: TypeScript Comparison Tracker
+1. Create TypeScript `comparison_tracker.py`:
+   - Use tree-sitter to find `binary_expression` nodes
+   - Handle `===`, `==`, `!==`, `!=` operators
+   - Extract variable and string literal
+   - Same exclusion patterns as Python
+
+### Step 5: Integration
+1. Update `python/analyzer.py`:
+   - Call comparison tracker during analysis
+   - Store results in SQLite
+
+2. Update `typescript/analyzer.py`:
+   - Call comparison tracker during analysis
+   - Store results in SQLite
+
+3. Update `violation_generator.py`:
+   - Query for variables with 2+ unique values
+   - Generate violations with cross-references
+
+**Detection Logic**:
+```python
+# Aggregate by variable name across all files
+# Flag when: same variable compared to 2+ unique string values
+
+# Example that SHOULD be flagged:
+# file1.py: if env == "production"
+# file2.py: if env == "staging"
+# -> Variable 'env' compared to 2 unique values across 2 files
+
+# Example that should NOT be flagged:
+# file1.py: if env == "production"
+# (only 1 unique value - not enough signal)
+```
+
+**Configuration Options**:
+```yaml
+stringly_typed:
+  # Existing options...
+  detect_scattered_comparisons: true  # Enable this feature
+  min_comparison_values: 2            # Min unique values to flag
+  require_cross_file_comparisons: false  # Flag even in same file
+```
+
+**Testing Requirements**:
+- Test Python `==` and `!=` detection
+- Test TypeScript `===`, `==`, `!==`, `!=` detection
+- Test cross-file aggregation by variable name
+- Test same-file aggregation
+- Test exclusion of `__name__ == "__main__"`
+- Test exclusion of dict key contexts
+- Test min_comparison_values threshold
+- Test require_cross_file_comparisons option
+- Test violation message includes all locations
+- Test suggestion mentions enum creation
+
+**Success Criteria**:
+- [ ] Tests written FIRST (TDD)
+- [ ] Python scattered comparisons detected
+- [ ] TypeScript scattered comparisons detected
+- [ ] Cross-file aggregation works
+- [ ] Same-file aggregation works
+- [ ] False positives filtered (`__name__`, dict keys)
+- [ ] Configuration options work
+- [ ] All existing tests still pass
+- [ ] Pylint 10.00/10
+- [ ] Xenon A-grade
+
+---
+
 ## Implementation Guidelines
 
 ### Code Standards
@@ -606,7 +767,12 @@ docs/stringly-typed.md
 ### Phase 4: Release (PR10)
 - Dogfooding
 - Documentation
-- Move to `.roadmap/complete/`
+
+### Phase 5: Enhanced Detection (PR11)
+- Scattered string comparison detection
+- TDD approach: tests first, then implementation
+- Addresses major gap in anti-pattern detection
+- Move to `.roadmap/complete/` after PR11
 
 ## Success Metrics
 

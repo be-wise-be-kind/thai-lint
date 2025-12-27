@@ -40,6 +40,7 @@ thai-lint complements your existing linting stack by catching the patterns AI to
 - **SRP Linting** - Detect Single Responsibility Principle violations
 - **DRY Linting** - Detect duplicate code across projects
 - **Collection Pipeline Linting** - Detect for loops with embedded filtering
+- **Stringly-Typed Linting** - Detect string patterns that should use enums
 - **Pluggable Architecture** - Easy to extend with custom linters
 - **Multi-Language Support** - Python, TypeScript, JavaScript, and more
 - **Flexible Configuration** - YAML/JSON configs with pattern matching
@@ -108,6 +109,9 @@ thailint dry .
 # Check for embedded filtering patterns
 thailint pipeline src/
 
+# Check for stringly-typed patterns
+thailint stringly-typed src/
+
 # With config file
 thailint dry --config .thailint.yaml src/
 
@@ -156,6 +160,9 @@ Detect duplicate code blocks across your project.
 
 ### [Collection Pipeline Linter](collection-pipeline-linter.md)
 Detect for loops with embedded filtering that should use collection pipelines.
+
+### [Stringly-Typed Linter](stringly-typed-linter.md)
+Detect string-based type patterns that should use enums or typed alternatives.
 
 ## Documentation
 

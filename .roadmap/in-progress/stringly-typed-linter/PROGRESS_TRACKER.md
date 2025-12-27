@@ -46,8 +46,8 @@ This is the **PRIMARY HANDOFF DOCUMENT** for AI agents working on the stringly-t
 4. **Update this document** after completing each PR
 
 ## Current Status
-**Current PR**: PR9 - Ignore Directives (Not Started)
-**Infrastructure State**: Module structure, config, Python/TypeScript detection, cross-file storage, function call tracking, CLI integration, and false positive filtering complete
+**Current PR**: PR11 - Scattered String Comparison Detection (Up Next)
+**Infrastructure State**: Module structure, config, Python/TypeScript detection, cross-file storage, function call tracking, CLI integration, false positive filtering, ignore directives, and documentation complete
 **Feature Target**: Detect stringly-typed code and suggest enum alternatives
 
 ## Required Documents Location
@@ -60,10 +60,65 @@ This is the **PRIMARY HANDOFF DOCUMENT** for AI agents working on the stringly-t
 
 ## Next PR to Implement
 
-### START HERE: PR9 - Ignore Directives
+### START HERE: PR11 - Scattered String Comparison Detection
 
 **Quick Summary**:
-Add inline ignore directives support (e.g., `# stringly-typed: ignore`) for suppressing specific violations.
+Detect `var == "string"` comparisons scattered across files that suggest missing enums.
+
+**Problem Being Solved**:
+```python
+# file1.py
+if env == "production":  # Currently NOT caught
+    deploy()
+
+# file2.py
+if env == "staging":     # Currently NOT caught
+    test()
+```
+These scattered comparisons are a major anti-pattern that the linter currently misses.
+
+**Implementation Approach (TDD)**:
+1. **Write tests first** - Define expected behavior before coding
+2. **Add storage** - New `string_comparisons` table in SQLite
+3. **Python tracker** - AST visitor for `==`/`!=` with string literals
+4. **TypeScript tracker** - Tree-sitter for `===`/`==`/`!==`/`!=`
+5. **Integration** - Connect to analyzers and violation generator
+
+**Key Files to Create**:
+- `tests/unit/linters/stringly_typed/test_scattered_comparison_python.py`
+- `tests/unit/linters/stringly_typed/test_scattered_comparison_typescript.py`
+- `src/linters/stringly_typed/python/comparison_tracker.py`
+- `src/linters/stringly_typed/typescript/comparison_tracker.py`
+
+**See PR_BREAKDOWN.md → PR11 for detailed implementation steps.**
+
+---
+
+**Completed PR10 - Dogfooding & Documentation**:
+- [x] Added `stringly-typed` CLI command to code_smells.py
+- [x] Created comprehensive documentation at `docs/stringly-typed-linter.md`
+- [x] Updated `docs/index.md` with stringly-typed linter entry
+- [x] Updated `README.md` with stringly-typed feature description
+- [x] Dogfooded on thai-lint codebase - no violations (clean codebase)
+- [x] All 1034 tests passing
+- [x] All 9 quality checks passing
+
+**Completed PR9 - Ignore Directives**:
+- [x] Created `src/linters/stringly_typed/ignore_checker.py` with IgnoreChecker class
+- [x] Wraps centralized IgnoreDirectiveParser for stringly-typed violations
+- [x] Supports line-level ignores (`# thailint: ignore[stringly-typed]`)
+- [x] Supports block-level ignores (`# thailint: ignore-start`/`ignore-end`)
+- [x] Supports file-level ignores (`# thailint: ignore-file[stringly-typed]`)
+- [x] Supports next-line ignores (`# thailint: ignore-next-line`)
+- [x] Supports TypeScript `//` syntax for line-level ignores
+- [x] Supports wildcard rule matching (`stringly-typed.*`)
+- [x] Integrated with ViolationGenerator for automatic filtering
+- [x] Added file content caching for performance
+- [x] Created `tests/unit/linters/stringly_typed/test_ignore_directives.py` with 23 tests
+- [x] Updated module exports in `__init__.py`
+- [x] All 1034 project tests passing
+- [x] Pylint 10.00/10, Xenon A-grade
+- [x] All 9 quality checks passing
 
 **Completed PR8 - False Positive Filtering**:
 - [x] Created `src/linters/stringly_typed/context_filter.py` with FunctionCallFilter class
@@ -161,10 +216,10 @@ Add inline ignore directives support (e.g., `# stringly-typed: ignore`) for supp
 ---
 
 ## Overall Progress
-**Total Completion**: 80% (8/10 PRs completed)
+**Total Completion**: 91% (10/11 PRs completed)
 
 ```
-[########..] 80% Complete
+[#########.] 91% Complete - PR11 remaining
 ```
 
 ---
@@ -181,8 +236,9 @@ Add inline ignore directives support (e.g., `# stringly-typed: ignore`) for supp
 | PR6 | Function Call Tracking | Complete | 100% | High | P1 | Python 23 tests + TypeScript 24 tests |
 | PR7 | CLI Integration & Output Formats | Complete | 100% | Medium | P0 | 28 new tests, text/JSON/SARIF output |
 | PR8 | False Positive Filtering | Complete | 100% | Medium | P1 | 32 tests, blocklist filter, <5% FP rate |
-| PR9 | Ignore Directives | Not Started | 0% | Low | P2 | |
-| PR10 | Dogfooding & Documentation | Not Started | 0% | Low | P0 | |
+| PR9 | Ignore Directives | Complete | 100% | Low | P2 | 23 tests, IgnoreChecker integration |
+| PR10 | Dogfooding & Documentation | Complete | 100% | Low | P0 | CLI command, docs, README updates |
+| PR11 | Scattered String Comparisons | Not Started | 0% | Medium | P0 | TDD: tests first, detect `var == "str"` patterns |
 
 ### Status Legend
 - Not Started
