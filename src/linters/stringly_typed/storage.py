@@ -1,28 +1,39 @@
+# pylint: disable=too-many-lines
+# Justification: Storage module for three related data types (patterns, function calls,
+# comparisons) with their dataclasses, conversion functions, SQL schemas, and CRUD methods.
+# Splitting into separate files would fragment cohesive SQLite storage logic.
 """
 Purpose: SQLite storage manager for stringly-typed pattern detection
 
-Scope: String validation pattern storage, function call tracking, and cross-file detection
+Scope: String validation pattern storage, function call tracking, comparison tracking, and
+    cross-file detection
 
 Overview: Implements in-memory or temporary-file SQLite storage for stringly-typed pattern
     detection. Stores string validation patterns with hash values computed from the string
     values, enabling cross-file duplicate detection during a single linter run. Also tracks
-    function calls with string arguments to detect parameters that should be enums. Supports
-    both :memory: mode (fast, RAM-only) and tempfile mode (disk-backed for large projects).
-    No persistence between runs - storage is cleared when linter completes. Includes indexes
-    for fast hash lookups enabling efficient cross-file detection.
+    function calls with string arguments to detect parameters that should be enums. Tracks
+    scattered string comparisons (`var == "string"`) to detect variables compared to multiple
+    string values across files. Supports both :memory: mode (fast, RAM-only) and tempfile mode
+    (disk-backed for large projects). No persistence between runs - storage is cleared when
+    linter completes. Includes indexes for fast hash lookups enabling efficient cross-file
+    detection.
 
 Dependencies: Python sqlite3 module (stdlib), tempfile module (stdlib), pathlib.Path,
     dataclasses, json module (stdlib)
 
-Exports: StoredPattern dataclass, StoredFunctionCall dataclass, StringlyTypedStorage class
+Exports: StoredPattern dataclass, StoredFunctionCall dataclass, StoredComparison dataclass,
+    StringlyTypedStorage class
 
 Interfaces: StringlyTypedStorage.__init__(storage_mode), add_pattern(pattern),
     add_patterns(patterns), get_duplicate_hashes(min_files), get_patterns_by_hash(hash_value),
     add_function_call(call), add_function_calls(calls), get_limited_value_functions(min_values,
-    max_values, min_files), get_calls_by_function(function_name, param_index), clear(), close()
+    max_values, min_files), get_calls_by_function(function_name, param_index),
+    add_comparison(comparison), add_comparisons(comparisons),
+    get_variables_with_multiple_values(min_values, min_files),
+    get_comparisons_by_variable(variable_name), get_all_comparisons(), clear(), close()
 
-Implementation: SQLite with string_validations and function_calls tables, indexed on
-    string_set_hash and function_name+param_index for performance
+Implementation: SQLite with string_validations, function_calls, and string_comparisons tables,
+    indexed on string_set_hash, function_name+param_index, and variable_name for performance
 """
 
 from __future__ import annotations
@@ -82,6 +93,25 @@ _CREATE_FUNCTION_FILE_INDEX_SQL = (
     "CREATE INDEX IF NOT EXISTS idx_function_file ON function_calls(file_path)"
 )
 
+# String comparisons table schema (for scattered comparison detection)
+_CREATE_COMPARISONS_TABLE_SQL = """CREATE TABLE IF NOT EXISTS string_comparisons (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    file_path TEXT NOT NULL,
+    line_number INTEGER NOT NULL,
+    column_number INTEGER NOT NULL,
+    variable_name TEXT NOT NULL,
+    compared_value TEXT NOT NULL,
+    operator TEXT NOT NULL
+)"""
+
+_CREATE_COMPARISONS_VAR_INDEX_SQL = (
+    "CREATE INDEX IF NOT EXISTS idx_comparison_var ON string_comparisons(variable_name)"
+)
+
+_CREATE_COMPARISONS_FILE_INDEX_SQL = (
+    "CREATE INDEX IF NOT EXISTS idx_comparison_file ON string_comparisons(file_path)"
+)
+
 # Row index constants for function_calls query results
 _CALL_COL_FILE_PATH = 0
 _CALL_COL_LINE_NUMBER = 1
@@ -89,6 +119,14 @@ _CALL_COL_COLUMN = 2
 _CALL_COL_FUNCTION_NAME = 3
 _CALL_COL_PARAM_INDEX = 4
 _CALL_COL_STRING_VALUE = 5
+
+# Row index constants for string_comparisons query results
+_COMP_COL_FILE_PATH = 0
+_COMP_COL_LINE_NUMBER = 1
+_COMP_COL_COLUMN = 2
+_COMP_COL_VARIABLE_NAME = 3
+_COMP_COL_COMPARED_VALUE = 4
+_COMP_COL_OPERATOR = 5
 
 
 @dataclass
@@ -117,6 +155,53 @@ class StoredFunctionCall:
 
     string_value: str
     """The string literal value passed to the function."""
+
+
+@dataclass
+class StoredComparison:
+    """Represents a string comparison stored in SQLite.
+
+    Captures information about a comparison like `if (env == "production")` to
+    enable cross-file analysis for detecting scattered string comparisons that
+    suggest missing enums.
+    """
+
+    file_path: Path
+    """Path to the file containing the comparison."""
+
+    line_number: int
+    """Line number where the comparison occurs (1-indexed)."""
+
+    column: int
+    """Column number where the comparison starts (0-indexed)."""
+
+    variable_name: str
+    """Variable name being compared (e.g., 'env' or 'self.status')."""
+
+    compared_value: str
+    """The string literal value being compared to."""
+
+    operator: str
+    """The comparison operator ('==', '!=', '===', '!==')."""
+
+
+def _row_to_comparison(row: tuple) -> StoredComparison:
+    """Convert a database row tuple to StoredComparison.
+
+    Args:
+        row: Tuple from SQLite query result
+
+    Returns:
+        StoredComparison instance
+    """
+    return StoredComparison(
+        file_path=Path(row[_COMP_COL_FILE_PATH]),
+        line_number=row[_COMP_COL_LINE_NUMBER],
+        column=row[_COMP_COL_COLUMN],
+        variable_name=row[_COMP_COL_VARIABLE_NAME],
+        compared_value=row[_COMP_COL_COMPARED_VALUE],
+        operator=row[_COMP_COL_OPERATOR],
+    )
 
 
 def _row_to_pattern(row: tuple) -> StoredPattern:
@@ -230,6 +315,9 @@ class StringlyTypedStorage:  # thailint: ignore srp
         self._db.execute(_CREATE_FUNCTION_CALLS_TABLE_SQL)
         self._db.execute(_CREATE_FUNCTION_PARAM_INDEX_SQL)
         self._db.execute(_CREATE_FUNCTION_FILE_INDEX_SQL)
+        self._db.execute(_CREATE_COMPARISONS_TABLE_SQL)
+        self._db.execute(_CREATE_COMPARISONS_VAR_INDEX_SQL)
+        self._db.execute(_CREATE_COMPARISONS_FILE_INDEX_SQL)
         self._db.commit()
 
     def add_pattern(self, pattern: StoredPattern) -> None:
@@ -427,10 +515,112 @@ class StringlyTypedStorage:  # thailint: ignore srp
 
         return [_row_to_function_call(row) for row in cursor.fetchall()]
 
+    def add_comparison(self, comparison: StoredComparison) -> None:
+        """Add a single comparison to storage.
+
+        Args:
+            comparison: StoredComparison instance to store
+        """
+        self.add_comparisons([comparison])
+
+    def add_comparisons(self, comparisons: list[StoredComparison]) -> None:
+        """Add multiple comparisons to storage in a batch.
+
+        Args:
+            comparisons: List of StoredComparison instances to store
+        """
+        if not comparisons:
+            return
+
+        for comparison in comparisons:
+            self._db.execute(
+                """INSERT INTO string_comparisons
+                   (file_path, line_number, column_number, variable_name,
+                    compared_value, operator)
+                   VALUES (?, ?, ?, ?, ?, ?)""",
+                (
+                    str(comparison.file_path),
+                    comparison.line_number,
+                    comparison.column,
+                    comparison.variable_name,
+                    comparison.compared_value,
+                    comparison.operator,
+                ),
+            )
+
+        self._db.commit()
+
+    def get_variables_with_multiple_values(
+        self, min_values: int = 2, min_files: int = 1
+    ) -> list[tuple[str, set[str]]]:
+        """Get variables compared to multiple unique string values.
+
+        Finds variables that are compared to at least min_values unique strings,
+        suggesting they should be enums.
+
+        Args:
+            min_values: Minimum unique values to consider (default: 2)
+            min_files: Minimum files the pattern must appear in (default: 1)
+
+        Returns:
+            List of (variable_name, unique_values) tuples
+        """
+        cursor = self._db.execute(
+            """SELECT variable_name, GROUP_CONCAT(DISTINCT compared_value)
+               FROM string_comparisons
+               GROUP BY variable_name
+               HAVING COUNT(DISTINCT compared_value) >= ?
+                  AND COUNT(DISTINCT file_path) >= ?""",
+            (min_values, min_files),
+        )
+
+        results: list[tuple[str, set[str]]] = []
+        for row in cursor.fetchall():
+            values = set(row[1].split(",")) if row[1] else set()
+            results.append((row[0], values))
+
+        return results
+
+    def get_comparisons_by_variable(self, variable_name: str) -> list[StoredComparison]:
+        """Get all comparisons for a specific variable.
+
+        Args:
+            variable_name: Name of the variable
+
+        Returns:
+            List of StoredComparison instances for this variable
+        """
+        cursor = self._db.execute(
+            """SELECT file_path, line_number, column_number, variable_name,
+                      compared_value, operator
+               FROM string_comparisons
+               WHERE variable_name = ?
+               ORDER BY file_path, line_number""",
+            (variable_name,),
+        )
+
+        return [_row_to_comparison(row) for row in cursor.fetchall()]
+
+    def get_all_comparisons(self) -> list[StoredComparison]:
+        """Get all stored comparisons.
+
+        Returns:
+            List of all StoredComparison instances in storage
+        """
+        cursor = self._db.execute(
+            """SELECT file_path, line_number, column_number, variable_name,
+                      compared_value, operator
+               FROM string_comparisons
+               ORDER BY file_path, line_number"""
+        )
+
+        return [_row_to_comparison(row) for row in cursor.fetchall()]
+
     def clear(self) -> None:
-        """Clear all stored patterns and function calls."""
+        """Clear all stored patterns, function calls, and comparisons."""
         self._db.execute("DELETE FROM string_validations")
         self._db.execute("DELETE FROM function_calls")
+        self._db.execute("DELETE FROM string_comparisons")
         self._db.commit()
 
     def close(self) -> None:
