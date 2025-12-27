@@ -23,6 +23,7 @@ Implementation: Queries storage, validates pattern thresholds, builds violations
 from src.core.types import Severity, Violation
 
 from .config import StringlyTypedConfig
+from .context_filter import FunctionCallFilter
 from .function_call_violation_builder import FunctionCallViolationBuilder
 from .ignore_utils import is_ignored
 from .storage import StoredPattern, StringlyTypedStorage
@@ -44,8 +45,9 @@ class ViolationGenerator:  # thailint: ignore srp
     """Generates violations from cross-file stringly-typed patterns."""
 
     def __init__(self) -> None:
-        """Initialize with helper builders."""
+        """Initialize with helper builders and filters."""
         self._call_builder = FunctionCallViolationBuilder()
+        self._call_filter = FunctionCallFilter()
 
     def generate_violations(
         self,
@@ -104,6 +106,9 @@ class ViolationGenerator:  # thailint: ignore srp
         for function_name, param_index, unique_values in limited_funcs:
             if _is_allowed_value_set(unique_values, config):
                 continue
+            # Apply context-aware filtering to reduce false positives
+            if not self._call_filter.should_include(function_name, param_index, unique_values):
+                continue
             calls = storage.get_calls_by_function(function_name, param_index)
             violations.extend(self._call_builder.build_violations(calls, unique_values))
 
@@ -116,7 +121,14 @@ class ViolationGenerator:  # thailint: ignore srp
         if not patterns:
             return True
         first = patterns[0]
-        return not self._is_enum_candidate(first, config) or self._is_pattern_allowed(first, config)
+        if not self._is_enum_candidate(first, config):
+            return True
+        if self._is_pattern_allowed(first, config):
+            return True
+        # Skip if all values match excluded patterns (numeric strings, etc.)
+        if self._call_filter.are_all_values_excluded(set(first.string_values)):
+            return True
+        return False
 
     def _is_enum_candidate(self, pattern: StoredPattern, config: StringlyTypedConfig) -> bool:
         """Check if pattern's value count is within enum range."""
