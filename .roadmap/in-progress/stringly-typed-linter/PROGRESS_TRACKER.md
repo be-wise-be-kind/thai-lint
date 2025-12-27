@@ -46,7 +46,7 @@ This is the **PRIMARY HANDOFF DOCUMENT** for AI agents working on the stringly-t
 4. **Update this document** after completing each PR
 
 ## Current Status
-**Current PR**: COMPLETE - All 10 PRs implemented
+**Current PR**: PR11 - Scattered String Comparison Detection (Up Next)
 **Infrastructure State**: Module structure, config, Python/TypeScript detection, cross-file storage, function call tracking, CLI integration, false positive filtering, ignore directives, and documentation complete
 **Feature Target**: Detect stringly-typed code and suggest enum alternatives
 
@@ -60,7 +60,39 @@ This is the **PRIMARY HANDOFF DOCUMENT** for AI agents working on the stringly-t
 
 ## Next PR to Implement
 
-### FEATURE COMPLETE
+### START HERE: PR11 - Scattered String Comparison Detection
+
+**Quick Summary**:
+Detect `var == "string"` comparisons scattered across files that suggest missing enums.
+
+**Problem Being Solved**:
+```python
+# file1.py
+if env == "production":  # Currently NOT caught
+    deploy()
+
+# file2.py
+if env == "staging":     # Currently NOT caught
+    test()
+```
+These scattered comparisons are a major anti-pattern that the linter currently misses.
+
+**Implementation Approach (TDD)**:
+1. **Write tests first** - Define expected behavior before coding
+2. **Add storage** - New `string_comparisons` table in SQLite
+3. **Python tracker** - AST visitor for `==`/`!=` with string literals
+4. **TypeScript tracker** - Tree-sitter for `===`/`==`/`!==`/`!=`
+5. **Integration** - Connect to analyzers and violation generator
+
+**Key Files to Create**:
+- `tests/unit/linters/stringly_typed/test_scattered_comparison_python.py`
+- `tests/unit/linters/stringly_typed/test_scattered_comparison_typescript.py`
+- `src/linters/stringly_typed/python/comparison_tracker.py`
+- `src/linters/stringly_typed/typescript/comparison_tracker.py`
+
+**See PR_BREAKDOWN.md → PR11 for detailed implementation steps.**
+
+---
 
 **Completed PR10 - Dogfooding & Documentation**:
 - [x] Added `stringly-typed` CLI command to code_smells.py
@@ -184,10 +216,10 @@ This is the **PRIMARY HANDOFF DOCUMENT** for AI agents working on the stringly-t
 ---
 
 ## Overall Progress
-**Total Completion**: 100% (10/10 PRs completed)
+**Total Completion**: 91% (10/11 PRs completed)
 
 ```
-[##########] 100% Complete - FEATURE READY FOR RELEASE
+[#########.] 91% Complete - PR11 remaining
 ```
 
 ---
@@ -206,6 +238,7 @@ This is the **PRIMARY HANDOFF DOCUMENT** for AI agents working on the stringly-t
 | PR8 | False Positive Filtering | Complete | 100% | Medium | P1 | 32 tests, blocklist filter, <5% FP rate |
 | PR9 | Ignore Directives | Complete | 100% | Low | P2 | 23 tests, IgnoreChecker integration |
 | PR10 | Dogfooding & Documentation | Complete | 100% | Low | P0 | CLI command, docs, README updates |
+| PR11 | Scattered String Comparisons | Not Started | 0% | Medium | P0 | TDD: tests first, detect `var == "str"` patterns |
 
 ### Status Legend
 - Not Started
