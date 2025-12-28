@@ -39,7 +39,7 @@ from .base_token_analyzer import BaseTokenAnalyzer
 from .block_filter import BlockFilterRegistry, create_default_registry
 from .cache import CodeBlock
 from .config import DRYConfig
-from .typescript_statement_detector import TypeScriptStatementDetector
+from .typescript_statement_detector import is_single_statement, should_include_block
 
 if TREE_SITTER_AVAILABLE:
     from tree_sitter import Node
@@ -62,7 +62,6 @@ class TypeScriptDuplicateAnalyzer(BaseTokenAnalyzer):  # thailint: ignore[srp.vi
         """
         super().__init__()
         self._filter_registry = filter_registry or create_default_registry()
-        self._statement_detector = TypeScriptStatementDetector()
 
     def analyze(self, file_path: Path, content: str, config: DRYConfig) -> list[CodeBlock]:
         """Analyze TypeScript/JavaScript file for duplicate code blocks.
@@ -90,8 +89,8 @@ class TypeScriptDuplicateAnalyzer(BaseTokenAnalyzer):  # thailint: ignore[srp.vi
         valid_windows = (
             (hash_val, start_line, end_line, snippet)
             for hash_val, start_line, end_line, snippet in windows
-            if self._statement_detector.should_include_block(content, start_line, end_line)
-            and not self._statement_detector.is_single_statement(content, start_line, end_line)
+            if should_include_block(content, start_line, end_line)
+            and not is_single_statement(content, start_line, end_line)
         )
         return self._build_blocks(valid_windows, file_path, content)
 

@@ -14,7 +14,7 @@ Overview: Handles violation generation for stringly-typed patterns that appear a
     Separates violation generation logic from main linter rule to maintain SRP compliance.
 
 Dependencies: StringlyTypedStorage, StoredPattern, StoredComparison, StringlyTypedConfig,
-    Violation, Severity, FunctionCallViolationBuilder, IgnoreChecker
+    Violation, Severity, build_function_call_violations, IgnoreChecker
 
 Exports: ViolationGenerator class
 
@@ -29,7 +29,7 @@ from src.core.types import Severity, Violation
 
 from .config import StringlyTypedConfig
 from .context_filter import FunctionCallFilter
-from .function_call_violation_builder import FunctionCallViolationBuilder
+from .function_call_violation_builder import build_function_call_violations
 from .ignore_checker import IgnoreChecker
 from .ignore_utils import is_ignored
 from .storage import StoredComparison, StoredPattern, StringlyTypedStorage
@@ -51,8 +51,7 @@ class ViolationGenerator:  # thailint: ignore srp
     """Generates violations from cross-file stringly-typed patterns."""
 
     def __init__(self) -> None:
-        """Initialize with helper builders and filters."""
-        self._call_builder = FunctionCallViolationBuilder()
+        """Initialize with helper filters."""
         self._call_filter = FunctionCallFilter()
         self._ignore_checker = IgnoreChecker()
 
@@ -132,6 +131,15 @@ class ViolationGenerator:  # thailint: ignore srp
         config: StringlyTypedConfig,
     ) -> list[Violation]:
         """Generate violations for function call patterns."""
+        valid_funcs = self._get_valid_functions(storage, config)
+        return self._build_call_violations(valid_funcs, storage)
+
+    def _get_valid_functions(
+        self,
+        storage: StringlyTypedStorage,
+        config: StringlyTypedConfig,
+    ) -> list[tuple[str, int, set[str]]]:
+        """Get functions that pass all filters."""
         min_files = config.min_occurrences if config.require_cross_file else 1
         limited_funcs = storage.get_limited_value_functions(
             min_values=config.min_values_for_enum,
@@ -139,16 +147,23 @@ class ViolationGenerator:  # thailint: ignore srp
             min_files=min_files,
         )
 
-        violations: list[Violation] = []
-        for function_name, param_index, unique_values in limited_funcs:
-            if _is_allowed_value_set(unique_values, config):
-                continue
-            # Apply context-aware filtering to reduce false positives
-            if not self._call_filter.should_include(function_name, param_index, unique_values):
-                continue
-            calls = storage.get_calls_by_function(function_name, param_index)
-            violations.extend(self._call_builder.build_violations(calls, unique_values))
+        return [
+            (name, idx, vals)
+            for name, idx, vals in limited_funcs
+            if not _is_allowed_value_set(vals, config)
+            and self._call_filter.should_include(name, idx, vals)
+        ]
 
+    def _build_call_violations(
+        self,
+        valid_funcs: list[tuple[str, int, set[str]]],
+        storage: StringlyTypedStorage,
+    ) -> list[Violation]:
+        """Build violations for valid function patterns."""
+        violations: list[Violation] = []
+        for function_name, param_index, unique_values in valid_funcs:
+            calls = storage.get_calls_by_function(function_name, param_index)
+            violations.extend(build_function_call_violations(calls, unique_values))
         return violations
 
     def _should_skip_patterns(
@@ -293,24 +308,20 @@ class ViolationGenerator:  # thailint: ignore srp
             return True
         return False
 
-    def _should_skip_variable(self, variable_name: str) -> bool:
-        """Check if a variable name indicates a false positive comparison.
+    # Variable suffixes that indicate false positive comparisons
+    _EXCLUDED_VARIABLE_SUFFIXES: tuple[str, ...] = (
+        ".value",  # Enum value access
+        ".method",  # HTTP method
+        ".type",  # Tree-sitter node types
+    )
 
-        Excludes:
-        - Variables ending with .value (enum value access)
-        - HTTP method variables (request.method, etc.)
-        - Variables that are likely test fixtures (underscore prefix patterns)
-        """
-        # Enum value access - already using an enum
-        if variable_name.endswith(".value"):
-            return True
-        # HTTP method - standard protocol strings
-        if variable_name.endswith(".method"):
+    def _should_skip_variable(self, variable_name: str) -> bool:
+        """Check if a variable name indicates a false positive comparison."""
+        # Check excluded suffixes
+        if any(variable_name.endswith(s) for s in self._EXCLUDED_VARIABLE_SUFFIXES):
             return True
         # Test assertion patterns (underscore prefix is common in comprehensions/lambdas)
-        if variable_name.startswith("_."):
-            return True
-        return False
+        return variable_name.startswith("_.")
 
     def _build_comparison_violation(
         self,

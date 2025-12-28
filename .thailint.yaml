@@ -215,3 +215,8 @@ collection-pipeline:
   # Ignore patterns for files and directories
   ignore:
     - "tests/"  # Test files often have intentional patterns for testing
+
+# Stringly-typed linter configuration
+stringly-typed:
+  enabled: true
+  min_occurrences: 2  # Require cross-file occurrences

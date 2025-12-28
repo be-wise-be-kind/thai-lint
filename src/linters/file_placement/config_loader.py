@@ -23,6 +23,8 @@ from typing import Any
 
 import yaml
 
+from src.core.constants import CONFIG_EXTENSIONS
+
 
 class ConfigLoader:
     """Loads configuration files for file placement linter."""
@@ -79,7 +81,7 @@ class ConfigLoader:
             ValueError: If file format is unsupported
         """
         with config_path.open(encoding="utf-8") as f:
-            if config_path.suffix in [".yaml", ".yml"]:
+            if config_path.suffix in CONFIG_EXTENSIONS:
                 return yaml.safe_load(f) or {}
             if config_path.suffix == ".json":
                 return json.load(f)

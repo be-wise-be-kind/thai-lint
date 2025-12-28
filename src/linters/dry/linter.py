@@ -11,8 +11,8 @@ Overview: Implements DRY linter rule following BaseLintRule interface with state
     with SRP.
 
 Dependencies: BaseLintRule, BaseLintContext, ConfigLoader, StorageInitializer, FileAnalyzer,
-    DuplicateStorage, ViolationGenerator, PythonConstantExtractor, TypeScriptConstantExtractor,
-    ConstantMatcher, ConstantViolationBuilder
+    DuplicateStorage, ViolationGenerator, extract_python_constants, TypeScriptConstantExtractor,
+    find_constant_groups, ConstantViolationBuilder
 
 Exports: DRYRule class
 
@@ -23,6 +23,7 @@ Implementation: Delegates all logic to helper classes, maintains only orchestrat
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -33,12 +34,12 @@ from src.core.types import Violation
 from .config import DRYConfig
 from .config_loader import ConfigLoader
 from .constant import ConstantInfo
-from .constant_matcher import ConstantMatcher
+from .constant_matcher import find_constant_groups
 from .constant_violation_builder import ConstantViolationBuilder
 from .duplicate_storage import DuplicateStorage
 from .file_analyzer import FileAnalyzer
 from .inline_ignore import InlineIgnoreParser
-from .python_constant_extractor import PythonConstantExtractor
+from .python_constant_extractor import extract_python_constants
 from .storage_initializer import StorageInitializer
 from .typescript_constant_extractor import TypeScriptConstantExtractor
 from .violation_generator import ViolationGenerator
@@ -53,9 +54,7 @@ class DRYComponents:  # pylint: disable=too-many-instance-attributes
     file_analyzer: FileAnalyzer
     violation_generator: ViolationGenerator
     inline_ignore: InlineIgnoreParser
-    python_extractor: PythonConstantExtractor
     typescript_extractor: TypeScriptConstantExtractor
-    constant_matcher: ConstantMatcher
     constant_violation_builder: ConstantViolationBuilder
 
 
@@ -79,9 +78,7 @@ class DRYRule(BaseLintRule):
             file_analyzer=FileAnalyzer(),  # Placeholder, will be replaced with configured one
             violation_generator=ViolationGenerator(),
             inline_ignore=InlineIgnoreParser(),
-            python_extractor=PythonConstantExtractor(),
             typescript_extractor=TypeScriptConstantExtractor(),
-            constant_matcher=ConstantMatcher(),
             constant_violation_builder=ConstantViolationBuilder(),
         )
 
@@ -158,9 +155,9 @@ class DRYRule(BaseLintRule):
         if context.file_path is None or context.file_content is None:
             return
         file_path = Path(context.file_path)
-        extractor = _get_extractor_for_language(context.language, self._helpers)
-        if extractor:
-            self._constants.extend((file_path, c) for c in extractor.extract(context.file_content))
+        extract_fn = _get_extractor_for_language(context.language, self._helpers)
+        if extract_fn:
+            self._constants.extend((file_path, c) for c in extract_fn(context.file_content))
 
     def finalize(self) -> list[Violation]:
         """Generate violations after all files processed."""
@@ -180,14 +177,17 @@ class DRYRule(BaseLintRule):
         return violations
 
 
+ConstantExtractorFn = Callable[[str], list[ConstantInfo]]
+
+
 def _get_extractor_for_language(
     language: str | None, helpers: DRYComponents
-) -> PythonConstantExtractor | TypeScriptConstantExtractor | None:
-    """Get the appropriate constant extractor for a language."""
-    extractors: dict[str, PythonConstantExtractor | TypeScriptConstantExtractor] = {
-        "python": helpers.python_extractor,
-        "typescript": helpers.typescript_extractor,
-        "javascript": helpers.typescript_extractor,
+) -> ConstantExtractorFn | None:
+    """Get the appropriate constant extractor function for a language."""
+    extractors: dict[str, ConstantExtractorFn] = {
+        "python": extract_python_constants,
+        "typescript": helpers.typescript_extractor.extract,
+        "javascript": helpers.typescript_extractor.extract,
     }
     return extractors.get(language or "")
 
@@ -199,6 +199,6 @@ def _generate_constant_violations(
     rule_id: str,
 ) -> list[Violation]:
     """Generate violations for duplicate constants."""
-    groups = helpers.constant_matcher.find_groups(constants)
+    groups = find_constant_groups(constants)
     helpers.constant_violation_builder.min_occurrences = config.min_constant_occurrences
     return helpers.constant_violation_builder.build_violations(groups, rule_id)

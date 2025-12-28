@@ -10,9 +10,9 @@ Overview: Handles building violation objects for function calls that consistentl
 
 Dependencies: Violation, Severity, StoredFunctionCall, StringlyTypedConfig
 
-Exports: FunctionCallViolationBuilder class
+Exports: build_function_call_violations function
 
-Interfaces: FunctionCallViolationBuilder.build_violations(calls, unique_values) -> list[Violation]
+Interfaces: build_function_call_violations(calls, unique_values) -> list[Violation]
 
 Implementation: Builds violations with cross-file references and enum suggestions
 """
@@ -22,6 +22,21 @@ from pathlib import Path
 from src.core.types import Severity, Violation
 
 from .storage import StoredFunctionCall
+
+
+def build_function_call_violations(
+    calls: list[StoredFunctionCall], unique_values: set[str]
+) -> list[Violation]:
+    """Build violations for all calls to a function with limited values.
+
+    Args:
+        calls: All calls to the function/param
+        unique_values: Set of unique string values passed
+
+    Returns:
+        List of violations for each call site
+    """
+    return [_build_violation(call, calls, unique_values) for call in calls]
 
 
 def _build_cross_references(call: StoredFunctionCall, all_calls: list[StoredFunctionCall]) -> str:
@@ -42,96 +57,79 @@ def _build_cross_references(call: StoredFunctionCall, all_calls: list[StoredFunc
     return ", ".join(refs[:5])  # Limit to 5 references
 
 
-class FunctionCallViolationBuilder:
-    """Builds violations for function call patterns with limited string values."""
+def _build_violation(
+    call: StoredFunctionCall,
+    all_calls: list[StoredFunctionCall],
+    unique_values: set[str],
+) -> Violation:
+    """Build a single violation for a function call.
 
-    def build_violations(
-        self, calls: list[StoredFunctionCall], unique_values: set[str]
-    ) -> list[Violation]:
-        """Build violations for all calls to a function with limited values.
+    Args:
+        call: The specific call to create violation for
+        all_calls: All calls to the same function/param
+        unique_values: Set of unique string values passed
 
-        Args:
-            calls: All calls to the function/param
-            unique_values: Set of unique string values passed
+    Returns:
+        Violation instance
+    """
+    message = _build_message(call, all_calls, unique_values)
+    suggestion = _build_suggestion(call, unique_values)
 
-        Returns:
-            List of violations for each call site
-        """
-        return [self._build_violation(call, calls, unique_values) for call in calls]
+    return Violation(
+        rule_id="stringly-typed.limited-values",
+        file_path=str(call.file_path),
+        line=call.line_number,
+        column=call.column,
+        message=message,
+        severity=Severity.ERROR,
+        suggestion=suggestion,
+    )
 
-    def _build_violation(
-        self,
-        call: StoredFunctionCall,
-        all_calls: list[StoredFunctionCall],
-        unique_values: set[str],
-    ) -> Violation:
-        """Build a single violation for a function call.
 
-        Args:
-            call: The specific call to create violation for
-            all_calls: All calls to the same function/param
-            unique_values: Set of unique string values passed
+def _build_message(
+    call: StoredFunctionCall,
+    all_calls: list[StoredFunctionCall],
+    unique_values: set[str],
+) -> str:
+    """Build violation message for function call pattern.
 
-        Returns:
-            Violation instance
-        """
-        message = self._build_message(call, all_calls, unique_values)
-        suggestion = self._build_suggestion(call, unique_values)
+    Args:
+        call: Current function call
+        all_calls: All calls to the same function/param
+        unique_values: Set of unique values passed
 
-        return Violation(
-            rule_id="stringly-typed.limited-values",
-            file_path=str(call.file_path),
-            line=call.line_number,
-            column=call.column,
-            message=message,
-            severity=Severity.ERROR,
-            suggestion=suggestion,
-        )
+    Returns:
+        Human-readable violation message
+    """
+    file_count = len({c.file_path for c in all_calls})
+    values_str = ", ".join(f"'{v}'" for v in sorted(unique_values))
+    param_desc = f"parameter {call.param_index}" if call.param_index > 0 else "first parameter"
 
-    def _build_message(
-        self,
-        call: StoredFunctionCall,
-        all_calls: list[StoredFunctionCall],
-        unique_values: set[str],
-    ) -> str:
-        """Build violation message for function call pattern.
+    message = (
+        f"Function '{call.function_name}' {param_desc} is called with "
+        f"only {len(unique_values)} unique string values [{values_str}] "
+        f"across {file_count} file(s)."
+    )
 
-        Args:
-            call: Current function call
-            all_calls: All calls to the same function/param
-            unique_values: Set of unique values passed
+    other_refs = _build_cross_references(call, all_calls)
+    if other_refs:
+        message += f" Also called in: {other_refs}."
 
-        Returns:
-            Human-readable violation message
-        """
-        file_count = len({c.file_path for c in all_calls})
-        values_str = ", ".join(f"'{v}'" for v in sorted(unique_values))
-        param_desc = f"parameter {call.param_index}" if call.param_index > 0 else "first parameter"
+    return message
 
-        message = (
-            f"Function '{call.function_name}' {param_desc} is called with "
-            f"only {len(unique_values)} unique string values [{values_str}] "
-            f"across {file_count} file(s)."
-        )
 
-        other_refs = _build_cross_references(call, all_calls)
-        if other_refs:
-            message += f" Also called in: {other_refs}."
+def _build_suggestion(call: StoredFunctionCall, unique_values: set[str]) -> str:
+    """Build fix suggestion for function call pattern.
 
-        return message
+    Args:
+        call: The function call
+        unique_values: Set of unique values passed
 
-    def _build_suggestion(self, call: StoredFunctionCall, unique_values: set[str]) -> str:
-        """Build fix suggestion for function call pattern.
-
-        Args:
-            call: The function call
-            unique_values: Set of unique values passed
-
-        Returns:
-            Human-readable suggestion
-        """
-        return (
-            f"Consider defining an enum or type union with the "
-            f"{len(unique_values)} possible values for '{call.function_name}' "
-            f"parameter {call.param_index}."
-        )
+    Returns:
+        Human-readable suggestion
+    """
+    return (
+        f"Consider defining an enum or type union with the "
+        f"{len(unique_values)} possible values for '{call.function_name}' "
+        f"parameter {call.param_index}."
+    )

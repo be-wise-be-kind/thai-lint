@@ -10,7 +10,7 @@ Overview: Test suite for edge cases and boundary conditions covering empty files
 
 Dependencies: pytest, src.Linter, pathlib, tmp_path fixture
 
-Exports: 8 test functions for edge case scenarios
+Exports: 2 test functions for edge case scenarios
 
 Interfaces: Uses Linter class with config file
 
@@ -20,8 +20,6 @@ Implementation: TDD approach - tests written before implementation. All tests sh
     (Decision 6): DRYRule maintains dict[int, list[CodeBlock]] instead of SQLite, providing
     same stateful behavior without persistence between test runs.
 """
-
-import pytest
 
 from src import Linter
 
@@ -51,33 +49,6 @@ def test_all_comments_no_code(tmp_path):
     violations = linter.lint(tmp_path, rules=["dry.duplicate-code"])
 
     assert len(violations) == 0
-
-
-def test_very_large_file(tmp_path):
-    """Test handling of very large files with duplicates."""
-    pytest.skip("Performance test - takes too long for regular test runs")
-
-    large_content = "\n".join([f"    line_{i} = process_{i}()" for i in range(1000)])
-
-    duplicate_section = """
-    x = fetch()
-    y = transform(x)
-    z = validate(y)
-"""
-
-    file1 = tmp_path / "large1.py"
-    file1.write_text(f"def huge_function1():\n{large_content}\n{duplicate_section}\n")
-
-    file2 = tmp_path / "large2.py"
-    file2.write_text(f"def huge_function2():\n{large_content}\n{duplicate_section}\n")
-
-    config = tmp_path / ".thailint.yaml"
-    config.write_text("dry:\n  enabled: true\n  min_duplicate_lines: 3\n  cache_enabled: false")
-
-    linter = Linter(config_file=config, project_root=tmp_path)
-    violations = linter.lint(tmp_path, rules=["dry.duplicate-code"])
-
-    assert isinstance(violations, list)
 
 
 def test_special_characters_in_code(tmp_path):

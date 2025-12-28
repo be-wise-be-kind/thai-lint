@@ -26,6 +26,7 @@ Implementation: Uses PipelinePatternDetector for AST analysis, composition patte
 from pathlib import Path
 
 from src.core.base import BaseLintContext, BaseLintRule
+from src.core.constants import IgnoreDirective, Language
 from src.core.types import Severity, Violation
 from src.linter_config.ignore import get_ignore_parser
 
@@ -91,7 +92,7 @@ class CollectionPipelineRule(BaseLintRule):  # thailint: ignore[srp,dry]
         Returns:
             True if should analyze
         """
-        return context.language == "python" and context.file_content is not None
+        return context.language == Language.PYTHON and context.file_content is not None
 
     def _get_config_dict(self, context: BaseLintContext) -> dict | None:
         """Get configuration dictionary from context.
@@ -391,7 +392,7 @@ class CollectionPipelineRule(BaseLintRule):  # thailint: ignore[srp,dry]
             return True
 
         # Rule-specific ignore
-        return self._matches_rule_ignore(line, "ignore")
+        return self._matches_rule_ignore(line, IgnoreDirective.IGNORE)
 
     def _create_violation(self, match: PatternMatch, context: BaseLintContext) -> Violation:
         """Create a Violation from a PatternMatch.

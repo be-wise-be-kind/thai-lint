@@ -12,9 +12,9 @@ Overview: Implements fuzzy matching strategies to identify related constants acr
 
 Dependencies: ConstantInfo, ConstantLocation, ConstantGroup from constant module
 
-Exports: ConstantMatcher class
+Exports: find_constant_groups function
 
-Interfaces: ConstantMatcher.find_groups(constants) -> list[ConstantGroup]
+Interfaces: find_constant_groups(constants) -> list[ConstantGroup]
 
 Implementation: Union-Find algorithm for grouping, word-set hashing, Levenshtein distance calculation
 """
@@ -80,29 +80,35 @@ class UnionFind:
             self._parent[px] = py
 
 
-class ConstantMatcher:
-    """Fuzzy matching for constant names."""
+def find_constant_groups(constants: list[tuple[Path, ConstantInfo]]) -> list[ConstantGroup]:
+    """Find groups of related constants.
 
-    def find_groups(self, constants: list[tuple[Path, ConstantInfo]]) -> list[ConstantGroup]:
-        """Find groups of related constants."""
-        if not constants:
-            return []
-        locations = _build_locations(constants)
-        exact_groups = _group_by_exact_name(locations)
-        return self._merge_fuzzy_groups(exact_groups)
+    Args:
+        constants: List of (file_path, ConstantInfo) tuples
 
-    def _merge_fuzzy_groups(self, groups: dict[str, ConstantGroup]) -> list[ConstantGroup]:
-        """Merge groups that match via fuzzy matching."""
-        names = list(groups.keys())
-        uf = UnionFind(names)
-        _union_matching_pairs(names, uf, self._is_fuzzy_match)
-        return _build_merged_groups(names, groups, uf)
+    Returns:
+        List of ConstantGroup instances representing related constants
+    """
+    if not constants:
+        return []
+    locations = _build_locations(constants)
+    exact_groups = _group_by_exact_name(locations)
+    return _merge_fuzzy_groups(exact_groups)
 
-    def _is_fuzzy_match(self, name1: str, name2: str) -> bool:
-        """Check if two constant names should be considered a match."""
-        if name1 == name2:
-            return True
-        return _is_fuzzy_similar(name1, name2)
+
+def _merge_fuzzy_groups(groups: dict[str, ConstantGroup]) -> list[ConstantGroup]:
+    """Merge groups that match via fuzzy matching."""
+    names = list(groups.keys())
+    uf = UnionFind(names)
+    _union_matching_pairs(names, uf, _is_fuzzy_match)
+    return _build_merged_groups(names, groups, uf)
+
+
+def _is_fuzzy_match(name1: str, name2: str) -> bool:
+    """Check if two constant names should be considered a match."""
+    if name1 == name2:
+        return True
+    return _is_fuzzy_similar(name1, name2)
 
 
 def _build_locations(constants: list[tuple[Path, ConstantInfo]]) -> list[ConstantLocation]:

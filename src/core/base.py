@@ -31,6 +31,7 @@ from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import Any
 
+from .constants import Language
 from .types import Violation
 
 
@@ -176,10 +177,10 @@ class MultiLanguageLintRule(BaseLintRule):
         if not config.enabled:
             return []
 
-        if context.language == "python":
+        if context.language == Language.PYTHON:
             return self._check_python(context, config)
 
-        if context.language in ("typescript", "javascript"):
+        if context.language in (Language.TYPESCRIPT, Language.JAVASCRIPT):
             return self._check_typescript(context, config)
 
         return []

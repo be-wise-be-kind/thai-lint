@@ -26,6 +26,8 @@ from typing import Any
 
 import click
 
+from src.core.constants import CONFIG_EXTENSIONS
+
 
 def common_linter_options(func: Callable) -> Callable:
     """Add common linter CLI options to command.
@@ -103,7 +105,7 @@ def _load_config_by_format(config_file: Path) -> dict[str, Any]:
     Returns:
         Loaded configuration dictionary
     """
-    if config_file.suffix in {".yaml", ".yml"}:
+    if config_file.suffix in CONFIG_EXTENSIONS:
         return _load_yaml_config(config_file)
     if config_file.suffix == ".json":
         return _load_json_config(config_file)

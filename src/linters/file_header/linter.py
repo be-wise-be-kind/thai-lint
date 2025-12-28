@@ -26,6 +26,7 @@ from pathlib import Path
 from typing import Protocol
 
 from src.core.base import BaseLintContext, BaseLintRule
+from src.core.constants import Language
 from src.core.linter_utils import load_linter_config
 from src.core.types import Violation
 from src.linter_config.ignore import get_ignore_parser
@@ -111,7 +112,7 @@ class FileHeaderRule(BaseLintRule):  # thailint: ignore[srp]
             return []
 
         # Markdown has special atemporal handling
-        if context.language == "markdown":
+        if context.language == Language.MARKDOWN:
             return self._check_markdown_header(parser, context, config)
 
         return self._check_header_with_parser(parser, context, config)

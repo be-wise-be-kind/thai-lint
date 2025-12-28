@@ -43,8 +43,11 @@ help:
     @echo "  just lint-dry                  - DRY principle linting (duplicate code detection)"
     @echo "  just lint-constants [FILES...] - Duplicate constants detection (cross-file)"
     @echo "  just lint-pipeline [FILES...]  - Collection pipeline detection (embedded filtering)"
+    @echo "  just lint-stateless [FILES...] - Stateless class detection (classes → module functions)"
+    @echo "  just lint-print [FILES...]     - Print statement detection (debug output in production)"
+    @echo "  just lint-stringly [FILES...]  - Stringly-typed detection (strings → enums)"
     @echo "  just clean-cache               - Clear DRY linter cache"
-    @echo "  just lint-full [FILES...]      - ALL quality checks (includes magic numbers, headers, and DRY)"
+    @echo "  just lint-full [FILES...]      - ALL quality checks (includes all thai-lint linters)"
     @echo "  just format                    - Auto-fix formatting and linting issues"
     @echo ""
     @echo "Testing:"
@@ -424,13 +427,64 @@ lint-file-header +files="src/ tests/":
         fi \
     fi
 
+# Stateless class linting (detect classes that should be module functions)
+lint-stateless +files="src/ tests/":
+    @echo ""
+    @echo "{{BLUE}}{{BOLD}}════════════════════════════════════════════════════════════{{NC}}"
+    @echo "{{BOLD}}  STATELESS CLASS (Classes → Module Functions){{NC}}"
+    @echo "{{BLUE}}{{BOLD}}════════════════════════════════════════════════════════════{{NC}}"
+    @echo ""
+    @SRC_TARGETS=$(just _get-src-targets {{files}}); \
+    if [ -n "$SRC_TARGETS" ]; then \
+        if poetry run thai-lint stateless-class $SRC_TARGETS --config .thailint.yaml 2>&1; then \
+            echo "{{GREEN}}✓ Stateless class checks passed{{NC}}"; \
+        else \
+            echo "{{RED}}✗ Stateless class checks failed{{NC}}"; \
+            exit 1; \
+        fi \
+    fi
+
+# Print statement linting (detect debug output in production code)
+lint-print +files="src/ tests/":
+    @echo ""
+    @echo "{{BLUE}}{{BOLD}}════════════════════════════════════════════════════════════{{NC}}"
+    @echo "{{BOLD}}  PRINT STATEMENTS (Debug Output Detection){{NC}}"
+    @echo "{{BLUE}}{{BOLD}}════════════════════════════════════════════════════════════{{NC}}"
+    @echo ""
+    @SRC_TARGETS=$(just _get-src-targets {{files}}); \
+    if [ -n "$SRC_TARGETS" ]; then \
+        if poetry run thai-lint print-statements $SRC_TARGETS --config .thailint.yaml 2>&1; then \
+            echo "{{GREEN}}✓ Print statement checks passed{{NC}}"; \
+        else \
+            echo "{{RED}}✗ Print statement checks failed{{NC}}"; \
+            exit 1; \
+        fi \
+    fi
+
+# Stringly-typed linting (detect string patterns that should be enums)
+lint-stringly +files="src/ tests/":
+    @echo ""
+    @echo "{{BLUE}}{{BOLD}}════════════════════════════════════════════════════════════{{NC}}"
+    @echo "{{BOLD}}  STRINGLY-TYPED (Strings → Enums){{NC}}"
+    @echo "{{BLUE}}{{BOLD}}════════════════════════════════════════════════════════════{{NC}}"
+    @echo ""
+    @SRC_TARGETS=$(just _get-src-targets {{files}}); \
+    if [ -n "$SRC_TARGETS" ]; then \
+        if poetry run thai-lint stringly-typed $SRC_TARGETS --config .thailint.yaml 2>&1; then \
+            echo "{{GREEN}}✓ Stringly-typed checks passed{{NC}}"; \
+        else \
+            echo "{{RED}}✗ Stringly-typed checks failed{{NC}}"; \
+            exit 1; \
+        fi \
+    fi
+
 # Clear DRY linter cache
 clean-cache:
     @echo "{{BLUE}}Clearing DRY linter cache...{{NC}}"
     @rm -rf .thailint-cache/
     @echo "{{GREEN}}✓ Cache cleared{{NC}}"
 
-# ALL quality checks (includes lint-dry as of PR4)
+# ALL quality checks (includes all thai-lint linters)
 lint-full +files="src/ tests/":
     #!/usr/bin/env bash
     set -e
@@ -503,14 +557,46 @@ lint-full +files="src/ tests/":
         FAILED+=("DRY Principles")
     fi
 
-    # Note: lint-pipeline is available but not yet in lint-full
-    # Will be added after dogfooding in PR4 (fixing codebase violations)
-
     echo ""
     if just lint-file-header {{files}}; then
         PASSED+=("File Headers")
     else
         FAILED+=("File Headers")
+    fi
+
+    echo ""
+    if just lint-constants {{files}}; then
+        PASSED+=("Duplicate Constants")
+    else
+        FAILED+=("Duplicate Constants")
+    fi
+
+    echo ""
+    if just lint-pipeline {{files}}; then
+        PASSED+=("Collection Pipelines")
+    else
+        FAILED+=("Collection Pipelines")
+    fi
+
+    echo ""
+    if just lint-stateless {{files}}; then
+        PASSED+=("Stateless Classes")
+    else
+        FAILED+=("Stateless Classes")
+    fi
+
+    echo ""
+    if just lint-print {{files}}; then
+        PASSED+=("Print Statements")
+    else
+        FAILED+=("Print Statements")
+    fi
+
+    echo ""
+    if just lint-stringly {{files}}; then
+        PASSED+=("Stringly-Typed")
+    else
+        FAILED+=("Stringly-Typed")
     fi
 
     # Print summary

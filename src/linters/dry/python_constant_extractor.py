@@ -11,9 +11,9 @@ Overview: Extracts module-level constant definitions from Python source code usi
 
 Dependencies: Python ast module, re for pattern matching, ConstantInfo from constant module
 
-Exports: PythonConstantExtractor class
+Exports: extract_python_constants function
 
-Interfaces: PythonConstantExtractor.extract(content: str) -> list[ConstantInfo]
+Interfaces: extract_python_constants(content: str) -> list[ConstantInfo]
 
 Implementation: AST-based parsing with module-level filtering and ALL_CAPS regex matching
 """
@@ -26,49 +26,55 @@ from .constant import CONSTANT_NAME_PATTERN, ConstantInfo
 CONTAINER_REPRESENTATIONS = {ast.List: "[...]", ast.Dict: "{...}", ast.Tuple: "(...)"}
 
 
-class PythonConstantExtractor:
-    """Extracts module-level constants from Python source code."""
+def extract_python_constants(content: str) -> list[ConstantInfo]:
+    """Extract constants from Python source code.
 
-    def extract(self, content: str) -> list[ConstantInfo]:
-        """Extract constants from Python source code."""
-        try:
-            tree = ast.parse(content)
-        except SyntaxError:
-            return []
-        constants: list[ConstantInfo] = []
-        for node in tree.body:
-            constants.extend(self._extract_from_node(node))
-        return constants
+    Args:
+        content: Python source code as string
 
-    def _extract_from_node(self, node: ast.stmt) -> list[ConstantInfo]:
-        """Extract constants from a single AST node."""
-        if isinstance(node, ast.Assign):
-            return self._extract_from_assign(node)
-        if isinstance(node, ast.AnnAssign):
-            return self._extract_from_ann_assign(node)
+    Returns:
+        List of ConstantInfo for module-level constants
+    """
+    try:
+        tree = ast.parse(content)
+    except SyntaxError:
         return []
+    constants: list[ConstantInfo] = []
+    for node in tree.body:
+        constants.extend(_extract_from_node(node))
+    return constants
 
-    def _extract_from_assign(self, node: ast.Assign) -> list[ConstantInfo]:
-        """Extract constants from a simple assignment."""
-        return [
-            info for t in node.targets if (info := self._to_const_info(t, node.value, node.lineno))
-        ]
 
-    def _extract_from_ann_assign(self, node: ast.AnnAssign) -> list[ConstantInfo]:
-        """Extract constants from an annotated assignment."""
-        if node.value is None:
-            return []
-        info = self._to_const_info(node.target, node.value, node.lineno)
-        return [info] if info else []
+def _extract_from_node(node: ast.stmt) -> list[ConstantInfo]:
+    """Extract constants from a single AST node."""
+    if isinstance(node, ast.Assign):
+        return _extract_from_assign(node)
+    if isinstance(node, ast.AnnAssign):
+        return _extract_from_ann_assign(node)
+    return []
 
-    def _to_const_info(self, target: ast.expr, value: ast.expr, lineno: int) -> ConstantInfo | None:
-        """Extract constant info from target and value."""
-        if not isinstance(target, ast.Name):
-            return None
-        name = target.id
-        if not _is_constant_name(name):
-            return None
-        return ConstantInfo(name=name, line_number=lineno, value=_get_value_string(value))
+
+def _extract_from_assign(node: ast.Assign) -> list[ConstantInfo]:
+    """Extract constants from a simple assignment."""
+    return [info for t in node.targets if (info := _to_const_info(t, node.value, node.lineno))]
+
+
+def _extract_from_ann_assign(node: ast.AnnAssign) -> list[ConstantInfo]:
+    """Extract constants from an annotated assignment."""
+    if node.value is None:
+        return []
+    info = _to_const_info(node.target, node.value, node.lineno)
+    return [info] if info else []
+
+
+def _to_const_info(target: ast.expr, value: ast.expr, lineno: int) -> ConstantInfo | None:
+    """Extract constant info from target and value."""
+    if not isinstance(target, ast.Name):
+        return None
+    name = target.id
+    if not _is_constant_name(name):
+        return None
+    return ConstantInfo(name=name, line_number=lineno, value=_get_value_string(value))
 
 
 def _is_constant_name(name: str) -> bool:
@@ -78,20 +84,13 @@ def _is_constant_name(name: str) -> bool:
 
 def _get_value_string(value: ast.expr) -> str | None:
     """Get string representation of a value expression."""
-    if isinstance(value, (ast.Constant, ast.Num, ast.Str)):
-        return _literal_repr(value)
+    if isinstance(value, ast.Constant):
+        return repr(value.value)
     if isinstance(value, ast.Name):
         return value.id
     if isinstance(value, ast.Call):
         return _call_to_string(value)
     return CONTAINER_REPRESENTATIONS.get(type(value))
-
-
-def _literal_repr(node: ast.expr) -> str:
-    """Get repr of a literal node."""
-    if isinstance(node, ast.Constant):
-        return repr(node.value)
-    return repr(getattr(node, "n", None) or getattr(node, "s", None))
 
 
 def _call_to_string(node: ast.Call) -> str:
