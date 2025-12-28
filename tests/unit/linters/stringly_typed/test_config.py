@@ -44,7 +44,8 @@ class TestConfigDataclass:
             f"Default max_values_for_enum should be {DEFAULT_MAX_VALUES_FOR_ENUM}"
         )
         assert config.require_cross_file is True, "Default require_cross_file should be True"
-        assert config.ignore == [], "Default ignore should be empty list"
+        # Dataclass default is empty; test patterns are added in from_dict
+        assert config.ignore == [], "Dataclass default ignore should be empty list"
         assert config.allowed_string_sets == [], "Default allowed_string_sets should be empty"
         assert config.exclude_variables == [], "Default exclude_variables should be empty"
 
@@ -67,7 +68,10 @@ class TestConfigDataclass:
         assert config.min_values_for_enum == 3
         assert config.max_values_for_enum == 8
         assert config.require_cross_file is False
-        assert config.ignore == ["tests/", "**/fixtures.py"]
+        # User patterns are merged with defaults
+        assert "tests/" in config.ignore
+        assert "**/fixtures.py" in config.ignore
+        assert "**/tests/**" in config.ignore  # Default pattern still present
         assert config.allowed_string_sets == [["debug", "info", "warning"]]
         assert config.exclude_variables == ["log_level"]
 
@@ -79,7 +83,8 @@ class TestConfigDataclass:
         assert config.min_values_for_enum == DEFAULT_MIN_VALUES_FOR_ENUM  # default
         assert config.max_values_for_enum == DEFAULT_MAX_VALUES_FOR_ENUM  # default
         assert config.require_cross_file is True  # default
-        assert config.ignore == []  # default
+        # Default ignore patterns are applied
+        assert "**/tests/**" in config.ignore
         assert config.allowed_string_sets == []  # default
         assert config.exclude_variables == []  # default
 
@@ -91,7 +96,8 @@ class TestConfigDataclass:
         assert config.min_values_for_enum == DEFAULT_MIN_VALUES_FOR_ENUM
         assert config.max_values_for_enum == DEFAULT_MAX_VALUES_FOR_ENUM
         assert config.require_cross_file is True
-        assert config.ignore == []
+        # Default ignore patterns are applied
+        assert "**/tests/**" in config.ignore
         assert config.allowed_string_sets == []
         assert config.exclude_variables == []
 

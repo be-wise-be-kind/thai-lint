@@ -172,34 +172,54 @@ def _autodetect_project_root(
     return auto_root
 
 
-def get_project_root_from_context(ctx: click.Context) -> Path:
+def get_project_root_from_context(ctx: click.Context) -> Path | None:
     """Get or determine project root from Click context.
 
     This function defers the actual determination until needed to avoid
     importing pyprojroot in test environments where it may not be available.
 
+    Returns None when no explicit root is specified (via --project-root or --config),
+    allowing the orchestrator to auto-detect from target paths instead of CWD.
+
     Args:
         ctx: Click context containing CLI options
 
     Returns:
-        Path to determined project root
+        Path to determined project root, or None for auto-detection from target paths
     """
     # Check if already determined and cached
     if "project_root" in ctx.obj:
-        cached_root: Path = ctx.obj["project_root"]
-        return cached_root
+        cached: Path | None = ctx.obj["project_root"]
+        return cached
 
-    # Determine project root using stored CLI options
+    project_root = _determine_project_root_for_context(ctx)
+    ctx.obj["project_root"] = project_root
+    return project_root
+
+
+def _determine_project_root_for_context(ctx: click.Context) -> Path | None:
+    """Determine project root from context options.
+
+    Args:
+        ctx: Click context containing CLI options
+
+    Returns:
+        Path if explicit root or config specified, None for auto-detection
+    """
     explicit_root = ctx.obj.get("cli_project_root")
     config_path = ctx.obj.get("cli_config_path")
     verbose = ctx.obj.get("verbose", False)
 
-    project_root = _determine_project_root(explicit_root, config_path, verbose)
+    if explicit_root:
+        return _resolve_explicit_project_root(explicit_root, verbose)
 
-    # Cache for future use
-    ctx.obj["project_root"] = project_root
+    if config_path:
+        return _infer_root_from_config(config_path, verbose)
 
-    return project_root
+    # No explicit root - return None for auto-detection from target paths
+    if verbose:
+        logger.debug("No explicit project root, will auto-detect from target paths")
+    return None
 
 
 # =============================================================================

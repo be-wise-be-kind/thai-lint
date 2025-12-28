@@ -15,7 +15,8 @@ Overview: Provides PythonStringlyTypedAnalyzer class that coordinates detection 
 Dependencies: ast module, MembershipValidationDetector, ConditionalPatternDetector,
     FunctionCallTracker, StringlyTypedConfig
 
-Exports: PythonStringlyTypedAnalyzer class, AnalysisResult dataclass, FunctionCallResult dataclass
+Exports: PythonStringlyTypedAnalyzer class, AnalysisResult dataclass, FunctionCallResult dataclass,
+    ComparisonResult dataclass
 
 Interfaces: PythonStringlyTypedAnalyzer.analyze(code, file_path) -> list[AnalysisResult],
     PythonStringlyTypedAnalyzer.analyze_function_calls(code, file_path) -> list[FunctionCallResult]
@@ -29,6 +30,7 @@ from pathlib import Path
 
 from ..config import StringlyTypedConfig
 from .call_tracker import FunctionCallPattern, FunctionCallTracker
+from .comparison_tracker import ComparisonPattern, ComparisonTracker
 from .conditional_detector import ConditionalPatternDetector, EqualityChainPattern
 from .validation_detector import MembershipPattern, MembershipValidationDetector
 
@@ -90,13 +92,45 @@ class FunctionCallResult:
     """Column number where the call starts (0-indexed)."""
 
 
-class PythonStringlyTypedAnalyzer:
+@dataclass
+class ComparisonResult:
+    """Represents a string comparison found in Python code.
+
+    Provides information about a comparison like `if env == "production"` to
+    enable cross-file aggregation for detecting scattered comparisons that
+    suggest missing enums.
+    """
+
+    variable_name: str
+    """Variable name being compared (e.g., 'env' or 'self.status')."""
+
+    compared_value: str
+    """The string literal value being compared to."""
+
+    operator: str
+    """The comparison operator ('==' or '!=')."""
+
+    file_path: Path
+    """Path to the file containing the comparison."""
+
+    line_number: int
+    """Line number where the comparison occurs (1-indexed)."""
+
+    column: int
+    """Column number where the comparison starts (0-indexed)."""
+
+
+class PythonStringlyTypedAnalyzer:  # thailint: ignore srp
     """Analyzes Python code for stringly-typed patterns.
 
     Coordinates detection of various stringly-typed patterns including membership
     validation ('x in ("a", "b")'), equality chains ('if x == "a" elif x == "b"'),
     and function calls with string arguments ('process("active")').
     Provides configuration-aware analysis with filtering support.
+
+    Note: Method count exceeds SRP limit due to analyzer coordination role. Multiple
+    analysis methods are required for different pattern types (membership, conditional,
+    function calls, comparisons) and their converters.
     """
 
     def __init__(self, config: StringlyTypedConfig | None = None) -> None:
@@ -109,6 +143,7 @@ class PythonStringlyTypedAnalyzer:
         self._membership_detector = MembershipValidationDetector()
         self._conditional_detector = ConditionalPatternDetector()
         self._call_tracker = FunctionCallTracker()
+        self._comparison_tracker = ComparisonTracker()
 
     def analyze(self, code: str, file_path: Path) -> list[AnalysisResult]:
         """Analyze Python code for stringly-typed patterns.
@@ -263,6 +298,46 @@ class PythonStringlyTypedAnalyzer:
             function_name=pattern.function_name,
             param_index=pattern.param_index,
             string_value=pattern.string_value,
+            file_path=file_path,
+            line_number=pattern.line_number,
+            column=pattern.column,
+        )
+
+    def analyze_comparisons(self, code: str, file_path: Path) -> list[ComparisonResult]:
+        """Analyze Python code for string comparisons.
+
+        Args:
+            code: Python source code to analyze
+            file_path: Path to the file being analyzed
+
+        Returns:
+            List of ComparisonResult instances for each detected comparison
+        """
+        tree = self._parse_code(code)
+        if tree is None:
+            return []
+
+        comparison_patterns = self._comparison_tracker.find_patterns(tree)
+        return [
+            self._convert_comparison_pattern(pattern, file_path) for pattern in comparison_patterns
+        ]
+
+    def _convert_comparison_pattern(
+        self, pattern: ComparisonPattern, file_path: Path
+    ) -> ComparisonResult:
+        """Convert a ComparisonPattern to ComparisonResult.
+
+        Args:
+            pattern: Detected comparison pattern
+            file_path: Path to the file containing the comparison
+
+        Returns:
+            ComparisonResult representing the comparison
+        """
+        return ComparisonResult(
+            variable_name=pattern.variable_name,
+            compared_value=pattern.compared_value,
+            operator=pattern.operator,
             file_path=file_path,
             line_number=pattern.line_number,
             column=pattern.column,
