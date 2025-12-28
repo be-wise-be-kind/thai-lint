@@ -89,8 +89,21 @@ class TypeScriptCallTracker(TypeScriptBaseAnalyzer):  # thailint: ignore[srp]
         if root is None:
             return []
 
+        return self.find_patterns_from_tree(root)
+
+    def find_patterns_from_tree(self, tree: Node) -> list[TypeScriptFunctionCallPattern]:
+        """Find all function calls with string arguments from a pre-parsed tree.
+
+        Optimized for single-parse workflows where the tree is shared between trackers.
+
+        Args:
+            tree: Pre-parsed tree-sitter root node
+
+        Returns:
+            List of TypeScriptFunctionCallPattern instances for each detected call
+        """
         self.patterns = []
-        self._traverse_tree(root)
+        self._traverse_tree(tree)
         return self.patterns
 
     def _traverse_tree(self, node: Node) -> None:

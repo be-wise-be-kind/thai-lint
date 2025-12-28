@@ -93,8 +93,21 @@ class TypeScriptComparisonTracker(TypeScriptBaseAnalyzer):  # thailint: ignore[s
         if root is None:
             return []
 
+        return self.find_patterns_from_tree(root)
+
+    def find_patterns_from_tree(self, tree: Node) -> list[TypeScriptComparisonPattern]:
+        """Find all string comparisons from a pre-parsed tree.
+
+        Optimized for single-parse workflows where the tree is shared between trackers.
+
+        Args:
+            tree: Pre-parsed tree-sitter root node
+
+        Returns:
+            List of TypeScriptComparisonPattern instances for each detected comparison
+        """
         self.patterns = []
-        self._traverse_tree(root)
+        self._traverse_tree(tree)
         return self.patterns
 
     def _traverse_tree(self, node: Node) -> None:
