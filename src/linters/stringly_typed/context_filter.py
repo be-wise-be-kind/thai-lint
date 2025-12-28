@@ -34,6 +34,14 @@ class FunctionCallFilter:  # thailint: ignore srp - data-heavy class with extens
     - File and path operations
     """
 
+    # Function name suffixes that always indicate false positives
+    _EXCLUDED_FUNCTION_SUFFIXES: tuple[str, ...] = (
+        # Exception constructors - error messages are inherently unique strings
+        "Error",
+        "Exception",
+        "Warning",
+    )
+
     # Function name patterns to always exclude (case-insensitive suffix/contains match)
     _EXCLUDED_FUNCTION_PATTERNS: tuple[str, ...] = (
         # Dictionary/object access - these are metadata access, not domain values
@@ -330,9 +338,20 @@ class FunctionCallFilter:  # thailint: ignore srp - data-heavy class with extens
 
     def _is_excluded_function(self, function_name: str) -> bool:
         """Check if function name matches any excluded pattern."""
-        func_lower = function_name.lower()
+        # Check suffix patterns (e.g., *Error, *Exception)
+        if self._matches_suffix(function_name):
+            return True
+        return self._matches_pattern(function_name.lower())
+
+    def _matches_suffix(self, function_name: str) -> bool:
+        """Check if function name ends with an excluded suffix."""
+        return any(function_name.endswith(s) for s in self._EXCLUDED_FUNCTION_SUFFIXES)
+
+    def _matches_pattern(self, func_lower: str) -> bool:
+        """Check if function name matches any excluded pattern."""
         for pattern in self._EXCLUDED_FUNCTION_PATTERNS:
-            if pattern.lower() in func_lower or func_lower.endswith(pattern.lower()):
+            pattern_lower = pattern.lower()
+            if pattern_lower in func_lower or func_lower.endswith(pattern_lower):
                 return True
         return False
 

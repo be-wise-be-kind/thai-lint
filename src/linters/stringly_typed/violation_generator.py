@@ -273,6 +273,9 @@ class ViolationGenerator:  # thailint: ignore srp
         # Skip if already covered by equality chain or validation pattern
         if variable_name in covered_variables:
             return
+        # Skip false positive variable patterns (.value, .method, etc.)
+        if self._should_skip_variable(variable_name):
+            return
         if self._should_skip_comparison(unique_values, config):
             return
         comparisons = storage.get_comparisons_by_variable(variable_name)
@@ -287,6 +290,25 @@ class ViolationGenerator:  # thailint: ignore srp
         if _is_allowed_value_set(unique_values, config):
             return True
         if self._call_filter.are_all_values_excluded(unique_values):
+            return True
+        return False
+
+    def _should_skip_variable(self, variable_name: str) -> bool:
+        """Check if a variable name indicates a false positive comparison.
+
+        Excludes:
+        - Variables ending with .value (enum value access)
+        - HTTP method variables (request.method, etc.)
+        - Variables that are likely test fixtures (underscore prefix patterns)
+        """
+        # Enum value access - already using an enum
+        if variable_name.endswith(".value"):
+            return True
+        # HTTP method - standard protocol strings
+        if variable_name.endswith(".method"):
+            return True
+        # Test assertion patterns (underscore prefix is common in comprehensions/lambdas)
+        if variable_name.startswith("_."):
             return True
         return False
 

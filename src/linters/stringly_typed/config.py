@@ -33,6 +33,21 @@ DEFAULT_MIN_OCCURRENCES = 2
 DEFAULT_MIN_VALUES_FOR_ENUM = 2
 DEFAULT_MAX_VALUES_FOR_ENUM = 6
 
+# Default ignore patterns - test directories are excluded by default
+# because test fixtures commonly use string literals for mocking
+DEFAULT_IGNORE_PATTERNS: list[str] = [
+    "**/tests/**",
+    "**/test/**",
+    "**/*_test.py",
+    "**/*_test.ts",
+    "**/*.test.ts",
+    "**/*.test.tsx",
+    "**/*.spec.ts",
+    "**/*.spec.tsx",
+    "**/conftest.py",
+    "**/fixtures/**",
+]
+
 
 @dataclass
 class StringlyTypedConfig:  # pylint: disable=too-many-instance-attributes
@@ -62,7 +77,7 @@ class StringlyTypedConfig:  # pylint: disable=too-many-instance-attributes
     """Whether to require cross-file occurrences to flag violations."""
 
     ignore: list[str] = field(default_factory=list)
-    """File patterns to ignore."""
+    """File patterns to ignore. Defaults merged with test directories in from_dict."""
 
     allowed_string_sets: list[list[str]] = field(default_factory=list)
     """String sets that are allowed and should not be flagged."""
@@ -114,13 +129,17 @@ class StringlyTypedConfig:  # pylint: disable=too-many-instance-attributes
         Returns:
             StringlyTypedConfig instance
         """
+        # Merge user ignore patterns with defaults
+        user_ignore = config.get("ignore", [])
+        merged_ignore = DEFAULT_IGNORE_PATTERNS.copy() + user_ignore
+
         return cls(
             enabled=config.get("enabled", True),
             min_occurrences=config.get("min_occurrences", DEFAULT_MIN_OCCURRENCES),
             min_values_for_enum=config.get("min_values_for_enum", DEFAULT_MIN_VALUES_FOR_ENUM),
             max_values_for_enum=config.get("max_values_for_enum", DEFAULT_MAX_VALUES_FOR_ENUM),
             require_cross_file=config.get("require_cross_file", True),
-            ignore=config.get("ignore", []),
+            ignore=merged_ignore,
             allowed_string_sets=config.get("allowed_string_sets", []),
             exclude_variables=config.get("exclude_variables", []),
         )
@@ -138,6 +157,10 @@ class StringlyTypedConfig:  # pylint: disable=too-many-instance-attributes
         Returns:
             StringlyTypedConfig instance with merged values
         """
+        # Merge user ignore patterns with defaults
+        user_ignore = lang_config.get("ignore", base_config.get("ignore", []))
+        merged_ignore = DEFAULT_IGNORE_PATTERNS.copy() + user_ignore
+
         return cls(
             enabled=lang_config.get("enabled", base_config.get("enabled", True)),
             min_occurrences=lang_config.get(
@@ -155,7 +178,7 @@ class StringlyTypedConfig:  # pylint: disable=too-many-instance-attributes
             require_cross_file=lang_config.get(
                 "require_cross_file", base_config.get("require_cross_file", True)
             ),
-            ignore=lang_config.get("ignore", base_config.get("ignore", [])),
+            ignore=merged_ignore,
             allowed_string_sets=lang_config.get(
                 "allowed_string_sets", base_config.get("allowed_string_sets", [])
             ),
