@@ -44,6 +44,8 @@ DEFAULT_IGNORE_PATTERNS: list[str] = [
     "**/*.test.tsx",
     "**/*.spec.ts",
     "**/*.spec.tsx",
+    "**/*.stories.ts",
+    "**/*.stories.tsx",
     "**/conftest.py",
     "**/fixtures/**",
 ]
