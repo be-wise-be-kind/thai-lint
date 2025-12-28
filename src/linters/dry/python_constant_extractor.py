@@ -78,20 +78,13 @@ def _is_constant_name(name: str) -> bool:
 
 def _get_value_string(value: ast.expr) -> str | None:
     """Get string representation of a value expression."""
-    if isinstance(value, (ast.Constant, ast.Num, ast.Str)):
-        return _literal_repr(value)
+    if isinstance(value, ast.Constant):
+        return repr(value.value)
     if isinstance(value, ast.Name):
         return value.id
     if isinstance(value, ast.Call):
         return _call_to_string(value)
     return CONTAINER_REPRESENTATIONS.get(type(value))
-
-
-def _literal_repr(node: ast.expr) -> str:
-    """Get repr of a literal node."""
-    if isinstance(node, ast.Constant):
-        return repr(node.value)
-    return repr(getattr(node, "n", None) or getattr(node, "s", None))
 
 
 def _call_to_string(node: ast.Call) -> str:
