@@ -27,6 +27,8 @@ from typing import Any, TextIO
 
 import yaml
 
+from src.core.constants import CONFIG_EXTENSIONS
+
 
 class ConfigParseError(Exception):
     """Configuration file parsing errors."""
@@ -113,11 +115,12 @@ def parse_config_file(path: Path, encoding: str = "utf-8") -> dict[str, Any]:
     """
     suffix = path.suffix.lower()
 
-    if suffix not in [".yaml", ".yml", ".json"]:
+    valid_suffixes = (*CONFIG_EXTENSIONS, ".json")
+    if suffix not in valid_suffixes:
         raise ConfigParseError(f"Unsupported config format: {suffix}")
 
     with path.open(encoding=encoding) as f:
-        if suffix in [".yaml", ".yml"]:
+        if suffix in CONFIG_EXTENSIONS:
             config = parse_yaml(f, path)
         else:
             config = parse_json(f, path)

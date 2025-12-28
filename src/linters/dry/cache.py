@@ -30,6 +30,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING
 
+from src.core.constants import StorageMode
+
 from .cache_query import CacheQueryService
 
 if TYPE_CHECKING:
@@ -62,9 +64,9 @@ class DRYCache:
         self._tempfile = None
 
         # Create SQLite connection based on storage mode
-        if storage_mode == "memory":
+        if storage_mode == StorageMode.MEMORY:
             self.db = sqlite3.connect(":memory:")
-        elif storage_mode == "tempfile":
+        elif storage_mode == StorageMode.TEMPFILE:
             # Create temporary file that auto-deletes on close
             # pylint: disable=consider-using-with
             # Justification: tempfile must remain open for SQLite connection lifetime.

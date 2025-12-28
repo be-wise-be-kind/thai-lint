@@ -26,6 +26,7 @@ from typing import Any
 import yaml
 
 from src.core.config_parser import ConfigParseError, parse_config_file
+from src.core.constants import CONFIG_EXTENSIONS
 
 logger = logging.getLogger(__name__)
 
@@ -170,7 +171,7 @@ def _validate_before_save(config: dict[str, Any]) -> None:
 
 def _write_config_file(config: dict[str, Any], path: Path) -> None:
     """Write config to file based on extension."""
-    if path.suffix in [".yaml", ".yml"]:
+    if path.suffix in CONFIG_EXTENSIONS:
         _write_yaml_config(config, path)
     elif path.suffix == ".json":
         _write_json_config(config, path)

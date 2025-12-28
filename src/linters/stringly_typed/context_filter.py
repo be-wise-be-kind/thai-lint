@@ -309,6 +309,11 @@ class FunctionCallFilter:  # thailint: ignore srp - data-heavy class with extens
         "Mock",
         "MagicMock",
         "PropertyMock",
+        # String parsing methods - internal message processing
+        ".index",
+        ".find",
+        ".rfind",
+        ".rindex",
         # Storybook - action handlers
         "action",
         "fn",
@@ -331,6 +336,10 @@ class FunctionCallFilter:  # thailint: ignore srp - data-heavy class with extens
         "json.loads",
         # Health checks - framework pattern
         "register_health_check",
+        # Config management - dynamic config keys
+        "ensure_config_section",
+        "set_config_value",
+        "get_config_value",
     )
 
     # Function names where second parameter (index 1) should be excluded

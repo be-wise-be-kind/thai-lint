@@ -18,6 +18,8 @@ Implementation: Delegates to language-specific analyzers, always performs fresh 
 
 from pathlib import Path
 
+from src.core.constants import Language
+
 from .block_filter import BlockFilterRegistry, create_default_registry
 from .cache import CodeBlock
 from .config import DRYConfig
@@ -83,8 +85,8 @@ class FileAnalyzer:
             List of CodeBlock instances
         """
         # Analyze file based on language
-        if language == "python":
+        if language == Language.PYTHON:
             return self._python_analyzer.analyze(file_path, content, config)
-        if language in ("typescript", "javascript"):
+        if language in (Language.TYPESCRIPT, Language.JAVASCRIPT):
             return self._typescript_analyzer.analyze(file_path, content, config)
         return []

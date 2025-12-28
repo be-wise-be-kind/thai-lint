@@ -20,6 +20,8 @@ Implementation: Dataclass with field defaults, __post_init__ validation, and dic
 from dataclasses import dataclass, field
 from typing import Any
 
+from src.core.constants import StorageMode
+
 # Default configuration constants
 DEFAULT_MIN_DUPLICATE_LINES = 3
 DEFAULT_MIN_DUPLICATE_TOKENS = 30
@@ -72,7 +74,8 @@ class DRYConfig:  # pylint: disable=too-many-instance-attributes
     def __post_init__(self) -> None:
         """Validate configuration values."""
         self._validate_positive_fields()
-        if self.storage_mode not in ("memory", "tempfile"):
+        valid_modes = (StorageMode.MEMORY, StorageMode.TEMPFILE)
+        if self.storage_mode not in valid_modes:
             raise ValueError(
                 f"storage_mode must be 'memory' or 'tempfile', got '{self.storage_mode}'"
             )

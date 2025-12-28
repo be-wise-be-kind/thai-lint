@@ -44,6 +44,8 @@ import tempfile
 from dataclasses import dataclass
 from pathlib import Path
 
+from src.core.constants import StorageMode
+
 # Row index constants for SQLite query results
 _COL_FILE_PATH = 0
 _COL_LINE_NUMBER = 1
@@ -297,9 +299,9 @@ class StringlyTypedStorage:  # thailint: ignore srp
         self._tempfile = None
 
         # Create SQLite connection based on storage mode
-        if storage_mode == "memory":
+        if storage_mode == StorageMode.MEMORY:
             self._db = sqlite3.connect(":memory:")
-        elif storage_mode == "tempfile":
+        elif storage_mode == StorageMode.TEMPFILE:
             # pylint: disable=consider-using-with
             # Justification: tempfile must remain open for SQLite connection lifetime.
             # It is explicitly closed in close() method when storage is finalized.

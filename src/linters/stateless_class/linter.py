@@ -25,6 +25,7 @@ Implementation: Composition pattern delegating analysis to specialized analyzer 
 from pathlib import Path
 
 from src.core.base import BaseLintContext, BaseLintRule
+from src.core.constants import IgnoreDirective, Language
 from src.core.types import Severity, Violation
 from src.linter_config.ignore import get_ignore_parser
 
@@ -90,7 +91,7 @@ class StatelessClassRule(BaseLintRule):  # thailint: ignore[srp,dry]
         Returns:
             True if should analyze
         """
-        return context.language == "python" and context.file_content is not None
+        return context.language == Language.PYTHON and context.file_content is not None
 
     def _load_config(self, context: BaseLintContext) -> StatelessClassConfig:
         """Load configuration from context.
@@ -330,7 +331,7 @@ class StatelessClassRule(BaseLintRule):  # thailint: ignore[srp,dry]
             return True
 
         # Rule-specific ignore
-        return self._matches_rule_ignore(line, "ignore")
+        return self._matches_rule_ignore(line, IgnoreDirective.IGNORE)
 
     def _create_violation(self, info: ClassInfo, context: BaseLintContext) -> Violation:
         """Create violation from class info.

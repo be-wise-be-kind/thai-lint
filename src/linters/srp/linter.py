@@ -19,6 +19,7 @@ Implementation: Composition pattern with helper classes, heuristic-based SRP ana
 """
 
 from src.core.base import BaseLintContext, MultiLanguageLintRule
+from src.core.constants import Language
 from src.core.linter_utils import load_linter_config
 from src.core.types import Violation
 from src.linter_config.ignore import get_ignore_parser
@@ -100,10 +101,10 @@ class SRPRule(MultiLanguageLintRule):
         Returns:
             List of violations found
         """
-        if context.language == "python":
+        if context.language == Language.PYTHON:
             return self._check_python(context, config)
 
-        if context.language in ("typescript", "javascript"):
+        if context.language in (Language.TYPESCRIPT, Language.JAVASCRIPT):
             return self._check_typescript(context, config)
 
         return []
