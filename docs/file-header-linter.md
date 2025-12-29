@@ -16,6 +16,23 @@
 
 ---
 
+## Try It Now
+
+```bash
+pip install thai-lint
+thailint file-header src/
+```
+
+**Example output:**
+```
+src/utils.py:1 - Missing mandatory field: Purpose
+src/utils.py:1 - Missing mandatory field: Overview
+```
+
+**Fix it:** Add a docstring header with Purpose, Scope, and Overview fields.
+
+---
+
 ## Overview
 
 The file header linter validates that source files have proper documentation headers containing required fields (Purpose, Scope, Overview, etc.) and don't use temporal language (dates, "currently", "now", etc.). It enforces consistent documentation patterns across entire codebases.

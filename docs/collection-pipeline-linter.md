@@ -16,6 +16,23 @@
 
 ---
 
+## Try It Now
+
+```bash
+pip install thai-lint
+thailint pipeline src/
+```
+
+**Example output:**
+```
+src/processor.py:28 - For loop over 'items' has embedded filtering
+  Consider: for item in (x for x in items if x.is_valid()):
+```
+
+**Fix it:** Extract filter conditions into a generator expression.
+
+---
+
 ## Overview
 
 The collection-pipeline linter detects `for` loops with embedded filtering (if/continue patterns) that could be refactored to use collection pipelines such as generator expressions, `filter()`, or list comprehensions.

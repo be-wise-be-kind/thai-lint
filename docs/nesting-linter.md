@@ -16,6 +16,23 @@
 
 ---
 
+## Try It Now
+
+```bash
+pip install thai-lint
+thailint nesting src/
+```
+
+**Example output:**
+```
+src/processor.py:42 - Excessive nesting (depth 5, max 4) in function 'process_data'
+  Suggestion: Use guard clauses or extract nested logic to separate functions
+```
+
+**Fix it:** Add early returns or extract deeply nested code into helper functions.
+
+---
+
 ## Overview
 
 The nesting depth linter detects deeply nested code structures (if/for/while/try statements) that reduce readability and maintainability. It analyzes Python and TypeScript code using Abstract Syntax Tree (AST) parsing to accurately calculate nesting depth within functions.

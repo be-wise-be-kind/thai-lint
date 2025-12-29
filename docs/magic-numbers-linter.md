@@ -16,6 +16,23 @@
 
 ---
 
+## Try It Now
+
+```bash
+pip install thai-lint
+thailint magic-numbers src/
+```
+
+**Example output:**
+```
+src/config.py:42 - Magic number 3600 should be a named constant
+  Suggestion: Extract to TIMEOUT_SECONDS = 3600
+```
+
+**Fix it:** Replace magic numbers with named constants that explain their meaning.
+
+---
+
 ## Overview
 
 The magic numbers linter detects unnamed numeric literals (magic numbers) that should be extracted to named constants. It analyzes Python and TypeScript code using Abstract Syntax Tree (AST) parsing to identify numeric literals that lack meaningful context.

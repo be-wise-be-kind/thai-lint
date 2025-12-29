@@ -20,6 +20,23 @@
 
 ---
 
+## Try It Now
+
+```bash
+pip install thai-lint
+thailint file-placement src/
+```
+
+**Example output:**
+```
+src/test_utils.py:1 - File 'test_utils.py' matches deny pattern 'test_.*\.py$' for directory 'src/'
+  Suggestion: Move test files to tests/ directory
+```
+
+**Fix it:** Move files to their correct directories according to your project structure rules.
+
+---
+
 ## Overview
 
 The file placement linter enforces project structure by ensuring files are located in appropriate directories based on configurable rules and patterns. It helps maintain consistent organization across your codebase.
