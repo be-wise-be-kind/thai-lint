@@ -29,7 +29,8 @@ from src.core.base import BaseLintContext, BaseLintRule
 from src.core.constants import Language
 from src.core.linter_utils import load_linter_config
 from src.core.types import Violation
-from src.linter_config.ignore import get_ignore_parser
+from src.linter_config.directive_markers import check_general_ignore, has_ignore_directive_marker
+from src.linter_config.ignore import _check_specific_rule_ignore, get_ignore_parser
 
 from .atemporal_detector import AtemporalDetector
 from .bash_parser import BashHeaderParser
@@ -159,16 +160,16 @@ class FileHeaderRule(BaseLintRule):  # thailint: ignore[srp]
 
         return self._has_custom_ignore_syntax(file_content)
 
-    def _has_standard_ignore(self, file_content: str) -> bool:  # thailint: ignore[nesting]
+    def _has_standard_ignore(self, file_content: str) -> bool:
         """Check standard ignore parser for file-level ignores."""
         first_lines = file_content.splitlines()[:10]
-        for line in first_lines:
-            if self._ignore_parser._has_ignore_directive_marker(line):  # pylint: disable=protected-access
-                if self._ignore_parser._check_specific_rule_ignore(line, self.rule_id):  # pylint: disable=protected-access
-                    return True
-                if self._ignore_parser._check_general_ignore(line):  # pylint: disable=protected-access
-                    return True
-        return False
+        return any(self._line_has_matching_ignore(line) for line in first_lines)
+
+    def _line_has_matching_ignore(self, line: str) -> bool:
+        """Check if line has matching ignore directive for this rule."""
+        if not has_ignore_directive_marker(line):
+            return False
+        return _check_specific_rule_ignore(line, self.rule_id) or check_general_ignore(line)
 
     def _has_custom_ignore_syntax(self, file_content: str) -> bool:
         """Check custom file-level ignore syntax."""

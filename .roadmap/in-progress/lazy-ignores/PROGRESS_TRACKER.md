@@ -28,8 +28,8 @@ This is the **PRIMARY HANDOFF DOCUMENT** for AI agents working on the lazy-ignor
 
 ## Current Status
 
-**Current PR**: PR6 - CLI Integration & LazyIgnoresRule - COMPLETE
-**Infrastructure State**: PR1-3, PR6 complete - Full lazy-ignores linter working with CLI
+**Current PR**: PR4 - TypeScript/JavaScript Detection - COMPLETE
+**Infrastructure State**: PR1-4, PR6 complete - Full lazy-ignores linter with Python and TypeScript support
 **Feature Target**: Production-ready linter with full test coverage, integrated into thai-lint quality gates
 
 ---
@@ -78,16 +78,31 @@ This is the **PRIMARY HANDOFF DOCUMENT** for AI agents working on the lazy-ignor
 - [x] Removed skip markers from passing tests (21 tests now passing)
 - [x] All quality gates pass (ruff, pylint, xenon, SRP)
 
-**Next PR**: PR4 (TypeScript Detection) or PR7 (Dogfooding)
+---
+
+### PR4 - TypeScript/JavaScript Detection - COMPLETE
+
+**Quick Summary**: Implemented TypeScriptIgnoreDetector for TS/JS pattern detection.
+
+**Completed**:
+- [x] Created `src/linters/lazy_ignores/typescript_analyzer.py` with TypeScriptIgnoreDetector
+- [x] Detects @ts-ignore, @ts-nocheck, @ts-expect-error patterns
+- [x] Detects eslint-disable-next-line, eslint-disable-line, eslint-disable block patterns
+- [x] Extracts rule IDs from ESLint patterns (e.g., no-console, react/prop-types)
+- [x] Updated tests: test_typescript_detection.py (17 tests now passing)
+- [x] Added TypeScriptIgnoreDetector to module exports in __init__.py
+- [x] All quality gates pass (ruff, pylint, xenon A-grade, SRP)
+
+**Next PR**: PR5 (Test Skip Detection) or PR7 (Dogfooding)
 
 ---
 
 ## Overall Progress
 
-**Total Completion**: 50% (PR1-3, PR6 complete, 4/8 PRs fully completed)
+**Total Completion**: 62.5% (PR1-4, PR6 complete, 5/8 PRs fully completed)
 
 ```
-[█████░░░░░] 50% Complete
+[██████░░░░] 62.5% Complete
 ```
 
 ---
@@ -99,7 +114,7 @@ This is the **PRIMARY HANDOFF DOCUMENT** for AI agents working on the lazy-ignor
 | PR1 | Core Infrastructure & Python Tests (TDD) | 🟢 Complete | 100% | Medium | P0 | TDD tests + types + config done |
 | PR2 | Python Ignore Detection | 🟢 Complete | 100% | Medium | P0 | PythonIgnoreDetector implemented |
 | PR3 | Header Suppressions Parser | 🟢 Complete | 100% | Medium | P0 | SuppressionsParser implemented |
-| PR4 | TypeScript/JavaScript Detection | 🔴 Not Started | 0% | Medium | P1 | @ts-ignore, eslint-disable patterns |
+| PR4 | TypeScript/JavaScript Detection | 🟢 Complete | 100% | Medium | P1 | TypeScriptIgnoreDetector + 17 tests |
 | PR5 | Test Skip Detection | 🔴 Not Started | 0% | Low | P1 | pytest.mark.skip, it.skip() |
 | PR6 | CLI Integration & Output Formats | 🟢 Complete | 100% | Medium | P0 | LazyIgnoresRule + CLI + 21 tests passing |
 | PR7 | Dogfooding - Internal Use | 🔴 Not Started | 0% | Low | P1 | Add to just lint-full, fix own violations |
@@ -140,8 +155,8 @@ This is the **PRIMARY HANDOFF DOCUMENT** for AI agents working on the lazy-ignor
 - [ ] Zero false positives on legitimate patterns
 
 ### Feature Metrics
-- [ ] Detects all common Python ignore patterns
-- [ ] Detects all common TypeScript/JavaScript patterns
+- [x] Detects all common Python ignore patterns
+- [x] Detects all common TypeScript/JavaScript patterns
 - [ ] Error messages guide AI agents correctly
 - [ ] Orphaned header entries detected
 

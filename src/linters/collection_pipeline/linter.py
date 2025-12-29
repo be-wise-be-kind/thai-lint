@@ -29,6 +29,7 @@ from src.core.base import BaseLintContext, BaseLintRule
 from src.core.constants import IgnoreDirective, Language
 from src.core.types import Severity, Violation
 from src.linter_config.ignore import get_ignore_parser
+from src.linter_config.rule_matcher import rule_matches
 
 from .config import CollectionPipelineConfig
 from .detector import PatternMatch, PipelinePatternDetector
@@ -234,23 +235,7 @@ class CollectionPipelineRule(BaseLintRule):  # thailint: ignore[srp,dry]
         Returns:
             True if pattern matches this rule
         """
-        rule_id_lower = self.rule_id.lower()
-        pattern_lower = rule_pattern.lower()
-
-        # Exact match
-        if rule_id_lower == pattern_lower:
-            return True
-
-        # Prefix match: collection-pipeline matches collection-pipeline.embedded-filter
-        if rule_id_lower.startswith(pattern_lower + "."):
-            return True
-
-        # Wildcard match: collection-pipeline.* matches collection-pipeline.embedded-filter
-        if pattern_lower.endswith("*"):
-            prefix = pattern_lower[:-1]
-            return rule_id_lower.startswith(prefix)
-
-        return False
+        return rule_matches(self.rule_id, rule_pattern)
 
     def _analyze_python(
         self, context: BaseLintContext, config: CollectionPipelineConfig
