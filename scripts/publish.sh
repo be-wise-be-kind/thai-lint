@@ -23,9 +23,16 @@ BOLD='\033[1m'
 # Parse arguments
 SKIP_CHECKS=false
 VERSION=""
+BUMP_TYPE=""
 for arg in "$@"; do
     if [ "$arg" = "--skip-checks" ]; then
         SKIP_CHECKS=true
+    elif [ "$arg" = "--patch" ] || [ "$arg" = "patch" ]; then
+        BUMP_TYPE="patch"
+    elif [ "$arg" = "--minor" ] || [ "$arg" = "minor" ]; then
+        BUMP_TYPE="minor"
+    elif [ "$arg" = "--major" ] || [ "$arg" = "major" ]; then
+        BUMP_TYPE="major"
     elif [[ "$arg" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
         VERSION="$arg"
     fi
@@ -34,6 +41,30 @@ done
 # Check for VERSION_INPUT environment variable (from GitHub Actions)
 if [ -z "$VERSION" ] && [ -n "${VERSION_INPUT:-}" ]; then
     VERSION="$VERSION_INPUT"
+fi
+
+# Calculate version from bump type if specified
+if [ -z "$VERSION" ] && [ -n "$BUMP_TYPE" ]; then
+    CURRENT_VERSION=$(grep '^version = ' pyproject.toml | cut -d'"' -f2)
+    IFS='.' read -r MAJOR MINOR PATCH <<< "$CURRENT_VERSION"
+
+    case "$BUMP_TYPE" in
+        major)
+            MAJOR=$((MAJOR + 1))
+            MINOR=0
+            PATCH=0
+            ;;
+        minor)
+            MINOR=$((MINOR + 1))
+            PATCH=0
+            ;;
+        patch)
+            PATCH=$((PATCH + 1))
+            ;;
+    esac
+
+    VERSION="${MAJOR}.${MINOR}.${PATCH}"
+    echo "Calculated version from $BUMP_TYPE bump: $CURRENT_VERSION -> $VERSION"
 fi
 
 echo "=========================================="

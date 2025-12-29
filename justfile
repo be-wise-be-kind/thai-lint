@@ -978,9 +978,11 @@ _publish-docker-only:
 
 # Publish to both PyPI and Docker Hub
 # Usage:
-#   just publish                    - Interactive mode with tests and linting
-#   just publish 51.0.0             - Non-interactive with specified version
-#   just publish --skip-checks      - Skip tests and linting
-#   just publish 51.0.0 --skip-checks  - Both options
+#   just publish                         - Interactive mode with tests and linting
+#   just publish --patch                 - Auto-bump patch version (x.y.Z)
+#   just publish --minor                 - Auto-bump minor version (x.Y.0)
+#   just publish --major                 - Auto-bump major version (X.0.0)
+#   just publish 51.0.0                  - Explicit version
+#   just publish --patch --skip-checks   - Combine options
 publish *ARGS="":
     @./scripts/publish.sh {{ARGS}}
