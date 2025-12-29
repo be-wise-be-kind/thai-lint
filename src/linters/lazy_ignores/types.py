@@ -7,7 +7,8 @@ Overview: Defines core types for the lazy-ignores linter including IgnoreType en
     categorizing different suppression patterns, IgnoreDirective dataclass for representing
     detected ignores in code, and SuppressionEntry dataclass for representing declared
     suppressions in file headers. Supports Python (noqa, type:ignore, pylint, nosec),
-    TypeScript (@ts-ignore, eslint-disable), and thai-lint (thailint:ignore) patterns.
+    TypeScript (@ts-ignore, eslint-disable), thai-lint (thailint:ignore), and test skip
+    patterns (pytest.mark.skip, it.skip, describe.skip).
 
 Dependencies: dataclasses, enum, pathlib
 
@@ -38,6 +39,11 @@ class IgnoreType(Enum):
     THAILINT_IGNORE_FILE = "thailint:ignore-file"
     THAILINT_IGNORE_NEXT = "thailint:ignore-next-line"
     THAILINT_IGNORE_BLOCK = "thailint:ignore-start"
+    # Test skip patterns
+    PYTEST_SKIP = "pytest:skip"
+    PYTEST_SKIPIF = "pytest:skipif"
+    JEST_SKIP = "jest:skip"
+    MOCHA_SKIP = "mocha:skip"
 
 
 @dataclass(frozen=True)
