@@ -28,13 +28,13 @@ This is the **PRIMARY HANDOFF DOCUMENT** for AI agents working on the LBYL linte
 4. **Update this document** after completing each PR
 
 ## Current Status
-**Current PR**: Not Started - PR1 (Infrastructure + Dict Key Detection)
-**Infrastructure State**: Planning Complete
+**Current PR**: PR1 (Infrastructure + Dict Key Detection) - IN PROGRESS
+**Infrastructure State**: TDD tests written, minimal infrastructure created
 **Feature Target**: Detect 8 LBYL anti-patterns in Python code with EAFP suggestions
 
 ## Required Documents Location
 ```
-.roadmap/planning/lbyl/
+.roadmap/in-progress/lbyl/
 ├── AI_CONTEXT.md          # Overall feature architecture and context
 ├── PR_BREAKDOWN.md        # Detailed instructions for each PR
 ├── PROGRESS_TRACKER.md    # THIS FILE - Current progress and handoff notes
@@ -64,10 +64,10 @@ This is the foundation PR that establishes all the patterns for subsequent PRs.
 ---
 
 ## Overall Progress
-**Total Completion**: 0% (0/5 PRs completed)
+**Total Completion**: 10% (PR1 TDD scaffolding complete, 0/5 PRs fully completed)
 
 ```
-[░░░░░░░░░░░░░░░░░░░░] 0% Complete
+[██░░░░░░░░░░░░░░░░░░] 10% Complete
 ```
 
 ---
@@ -76,7 +76,7 @@ This is the foundation PR that establishes all the patterns for subsequent PRs.
 
 | PR | Title | Status | Completion | Complexity | Priority | Notes |
 |----|-------|--------|------------|------------|----------|-------|
-| PR1 | Infrastructure + Dict Key Detection | Not Started | 0% | High | P0 | Foundation PR - establishes all patterns |
+| PR1 | Infrastructure + Dict Key Detection | In Progress | 50% | High | P0 | TDD tests done, need implementation |
 | PR2 | hasattr + isinstance Detectors | Not Started | 0% | Medium | P1 | Can start after PR1 |
 | PR3 | File Exists + Len Check Detectors | Not Started | 0% | Medium | P1 | Can start after PR1 |
 | PR4 | None + String + Division Detectors | Not Started | 0% | Medium | P1 | Can start after PR1 |
@@ -94,29 +94,29 @@ This is the foundation PR that establishes all the patterns for subsequent PRs.
 ## PR1: Infrastructure + Dict Key Detection
 
 ### Checklist
-- [ ] Write tests first (TDD)
-  - [ ] Create `tests/unit/linters/lbyl/__init__.py`
-  - [ ] Create `tests/unit/linters/lbyl/conftest.py`
-  - [ ] Create `tests/unit/linters/lbyl/test_config.py`
-  - [ ] Create `tests/unit/linters/lbyl/test_dict_key_detector.py` (~15 tests)
-  - [ ] Create `tests/unit/linters/lbyl/test_linter.py`
-- [ ] Implement linter infrastructure
-  - [ ] Create `src/linters/lbyl/__init__.py`
-  - [ ] Create `src/linters/lbyl/config.py`
+- [x] Write tests first (TDD)
+  - [x] Create `tests/unit/linters/lbyl/__init__.py`
+  - [x] Create `tests/unit/linters/lbyl/conftest.py`
+  - [x] Create `tests/unit/linters/lbyl/test_config.py`
+  - [x] Create `tests/unit/linters/lbyl/test_dict_key_detector.py` (~15 tests)
+  - [x] Create `tests/unit/linters/lbyl/test_linter.py`
+- [x] Implement linter infrastructure (partial)
+  - [x] Create `src/linters/lbyl/__init__.py`
+  - [x] Create `src/linters/lbyl/config.py`
   - [ ] Create `src/linters/lbyl/linter.py`
   - [ ] Create `src/linters/lbyl/python_analyzer.py`
   - [ ] Create `src/linters/lbyl/violation_builder.py`
-- [ ] Implement dict key detector
-  - [ ] Create `src/linters/lbyl/pattern_detectors/__init__.py`
-  - [ ] Create `src/linters/lbyl/pattern_detectors/base.py`
+- [x] Implement dict key detector (partial)
+  - [x] Create `src/linters/lbyl/pattern_detectors/__init__.py`
+  - [x] Create `src/linters/lbyl/pattern_detectors/base.py`
   - [ ] Create `src/linters/lbyl/pattern_detectors/dict_key_detector.py`
 - [ ] Register CLI command
 - [ ] Verify all output formats (text, json, sarif)
 - [ ] Quality gates pass
-  - [ ] All tests pass: `just test`
-  - [ ] Pylint 10.00/10
-  - [ ] Xenon A-grade
-  - [ ] `just lint-full` exits 0
+  - [x] All tests pass: `just test` (15 pass, 33 skipped - TDD)
+  - [x] Pylint 10.00/10
+  - [x] Xenon A-grade
+  - [x] `just lint-full` exits 0
 
 ### Success Criteria
 - Dict key pattern detected correctly
