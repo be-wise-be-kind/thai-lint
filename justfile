@@ -978,85 +978,9 @@ _publish-docker-only:
 
 # Publish to both PyPI and Docker Hub
 # Usage:
-#   just publish                 - Run with tests and linting
-#   just publish --skip-checks   - Skip tests and linting (already validated)
+#   just publish                    - Interactive mode with tests and linting
+#   just publish 51.0.0             - Non-interactive with specified version
+#   just publish --skip-checks      - Skip tests and linting
+#   just publish 51.0.0 --skip-checks  - Both options
 publish *ARGS="":
-    #!/usr/bin/env bash
-    echo "=========================================="
-    echo "Publishing to PyPI and Docker Hub"
-    echo "=========================================="
-    echo ""
-
-    # Check for --skip-checks flag
-    SKIP_CHECKS=false
-    for arg in {{ARGS}}; do
-        if [ "$arg" = "--skip-checks" ]; then
-            SKIP_CHECKS=true
-        fi
-    done
-
-    # Run checks unless skipped
-    if [ "$SKIP_CHECKS" = "false" ]; then
-        echo "Step 1: Auto-formatting code..."
-        just format
-        echo "✓ Code formatted"
-        echo ""
-        echo "Step 2: Running tests with coverage (for badge updates)..."
-        just test-coverage
-        if [ $? -ne 0 ]; then
-            echo "❌ Tests failed! Cannot publish."
-            exit 1
-        fi
-        echo "✓ Tests passed (coverage reports generated)"
-        echo ""
-        echo "Step 3: Updating test and coverage badges..."
-        just update-test-badges
-        echo ""
-        echo "Step 4: Running full linting..."
-        just lint-full
-        if [ $? -ne 0 ]; then
-            echo "❌ Linting failed! Cannot publish."
-            exit 1
-        fi
-        echo "✓ Linting passed"
-        echo ""
-    else
-        echo "⚠️  SKIPPING tests and linting checks (--skip-checks flag)"
-        echo ""
-    fi
-
-    # Version bump always runs (even with --skip-checks)
-    echo "Step 5: Version bump..."
-    just bump-version
-    if [ $? -ne 0 ]; then
-        echo "❌ Version bump cancelled or failed!"
-        exit 1
-    fi
-    echo ""
-
-    just _publish-pypi-only
-    if [ $? -ne 0 ]; then
-        echo "❌ PyPI publishing failed! Stopping."
-        exit 1
-    fi
-    echo ""
-    just _publish-docker-only
-    if [ $? -ne 0 ]; then
-        echo "❌ Docker Hub publishing failed!"
-        exit 1
-    fi
-    echo ""
-    echo "=========================================="
-    echo "✅ Publishing Complete!"
-    echo "=========================================="
-    VERSION=$(grep '^version = ' pyproject.toml | cut -d'"' -f2)
-    DOCKERHUB_USERNAME=$(grep DOCKERHUB_USERNAME .env | cut -d'=' -f2)
-    echo ""
-    echo "Published version: $VERSION"
-    echo ""
-    echo "PyPI: https://pypi.org/project/thailint/$VERSION/"
-    echo "Docker Hub: https://hub.docker.com/r/$DOCKERHUB_USERNAME/thailint"
-    echo ""
-    echo "Installation:"
-    echo "  pip install thailint==$VERSION"
-    echo "  docker pull $DOCKERHUB_USERNAME/thailint:$VERSION"
+    @./scripts/publish.sh {{ARGS}}
