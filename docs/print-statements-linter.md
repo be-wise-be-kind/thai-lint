@@ -16,6 +16,23 @@
 
 ---
 
+## Try It Now
+
+```bash
+pip install thai-lint
+thailint print-statements src/
+```
+
+**Example output:**
+```
+src/handlers.py:42 - print() call found - use logging instead
+  Suggestion: Replace print("Debug: user={user}") with logger.debug("user=%s", user)
+```
+
+**Fix it:** Replace print statements with proper logging calls.
+
+---
+
 ## Overview
 
 The print statements linter detects `print()` calls in Python and `console.*` calls in TypeScript/JavaScript that should be replaced with proper logging. These debug statements are common in development but should not appear in production code.

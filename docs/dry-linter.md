@@ -16,6 +16,26 @@
 
 ---
 
+## Try It Now
+
+```bash
+pip install thai-lint
+thailint dry src/
+```
+
+**Example output:**
+```
+src/auth.py:3 - Duplicate code detected (4 lines, 2 occurrences)
+  Locations:
+    - src/auth.py:3-6
+    - src/admin.py:3-6
+  Consider extracting to shared function
+```
+
+**Fix it:** Extract the duplicate code to a shared function and import it where needed.
+
+---
+
 ## Overview
 
 The DRY linter detects duplicate code blocks across your entire project using token-based hashing. It identifies identical or near-identical code that violates the Don't Repeat Yourself (DRY) principle, helping maintain code quality and reducing maintenance burden.

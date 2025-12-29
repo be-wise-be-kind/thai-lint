@@ -16,6 +16,23 @@
 
 ---
 
+## Try It Now
+
+```bash
+pip install thai-lint
+thailint method-property src/
+```
+
+**Example output:**
+```
+src/models.py:45 - Method 'get_full_name' should be a @property
+  Suggestion: Replace 'def get_full_name(self):' with '@property def full_name(self):'
+```
+
+**Fix it:** Convert getter methods to `@property` decorators for cleaner attribute access.
+
+---
+
 ## Overview
 
 The method-property linter detects Python methods that should be converted to `@property` decorators. It follows the Pythonic principle that simple attribute access should use properties rather than getter methods.

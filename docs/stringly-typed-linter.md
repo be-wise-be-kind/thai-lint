@@ -16,6 +16,24 @@
 
 ---
 
+## Try It Now
+
+```bash
+pip install thai-lint
+thailint stringly-typed src/
+```
+
+**Example output:**
+```
+src/models.py:28 - String 'active' appears in membership test pattern
+  Found in: if status in ['active', 'pending', 'cancelled']
+  Suggestion: Consider creating a Status enum
+```
+
+**Fix it:** Replace repeated string literals with enums or typed constants.
+
+---
+
 ## Overview
 
 The stringly-typed linter detects code patterns where plain strings are used in ways that suggest a missing enum or type definition. It analyzes Python and TypeScript code to find repeated string validation patterns across multiple files.

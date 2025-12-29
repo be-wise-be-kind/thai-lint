@@ -16,81 +16,20 @@
 
 ---
 
-## AI Agent Quick Reference
-
-> **For AI coding assistants**: This section provides quick integration instructions.
-
-### Quick Start (Copy-Paste Ready)
+## Try It Now
 
 ```bash
-# Install
-pip install thailint
-
-# Run on Python codebase
+pip install thai-lint
 thailint stateless-class src/
-
-# Generate config file (non-interactive for AI agents)
-thailint init-config --non-interactive
-
-# Add to .thailint.yaml
-cat >> .thailint.yaml << 'EOF'
-stateless-class:
-  enabled: true
-  min_methods: 2
-  ignore:
-    - "tests/"
-EOF
 ```
 
-### Rule Summary
-
-| Rule ID | `stateless-class.violation` |
-|---------|----------------------------|
-| Severity | ERROR |
-| Languages | Python only |
-| Auto-fix | No (requires manual refactoring) |
-
-### When This Linter Flags Code
-
-Flags classes that have **ALL** of:
-- No `__init__` or `__new__` method
-- No instance attributes (`self.attr = value`)
-- No class-level attributes
-- No base classes (other than `object`)
-- No decorators
-- 2+ methods
-
-### When This Linter Does NOT Flag Code
-
-Does NOT flag classes that have **ANY** of:
-- Constructor (`__init__` or `__new__`)
-- Instance attributes (`self._data = []`)
-- Class attributes (`DEFAULT = 10`)
-- Base classes (`class Foo(BaseClass)`)
-- Decorators (`@dataclass`, `@register`)
-- ABC or Protocol inheritance
-- 0-1 methods only
-
-### Refactoring Pattern
-
-```python
-# BEFORE (violation)
-class TokenHasher:
-    def hash(self, token): return hashlib.sha256(token.encode()).hexdigest()
-    def verify(self, token, expected): return self.hash(token) == expected
-
-# AFTER (fixed)
-def hash_token(token): return hashlib.sha256(token.encode()).hexdigest()
-def verify_token(token, expected): return hash_token(token) == expected
+**Example output:**
+```
+src/utils.py:15 - Class 'StringUtils' has no state and should be module-level functions
+  Suggestion: Convert methods to standalone functions: capitalize_words(), reverse_words()
 ```
 
-### Ignore Directive
-
-```python
-class LegacyHelper:  # thailint: ignore[stateless-class]
-    def method1(self): ...
-    def method2(self): ...
-```
+**Fix it:** Convert stateless class methods to module-level functions.
 
 ---
 

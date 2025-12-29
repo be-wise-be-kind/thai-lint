@@ -16,6 +16,23 @@
 
 ---
 
+## Try It Now
+
+```bash
+pip install thai-lint
+thailint srp src/
+```
+
+**Example output:**
+```
+src/services.py:15 - Class 'UserManager' has too many responsibilities (12 methods, max 8)
+  Suggestion: Consider splitting into focused classes like UserRepository, UserValidator
+```
+
+**Fix it:** Split large classes into smaller, single-purpose classes.
+
+---
+
 ## Overview
 
 The Single Responsibility Principle (SRP) linter detects classes that have too many responsibilities, making them harder to understand, test, and maintain. It analyzes Python and TypeScript code using Abstract Syntax Tree (AST) parsing to measure class complexity through multiple heuristics.
