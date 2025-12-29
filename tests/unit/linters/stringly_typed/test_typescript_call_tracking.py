@@ -29,15 +29,22 @@ from src.linters.stringly_typed.typescript.call_tracker import (
     TypeScriptCallTracker,
 )
 
-pytestmark = pytest.mark.skipif(not TREE_SITTER_AVAILABLE, reason="tree-sitter not available")
-
 
 class TestTypeScriptCallTracker:
     """Tests for TypeScriptCallTracker class."""
 
     @pytest.fixture
     def tracker(self) -> TypeScriptCallTracker:
-        """Create a tracker instance."""
+        """Create a tracker instance.
+
+        Raises:
+            RuntimeError: If tree-sitter is not available
+        """
+        if not TREE_SITTER_AVAILABLE:
+            raise RuntimeError(
+                "tree-sitter-typescript is required for TypeScript tests. "
+                "Install with: poetry install"
+            )
         return TypeScriptCallTracker()
 
     def test_simple_function_call_with_string(self, tracker: TypeScriptCallTracker) -> None:
@@ -208,7 +215,16 @@ class TestTypeScriptStringlyTypedAnalyzer:
 
     @pytest.fixture
     def analyzer(self) -> TypeScriptStringlyTypedAnalyzer:
-        """Create analyzer instance."""
+        """Create analyzer instance.
+
+        Raises:
+            RuntimeError: If tree-sitter is not available
+        """
+        if not TREE_SITTER_AVAILABLE:
+            raise RuntimeError(
+                "tree-sitter-typescript is required for TypeScript tests. "
+                "Install with: poetry install"
+            )
         return TypeScriptStringlyTypedAnalyzer()
 
     def test_analyze_function_calls_basic(self, analyzer: TypeScriptStringlyTypedAnalyzer) -> None:
@@ -279,7 +295,16 @@ class TestTypeScriptIntegration:
 
     @pytest.fixture
     def analyzer(self) -> TypeScriptStringlyTypedAnalyzer:
-        """Create analyzer instance."""
+        """Create analyzer instance.
+
+        Raises:
+            RuntimeError: If tree-sitter is not available
+        """
+        if not TREE_SITTER_AVAILABLE:
+            raise RuntimeError(
+                "tree-sitter-typescript is required for TypeScript tests. "
+                "Install with: poetry install"
+            )
         return TypeScriptStringlyTypedAnalyzer()
 
     def test_realistic_react_component(self, analyzer: TypeScriptStringlyTypedAnalyzer) -> None:
