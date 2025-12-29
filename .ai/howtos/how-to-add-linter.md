@@ -228,7 +228,43 @@ def your_linter(paths: tuple[str, ...], format: str, max_threshold: int):
     click.echo(output)
 ```
 
-### Step 7: Ensure SARIF Support
+### Step 7: Update init-config Template
+
+Add your linter's configuration section to `src/templates/thailint_config_template.yaml` so users
+can configure it when running `thailint init-config`:
+
+1. Add a section following the existing format (header comment, enabled flag, config options)
+2. Include all configurable options with their default values
+3. Add commented examples for optional settings
+4. Place the section in logical order (group similar linters together)
+
+Example section:
+
+```yaml
+# ============================================================================
+# YOUR LINTER NAME
+# ============================================================================
+# Brief description of what this linter detects
+#
+your-linter:
+  enabled: true
+
+  # Configuration option description
+  # Default: value
+  option_name: default_value
+
+  # -------------------------------------------------------------------------
+  # OPTIONAL: File patterns to ignore
+  # -------------------------------------------------------------------------
+  # ignore:
+  #   - "tests/**"
+```
+
+**Why this matters**: Users running `thailint init-config` expect to see all available linters
+with their configuration options. Missing linters from the template means users won't know they
+exist or how to configure them.
+
+### Step 8: Ensure SARIF Support
 
 Verify your linter works with all output formats:
 
@@ -245,7 +281,7 @@ thailint your-linter --format sarif . | jq
 
 **SARIF is mandatory.** See `.ai/docs/SARIF_STANDARDS.md` for requirements.
 
-### Step 8: Add CLI Integration Tests
+### Step 9: Add CLI Integration Tests
 
 Test the CLI integration:
 
@@ -294,7 +330,7 @@ class TestYourLinterCLI:
         assert "runs" in sarif
 ```
 
-### Step 9: Write Documentation
+### Step 10: Write Documentation
 
 Create user-facing documentation:
 
@@ -302,7 +338,7 @@ Create user-facing documentation:
 2. **Create docs/your-linter.md** - Detailed usage guide
 3. **Add examples** - Sample code with violations
 
-### Step 10: Final Quality Checks
+### Step 11: Final Quality Checks
 
 Before submitting your PR, verify:
 
@@ -341,6 +377,9 @@ poetry run mypy src/linters/your_linter/
 - [ ] Xenon complexity is A-grade
 - [ ] MyPy passes with no errors
 - [ ] `just lint-full` passes
+
+### Configuration
+- [ ] init-config template updated (`src/templates/thailint_config_template.yaml`)
 
 ### Documentation
 - [ ] File headers on all new files

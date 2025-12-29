@@ -138,6 +138,12 @@ docker run --rm washad/thailint:latest --help
 ### CLI Mode
 
 ```bash
+# Generate a configuration file (first time setup)
+thailint init-config
+
+# Or use a preset (strict, standard, lenient)
+thailint init-config --preset lenient
+
 # Check file placement
 thailint file-placement .
 
@@ -244,6 +250,33 @@ docker run --rm -v $(pwd):/data \
 See **[Docker Usage](#docker-usage)** section below for more examples.
 
 ## Configuration
+
+### Generate Configuration File
+
+The easiest way to create a configuration file is with `init-config`:
+
+```bash
+# Generate .thailint.yaml with interactive prompts
+thailint init-config
+
+# Non-interactive mode (for CI/AI agents)
+thailint init-config --non-interactive
+
+# Choose a preset level
+thailint init-config --preset strict    # Only -1, 0, 1 allowed
+thailint init-config --preset standard  # Balanced defaults (default)
+thailint init-config --preset lenient   # Includes time conversions (60, 3600)
+
+# Custom output path
+thailint init-config --output my-config.yaml
+
+# Force overwrite existing config
+thailint init-config --force
+```
+
+**Merge behavior**: If `.thailint.yaml` already exists, `init-config` will add any missing linter sections without overwriting your customizations. Use `--force` to completely replace the file.
+
+### Manual Configuration
 
 Create `.thailint.yaml` in your project root:
 
