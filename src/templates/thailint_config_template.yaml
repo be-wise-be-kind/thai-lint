@@ -133,6 +133,45 @@ print-statements:
   #   - "**/debug.py"
 
 # ============================================================================
+# STRINGLY-TYPED LINTER
+# ============================================================================
+# Detects "stringly typed" code patterns where strings are used instead of
+# proper enums - e.g., if env == "production": ... repeated across files
+#
+stringly-typed:
+  enabled: true
+
+  # Minimum occurrences across files to flag a violation
+  # Default: 2
+  min_occurrences: 2
+
+  # Minimum unique string values to suggest creating an enum
+  # Default: 2
+  min_values_for_enum: 2
+
+  # Maximum unique string values to suggest an enum (above this, probably not enum-worthy)
+  # Default: 6
+  max_values_for_enum: 6
+
+  # Whether to require cross-file occurrences to flag violations
+  # Default: true
+  require_cross_file: true
+
+  # -------------------------------------------------------------------------
+  # OPTIONAL: String value sets that are acceptable (won't be flagged)
+  # -------------------------------------------------------------------------
+  # allowed_string_sets:
+  #   - ["debug", "info", "warning", "error"]  # Log levels
+  #   - ["ASC", "DESC"]                         # Sort directions
+
+  # -------------------------------------------------------------------------
+  # OPTIONAL: Variable names to exclude from analysis
+  # -------------------------------------------------------------------------
+  # exclude_variables:
+  #   - log_level
+  #   - severity
+
+# ============================================================================
 # GLOBAL SETTINGS
 # ============================================================================
 #
