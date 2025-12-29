@@ -28,8 +28,8 @@ This is the **PRIMARY HANDOFF DOCUMENT** for AI agents working on the lazy-ignor
 
 ## Current Status
 
-**Current PR**: PR1 - Core Infrastructure & Python Tests (TDD) - IN PROGRESS
-**Infrastructure State**: TDD tests written, minimal infrastructure created
+**Current PR**: PR2 - Python Ignore Detection - READY TO START
+**Infrastructure State**: PR1 complete - PythonIgnoreDetector and SuppressionsParser implemented
 **Feature Target**: Production-ready linter with full test coverage, integrated into thai-lint quality gates
 
 ---
@@ -47,32 +47,47 @@ This is the **PRIMARY HANDOFF DOCUMENT** for AI agents working on the lazy-ignor
 
 ## Next PR to Implement
 
-### CONTINUE HERE: PR1 - Core Infrastructure & Python Tests (TDD)
+### PR1 - Core Infrastructure & Python Tests (TDD) - COMPLETE
 
-**Quick Summary**: Create failing tests that define the linter's expected behavior, plus minimal infrastructure (types, config).
+**Quick Summary**: Created failing tests, then implemented PythonIgnoreDetector and SuppressionsParser.
 
 **Completed**:
 - [x] Created test files with @pytest.mark.skip for TDD approach
 - [x] Created `src/linters/lazy_ignores/types.py` with IgnoreType enum, IgnoreDirective dataclass
 - [x] Created `src/linters/lazy_ignores/config.py` with LazyIgnoresConfig
 - [x] Created test files: test_python_ignore_detection.py, test_thailint_ignore_detection.py, test_typescript_detection.py, test_header_parser.py, test_orphaned_detection.py, test_violation_messages.py
-- [x] All quality gates pass (ruff, pylint, flake8, mypy)
+- [x] Implemented `src/linters/lazy_ignores/python_analyzer.py` - PythonIgnoreDetector
+- [x] Implemented `src/linters/lazy_ignores/header_parser.py` - SuppressionsParser
+- [x] All quality gates pass (ruff, pylint, flake8, mypy, xenon)
+- [x] 26 tests passing, 44 skipped (TDD for future PRs)
 
-**Remaining for PR1**:
-- [ ] Implement PythonIgnoreDetector to make tests pass
-- [ ] Implement header parser for Suppressions: section
-- [ ] Wire up basic rule structure
+---
 
-**Detailed Steps**: See PR_BREAKDOWN.md → PR1 section
+### START HERE: PR6 - CLI Integration & LazyIgnoresRule
+
+**Quick Summary**: Wire up the LazyIgnoresRule class with CLI integration.
+
+**Prerequisites**:
+- [x] PythonIgnoreDetector implemented
+- [x] SuppressionsParser implemented
+
+**Remaining**:
+- [ ] Create `src/linters/lazy_ignores/linter.py` with LazyIgnoresRule class
+- [ ] Create `src/linters/lazy_ignores/violation_builder.py` for agent guidance messages
+- [ ] Register CLI command in `src/cli/linters/code_patterns.py`
+- [ ] Update tests: test_orphaned_detection.py, test_violation_messages.py
+- [ ] Remove skip markers from passing tests
+
+**Detailed Steps**: See PR_BREAKDOWN.md → PR6 section
 
 ---
 
 ## Overall Progress
 
-**Total Completion**: 6% (PR1 TDD scaffolding complete, 0/8 PRs fully completed)
+**Total Completion**: 38% (PR1-3 complete, 3/8 PRs fully completed)
 
 ```
-[█░░░░░░░░░] 6% Complete
+[████░░░░░░] 38% Complete
 ```
 
 ---
@@ -81,9 +96,9 @@ This is the **PRIMARY HANDOFF DOCUMENT** for AI agents working on the lazy-ignor
 
 | PR | Title | Status | Completion | Complexity | Priority | Notes |
 |----|-------|--------|------------|------------|----------|-------|
-| PR1 | Core Infrastructure & Python Tests (TDD) | 🟡 In Progress | 50% | Medium | P0 | TDD tests written, need implementation |
-| PR2 | Python Ignore Detection | 🔴 Not Started | 0% | Medium | P0 | noqa, type:ignore, pylint, nosec |
-| PR3 | Header Suppressions Parser | 🔴 Not Started | 0% | Medium | P0 | Parse Suppressions: section from headers |
+| PR1 | Core Infrastructure & Python Tests (TDD) | 🟢 Complete | 100% | Medium | P0 | TDD tests + types + config done |
+| PR2 | Python Ignore Detection | 🟢 Complete | 100% | Medium | P0 | PythonIgnoreDetector implemented |
+| PR3 | Header Suppressions Parser | 🟢 Complete | 100% | Medium | P0 | SuppressionsParser implemented |
 | PR4 | TypeScript/JavaScript Detection | 🔴 Not Started | 0% | Medium | P1 | @ts-ignore, eslint-disable patterns |
 | PR5 | Test Skip Detection | 🔴 Not Started | 0% | Low | P1 | pytest.mark.skip, it.skip() |
 | PR6 | CLI Integration & Output Formats | 🔴 Not Started | 0% | Medium | P0 | Wire up CLI, text/json/sarif output |
