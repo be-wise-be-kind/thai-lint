@@ -28,8 +28,8 @@ This is the **PRIMARY HANDOFF DOCUMENT** for AI agents working on the lazy-ignor
 
 ## Current Status
 
-**Current PR**: PR2 - Python Ignore Detection - READY TO START
-**Infrastructure State**: PR1 complete - PythonIgnoreDetector and SuppressionsParser implemented
+**Current PR**: PR6 - CLI Integration & LazyIgnoresRule - COMPLETE
+**Infrastructure State**: PR1-3, PR6 complete - Full lazy-ignores linter working with CLI
 **Feature Target**: Production-ready linter with full test coverage, integrated into thai-lint quality gates
 
 ---
@@ -63,31 +63,31 @@ This is the **PRIMARY HANDOFF DOCUMENT** for AI agents working on the lazy-ignor
 
 ---
 
-### START HERE: PR6 - CLI Integration & LazyIgnoresRule
+### PR6 - CLI Integration & LazyIgnoresRule - COMPLETE
 
 **Quick Summary**: Wire up the LazyIgnoresRule class with CLI integration.
 
-**Prerequisites**:
+**Completed**:
 - [x] PythonIgnoreDetector implemented
 - [x] SuppressionsParser implemented
+- [x] Created `src/linters/lazy_ignores/linter.py` with LazyIgnoresRule class
+- [x] Created `src/linters/lazy_ignores/violation_builder.py` for agent guidance messages
+- [x] Created `src/linters/lazy_ignores/matcher.py` for ignore-suppression matching
+- [x] Registered CLI command in `src/cli/linters/code_patterns.py`
+- [x] Updated tests: test_orphaned_detection.py, test_violation_messages.py
+- [x] Removed skip markers from passing tests (21 tests now passing)
+- [x] All quality gates pass (ruff, pylint, xenon, SRP)
 
-**Remaining**:
-- [ ] Create `src/linters/lazy_ignores/linter.py` with LazyIgnoresRule class
-- [ ] Create `src/linters/lazy_ignores/violation_builder.py` for agent guidance messages
-- [ ] Register CLI command in `src/cli/linters/code_patterns.py`
-- [ ] Update tests: test_orphaned_detection.py, test_violation_messages.py
-- [ ] Remove skip markers from passing tests
-
-**Detailed Steps**: See PR_BREAKDOWN.md → PR6 section
+**Next PR**: PR4 (TypeScript Detection) or PR7 (Dogfooding)
 
 ---
 
 ## Overall Progress
 
-**Total Completion**: 38% (PR1-3 complete, 3/8 PRs fully completed)
+**Total Completion**: 50% (PR1-3, PR6 complete, 4/8 PRs fully completed)
 
 ```
-[████░░░░░░] 38% Complete
+[█████░░░░░] 50% Complete
 ```
 
 ---
@@ -101,7 +101,7 @@ This is the **PRIMARY HANDOFF DOCUMENT** for AI agents working on the lazy-ignor
 | PR3 | Header Suppressions Parser | 🟢 Complete | 100% | Medium | P0 | SuppressionsParser implemented |
 | PR4 | TypeScript/JavaScript Detection | 🔴 Not Started | 0% | Medium | P1 | @ts-ignore, eslint-disable patterns |
 | PR5 | Test Skip Detection | 🔴 Not Started | 0% | Low | P1 | pytest.mark.skip, it.skip() |
-| PR6 | CLI Integration & Output Formats | 🔴 Not Started | 0% | Medium | P0 | Wire up CLI, text/json/sarif output |
+| PR6 | CLI Integration & Output Formats | 🟢 Complete | 100% | Medium | P0 | LazyIgnoresRule + CLI + 21 tests passing |
 | PR7 | Dogfooding - Internal Use | 🔴 Not Started | 0% | Low | P1 | Add to just lint-full, fix own violations |
 | PR8 | Documentation & PyPI Prep | 🔴 Not Started | 0% | Low | P2 | README, examples, user docs |
 

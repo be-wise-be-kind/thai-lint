@@ -21,8 +21,10 @@ Implementation: Enum and dataclass definitions for ignore directive representati
 
 from .config import LazyIgnoresConfig
 from .header_parser import SuppressionsParser
+from .linter import LazyIgnoresRule
 from .python_analyzer import PythonIgnoreDetector
 from .types import IgnoreDirective, IgnoreType, SuppressionEntry
+from .violation_builder import build_orphaned_violation, build_unjustified_violation
 
 __all__ = [
     "IgnoreType",
@@ -31,4 +33,7 @@ __all__ = [
     "LazyIgnoresConfig",
     "PythonIgnoreDetector",
     "SuppressionsParser",
+    "LazyIgnoresRule",
+    "build_unjustified_violation",
+    "build_orphaned_violation",
 ]
