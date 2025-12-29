@@ -172,6 +172,133 @@ stringly-typed:
   #   - severity
 
 # ============================================================================
+# FILE HEADER LINTER
+# ============================================================================
+# Validates that files have proper documentation headers
+#
+file-header:
+  enabled: true
+
+  # Enforce atemporal language (no "currently", "now", dates)
+  # Default: true
+  enforce_atemporal: true
+
+  # -------------------------------------------------------------------------
+  # OPTIONAL: Override required fields by language
+  # -------------------------------------------------------------------------
+  # required_fields:
+  #   python: [Purpose, Scope, Overview, Dependencies, Exports, Interfaces, Implementation]
+  #   typescript: [Purpose, Scope, Overview, Dependencies, Exports, Props/Interfaces, State/Behavior]
+  #   bash: [Purpose, Scope, Overview, Dependencies, Exports, Usage, Environment]
+  #   markdown: [purpose, scope, overview, audience, status]
+  #   css: [Purpose, Scope, Overview, Dependencies, Exports, Interfaces, Environment]
+
+  # -------------------------------------------------------------------------
+  # OPTIONAL: File patterns to ignore
+  # -------------------------------------------------------------------------
+  # ignore:
+  #   - "test/**"
+  #   - "**/migrations/**"
+  #   - "**/__init__.py"
+
+# ============================================================================
+# METHOD PROPERTY LINTER
+# ============================================================================
+# Detects methods that should be @property (no args, simple return)
+#
+method-property:
+  enabled: true
+
+  # Maximum statements in method body to suggest @property
+  # Default: 3
+  max_body_statements: 3
+
+  # -------------------------------------------------------------------------
+  # OPTIONAL: Methods to ignore (exact names)
+  # -------------------------------------------------------------------------
+  # ignore_methods:
+  #   - "__str__"
+  #   - "__repr__"
+
+  # -------------------------------------------------------------------------
+  # OPTIONAL: Additional action verb prefixes to exclude
+  # -------------------------------------------------------------------------
+  # exclude_prefixes:
+  #   - "fetch_"
+  #   - "load_"
+
+  # -------------------------------------------------------------------------
+  # OPTIONAL: File patterns to ignore
+  # -------------------------------------------------------------------------
+  # ignore:
+  #   - "tests/**"
+
+# ============================================================================
+# STATELESS CLASS LINTER
+# ============================================================================
+# Detects classes with no instance state (should be modules or functions)
+#
+stateless-class:
+  enabled: true
+
+  # Minimum methods to flag a stateless class
+  # Default: 2
+  min_methods: 2
+
+  # -------------------------------------------------------------------------
+  # OPTIONAL: File patterns to ignore
+  # -------------------------------------------------------------------------
+  # ignore:
+  #   - "tests/**"
+
+# ============================================================================
+# COLLECTION PIPELINE LINTER
+# ============================================================================
+# Detects "embedded loop filtering" anti-pattern (if/continue in loops)
+# Suggests using filter(), list comprehensions, or generator expressions
+#
+pipeline:
+  enabled: true
+
+  # Minimum if/continue patterns in a loop to flag
+  # Default: 1
+  min_continues: 1
+
+  # -------------------------------------------------------------------------
+  # OPTIONAL: File patterns to ignore
+  # -------------------------------------------------------------------------
+  # ignore:
+  #   - "tests/**"
+
+# ============================================================================
+# LAZY IGNORES LINTER
+# ============================================================================
+# Detects unjustified linting suppressions (noqa, type: ignore, etc.)
+# without proper documentation in file headers
+#
+lazy-ignores:
+  enabled: true
+
+  # Pattern-specific toggles
+  check_noqa: true
+  check_type_ignore: true
+  check_pylint_disable: true
+  check_nosec: true
+  check_ts_ignore: true
+  check_eslint_disable: true
+  check_thailint_ignore: true
+  check_test_skips: true
+
+  # Check for orphaned suppressions (documented but not used)
+  check_orphaned: true
+
+  # -------------------------------------------------------------------------
+  # OPTIONAL: File patterns to ignore
+  # -------------------------------------------------------------------------
+  # ignore_patterns:
+  #   - "tests/**"
+
+# ============================================================================
 # GLOBAL SETTINGS
 # ============================================================================
 #

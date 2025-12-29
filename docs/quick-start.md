@@ -66,6 +66,8 @@ thailint init-config
 - `standard`: Balanced defaults including 2, 10, 100, 1000
 - `lenient`: Includes time conversions (60s, 3600s) and common sizes (1024)
 
+**Updating existing config:** If `.thailint.yaml` already exists, `init-config` will add any missing linter sections without overwriting your customizations. Use `--force` to completely replace the file.
+
 ### Step 3: Run Your First Lint
 
 ```bash

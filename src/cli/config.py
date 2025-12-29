@@ -26,9 +26,11 @@ import sys
 from pathlib import Path
 
 import click
+import yaml
 
 from src.config import ConfigError, save_config, validate_config
 
+from .config_merge import perform_merge
 from .main import cli
 
 # Configure module logger
@@ -98,8 +100,6 @@ def _format_config_json(cfg: dict) -> None:
 
 def _format_config_yaml(cfg: dict) -> None:
     """Format configuration as YAML."""
-    import yaml
-
     click.echo(yaml.dump(cfg, default_flow_style=False, sort_keys=False))
 
 
@@ -285,6 +285,9 @@ def init_config(preset: str, non_interactive: bool, force: bool, output: str) ->
     Creates a richly-commented configuration file with sensible defaults
     and optional customizations for different strictness levels.
 
+    If a config file already exists, missing linter sections will be added
+    without modifying existing settings. Use --force to completely overwrite.
+
     For AI agents, use --non-interactive mode:
       thailint init-config --non-interactive --preset lenient
 
@@ -308,7 +311,7 @@ def init_config(preset: str, non_interactive: bool, force: bool, output: str) ->
         thailint init-config --preset lenient
 
         \\b
-        # Overwrite existing config
+        # Overwrite existing config (replaces entire file)
         thailint init-config --force
 
         \\b
@@ -317,19 +320,16 @@ def init_config(preset: str, non_interactive: bool, force: bool, output: str) ->
     """
     output_path = Path(output)
 
-    # Check if file exists (unless --force)
-    if output_path.exists() and not force:
-        click.echo(f"Error: {output} already exists", err=True)
-        click.echo("", err=True)
-        click.echo("Use --force to overwrite:", err=True)
-        click.echo("  thailint init-config --force", err=True)
-        sys.exit(1)
-
     # Interactive mode: Ask user for preferences
     if not non_interactive:
         preset = _run_interactive_preset_selection(preset)
 
-    # Generate config based on preset
+    # If file exists and not forcing overwrite, merge missing sections
+    if output_path.exists() and not force:
+        perform_merge(output_path, preset, output, _generate_config_content)
+        return
+
+    # Generate full config based on preset
     config_content = _generate_config_content(preset)
 
     # Write config file
