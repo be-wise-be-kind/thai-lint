@@ -17,6 +17,9 @@ Exports: cli (main command group with all commands registered)
 Interfaces: Click CLI commands, integration with Orchestrator for linting execution
 
 Implementation: Module imports trigger command registration via Click decorator side effects
+
+Suppressions:
+    - F401: Module re-exports and imports trigger Click command registration via decorator side effects
 """
 
 # Import the main CLI group from the modular package

@@ -21,6 +21,9 @@ Interfaces: ViolationInfo(rule_id, file_path, line, message, column, severity),
 
 Implementation: Uses dataclass for type-safe violation info, functions provide build logic
     that constructs Violation objects with proper defaults
+
+Suppressions:
+    - too-many-arguments,too-many-positional-arguments: Violation fields as parameters
 """
 
 from dataclasses import dataclass

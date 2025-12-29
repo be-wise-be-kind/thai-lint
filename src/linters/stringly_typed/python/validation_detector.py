@@ -18,6 +18,9 @@ Exports: MembershipValidationDetector class, MembershipPattern dataclass
 Interfaces: MembershipValidationDetector.find_patterns(tree) -> list[MembershipPattern]
 
 Implementation: AST NodeVisitor pattern with Compare node handling for In/NotIn operators
+
+Suppressions:
+    - invalid-name: visit_Compare follows AST NodeVisitor method naming convention
 """
 
 import ast

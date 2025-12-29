@@ -21,10 +21,14 @@ Interfaces: MagicNumberRule.check(context) -> list[Violation], properties for ru
 
 Implementation: Composition pattern with helper classes, AST-based analysis with configurable
     allowed numbers and context detection
+
+Suppressions:
+    - too-many-arguments,too-many-positional-arguments: TypeScript violation creation with related params
 """
 
 import ast
 from pathlib import Path
+from typing import Any
 
 from src.core.base import BaseLintContext, MultiLanguageLintRule
 from src.core.linter_utils import load_linter_config
@@ -421,12 +425,17 @@ class MagicNumberRule(MultiLanguageLintRule):  # thailint: ignore[srp]
         return value in config.allowed_numbers or self._is_test_file(context.file_path)
 
     def _is_typescript_special_context(
-        self, node: object, analyzer: TypeScriptMagicNumberAnalyzer, context: BaseLintContext
+        self, node: Any, analyzer: TypeScriptMagicNumberAnalyzer, context: BaseLintContext
     ) -> bool:
-        """Check if in TypeScript-specific special context."""
-        # Calls require type: ignore because node is typed as object but analyzer expects Node
-        in_enum = analyzer.is_enum_context(node)  # type: ignore[arg-type]
-        in_const_def = analyzer.is_constant_definition(node, context.file_content or "")  # type: ignore[arg-type]
+        """Check if in TypeScript-specific special context.
+
+        Args:
+            node: Tree-sitter Node (typed as Any due to optional dependency)
+            analyzer: TypeScript analyzer
+            context: Lint context
+        """
+        in_enum = analyzer.is_enum_context(node)
+        in_const_def = analyzer.is_constant_definition(node, context.file_content or "")
         return in_enum or in_const_def
 
     def _is_test_file(self, file_path: object) -> bool:

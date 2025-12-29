@@ -20,6 +20,9 @@ Interfaces: StatelessClassRule.check(context) -> list[Violation]
 
 Implementation: Composition pattern delegating analysis to specialized analyzer with
     config loading and comprehensive ignore checking
+
+Suppressions:
+    - B101: Type narrowing assertion after _should_analyze guard (can't fail)
 """
 
 from pathlib import Path
@@ -69,19 +72,28 @@ class StatelessClassRule(BaseLintRule):  # thailint: ignore[srp,dry]
             return []
 
         config = self._load_config(context)
-        if not config.enabled:
+        if not config.enabled or self._should_skip_file(context, config):
             return []
 
-        if self._is_file_ignored(context, config):
-            return []
-
-        if self._has_file_level_ignore(context):
-            return []
+        # _should_analyze ensures file_content is set
+        assert context.file_content is not None  # nosec B101
 
         analyzer = StatelessClassAnalyzer(min_methods=config.min_methods)
-        stateless_classes = analyzer.analyze(context.file_content)  # type: ignore[arg-type]
+        stateless_classes = analyzer.analyze(context.file_content)
 
         return self._filter_ignored_violations(stateless_classes, context)
+
+    def _should_skip_file(self, context: BaseLintContext, config: StatelessClassConfig) -> bool:
+        """Check if file should be skipped due to ignore patterns or directives.
+
+        Args:
+            context: Lint context
+            config: Configuration
+
+        Returns:
+            True if file should be skipped
+        """
+        return self._is_file_ignored(context, config) or self._has_file_level_ignore(context)
 
     def _should_analyze(self, context: BaseLintContext) -> bool:
         """Check if context should be analyzed.

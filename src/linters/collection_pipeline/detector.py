@@ -17,6 +17,9 @@ Exports: PipelinePatternDetector class, PatternMatch dataclass
 Interfaces: PipelinePatternDetector.detect_patterns() -> list[PatternMatch]
 
 Implementation: AST visitor pattern with delegated pattern matching and suggestion generation
+
+Suppressions:
+    - invalid-name: PatternVisitor inner class follows AST NodeVisitor convention
 """
 
 import ast

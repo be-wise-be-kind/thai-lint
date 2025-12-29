@@ -163,3 +163,64 @@ y = 2  # type: ignore
         assert len(directives) == 2
         assert directives[0].line == 2
         assert directives[1].line == 4
+
+
+class TestFalsePositivePrevention:
+    """Tests ensuring patterns in docstrings/strings are NOT detected."""
+
+    def test_ignores_noqa_in_docstring(self) -> None:
+        """Does NOT detect # noqa mentioned in docstring."""
+        code = '''"""
+This function explains how to use # noqa for silencing linters.
+"""
+def foo():
+    pass
+'''
+        detector = PythonIgnoreDetector()
+        directives = detector.find_ignores(code)
+        assert len(directives) == 0
+
+    def test_ignores_type_ignore_in_docstring(self) -> None:
+        """Does NOT detect # type: ignore mentioned in docstring."""
+        code = '''"""
+Use # type: ignore[arg-type] to suppress type errors.
+"""
+def foo():
+    pass
+'''
+        detector = PythonIgnoreDetector()
+        directives = detector.find_ignores(code)
+        assert len(directives) == 0
+
+    def test_ignores_pylint_disable_in_docstring(self) -> None:
+        """Does NOT detect # pylint: disable in docstring."""
+        code = '''"""
+Example: # pylint: disable=no-member
+"""
+x = 1
+'''
+        detector = PythonIgnoreDetector()
+        directives = detector.find_ignores(code)
+        assert len(directives) == 0
+
+    def test_ignores_patterns_in_string_literals(self) -> None:
+        """Does NOT detect patterns inside string literals."""
+        code = """x = "# noqa: PLR0912"
+y = '# type: ignore'
+"""
+        detector = PythonIgnoreDetector()
+        directives = detector.find_ignores(code)
+        assert len(directives) == 0
+
+    def test_detects_real_ignore_after_docstring(self) -> None:
+        """DOES detect real ignores after docstring ends."""
+        code = '''"""
+This mentions # noqa for documentation.
+"""
+x = 1  # noqa: PLR0912
+'''
+        detector = PythonIgnoreDetector()
+        directives = detector.find_ignores(code)
+        assert len(directives) == 1
+        assert directives[0].line == 4
+        assert "PLR0912" in directives[0].rule_ids

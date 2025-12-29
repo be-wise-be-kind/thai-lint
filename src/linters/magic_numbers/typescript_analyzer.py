@@ -20,6 +20,9 @@ Interfaces: find_numeric_literals(root_node) -> list[tuple], is_enum_context(nod
 
 Implementation: Tree-sitter node traversal with visitor pattern, context-aware filtering
     for acceptable numeric literal locations
+
+Suppressions:
+    - type:ignore: Tree-sitter Node type alias (optional dependency fallback)
 """
 
 from typing import Any
@@ -43,10 +46,6 @@ class TypeScriptMagicNumberAnalyzer(TypeScriptBaseAnalyzer):  # thailint: ignore
     complexity requires extracting helper methods. Class maintains single responsibility
     of TypeScript magic number detection - all methods support this core purpose.
     """
-
-    def __init__(self) -> None:  # pylint: disable=useless-parent-delegation
-        """Initialize the TypeScript magic number analyzer."""
-        super().__init__()  # Sets self.tree_sitter_available from base class
 
     def find_numeric_literals(self, root_node: Node) -> list[tuple[Node, float | int, int]]:
         """Find all numeric literal nodes in TypeScript/JavaScript AST.

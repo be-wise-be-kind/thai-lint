@@ -20,6 +20,10 @@ Implementation: Click decorators for command definition, orchestrator-based lint
 
 SRP Exception: CLI command modules follow Click framework patterns requiring similar command
     structure across all linter commands. This is intentional design for consistency.
+
+Suppressions:
+    too-many-arguments: Click commands require many parameters by framework design
+    too-many-positional-arguments: Click positional params match CLI arg structure
 """
 # dry: ignore-block - CLI commands follow Click framework pattern with intentional repetition
 

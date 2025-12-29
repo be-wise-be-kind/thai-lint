@@ -16,6 +16,9 @@ Exports: ViolationBuilder class
 Interfaces: create_violation(method_name, line, column, file_path, is_get_prefix, class_name)
 
 Implementation: Builder pattern with message templates suggesting @property decorator conversion
+
+Suppressions:
+    - too-many-arguments,too-many-positional-arguments: Violation creation with related params
 """
 
 from pathlib import Path

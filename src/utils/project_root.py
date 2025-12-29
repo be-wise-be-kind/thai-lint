@@ -15,6 +15,9 @@ Exports: is_project_root(), get_project_root()
 Interfaces: Path-based functions for checking and finding project roots
 
 Implementation: pyprojroot delegation with manual fallback for test environments
+
+Suppressions:
+    - type:ignore[arg-type]: pyprojroot external library typing issue with Path conversion
 """
 
 from pathlib import Path

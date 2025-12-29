@@ -56,6 +56,58 @@ def _scan_empty(_line: str, _line_num: int, _file_path: Path) -> list[IgnoreDire
     return []
 
 
+def _count_unescaped_triple_quotes(line: str, quote: str) -> int:
+    """Count unescaped triple-quote occurrences in a line.
+
+    Uses regex to find non-escaped triple quotes.
+
+    Args:
+        line: Line to scan
+        quote: Triple-quote pattern to count (single or double)
+
+    Returns:
+        Number of unescaped triple-quote occurrences
+    """
+    escaped_quote = re.escape(quote)
+    pattern = re.compile(rf"(?<!\\){escaped_quote}")
+    return len(pattern.findall(line))
+
+
+def _update_docstring_state(line: str, quotes: list[str], state: list[bool]) -> None:
+    """Update docstring tracking state based on quotes in line.
+
+    Args:
+        line: Line to analyze
+        quotes: List of quote patterns to check
+        state: Mutable list tracking in-docstring state for each quote type
+    """
+    for i, quote in enumerate(quotes):
+        if _count_unescaped_triple_quotes(line, quote) % 2 == 1:
+            state[i] = not state[i]
+
+
+def _get_python_scannable_lines(code: str) -> list[tuple[int, str]]:
+    """Get Python lines that are not inside docstrings.
+
+    Args:
+        code: Source code to analyze
+
+    Returns:
+        List of (line_number, line_text) tuples for scannable lines
+    """
+    in_docstring = [False, False]  # [triple_double, triple_single]
+    quotes = ['"""', "'''"]
+    scannable: list[tuple[int, str]] = []
+
+    for line_num, line in enumerate(code.splitlines(), start=1):
+        was_in_docstring = in_docstring[0] or in_docstring[1]
+        _update_docstring_state(line, quotes, in_docstring)
+        if not was_in_docstring:
+            scannable.append((line_num, line))
+
+    return scannable
+
+
 class TestSkipDetector:
     """Detects test skip patterns without proper justification."""
 
@@ -106,6 +158,9 @@ class TestSkipDetector:
     ) -> list[IgnoreDirective]:
         """Find test skip patterns without justification.
 
+        Tracks docstring state across lines to avoid false positives from
+        patterns mentioned in documentation.
+
         Args:
             code: Source code to scan
             file_path: Optional path to the source file (Path or string)
@@ -118,11 +173,25 @@ class TestSkipDetector:
         lang = Language(language) if isinstance(language, str) else language
         scanner = self._get_line_scanner(lang)
 
+        scannable_lines = self._get_scannable_lines(code, lang)
         directives: list[IgnoreDirective] = []
-        for line_num, line in enumerate(code.splitlines(), start=1):
+        for line_num, line in scannable_lines:
             directives.extend(scanner(line, line_num, effective_path))
-
         return directives
+
+    def _get_scannable_lines(self, code: str, lang: Language) -> list[tuple[int, str]]:
+        """Get lines that are not inside docstrings (Python) or all lines (other).
+
+        Args:
+            code: Source code to analyze
+            lang: Programming language
+
+        Returns:
+            List of (line_number, line_text) tuples for scannable lines
+        """
+        if lang != Language.PYTHON:
+            return list(enumerate(code.splitlines(), start=1))
+        return _get_python_scannable_lines(code)
 
     def _get_line_scanner(
         self, lang: Language

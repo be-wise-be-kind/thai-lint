@@ -19,6 +19,10 @@ Interfaces: TypeScriptDuplicateAnalyzer.analyze(file_path: Path, content: str, c
 Implementation: Inherits analyze() workflow from BaseTokenAnalyzer, adds JSDoc comment extraction,
     single statement detection using tree-sitter AST patterns, and interface filtering logic
 
+Suppressions:
+    - type:ignore[assignment,misc]: Tree-sitter Node type alias (optional dependency fallback)
+    - invalid-name: Node type alias follows tree-sitter naming convention
+
 SRP Exception: TypeScriptDuplicateAnalyzer has 20 methods and 324 lines (exceeds max 8 methods/200 lines)
     Justification: Complex tree-sitter AST analysis algorithm for duplicate code detection with sophisticated
     false positive filtering. Mirrors Python analyzer structure. Methods form tightly coupled algorithm
@@ -228,11 +232,11 @@ class TypeScriptDuplicateAnalyzer(BaseTokenAnalyzer):  # thailint: ignore[srp.vi
         Returns:
             Tuple of (new_import_state, normalized_line or None if should skip)
         """
-        normalized = self._hasher._normalize_line(line)  # pylint: disable=protected-access
+        normalized = self._hasher.normalize_line(line)
         if not normalized:
             return in_multiline_import, None
 
-        new_state, should_skip = self._hasher._should_skip_import_line(  # pylint: disable=protected-access
+        new_state, should_skip = self._hasher.should_skip_import_line(
             normalized, in_multiline_import
         )
         if should_skip:

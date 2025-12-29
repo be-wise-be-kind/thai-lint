@@ -28,8 +28,8 @@ This is the **PRIMARY HANDOFF DOCUMENT** for AI agents working on the lazy-ignor
 
 ## Current Status
 
-**Current PR**: PR5 - Test Skip Detection - COMPLETE
-**Infrastructure State**: PR1-6, PR5 complete - Full lazy-ignores linter with Python, TypeScript, and test skip detection
+**Current PR**: PR7 - Dogfooding - COMPLETE
+**Infrastructure State**: PR1-7 complete - Full lazy-ignores linter integrated into lint-full pipeline
 **Feature Target**: Production-ready linter with full test coverage, integrated into thai-lint quality gates
 
 ---
@@ -93,7 +93,25 @@ This is the **PRIMARY HANDOFF DOCUMENT** for AI agents working on the lazy-ignor
 - [x] Added TypeScriptIgnoreDetector to module exports in __init__.py
 - [x] All quality gates pass (ruff, pylint, xenon A-grade, SRP)
 
-**Next PR**: PR7 (Dogfooding) or PR8 (Documentation)
+---
+
+### PR7 - Dogfooding - COMPLETE
+
+**Quick Summary**: Ran lazy-ignores on thai-lint itself, added to lint-full pipeline, fixed all violations.
+
+**Completed**:
+- [x] Added `lint-lazy-ignores` target to justfile
+- [x] Added lazy-ignores check to `lint-full` pipeline
+- [x] Fixed all unjustified suppressions by adding Suppressions headers
+- [x] Created `src/linters/lazy_ignores/rule_id_utils.py` for pure utility functions (SRP compliance)
+- [x] Reduced IgnoreSuppressionMatcher from 17 methods to 8 methods
+- [x] Fixed header_parser.py to skip leading comments before docstrings
+- [x] Fixed complexity issues in stateless_class/linter.py and stringly_typed/linter.py
+- [x] All 15 quality gates pass (including lazy-ignores)
+- [x] Updated FILE_HEADER_STANDARDS.md with Suppressions section format
+- [x] Updated AGENTS.md with lazy-ignores command
+
+**Next PR**: PR8 (User Documentation)
 
 ---
 
@@ -118,10 +136,10 @@ This is the **PRIMARY HANDOFF DOCUMENT** for AI agents working on the lazy-ignor
 
 ## Overall Progress
 
-**Total Completion**: 75% (PR1-6 complete, 6/8 PRs fully completed)
+**Total Completion**: 87.5% (PR1-7 complete, 7/8 PRs fully completed)
 
 ```
-[████████░░] 75% Complete
+[█████████░] 87.5% Complete
 ```
 
 ---
@@ -136,7 +154,7 @@ This is the **PRIMARY HANDOFF DOCUMENT** for AI agents working on the lazy-ignor
 | PR4 | TypeScript/JavaScript Detection | 🟢 Complete | 100% | Medium | P1 | TypeScriptIgnoreDetector + 17 tests |
 | PR5 | Test Skip Detection | 🟢 Complete | 100% | Low | P1 | TestSkipDetector + 24 tests + directive_utils.py |
 | PR6 | CLI Integration & Output Formats | 🟢 Complete | 100% | Medium | P0 | LazyIgnoresRule + CLI + 21 tests passing |
-| PR7 | Dogfooding - Internal Use | 🔴 Not Started | 0% | Low | P1 | Add to just lint-full, fix own violations |
+| PR7 | Dogfooding - Internal Use | 🟢 Complete | 100% | Medium | P1 | Integrated into lint-full, all 15 checks pass |
 | PR8 | Documentation & PyPI Prep | 🔴 Not Started | 0% | Low | P2 | README, examples, user docs |
 
 ### Status Legend
@@ -220,7 +238,7 @@ After completing each PR:
 The feature is complete when:
 - [ ] All 8 PRs merged to main
 - [ ] 90%+ test coverage
-- [ ] thai-lint passes its own lazy-ignores check
+- [x] thai-lint passes its own lazy-ignores check
 - [ ] Documentation published in docs/
-- [ ] Added to `just lint-full` command
+- [x] Added to `just lint-full` command
 - [ ] README.md updated with new linter

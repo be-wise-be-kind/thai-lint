@@ -18,6 +18,9 @@ Exports: TypeScriptCallTracker class, TypeScriptFunctionCallPattern dataclass
 Interfaces: TypeScriptCallTracker.find_patterns(code) -> list[TypeScriptFunctionCallPattern]
 
 Implementation: Tree-sitter node traversal with call_expression node handling for string arguments
+
+Suppressions:
+    - type:ignore[assignment,misc]: Tree-sitter Node type alias (optional dependency fallback)
 """
 
 from dataclasses import dataclass

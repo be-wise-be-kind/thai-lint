@@ -16,6 +16,9 @@ Exports: ComparisonTracker class, ComparisonPattern dataclass
 Interfaces: ComparisonTracker.find_patterns(tree) -> list[ComparisonPattern]
 
 Implementation: AST NodeVisitor pattern with Compare node handling for string comparisons
+
+Suppressions:
+    - invalid-name: visit_Compare follows AST NodeVisitor method naming convention
 """
 
 import ast

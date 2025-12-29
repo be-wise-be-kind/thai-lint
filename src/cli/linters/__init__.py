@@ -16,6 +16,9 @@ Exports: All linter command functions for reference and testing
 Interfaces: Click command decorators, integration with main CLI group
 
 Implementation: Module imports trigger command registration via Click decorator side effects
+
+Suppressions:
+    - F401: Module imports trigger Click command registration via decorator side effects
 """
 
 # Import all linter command modules to register them with the CLI

@@ -1,7 +1,4 @@
 # pylint: disable=too-many-lines
-# Justification: Storage module for three related data types (patterns, function calls,
-# comparisons) with their dataclasses, conversion functions, SQL schemas, and CRUD methods.
-# Splitting into separate files would fragment cohesive SQLite storage logic.
 """
 Purpose: SQLite storage manager for stringly-typed pattern detection
 
@@ -34,6 +31,11 @@ Interfaces: StringlyTypedStorage.__init__(storage_mode), add_pattern(pattern),
 
 Implementation: SQLite with string_validations, function_calls, and string_comparisons tables,
     indexed on string_set_hash, function_name+param_index, and variable_name for performance
+
+Suppressions:
+    - too-many-lines: Storage module for three related data types with dataclasses, SQL schemas, and CRUD methods
+    - too-many-instance-attributes: StoredPattern is a pure DTO with 8 necessary fields for SQLite storage
+    - consider-using-with: NamedTemporaryFile must remain open for SQLite connection lifetime (closed in close())
 """
 
 from __future__ import annotations
@@ -246,11 +248,8 @@ def _row_to_function_call(row: tuple) -> StoredFunctionCall:
     )
 
 
-# pylint: disable=too-many-instance-attributes
-# Justification: StoredPattern is a pure data transfer object for SQLite storage.
-# All 8 fields are necessary: file location (3), variable info (1), hash/values (3), pattern type (1).
 @dataclass
-class StoredPattern:
+class StoredPattern:  # pylint: disable=too-many-instance-attributes
     """Represents a stringly-typed pattern stored in SQLite.
 
     Captures all information needed to detect cross-file duplicates and generate
@@ -302,10 +301,7 @@ class StringlyTypedStorage:  # thailint: ignore srp
         if storage_mode == StorageMode.MEMORY:
             self._db = sqlite3.connect(":memory:")
         elif storage_mode == StorageMode.TEMPFILE:
-            # pylint: disable=consider-using-with
-            # Justification: tempfile must remain open for SQLite connection lifetime.
-            # It is explicitly closed in close() method when storage is finalized.
-            self._tempfile = tempfile.NamedTemporaryFile(suffix=".db", delete=True)
+            self._tempfile = tempfile.NamedTemporaryFile(suffix=".db", delete=True)  # pylint: disable=consider-using-with
             self._db = sqlite3.connect(self._tempfile.name)
         else:
             raise ValueError(f"Invalid storage_mode: {storage_mode}")

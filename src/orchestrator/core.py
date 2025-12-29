@@ -33,6 +33,7 @@ Implementation: Directory glob pattern matching for traversal (** for recursive,
 
 from __future__ import annotations
 
+import logging
 import multiprocessing
 import os
 from concurrent.futures import Future, ProcessPoolExecutor, as_completed
@@ -45,6 +46,8 @@ from src.linter_config.ignore import get_ignore_parser
 from src.linter_config.loader import LinterConfigLoader
 
 from .language_detector import detect_language
+
+logger = logging.getLogger(__name__)
 
 # Default max workers for parallel processing (capped to avoid resource contention)
 DEFAULT_MAX_WORKERS = 8
@@ -163,7 +166,8 @@ def _lint_file_worker(args: tuple[Path, Path, dict]) -> list[dict]:
         violations = orchestrator.lint_file(file_path)
         # Convert to dicts for pickling
         return [v.to_dict() for v in violations]
-    except Exception:  # nosec B112 - defensive; don't crash on worker errors
+    except Exception:
+        logger.exception("Worker error processing file: %s", file_path)
         return []
 
 
@@ -334,8 +338,8 @@ class Orchestrator:  # thailint: ignore[srp]
         except ValueError:
             # Re-raise configuration validation errors (these are user-facing)
             raise
-        except Exception:  # nosec B112
-            # Skip rules that fail (defensive programming)
+        except Exception:
+            logger.exception("Rule %s failed on %s", rule.rule_id, context.file_path)
             return []
 
     def lint_directory(self, dir_path: Path, recursive: bool = True) -> list[Violation]:
@@ -410,7 +414,8 @@ class Orchestrator:  # thailint: ignore[srp]
         """Extract violations from a completed future, handling errors."""
         try:
             return [Violation.from_dict(d) for d in future.result()]
-        except Exception:  # nosec B112 - continue on worker errors
+        except Exception:
+            logger.exception("Error extracting violations from worker future")
             return []
 
     def _finalize_rules(self) -> list[Violation]:

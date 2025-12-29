@@ -17,6 +17,10 @@ Exports: TypeScriptConstantExtractor class
 Interfaces: TypeScriptConstantExtractor.extract(content: str) -> list[ConstantInfo]
 
 Implementation: Tree-sitter-based parsing with const declaration filtering and ALL_CAPS regex matching
+
+Suppressions:
+    - type:ignore[assignment,misc]: Tree-sitter Node type alias (optional dependency fallback)
+    - broad-exception-caught: Defensive parsing for malformed TypeScript code
 """
 
 from typing import Any

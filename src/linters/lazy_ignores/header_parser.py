@@ -81,13 +81,21 @@ class SuppressionsParser:
     def normalize_rule_id(self, rule_id: str) -> str:
         """Normalize rule ID for case-insensitive matching.
 
+        Strips common list prefixes (-, *, •) and normalizes to lowercase.
+
         Args:
             rule_id: Original rule ID string
 
         Returns:
-            Normalized rule ID (lowercase)
+            Normalized rule ID (lowercase, no list prefix)
         """
-        return rule_id.lower().strip()
+        normalized = rule_id.lower().strip()
+        # Strip common list prefixes (bullet points)
+        if normalized.startswith(("- ", "* ", "• ")):
+            normalized = normalized[2:]
+        elif normalized.startswith(("-", "*", "•")):
+            normalized = normalized[1:].lstrip()
+        return normalized
 
     def extract_header(self, code: str, language: str | Language = Language.PYTHON) -> str:
         """Extract the header section from code.
@@ -116,8 +124,8 @@ class SuppressionsParser:
             Docstring content or empty string
         """
         # Match triple-quoted docstring at start of file
-        # Allow leading whitespace/newlines
-        stripped = code.lstrip()
+        # Skip leading whitespace, comments, and encoding declarations
+        stripped = self._skip_leading_comments(code)
 
         # Try double quotes first
         match = re.match(r'^"""(.*?)"""', stripped, re.DOTALL)
@@ -129,6 +137,28 @@ class SuppressionsParser:
         if match:
             return match.group(0)
 
+        return ""
+
+    def _skip_leading_comments(self, code: str) -> str:
+        """Skip leading comments and empty lines to find docstring.
+
+        Args:
+            code: Python source code
+
+        Returns:
+            Code with leading comments/empty lines removed
+        """
+        lines = code.split("\n")
+        for i, line in enumerate(lines):
+            stripped = line.strip()
+            # Skip empty lines
+            if not stripped:
+                continue
+            # Skip comment lines (including pylint/noqa/type comments)
+            if stripped.startswith("#"):
+                continue
+            # Found non-comment, non-empty line - return from here
+            return "\n".join(lines[i:])
         return ""
 
     def _extract_ts_header(self, code: str) -> str:

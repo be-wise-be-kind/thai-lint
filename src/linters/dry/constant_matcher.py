@@ -17,6 +17,9 @@ Exports: find_constant_groups function
 Interfaces: find_constant_groups(constants) -> list[ConstantGroup]
 
 Implementation: Union-Find algorithm for grouping, word-set hashing, Levenshtein distance calculation
+
+Suppressions:
+    - arguments-out-of-order: Named arguments used for clarity in ConstantLocation
 """
 
 from collections.abc import Callable

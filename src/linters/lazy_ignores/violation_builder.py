@@ -40,7 +40,10 @@ def build_unjustified_violation(
     Returns:
         Violation object with agent-friendly guidance message.
     """
-    message = f"Unjustified suppression found: {raw_text}"
+    message = (
+        f"Unjustified suppression found: {raw_text} "
+        f"(ASK PERMISSION before adding Suppressions header)"
+    )
 
     suggestion = _build_unjustified_suggestion(rule_id)
 

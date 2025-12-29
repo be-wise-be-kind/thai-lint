@@ -16,6 +16,9 @@ Interfaces: is_single_statement(content, start_line, end_line) -> bool,
     should_include_block(content, start_line, end_line) -> bool
 
 Implementation: Tree-sitter AST walking with pattern matching for TypeScript constructs
+
+Suppressions:
+    - type:ignore[assignment,misc]: Tree-sitter Node type alias (optional dependency fallback)
 """
 
 from collections.abc import Generator

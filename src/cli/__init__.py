@@ -16,6 +16,9 @@ Exports: cli (main Click command group with all commands registered)
 Interfaces: Single import point for CLI access via 'from src.cli import cli'
 
 Implementation: Imports submodules to trigger command registration via Click decorators
+
+Suppressions:
+    - F401: Module re-exports required for public API interface
 """
 
 # Import the CLI group from main module

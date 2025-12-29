@@ -17,6 +17,10 @@ Interfaces: PythonDuplicateAnalyzer.analyze(file_path: Path, content: str, confi
 
 Implementation: Uses custom tokenizer that filters docstrings before hashing
 
+Suppressions:
+    - too-many-arguments,too-many-positional-arguments: Line processing with related params
+    - type:ignore[arg-type]: ast.get_docstring returns str|None, typing limitation
+
 SRP Exception: PythonDuplicateAnalyzer has 32 methods and 358 lines (exceeds max 8 methods/200 lines)
     Justification: Complex AST analysis algorithm for duplicate code detection with sophisticated
     false positive filtering. Methods form tightly coupled algorithm pipeline: docstring extraction,
@@ -229,11 +233,11 @@ class PythonDuplicateAnalyzer(BaseTokenAnalyzer):  # thailint: ignore[srp.violat
         Returns:
             Tuple of (new_import_state, normalized_line or None if should skip)
         """
-        normalized = self._hasher._normalize_line(line)  # pylint: disable=protected-access
+        normalized = self._hasher.normalize_line(line)
         if not normalized:
             return in_multiline_import, None
 
-        new_state, should_skip = self._hasher._should_skip_import_line(  # pylint: disable=protected-access
+        new_state, should_skip = self._hasher.should_skip_import_line(
             normalized, in_multiline_import
         )
         if should_skip:

@@ -23,6 +23,9 @@ Interfaces: ViolationGenerator.generate_violations(storage, rule_id, config) -> 
 Implementation: Queries storage, validates pattern thresholds, builds violations with
     cross-file references, delegates function call violations to builder, generates
     comparison violations from scattered string comparisons, filters by ignore directives
+
+Suppressions:
+    - too-many-arguments,too-many-positional-arguments: Violation building with related params
 """
 
 from src.core.types import Severity, Violation

@@ -21,6 +21,9 @@ Interfaces: ContextAnalyzer.is_acceptable_context(node, parent, file_path, confi
 
 Implementation: AST parent node inspection, pattern matching for acceptable contexts, configurable
     max_small_integer threshold for range detection
+
+Suppressions:
+    - B101: Assert used for internal invariant checking, not security validation
 """
 
 import ast
