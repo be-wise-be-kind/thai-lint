@@ -11,7 +11,8 @@ Overview: Package providing lazy-ignores linter functionality. Detects when AI a
 
 Dependencies: src.core for base types, re for pattern matching
 
-Exports: IgnoreType, IgnoreDirective, SuppressionEntry, LazyIgnoresConfig
+Exports: IgnoreType, IgnoreDirective, SuppressionEntry, LazyIgnoresConfig,
+    PythonIgnoreDetector, SuppressionsParser
 
 Interfaces: LazyIgnoresConfig.from_dict() for YAML configuration loading
 
@@ -19,6 +20,8 @@ Implementation: Enum and dataclass definitions for ignore directive representati
 """
 
 from .config import LazyIgnoresConfig
+from .header_parser import SuppressionsParser
+from .python_analyzer import PythonIgnoreDetector
 from .types import IgnoreDirective, IgnoreType, SuppressionEntry
 
 __all__ = [
@@ -26,4 +29,6 @@ __all__ = [
     "IgnoreDirective",
     "SuppressionEntry",
     "LazyIgnoresConfig",
+    "PythonIgnoreDetector",
+    "SuppressionsParser",
 ]
