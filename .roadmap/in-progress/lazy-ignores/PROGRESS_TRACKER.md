@@ -28,8 +28,8 @@ This is the **PRIMARY HANDOFF DOCUMENT** for AI agents working on the lazy-ignor
 
 ## Current Status
 
-**Current PR**: PR1 - Core Infrastructure & Python Tests (TDD)
-**Infrastructure State**: Not started - no files created yet
+**Current PR**: PR1 - Core Infrastructure & Python Tests (TDD) - IN PROGRESS
+**Infrastructure State**: TDD tests written, minimal infrastructure created
 **Feature Target**: Production-ready linter with full test coverage, integrated into thai-lint quality gates
 
 ---
@@ -37,7 +37,7 @@ This is the **PRIMARY HANDOFF DOCUMENT** for AI agents working on the lazy-ignor
 ## Required Documents Location
 
 ```
-.roadmap/planning/lazy-ignores/
+.roadmap/in-progress/lazy-ignores/
 ├── PROGRESS_TRACKER.md    # THIS FILE - Current progress and handoff notes
 ├── PR_BREAKDOWN.md        # Detailed instructions for each PR
 └── AI_CONTEXT.md          # Feature architecture and design decisions
@@ -47,17 +47,21 @@ This is the **PRIMARY HANDOFF DOCUMENT** for AI agents working on the lazy-ignor
 
 ## Next PR to Implement
 
-### START HERE: PR1 - Core Infrastructure & Python Tests (TDD)
+### CONTINUE HERE: PR1 - Core Infrastructure & Python Tests (TDD)
 
 **Quick Summary**: Create failing tests that define the linter's expected behavior, plus minimal infrastructure (types, config).
 
-**Pre-flight Checklist**:
-- [ ] Read `.ai/howtos/how-to-add-linter.md`
-- [ ] Read `.ai/docs/FILE_HEADER_STANDARDS.md` for header format
-- [ ] Review test patterns in `tests/unit/linters/nesting/`
-- [ ] Review existing types in `src/core/types.py`
+**Completed**:
+- [x] Created test files with @pytest.mark.skip for TDD approach
+- [x] Created `src/linters/lazy_ignores/types.py` with IgnoreType enum, IgnoreDirective dataclass
+- [x] Created `src/linters/lazy_ignores/config.py` with LazyIgnoresConfig
+- [x] Created test files: test_python_ignore_detection.py, test_thailint_ignore_detection.py, test_typescript_detection.py, test_header_parser.py, test_orphaned_detection.py, test_violation_messages.py
+- [x] All quality gates pass (ruff, pylint, flake8, mypy)
 
-**Prerequisites Complete**: N/A (first PR)
+**Remaining for PR1**:
+- [ ] Implement PythonIgnoreDetector to make tests pass
+- [ ] Implement header parser for Suppressions: section
+- [ ] Wire up basic rule structure
 
 **Detailed Steps**: See PR_BREAKDOWN.md → PR1 section
 
@@ -65,10 +69,10 @@ This is the **PRIMARY HANDOFF DOCUMENT** for AI agents working on the lazy-ignor
 
 ## Overall Progress
 
-**Total Completion**: 0% (0/8 PRs completed)
+**Total Completion**: 6% (PR1 TDD scaffolding complete, 0/8 PRs fully completed)
 
 ```
-[░░░░░░░░░░] 0% Complete
+[█░░░░░░░░░] 6% Complete
 ```
 
 ---
@@ -77,7 +81,7 @@ This is the **PRIMARY HANDOFF DOCUMENT** for AI agents working on the lazy-ignor
 
 | PR | Title | Status | Completion | Complexity | Priority | Notes |
 |----|-------|--------|------------|------------|----------|-------|
-| PR1 | Core Infrastructure & Python Tests (TDD) | 🔴 Not Started | 0% | Medium | P0 | Tests first - all should fail initially |
+| PR1 | Core Infrastructure & Python Tests (TDD) | 🟡 In Progress | 50% | Medium | P0 | TDD tests written, need implementation |
 | PR2 | Python Ignore Detection | 🔴 Not Started | 0% | Medium | P0 | noqa, type:ignore, pylint, nosec |
 | PR3 | Header Suppressions Parser | 🔴 Not Started | 0% | Medium | P0 | Parse Suppressions: section from headers |
 | PR4 | TypeScript/JavaScript Detection | 🔴 Not Started | 0% | Medium | P1 | @ts-ignore, eslint-disable patterns |
