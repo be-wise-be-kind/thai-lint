@@ -8,16 +8,18 @@ Overview: Provides SuppressionsParser class for extracting the Suppressions sect
     Extracts rule IDs and justifications, normalizing rule IDs for case-insensitive matching.
     Returns dictionary mapping normalized rule IDs to their justifications.
 
-Dependencies: re for pattern matching
+Dependencies: re for pattern matching, Language enum for type safety
 
 Exports: SuppressionsParser
 
-Interfaces: parse(header: str) -> dict[str, str], extract_header(code: str, language: str)
+Interfaces: parse(header: str) -> dict[str, str], extract_header(code: str, language: Language)
 
 Implementation: Regex-based section extraction with line-by-line entry parsing
 """
 
 import re
+
+from src.core.constants import Language
 
 
 class SuppressionsParser:
@@ -87,19 +89,20 @@ class SuppressionsParser:
         """
         return rule_id.lower().strip()
 
-    def extract_header(self, code: str, language: str = "python") -> str:
+    def extract_header(self, code: str, language: str | Language = Language.PYTHON) -> str:
         """Extract the header section from code.
 
         Args:
             code: Full source code
-            language: Programming language ("python", "typescript", "javascript")
+            language: Programming language (Language enum or string)
 
         Returns:
             Header content as string, or empty string if not found
         """
-        if language == "python":
+        lang = Language(language) if isinstance(language, str) else language
+        if lang == Language.PYTHON:
             return self._extract_python_header(code)
-        if language in ("typescript", "javascript"):
+        if lang in (Language.TYPESCRIPT, Language.JAVASCRIPT):
             return self._extract_ts_header(code)
         return ""
 

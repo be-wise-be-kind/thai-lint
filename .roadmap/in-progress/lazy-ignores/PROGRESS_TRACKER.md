@@ -28,8 +28,8 @@ This is the **PRIMARY HANDOFF DOCUMENT** for AI agents working on the lazy-ignor
 
 ## Current Status
 
-**Current PR**: PR4 - TypeScript/JavaScript Detection - COMPLETE
-**Infrastructure State**: PR1-4, PR6 complete - Full lazy-ignores linter with Python and TypeScript support
+**Current PR**: PR5 - Test Skip Detection - COMPLETE
+**Infrastructure State**: PR1-6, PR5 complete - Full lazy-ignores linter with Python, TypeScript, and test skip detection
 **Feature Target**: Production-ready linter with full test coverage, integrated into thai-lint quality gates
 
 ---
@@ -93,16 +93,35 @@ This is the **PRIMARY HANDOFF DOCUMENT** for AI agents working on the lazy-ignor
 - [x] Added TypeScriptIgnoreDetector to module exports in __init__.py
 - [x] All quality gates pass (ruff, pylint, xenon A-grade, SRP)
 
-**Next PR**: PR5 (Test Skip Detection) or PR7 (Dogfooding)
+**Next PR**: PR7 (Dogfooding) or PR8 (Documentation)
+
+---
+
+### PR5 - Test Skip Detection - COMPLETE
+
+**Quick Summary**: Implemented TestSkipDetector for pytest.mark.skip and Jest/Mocha skip pattern detection.
+
+**Completed**:
+- [x] Added PYTEST_SKIP, PYTEST_SKIPIF, JEST_SKIP, MOCHA_SKIP to IgnoreType enum
+- [x] Created `src/linters/lazy_ignores/test_skip_detector.py` with TestSkipDetector
+- [x] Created `src/linters/lazy_ignores/directive_utils.py` for shared utility functions (DRY)
+- [x] Detects @pytest.mark.skip, @pytest.mark.skip(), pytest.skip() without reason
+- [x] Allows @pytest.mark.skip(reason="..."), pytest.skip("..."), @pytest.mark.skipif(..., reason="...")
+- [x] Detects it.skip(), test.skip(), describe.skip() for JavaScript/TypeScript
+- [x] Updated LazyIgnoresRule to include test skip detection (check_test_skips flag)
+- [x] Used Language enum instead of strings (stringly-typed fix)
+- [x] Created 24 tests in test_test_skip_detection.py (all passing)
+- [x] Refactored to extract helper functions (SRP compliance - 7 methods)
+- [x] All 14 quality gates pass
 
 ---
 
 ## Overall Progress
 
-**Total Completion**: 62.5% (PR1-4, PR6 complete, 5/8 PRs fully completed)
+**Total Completion**: 75% (PR1-6 complete, 6/8 PRs fully completed)
 
 ```
-[██████░░░░] 62.5% Complete
+[████████░░] 75% Complete
 ```
 
 ---
@@ -115,7 +134,7 @@ This is the **PRIMARY HANDOFF DOCUMENT** for AI agents working on the lazy-ignor
 | PR2 | Python Ignore Detection | 🟢 Complete | 100% | Medium | P0 | PythonIgnoreDetector implemented |
 | PR3 | Header Suppressions Parser | 🟢 Complete | 100% | Medium | P0 | SuppressionsParser implemented |
 | PR4 | TypeScript/JavaScript Detection | 🟢 Complete | 100% | Medium | P1 | TypeScriptIgnoreDetector + 17 tests |
-| PR5 | Test Skip Detection | 🔴 Not Started | 0% | Low | P1 | pytest.mark.skip, it.skip() |
+| PR5 | Test Skip Detection | 🟢 Complete | 100% | Low | P1 | TestSkipDetector + 24 tests + directive_utils.py |
 | PR6 | CLI Integration & Output Formats | 🟢 Complete | 100% | Medium | P0 | LazyIgnoresRule + CLI + 21 tests passing |
 | PR7 | Dogfooding - Internal Use | 🔴 Not Started | 0% | Low | P1 | Add to just lint-full, fix own violations |
 | PR8 | Documentation & PyPI Prep | 🔴 Not Started | 0% | Low | P2 | README, examples, user docs |

@@ -21,6 +21,7 @@ Implementation: Regex-based line-by-line scanning with pattern-specific rule ID 
 import re
 from pathlib import Path
 
+from src.linters.lazy_ignores.directive_utils import create_directive
 from src.linters.lazy_ignores.types import IgnoreDirective, IgnoreType
 
 
@@ -80,45 +81,5 @@ class PythonIgnoreDetector:
         for ignore_type, pattern in self.PATTERNS.items():
             match = pattern.search(line)
             if match:
-                found.append(self._create_directive(match, ignore_type, line_num, file_path))
+                found.append(create_directive(match, ignore_type, line_num, file_path))
         return found
-
-    def _create_directive(
-        self, match: re.Match[str], ignore_type: IgnoreType, line_num: int, file_path: Path
-    ) -> IgnoreDirective:
-        """Create an IgnoreDirective from a regex match.
-
-        Args:
-            match: Regex match object
-            ignore_type: Type of ignore pattern
-            line_num: 1-indexed line number
-            file_path: Path to source file
-
-        Returns:
-            IgnoreDirective for this match
-        """
-        return IgnoreDirective(
-            ignore_type=ignore_type,
-            rule_ids=tuple(self._extract_rule_ids(match)),
-            line=line_num,
-            column=match.start() + 1,
-            raw_text=match.group(0).strip(),
-            file_path=file_path,
-        )
-
-    def _extract_rule_ids(self, match: re.Match[str]) -> list[str]:
-        """Extract rule IDs from regex match.
-
-        Args:
-            match: Regex match object with optional group 1 containing rule IDs
-
-        Returns:
-            List of rule ID strings, empty if no specific rules
-        """
-        group = match.group(1)
-        if not group:
-            return []
-
-        # Split on comma and clean up whitespace
-        ids = [rule_id.strip() for rule_id in group.split(",")]
-        return [rule_id for rule_id in ids if rule_id]

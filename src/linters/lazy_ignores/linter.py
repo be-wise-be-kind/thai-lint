@@ -4,13 +4,13 @@ Purpose: Main LazyIgnoresRule class for detecting unjustified linting suppressio
 Scope: Orchestration of ignore detection and header suppression validation
 
 Overview: Provides LazyIgnoresRule that cross-references linting ignore directives found
-    in code (noqa, type:ignore, pylint:disable, nosec) with Suppressions entries declared
-    in file headers. Detects two types of violations: unjustified ignores (ignore directive
-    without header declaration) and orphaned suppressions (header declaration without
-    matching ignore in code). Enforces the header-based suppression model requiring human
-    approval for all linting bypasses.
+    in code (noqa, type:ignore, pylint:disable, nosec) and test skip patterns with
+    Suppressions entries declared in file headers. Detects two types of violations:
+    unjustified ignores/skips (directive without header declaration) and orphaned
+    suppressions (header declaration without matching ignore in code). Enforces the
+    header-based suppression model requiring human approval for all linting bypasses.
 
-Dependencies: PythonIgnoreDetector, SuppressionsParser, IgnoreSuppressionMatcher, violation_builder
+Dependencies: PythonIgnoreDetector, TestSkipDetector, SuppressionsParser, IgnoreSuppressionMatcher
 
 Exports: LazyIgnoresRule
 
@@ -28,6 +28,7 @@ from src.core.types import Violation
 from .header_parser import SuppressionsParser
 from .matcher import IgnoreSuppressionMatcher
 from .python_analyzer import PythonIgnoreDetector
+from .test_skip_detector import TestSkipDetector
 from .types import IgnoreDirective
 from .violation_builder import build_orphaned_violation, build_unjustified_violation
 
@@ -35,11 +36,17 @@ from .violation_builder import build_orphaned_violation, build_unjustified_viola
 class LazyIgnoresRule(BaseLintRule):
     """Detects unjustified linting suppressions and orphaned header entries."""
 
-    def __init__(self) -> None:
-        """Initialize the lazy ignores rule with detection components."""
+    def __init__(self, check_test_skips: bool = True) -> None:
+        """Initialize the lazy ignores rule with detection components.
+
+        Args:
+            check_test_skips: Whether to check for unjustified test skips.
+        """
         self._python_detector = PythonIgnoreDetector()
+        self._test_skip_detector = TestSkipDetector()
         self._suppression_parser = SuppressionsParser()
         self._matcher = IgnoreSuppressionMatcher(self._suppression_parser)
+        self._check_test_skips = check_test_skips
 
     @property
     def rule_id(self) -> str:
@@ -56,7 +63,8 @@ class LazyIgnoresRule(BaseLintRule):
         """Description of what this rule checks."""
         return (
             "Detects linting suppressions (noqa, type:ignore, pylint:disable, nosec) "
-            "without corresponding entries in the file header's Suppressions section."
+            "and test skips without corresponding entries in the file header's "
+            "Suppressions section."
         )
 
     def check(self, context: BaseLintContext) -> list[Violation]:
@@ -93,6 +101,11 @@ class LazyIgnoresRule(BaseLintRule):
 
         # Find all ignore directives in code
         ignores = self._python_detector.find_ignores(code, Path(file_path))
+
+        # Find test skip directives if enabled
+        if self._check_test_skips:
+            test_skips = self._test_skip_detector.find_skips(code, Path(file_path), "python")
+            ignores = list(ignores) + list(test_skips)
 
         # Build set of normalized rule IDs used in code
         used_rule_ids = self._matcher.collect_used_rule_ids(ignores)
