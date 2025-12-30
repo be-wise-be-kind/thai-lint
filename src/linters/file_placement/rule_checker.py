@@ -177,14 +177,14 @@ class RuleChecker:
         return [violation] if violation else []
 
     def _check_global_deny(
-        self, path_str: str, rel_path: Path, global_deny: list[dict[str, str]]
+        self, path_str: str, rel_path: Path, global_deny: list[dict[str, str] | str]
     ) -> list[Violation]:
         """Check file against global deny patterns.
 
         Args:
             path_str: Normalized path string
             rel_path: Relative path object
-            global_deny: Global deny patterns
+            global_deny: Global deny patterns (dicts with pattern/reason or plain strings)
 
         Returns:
             List of violations

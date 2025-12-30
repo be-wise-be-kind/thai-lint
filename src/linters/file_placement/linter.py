@@ -76,20 +76,30 @@ class FilePlacementLinter:
 
         # Load and validate config
         if config_obj:
-            # Handle both wrapped and unwrapped config formats
-            # Wrapped: {"file-placement": {...}} or {"file_placement": {...}}
-            # Unwrapped: {"directories": {...}, "global_deny": [...], ...}
-            # Try both hyphenated and underscored keys for backward compatibility
-            self.config = config_obj.get(
-                "file-placement", config_obj.get("file_placement", config_obj)
-            )
+            self.config = self._unwrap_config(config_obj)
         elif config_file:
-            self.config = self._components.config_loader.load_config_file(config_file)
+            raw_config = self._components.config_loader.load_config_file(config_file)
+            self.config = self._unwrap_config(raw_config)
         else:
             self.config = {}
 
         # Validate regex patterns in config
         self._components.pattern_validator.validate_config(self.config)
+
+    def _unwrap_config(self, config: dict[str, Any]) -> dict[str, Any]:
+        """Unwrap file-placement config from wrapper if present.
+
+        Args:
+            config: Raw config dict (may be wrapped or unwrapped)
+
+        Returns:
+            Unwrapped file-placement config dict
+        """
+        # Handle both wrapped and unwrapped config formats
+        # Wrapped: {"file-placement": {...}} or {"file_placement": {...}}
+        # Unwrapped: {"directories": {...}, "global_deny": [...], ...}
+        # Try both hyphenated and underscored keys for backward compatibility
+        return config.get("file-placement", config.get("file_placement", config))
 
     def lint_path(self, file_path: Path) -> list[Violation]:
         """Lint a single file path.
