@@ -9,28 +9,35 @@ Overview: Provides shared infrastructure for token-based duplicate code detectio
     for TypeScript). Eliminates duplication between PythonDuplicateAnalyzer and TypeScriptDuplicateAnalyzer
     by extracting shared analyze() method pattern and CodeBlock creation logic.
 
-Dependencies: TokenHasher, CodeBlock, DRYConfig, pathlib.Path
+Dependencies: token_hasher module functions, CodeBlock, DRYConfig, pathlib.Path
 
 Exports: BaseTokenAnalyzer class
 
 Interfaces: BaseTokenAnalyzer.analyze(file_path: Path, content: str, config: DRYConfig) -> list[CodeBlock]
 
 Implementation: Template method pattern with extension point for language-specific block filtering
+
+Suppressions:
+    - stateless-class: BaseTokenAnalyzer is an intentional template method base class.
+        Subclasses (PythonDuplicateAnalyzer, TypeScriptDuplicateAnalyzer) override
+        _should_include_block for language-specific filtering. Statelessness is by design
+        since state was moved to module-level functions in token_hasher.
 """
 
 from pathlib import Path
 
+from . import token_hasher
 from .cache import CodeBlock
 from .config import DRYConfig
-from .token_hasher import TokenHasher
 
 
-class BaseTokenAnalyzer:
-    """Base analyzer for token-based duplicate detection."""
+class BaseTokenAnalyzer:  # thailint: ignore[stateless-class] - Template method base class for inheritance
+    """Base analyzer for token-based duplicate detection.
 
-    def __init__(self) -> None:
-        """Initialize analyzer with token hasher."""
-        self._hasher = TokenHasher()
+    This is intentionally a base class for polymorphism. Subclasses
+    (PythonDuplicateAnalyzer, TypeScriptDuplicateAnalyzer) override
+    _should_include_block for language-specific filtering.
+    """
 
     def analyze(self, file_path: Path, content: str, config: DRYConfig) -> list[CodeBlock]:
         """Analyze file for duplicate code blocks.
@@ -43,8 +50,8 @@ class BaseTokenAnalyzer:
         Returns:
             List of CodeBlock instances with hash values
         """
-        lines = self._hasher.tokenize(content)
-        windows = self._hasher.rolling_hash(lines, config.min_duplicate_lines)
+        lines = token_hasher.tokenize(content)
+        windows = token_hasher.rolling_hash(lines, config.min_duplicate_lines)
 
         blocks = []
         for hash_val, start_line, end_line, snippet in windows:
