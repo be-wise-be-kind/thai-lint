@@ -118,10 +118,10 @@ class KeywordArgumentFilter(BaseBlockFilter):
             return False
 
         # Find if any Call node contains the block
-        for node in ast.walk(tree):
-            if isinstance(node, ast.Call) and self._check_multiline_containment(node, block):
-                return True
-        return False
+        return any(
+            isinstance(node, ast.Call) and self._check_multiline_containment(node, block)
+            for node in ast.walk(tree)
+        )
 
     @staticmethod
     def _check_multiline_containment(node: ast.Call, block: CodeBlock) -> bool:

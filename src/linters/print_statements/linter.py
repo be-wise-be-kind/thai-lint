@@ -126,10 +126,7 @@ class PrintStatementRule(MultiLanguageLintRule):  # thailint: ignore[srp]
             return False
 
         file_path = Path(context.file_path)
-        for pattern in config.ignore:
-            if self._matches_pattern(file_path, pattern):
-                return True
-        return False
+        return any(self._matches_pattern(file_path, pattern) for pattern in config.ignore)
 
     def _matches_pattern(self, file_path: Path, pattern: str) -> bool:
         """Check if file path matches a glob pattern.

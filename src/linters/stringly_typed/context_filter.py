@@ -445,10 +445,10 @@ class FunctionCallFilter:  # thailint: ignore[srp] - data-heavy class with exten
             return False
 
         func_lower = function_name.lower()
-        for pattern in self._EXCLUDE_PARAM_INDEX_1:
-            if pattern.lower() in func_lower or func_lower.endswith(pattern.lower()):
-                return True
-        return False
+        return any(
+            pattern.lower() in func_lower or func_lower.endswith(pattern.lower())
+            for pattern in self._EXCLUDE_PARAM_INDEX_1
+        )
 
     def _all_values_excluded(self, unique_values: set[str]) -> bool:
         """Check if all values in the set match excluded patterns."""
@@ -458,7 +458,4 @@ class FunctionCallFilter:  # thailint: ignore[srp] - data-heavy class with exten
 
     def _is_excluded_value(self, value: str) -> bool:
         """Check if a single value matches any excluded pattern."""
-        for pattern in self._EXCLUDED_VALUE_PATTERNS:
-            if pattern.match(value):
-                return True
-        return False
+        return any(pattern.match(value) for pattern in self._EXCLUDED_VALUE_PATTERNS)

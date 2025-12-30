@@ -174,7 +174,7 @@ def find_rule_in_suppressions(
     Returns:
         True if rule is found in any suppression's comma list
     """
-    for suppression_key in suppressions:
-        if rule_matches_suppression(normalized, suppression_key, is_type_ignore):
-            return True
-    return False
+    return any(
+        rule_matches_suppression(normalized, suppression_key, is_type_ignore)
+        for suppression_key in suppressions
+    )

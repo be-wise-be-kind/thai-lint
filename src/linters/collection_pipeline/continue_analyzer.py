@@ -66,10 +66,7 @@ def has_side_effects(continues: list[ast.If]) -> bool:
     Returns:
         True if any condition has side effects (e.g., walrus operator)
     """
-    for if_node in continues:
-        if _condition_has_side_effects(if_node.test):
-            return True
-    return False
+    return any(_condition_has_side_effects(if_node.test) for if_node in continues)
 
 
 def _condition_has_side_effects(node: ast.expr) -> bool:
@@ -81,10 +78,7 @@ def _condition_has_side_effects(node: ast.expr) -> bool:
     Returns:
         True if expression has side effects
     """
-    for child in ast.walk(node):
-        if isinstance(child, ast.NamedExpr):
-            return True
-    return False
+    return any(isinstance(child, ast.NamedExpr) for child in ast.walk(node))
 
 
 def has_body_after_continues(body: list[ast.stmt], num_continues: int) -> bool:

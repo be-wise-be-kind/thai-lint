@@ -42,15 +42,12 @@ class FieldValidator:
         Returns:
             List of (field_name, error_message) tuples for missing/invalid fields
         """
-        violations = []
         required_fields = self._get_required_fields(language)
-
-        for field_name in required_fields:
-            error = self._check_field(fields, field_name)
-            if error:
-                violations.append(error)
-
-        return violations
+        return [
+            error
+            for field_name in required_fields
+            if (error := self._check_field(fields, field_name))
+        ]
 
     def _check_field(self, fields: dict[str, str], field_name: str) -> tuple[str, str] | None:
         """Check a single field for presence and content."""

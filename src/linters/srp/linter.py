@@ -137,10 +137,7 @@ class SRPRule(MultiLanguageLintRule):
             return False
 
         file_path = str(context.file_path)
-        for pattern in config.ignore:
-            if pattern in file_path:
-                return True
-        return False
+        return any(pattern in file_path for pattern in config.ignore)
 
     def _check_python(self, context: BaseLintContext, config: SRPConfig) -> list[Violation]:
         """Check Python code for SRP violations.
@@ -174,13 +171,12 @@ class SRPRule(MultiLanguageLintRule):
         Returns:
             List of violations
         """
-        violations = []
         valid_metrics = (m for m in metrics_list if isinstance(m, dict))
-        for metrics in valid_metrics:
-            violation = self._create_violation_if_needed(metrics, config, context)
-            if violation:
-                violations.append(violation)
-        return violations
+        return [
+            violation
+            for metrics in valid_metrics
+            if (violation := self._create_violation_if_needed(metrics, config, context))
+        ]
 
     def _create_violation_if_needed(
         self,

@@ -76,10 +76,9 @@ def _check_overlapping_nodes(root: Node, start_line: int, end_line: int) -> bool
     ts_start = start_line - 1  # Convert to 0-indexed
     ts_end = end_line - 1
 
-    for node in _walk_nodes(root):
-        if _node_overlaps_and_matches(node, ts_start, ts_end):
-            return True
-    return False
+    return any(
+        _node_overlaps_and_matches(node, ts_start, ts_end) for node in _walk_nodes(root)
+    )
 
 
 def _walk_nodes(node: Node) -> Generator[Node, None, None]:
@@ -255,7 +254,4 @@ def _handle_interface_continuation(
 
 def _overlaps_interface(start: int, end: int, interface_ranges: list[tuple[int, int]]) -> bool:
     """Check if block overlaps with any interface range."""
-    for if_start, if_end in interface_ranges:
-        if start <= if_end and end >= if_start:
-            return True
-    return False
+    return any(start <= if_end and end >= if_start for if_start, if_end in interface_ranges)

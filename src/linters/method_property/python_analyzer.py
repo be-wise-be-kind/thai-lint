@@ -395,10 +395,7 @@ class PythonMethodAnalyzer:  # thailint: ignore[srp]
         Returns:
             True if assigning to self.*
         """
-        for target in targets:
-            if self._is_self_target(target):
-                return True
-        return False
+        return any(self._is_self_target(target) for target in targets)
 
     def _is_self_target(self, target: ast.expr) -> bool:
         """Check if target is a self attribute (self.* or self._*).
