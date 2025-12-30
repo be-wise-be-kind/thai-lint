@@ -205,6 +205,9 @@ just lint-security
 # Complexity analysis
 just lint-complexity
 
+# Lazy ignores (unjustified suppressions)
+just lint-lazy-ignores
+
 # ALL quality checks
 just lint-full
 ```
@@ -597,6 +600,7 @@ This systematic linting approach supports the Quality Gates requirements:
 | Complexity (Xenon) | Phase 2 | how-to-refactor-for-quality.md | `just lint-complexity` |
 | SRP violations | Phase 2 | how-to-refactor-for-quality.md | `just lint-solid` |
 | Nesting depth | Phase 2 | how-to-refactor-for-quality.md | `just lint-complexity` |
+| Unjustified suppressions | Phase 1 | FILE_HEADER_STANDARDS.md | `just lint-lazy-ignores` |
 
 ---
 

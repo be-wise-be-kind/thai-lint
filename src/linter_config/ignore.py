@@ -20,6 +20,9 @@ Interfaces: is_ignored(file_path) -> bool, has_file_ignore(file_path, rule_id) -
     has_line_ignore(code, line_num, rule_id) -> bool, should_ignore_violation(violation, content) -> bool
 
 Implementation: Modular design with extracted pure functions for pattern matching and marker detection
+
+Suppressions:
+    - global-statement: Module-level singleton pattern for parser caching (performance optimization)
 """
 
 import re

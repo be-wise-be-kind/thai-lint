@@ -21,6 +21,9 @@ Interfaces: check(context) -> list[Violation] for rule validation, standard rule
 
 Implementation: Composition pattern with helper classes (analyzers, violation builder),
     AST-based analysis for Python, tree-sitter for TypeScript/JavaScript
+
+Suppressions:
+    - too-many-arguments,too-many-positional-arguments: Violation creation with related fields
 """
 
 import ast

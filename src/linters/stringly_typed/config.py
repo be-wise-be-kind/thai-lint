@@ -18,11 +18,10 @@ Exports: StringlyTypedConfig dataclass, default constants
 Interfaces: StringlyTypedConfig.from_dict() class method for configuration loading
 
 Implementation: Dataclass with sensible defaults, validation in __post_init__, and config
-    loading from dictionary with language-specific override support. Pylint
-    too-many-instance-attributes suppressed because configuration dataclasses inherently
-    require multiple cohesive fields (8 attributes for detection thresholds, filtering,
-    cross-file settings). Splitting would reduce cohesion without benefit. This follows
-    the established pattern in DRYConfig which has the same suppression.
+    loading from dictionary with language-specific override support
+
+Suppressions:
+    - too-many-instance-attributes: Configuration dataclass with cohesive detection settings
 """
 
 from dataclasses import dataclass, field

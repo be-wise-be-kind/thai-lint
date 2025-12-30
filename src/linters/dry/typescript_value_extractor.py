@@ -14,6 +14,9 @@ Exports: TypeScriptValueExtractor class
 Interfaces: TypeScriptValueExtractor.get_value_string(node, content) -> str | None
 
 Implementation: Tree-sitter node traversal with type-specific string formatting
+
+Suppressions:
+    - type:ignore[assignment,misc]: Tree-sitter Node type alias (optional dependency fallback)
 """
 
 from typing import Any

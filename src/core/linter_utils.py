@@ -16,6 +16,10 @@ Exports: get_metadata, get_metadata_value, load_linter_config, has_file_content
 Interfaces: All functions take BaseLintContext and return typed values (dict, str, bool, Any)
 
 Implementation: Type-safe metadata access with fallbacks, generic config loading with language support
+
+Suppressions:
+    - invalid-name: T type variable follows Python generic naming convention
+    - type:ignore[return-value]: Generic config factory with runtime type checking
 """
 
 from typing import Any, Protocol, TypeVar

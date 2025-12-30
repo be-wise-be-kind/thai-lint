@@ -16,6 +16,9 @@ Exports: SRPRule class
 Interfaces: SRPRule.check(context) -> list[Violation], properties for rule metadata
 
 Implementation: Composition pattern with helper classes, heuristic-based SRP analysis
+
+Suppressions:
+    - type:ignore[return-value]: Generic TypeScript analyzer return type variance
 """
 
 from src.core.base import BaseLintContext, MultiLanguageLintRule

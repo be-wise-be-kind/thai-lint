@@ -18,6 +18,9 @@ Exports: ConditionalPatternDetector class, EqualityChainPattern dataclass
 Interfaces: ConditionalPatternDetector.find_patterns(tree) -> list[EqualityChainPattern]
 
 Implementation: AST NodeVisitor pattern with If node chain traversal and Match statement handling
+
+Suppressions:
+    - invalid-name: visit_If, visit_Match follow AST NodeVisitor method naming convention
 """
 
 import ast
@@ -110,7 +113,7 @@ class ConditionalPatternDetector(ast.NodeVisitor):
         """
         pattern = analyze_match_statement(node, EqualityChainPattern)
         if pattern is not None:
-            self.patterns.append(pattern)  # type: ignore[arg-type]
+            self.patterns.append(pattern)
         self.generic_visit(node)
 
     def _analyze_if_chain(self, node: ast.If) -> None:

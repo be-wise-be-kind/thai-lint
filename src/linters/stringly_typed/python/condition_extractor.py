@@ -15,6 +15,9 @@ Exports: extract_from_condition, is_simple_string_equality, get_string_constant
 Interfaces: Functions for extracting string comparisons from AST nodes
 
 Implementation: Recursive traversal of BoolOp nodes with Compare extraction
+
+Suppressions:
+    - type:ignore[attr-defined]: AST node attribute access varies by node type (value.value)
 """
 
 import ast

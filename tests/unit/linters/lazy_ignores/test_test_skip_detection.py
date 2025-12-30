@@ -294,15 +294,34 @@ def test_something():
         # The comment line starts with #, so our regex won't match the @
         assert len(directives) == 0
 
-    def test_skip_in_string_literal(self, detector: TestSkipDetector) -> None:
-        """Handles skip patterns in string literals."""
+    def test_skip_in_string_literal_not_detected(self, detector: TestSkipDetector) -> None:
+        """Does NOT detect skip patterns inside string literals."""
         code = """
 def test_something():
     code = "@pytest.mark.skip"
     assert True
 """
         directives = detector.find_skips(code, language="python")
-        # This is a known limitation - regex will match inside strings
-        # In a production linter we'd use AST parsing
-        # For now we accept this behavior
-        assert len(directives) >= 0  # May or may not detect
+        assert len(directives) == 0
+
+    def test_skip_in_docstring_not_detected(self, detector: TestSkipDetector) -> None:
+        """Does NOT detect skip patterns mentioned in docstrings."""
+        code = '''"""
+Purpose: Test skip detector for pytest.skip() and @pytest.mark.skip patterns
+"""
+def test_something():
+    pass
+'''
+        directives = detector.find_skips(code, language="python")
+        assert len(directives) == 0
+
+    def test_skip_description_in_docstring_not_detected(self, detector: TestSkipDetector) -> None:
+        """Does NOT detect skip pattern descriptions in docstrings."""
+        code = '''"""
+Scope: pytest.mark.skip, pytest.skip(), it.skip(), describe.skip() detection
+"""
+def test_something():
+    pass
+'''
+        directives = detector.find_skips(code, language="python")
+        assert len(directives) == 0

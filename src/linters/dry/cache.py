@@ -20,6 +20,9 @@ Interfaces: DRYCache.__init__(storage_mode), add_blocks(file_path, blocks),
 
 Implementation: SQLite with three tables (files, code_blocks, constants), indexed for performance,
     storage_mode determines :memory: vs tempfile location, ACID transactions for reliability
+
+Suppressions:
+    - consider-using-with: Tempfile managed by class lifecycle, not context manager
 """
 
 from __future__ import annotations

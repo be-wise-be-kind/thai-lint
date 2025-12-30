@@ -14,7 +14,9 @@ Dependencies: Python built-in hash function
 Exports: TokenHasher class
 
 Interfaces: TokenHasher.tokenize(code: str) -> list[str],
-    TokenHasher.rolling_hash(lines: list[str], window_size: int) -> list[tuple]
+    TokenHasher.rolling_hash(lines: list[str], window_size: int) -> list[tuple],
+    TokenHasher.normalize_line(line: str) -> str,
+    TokenHasher.should_skip_import_line(line: str, in_multiline_import: bool) -> tuple
 
 Implementation: Token-based normalization with rolling window algorithm, language-agnostic approach
 """
@@ -40,12 +42,12 @@ class TokenHasher:  # thailint: ignore[srp] - Methods support single responsibil
         in_multiline_import = False
 
         for line in code.split("\n"):
-            line = self._normalize_line(line)
+            line = self.normalize_line(line)
             if not line:
                 continue
 
             # Update multi-line import state and check if line should be skipped
-            in_multiline_import, should_skip = self._should_skip_import_line(
+            in_multiline_import, should_skip = self.should_skip_import_line(
                 line, in_multiline_import
             )
             if should_skip:
@@ -55,7 +57,7 @@ class TokenHasher:  # thailint: ignore[srp] - Methods support single responsibil
 
         return lines
 
-    def _normalize_line(self, line: str) -> str:
+    def normalize_line(self, line: str) -> str:
         """Normalize a line by removing comments and excess whitespace.
 
         Args:
@@ -67,7 +69,7 @@ class TokenHasher:  # thailint: ignore[srp] - Methods support single responsibil
         line = self._strip_comments(line)
         return " ".join(line.split())
 
-    def _should_skip_import_line(self, line: str, in_multiline_import: bool) -> tuple[bool, bool]:
+    def should_skip_import_line(self, line: str, in_multiline_import: bool) -> tuple[bool, bool]:
         """Determine if an import line should be skipped.
 
         Args:

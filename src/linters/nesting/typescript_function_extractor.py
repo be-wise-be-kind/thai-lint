@@ -27,10 +27,6 @@ from src.analyzers.typescript_base import TypeScriptBaseAnalyzer
 class TypeScriptFunctionExtractor(TypeScriptBaseAnalyzer):
     """Extracts function information from TypeScript AST nodes."""
 
-    def __init__(self) -> None:  # pylint: disable=useless-parent-delegation
-        """Initialize the TypeScript function extractor."""
-        super().__init__()  # Sets self.tree_sitter_available from base class
-
     def collect_all_functions(self, root_node: Any) -> list[tuple[Any, str]]:
         """Collect all function nodes from TypeScript AST.
 

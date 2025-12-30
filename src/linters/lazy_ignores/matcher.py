@@ -9,7 +9,8 @@ Overview: Provides IgnoreSuppressionMatcher class that cross-references linting 
     Identifies unjustified ignores (code ignores without header entries) and orphaned
     suppressions (header entries without matching code ignores).
 
-Dependencies: SuppressionsParser for normalization, types for IgnoreDirective and IgnoreType
+Dependencies: SuppressionsParser for normalization, types for IgnoreDirective and IgnoreType,
+    rule_id_utils for pure parsing functions
 
 Exports: IgnoreSuppressionMatcher
 
@@ -19,6 +20,12 @@ Implementation: Set-based matching with rule ID normalization for case-insensiti
 """
 
 from .header_parser import SuppressionsParser
+from .rule_id_utils import (
+    comma_list_has_used_rule,
+    find_rule_in_suppressions,
+    is_type_ignore_format_in_suppressions,
+    type_ignore_bracket_has_used_rule,
+)
 from .types import IgnoreDirective, IgnoreType
 
 
@@ -48,31 +55,16 @@ class IgnoreSuppressionMatcher:
         return used
 
     def _get_matchable_rule_ids(self, ignore: IgnoreDirective) -> list[str]:
-        """Get normalized rule IDs for matching, handling special formats.
-
-        For type:ignore directives, generates both the raw rule_id and
-        the full type:ignore[rule_id] format for header matching.
-
-        Args:
-            ignore: The ignore directive to extract rule IDs from.
-
-        Returns:
-            List of normalized rule IDs for matching.
-        """
+        """Get normalized rule IDs for matching, handling special formats."""
         if not ignore.rule_ids:
-            # Bare ignores (no rule IDs) are tracked by their type
             return [self._normalize(ignore.ignore_type.value)]
 
         ids: list[str] = []
         for rule_id in ignore.rule_ids:
             normalized = self._normalize(rule_id)
             ids.append(normalized)
-
-            # For type:ignore, also add the full format for header matching
             if ignore.ignore_type == IgnoreType.TYPE_IGNORE:
-                full_format = f"type:ignore[{normalized}]"
-                ids.append(full_format)
-
+                ids.append(f"type:ignore[{normalized}]")
         return ids
 
     def find_unjustified_rule_ids(
@@ -88,13 +80,11 @@ class IgnoreSuppressionMatcher:
             List of unjustified rule IDs (original case preserved).
         """
         if not ignore.rule_ids:
-            # Bare ignore (e.g., # noqa without rules) - check by type
             type_key = self._normalize(ignore.ignore_type.value)
             if type_key not in suppressions:
                 return [ignore.ignore_type.value]
             return []
 
-        # Check each specific rule ID
         unjustified: list[str] = []
         for rule_id in ignore.rule_ids:
             if not self._is_rule_justified(ignore, rule_id, suppressions):
@@ -104,29 +94,15 @@ class IgnoreSuppressionMatcher:
     def _is_rule_justified(
         self, ignore: IgnoreDirective, rule_id: str, suppressions: dict[str, str]
     ) -> bool:
-        """Check if a specific rule ID is justified in suppressions.
-
-        Args:
-            ignore: The ignore directive containing this rule.
-            rule_id: The rule ID to check.
-            suppressions: Dict of normalized rule IDs to justifications.
-
-        Returns:
-            True if the rule has a matching suppression entry.
-        """
+        """Check if a specific rule ID is justified in suppressions."""
         normalized = self._normalize(rule_id)
+        is_type_ignore = ignore.ignore_type == IgnoreType.TYPE_IGNORE
 
-        # Direct match
         if normalized in suppressions:
             return True
-
-        # For type:ignore, also check the full format
-        if ignore.ignore_type == IgnoreType.TYPE_IGNORE:
-            full_format = f"type:ignore[{normalized}]"
-            if full_format in suppressions:
-                return True
-
-        return False
+        if is_type_ignore and is_type_ignore_format_in_suppressions(normalized, suppressions):
+            return True
+        return find_rule_in_suppressions(normalized, suppressions, is_type_ignore)
 
     def find_orphaned_rule_ids(
         self, suppressions: dict[str, str], used_rule_ids: set[str]
@@ -142,17 +118,18 @@ class IgnoreSuppressionMatcher:
         """
         orphaned: list[tuple[str, str]] = []
         for rule_id, justification in suppressions.items():
-            if rule_id not in used_rule_ids:
+            if not self._suppression_is_used(rule_id, used_rule_ids):
                 orphaned.append((rule_id.upper(), justification))
         return orphaned
 
+    def _suppression_is_used(self, suppression_key: str, used_rule_ids: set[str]) -> bool:
+        """Check if a suppression key is used by any code ignores."""
+        if suppression_key in used_rule_ids:
+            return True
+        if comma_list_has_used_rule(suppression_key, used_rule_ids):
+            return True
+        return type_ignore_bracket_has_used_rule(suppression_key, used_rule_ids)
+
     def _normalize(self, rule_id: str) -> str:
-        """Normalize a rule ID for case-insensitive matching.
-
-        Args:
-            rule_id: The rule ID to normalize.
-
-        Returns:
-            Lowercase rule ID.
-        """
+        """Normalize a rule ID for case-insensitive matching."""
         return self._parser.normalize_rule_id(rule_id)

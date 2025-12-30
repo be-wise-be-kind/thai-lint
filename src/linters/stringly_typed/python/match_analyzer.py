@@ -17,16 +17,22 @@ Interfaces: MatchStatementAnalyzer.analyze(node) -> EqualityChainPattern | None
 Implementation: AST pattern matching for MatchValue nodes with string constants
 """
 
+from __future__ import annotations
+
 import ast
+from typing import TYPE_CHECKING
 
 from .constants import MIN_VALUES_FOR_PATTERN
 from .variable_extractor import extract_variable_name
 
+if TYPE_CHECKING:
+    from .conditional_detector import EqualityChainPattern
+
 
 def analyze_match_statement(
     node: ast.Match,
-    pattern_class: type,
-) -> object | None:
+    pattern_class: type[EqualityChainPattern],
+) -> EqualityChainPattern | None:
     """Analyze a match statement for string case patterns.
 
     Args:

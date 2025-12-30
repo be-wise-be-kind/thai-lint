@@ -15,6 +15,9 @@ Exports: DRYConfig dataclass
 Interfaces: DRYConfig.__init__, DRYConfig.from_dict(config: dict) -> DRYConfig
 
 Implementation: Dataclass with field defaults, __post_init__ validation, and dict-based construction
+
+Suppressions:
+    - too-many-instance-attributes: Configuration dataclass with related settings
 """
 
 from dataclasses import dataclass, field

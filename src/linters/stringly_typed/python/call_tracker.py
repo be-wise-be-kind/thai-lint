@@ -17,6 +17,9 @@ Exports: FunctionCallTracker class, FunctionCallPattern dataclass
 Interfaces: FunctionCallTracker.find_patterns(tree) -> list[FunctionCallPattern]
 
 Implementation: AST NodeVisitor pattern with Call node handling for string arguments
+
+Suppressions:
+    - invalid-name: visit_Call follows AST NodeVisitor method naming convention
 """
 
 import ast

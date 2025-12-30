@@ -16,6 +16,9 @@ Exports: TypeScriptNestingAnalyzer class with calculate_max_depth methods
 Interfaces: calculate_max_depth(func_node) -> tuple[int, int], find_all_functions(root_node)
 
 Implementation: Inherits tree-sitter parsing from base, visitor pattern with depth tracking
+
+Suppressions:
+    - type:ignore: Tree-sitter Node type alias (optional dependency fallback)
 """
 
 from typing import Any

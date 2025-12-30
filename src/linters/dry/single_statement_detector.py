@@ -18,6 +18,11 @@ Interfaces: SingleStatementDetector.is_single_statement(content, start_line, end
 
 Implementation: AST walking with line-to-node index optimization for performance
 
+Suppressions:
+    - type:ignore[attr-defined]: Tree-sitter Node.text attribute access (optional dependency)
+    - type:ignore[operator]: Tree-sitter Node comparison operations (optional dependency)
+    - too-many-arguments,too-many-positional-arguments: Builder pattern with related params
+
 SRP Exception: SingleStatementDetector has 33 methods and 308 lines (exceeds max 8 methods/200 lines)
     Justification: Complex AST analysis algorithm for single-statement pattern detection with sophisticated
     false positive filtering. Methods form tightly coupled algorithm pipeline: class field detection,

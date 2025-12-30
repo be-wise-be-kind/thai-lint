@@ -20,6 +20,9 @@ Interfaces: check(context) -> list[Violation] for rule validation, standard rule
 
 Implementation: Composition pattern with helper classes for parsing, validation,
     and violation building
+
+Suppressions:
+    - type:ignore[type-var]: Protocol pattern with generic type matching
 """
 
 from pathlib import Path

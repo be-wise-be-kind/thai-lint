@@ -18,6 +18,10 @@ Exports: TypeScriptBaseAnalyzer class with parsing and traversal utilities
 Interfaces: parse_typescript(code), walk_tree(node, node_type), extract_node_text(node)
 
 Implementation: Tree-sitter parser singleton, recursive AST traversal, composition pattern
+
+Suppressions:
+    - type:ignore[assignment]: Tree-sitter TS_PARSER fallback when import fails
+    - type:ignore[assignment,misc]: Tree-sitter Node type alias (optional dependency fallback)
 """
 
 from typing import Any

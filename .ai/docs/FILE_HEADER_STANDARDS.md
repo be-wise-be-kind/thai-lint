@@ -535,6 +535,39 @@ Exports: Main classes, functions, or constants this module provides
 - **Implementation**: Notable algorithms, patterns, or architectural decisions
 - **State/Behavior**: Important state management or behavioral patterns used
 - **Notes**: Any special considerations, warnings, or important operational details
+- **Suppressions**: Justified linter/type checker suppressions with explanations
+
+### Suppressions Section Format (Python Files)
+
+When a file contains legitimate ignore directives (e.g., `# nosec`, `# type: ignore`, `# pylint: disable`), document them in a Suppressions section in the file header:
+
+```python
+"""
+Purpose: Main linter rule implementation
+
+Scope: Linter rule class
+
+Overview: Implements linter with type narrowing assertions.
+
+Suppressions:
+    - B101: Type narrowing assertions after guards (can't fail at runtime)
+    - arg-type: Path type coercion handled by upstream validation
+    - too-many-instance-attributes: Components grouped in dataclass
+"""
+```
+
+**Format Rules:**
+- Each suppression on its own line with `- rule-id: justification`
+- Rule IDs should match exactly what appears in the code (e.g., `B101` for `# nosec B101`)
+- For type:ignore, use the error code (e.g., `union-attr` not `type:ignore[union-attr]`)
+- Justifications should explain WHY the ignore is legitimate, not WHAT it ignores
+
+**Example Justifications:**
+- `B101: Type narrowing assertion after _should_analyze guard (can't fail)`
+- `union-attr: _active_storage property asserts non-None`
+- `too-many-instance-attributes: Helper components grouped in dataclass`
+
+The lazy-ignores linter enforces that all ignore directives in code have matching Suppressions entries in the file header.
 
 ### Optional Fields (All Files)
 - **Related**: Links to related files, documentation, or external resources

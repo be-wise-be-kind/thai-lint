@@ -46,6 +46,7 @@ help:
     @echo "  just lint-stateless [FILES...] - Stateless class detection (classes → module functions)"
     @echo "  just lint-print [FILES...]     - Print statement detection (debug output in production)"
     @echo "  just lint-stringly [FILES...]  - Stringly-typed detection (strings → enums)"
+    @echo "  just lint-lazy-ignores [FILES...] - Lazy ignore detection (unjustified suppressions)"
     @echo "  just clean-cache               - Clear DRY linter cache"
     @echo "  just lint-full [FILES...]      - ALL quality checks (includes all thai-lint linters)"
     @echo "  just format                    - Auto-fix formatting and linting issues"
@@ -478,6 +479,23 @@ lint-stringly +files="src/ tests/":
         fi \
     fi
 
+# Lazy ignore detection (unjustified suppressions without header documentation)
+lint-lazy-ignores +files="src/ tests/":
+    @echo ""
+    @echo "{{BLUE}}{{BOLD}}════════════════════════════════════════════════════════════{{NC}}"
+    @echo "{{BOLD}}  LAZY IGNORES (Unjustified Suppressions){{NC}}"
+    @echo "{{BLUE}}{{BOLD}}════════════════════════════════════════════════════════════{{NC}}"
+    @echo ""
+    @SRC_TARGETS=$(just _get-src-targets {{files}}); \
+    if [ -n "$SRC_TARGETS" ]; then \
+        if poetry run thai-lint lazy-ignores $SRC_TARGETS --config .thailint.yaml 2>&1; then \
+            echo "{{GREEN}}✓ Lazy ignores checks passed{{NC}}"; \
+        else \
+            echo "{{RED}}✗ Lazy ignores checks failed{{NC}}"; \
+            exit 1; \
+        fi \
+    fi
+
 # Clear DRY linter cache
 clean-cache:
     @echo "{{BLUE}}Clearing DRY linter cache...{{NC}}"
@@ -597,6 +615,13 @@ lint-full +files="src/ tests/":
         PASSED+=("Stringly-Typed")
     else
         FAILED+=("Stringly-Typed")
+    fi
+
+    echo ""
+    if just lint-lazy-ignores {{files}}; then
+        PASSED+=("Lazy Ignores")
+    else
+        FAILED+=("Lazy Ignores")
     fi
 
     # Print summary

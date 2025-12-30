@@ -18,6 +18,9 @@ Interfaces: TypeScriptComparisonTracker.find_patterns(code) -> list[TypeScriptCo
 
 Implementation: Tree-sitter node traversal with binary_expression node handling for string
     comparisons
+
+Suppressions:
+    - type:ignore[assignment,misc]: Tree-sitter Node type alias (optional dependency fallback)
 """
 
 from dataclasses import dataclass

@@ -16,6 +16,9 @@ Exports: BaseBlockFilter, BlockFilterRegistry, KeywordArgumentFilter, ImportGrou
 Interfaces: BaseBlockFilter.should_filter(code_block, file_content) -> bool
 
 Implementation: Strategy pattern with filter registry for extensibility
+
+Suppressions:
+    - type:ignore[operator]: Tree-sitter Node comparison operations (optional dependency)
 """
 
 import ast

@@ -17,6 +17,9 @@ Interfaces: extract_header(code) -> str | None for frontmatter extraction,
     parse_fields(header) -> dict[str, str] for field parsing
 
 Implementation: YAML frontmatter extraction with PyYAML parsing and regex fallback for robustness
+
+Suppressions:
+    - BLE001: Broad exception catch for YAML parsing fallback (any exception triggers regex fallback)
 """
 
 import logging

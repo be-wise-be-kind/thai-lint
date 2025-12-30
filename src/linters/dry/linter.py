@@ -19,6 +19,10 @@ Exports: DRYRule class
 Interfaces: DRYRule.check(context) -> list[Violation], finalize() -> list[Violation]
 
 Implementation: Delegates all logic to helper classes, maintains only orchestration and state
+
+Suppressions:
+    - too-many-instance-attributes: DRYComponents groups related helper dependencies
+    - B101: Type narrowing assertions after guards (storage initialized, file_path/content set)
 """
 
 from __future__ import annotations
@@ -83,6 +87,18 @@ class DRYRule(BaseLintRule):
         )
 
     @property
+    def _active_storage(self) -> DuplicateStorage:
+        """Get storage, asserting it has been initialized."""
+        assert self._storage is not None, "Storage not initialized"  # nosec B101
+        return self._storage
+
+    @property
+    def _active_file_analyzer(self) -> FileAnalyzer:
+        """Get file analyzer, asserting it has been initialized."""
+        assert self._file_analyzer is not None, "File analyzer not initialized"  # nosec B101
+        return self._file_analyzer
+
+    @property
     def rule_id(self) -> str:
         """Unique identifier for this rule."""
         return "dry.duplicate-code"
@@ -112,8 +128,12 @@ class DRYRule(BaseLintRule):
 
     def _process_file(self, context: BaseLintContext, config: DRYConfig) -> None:
         """Process a single file for duplicates and constants."""
-        file_path = Path(context.file_path)  # type: ignore[arg-type]
-        self._helpers.inline_ignore.parse_file(file_path, context.file_content or "")
+        # should_process_file ensures file_path and file_content are set
+        assert context.file_path is not None  # nosec B101
+        assert context.file_content is not None  # nosec B101
+
+        file_path = context.file_path
+        self._helpers.inline_ignore.parse_file(file_path, context.file_content)
         self._ensure_storage_initialized(context, config)
         self._analyze_and_store(context, config)
         if config.detect_duplicate_constants:
@@ -131,15 +151,18 @@ class DRYRule(BaseLintRule):
         """Analyze file and store blocks."""
         if not self._can_analyze(context):
             return
-        file_path = Path(context.file_path)  # type: ignore[arg-type]
-        blocks = self._file_analyzer.analyze(  # type: ignore[union-attr]
-            file_path,
-            context.file_content,  # type: ignore[arg-type]
+        # _can_analyze ensures file_path and file_content are set
+        assert context.file_path is not None  # nosec B101
+        assert context.file_content is not None  # nosec B101
+
+        blocks = self._active_file_analyzer.analyze(
+            context.file_path,
+            context.file_content,
             context.language,
             config,
         )
         if blocks:
-            self._storage.add_blocks(file_path, blocks)  # type: ignore[union-attr]
+            self._active_storage.add_blocks(context.file_path, blocks)
 
     def _can_analyze(self, context: BaseLintContext) -> bool:
         """Check if context is ready for analysis."""
