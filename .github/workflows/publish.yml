@@ -18,11 +18,6 @@ on:
           - minor
           - major
         default: patch
-      skip_checks:
-        description: 'Skip tests and linting'
-        required: false
-        type: boolean
-        default: false
 
 permissions:
   contents: write   # For pushing branch
@@ -81,6 +76,12 @@ jobs:
           echo "DOCKERHUB_USERNAME=${{ secrets.DOCKERHUB_USERNAME }}" >> .env
           echo "DOCKERHUB_TOKEN=${{ secrets.DOCKERHUB_TOKEN }}" >> .env
 
+      - name: Run full lint suite (pre-flight check)
+        run: just lint-full
+
+      - name: Run tests with coverage (pre-flight check)
+        run: just test-coverage
+
       - name: Calculate next version
         id: version
         run: |
@@ -113,15 +114,8 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           VERSION_INPUT: ${{ steps.version.outputs.new_version }}
         run: |
-          # Make script executable
           chmod +x ./scripts/publish.sh
-
-          # Run with or without skip-checks flag
-          if [ "${{ inputs.skip_checks }}" = "true" ]; then
-            ./scripts/publish.sh --skip-checks
-          else
-            ./scripts/publish.sh
-          fi
+          ./scripts/publish.sh
 
       - name: Clean up .env
         if: always()

@@ -29,6 +29,10 @@ Implementation: Directory glob pattern matching for traversal (** for recursive,
     ignore pattern checking before file processing, dynamic context creation per file,
     rule filtering by applicability, violation collection and aggregation across files,
     ProcessPoolExecutor for parallel file processing
+
+Suppressions:
+    - srp: Orchestrator class coordinates multiple subsystems by design (registry, config, ignore,
+        language detection). Splitting would fragment the core linting workflow.
 """
 
 from __future__ import annotations

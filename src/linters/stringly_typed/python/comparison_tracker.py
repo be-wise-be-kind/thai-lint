@@ -19,6 +19,8 @@ Implementation: AST NodeVisitor pattern with Compare node handling for string co
 
 Suppressions:
     - invalid-name: visit_Compare follows AST NodeVisitor method naming convention
+    - srp: Tracker implements AST visitor pattern with multiple visit methods.
+        Methods support single responsibility of comparison pattern detection.
 """
 
 import ast

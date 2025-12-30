@@ -41,6 +41,14 @@ class TypeScriptIgnoreDetector:
         IgnoreType.TS_EXPECT_ERROR: re.compile(
             r"//\s*@ts-expect-error(?:\s|$)",
         ),
+        IgnoreType.THAILINT_IGNORE: re.compile(
+            r"//\s*thailint:\s*ignore(?!-)(?:\[([^\]]+)\])?",
+            re.IGNORECASE,
+        ),
+        IgnoreType.THAILINT_IGNORE_FILE: re.compile(
+            r"//\s*thailint:\s*ignore-file(?:\[([^\]]+)\])?",
+            re.IGNORECASE,
+        ),
     }
 
     # ESLint patterns (can be single-line or inline)

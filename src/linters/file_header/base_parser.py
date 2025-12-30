@@ -16,6 +16,10 @@ Exports: BaseHeaderParser abstract base class
 Interfaces: extract_header(code) abstract method, parse_fields(header) -> dict[str, str] for field extraction
 
 Implementation: Template method pattern with shared field parsing and language-specific extraction
+
+Suppressions:
+    - nesting: parse_fields uses nested loops for multi-line field processing. Extracting
+        would fragment the field-building logic without improving clarity.
 """
 
 import re

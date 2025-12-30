@@ -17,6 +17,10 @@ Exports: PythonPrintStatementAnalyzer class
 Interfaces: find_print_calls(tree) -> list[tuple[Call, AST | None, int]], is_in_main_block(node) -> bool
 
 Implementation: AST walk pattern with parent map for context detection and __main__ block identification
+
+Suppressions:
+    - srp: Analyzer implements parent tracking and __main__ detection requiring helper methods.
+        All methods support single responsibility of print call detection.
 """
 
 import ast

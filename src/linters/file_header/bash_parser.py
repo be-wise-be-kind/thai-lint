@@ -16,6 +16,10 @@ Exports: BashHeaderParser class
 Interfaces: extract_header(code) -> str | None for comment extraction, parse_fields(header) inherited from base
 
 Implementation: Skips shebang and preamble, then extracts contiguous hash comment block
+
+Suppressions:
+    - nesting: _skip_preamble uses conditional loops for shebang/preamble detection.
+        Sequential line processing requires nested state checks.
 """
 
 from src.linters.file_header.base_parser import BaseHeaderParser

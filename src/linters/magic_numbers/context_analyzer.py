@@ -24,6 +24,8 @@ Implementation: AST parent node inspection, pattern matching for acceptable cont
 
 Suppressions:
     - B101: Assert used for internal invariant checking, not security validation
+    - srp: Analyzer implements multiple context checks requiring helper methods.
+        Method count exceeds limit due to A-grade complexity refactoring.
 """
 
 import ast

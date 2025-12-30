@@ -40,10 +40,10 @@ class SuppressionsParser:
 
     # Pattern to parse individual entries (rule_id: justification)
     # Rule IDs can contain colons (e.g., type:ignore[arg-type])
-    # Use greedy match for rule_id, justification must start with word char
-    # This ensures we split at the last ": " before the justification text
+    # Handles list prefixes: "- ", "* ", "• " and plain indented entries
+    # Justification must start with word char or underscore to avoid matching continuation lines
     ENTRY_PATTERN = re.compile(
-        r"^[\s*]*(.+):\s+([A-Za-z].*)$",
+        r"^\s*[-*•]?\s*(.+):\s+([A-Za-z_].*)$",
         re.MULTILINE,
     )
 

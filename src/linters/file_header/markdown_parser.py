@@ -20,6 +20,9 @@ Implementation: YAML frontmatter extraction with PyYAML parsing and regex fallba
 
 Suppressions:
     - BLE001: Broad exception catch for YAML parsing fallback (any exception triggers regex fallback)
+    - srp: Class coordinates YAML extraction, parsing, and field validation for Markdown.
+        Method count exceeds limit due to complexity refactoring.
+    - nesting,dry: _parse_simple_yaml uses nested loops for YAML structure traversal.
 """
 
 import logging

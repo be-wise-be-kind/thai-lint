@@ -22,6 +22,7 @@ Implementation: Inherits analyze() workflow from BaseTokenAnalyzer, adds JSDoc c
 Suppressions:
     - type:ignore[assignment,misc]: Tree-sitter Node type alias (optional dependency fallback)
     - invalid-name: Node type alias follows tree-sitter naming convention
+    - srp.violation: Complex tree-sitter AST analysis algorithm. See SRP Exception below.
 
 SRP Exception: TypeScriptDuplicateAnalyzer has 20 methods and 324 lines (exceeds max 8 methods/200 lines)
     Justification: Complex tree-sitter AST analysis algorithm for duplicate code detection with sophisticated

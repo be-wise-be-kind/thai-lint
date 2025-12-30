@@ -26,6 +26,9 @@ Implementation: Queries storage, validates pattern thresholds, builds violations
 
 Suppressions:
     - too-many-arguments,too-many-positional-arguments: Violation building with related params
+    - srp: Generator handles violations for patterns, calls, and comparisons from storage.
+        Methods support single responsibility of violation generation.
+    - stringly-typed: Comment documenting inline ignore directive format for filter method.
 """
 
 from src.core.types import Severity, Violation
@@ -50,7 +53,7 @@ def _is_allowed_value_set(values: set[str], config: StringlyTypedConfig) -> bool
     return any(values == set(allowed) for allowed in config.allowed_string_sets)
 
 
-class ViolationGenerator:  # thailint: ignore srp
+class ViolationGenerator:  # thailint: ignore[srp]
     """Generates violations from cross-file stringly-typed patterns."""
 
     def __init__(self) -> None:

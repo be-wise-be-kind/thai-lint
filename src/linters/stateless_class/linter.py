@@ -23,6 +23,8 @@ Implementation: Composition pattern delegating analysis to specialized analyzer 
 
 Suppressions:
     - B101: Type narrowing assertion after _should_analyze guard (can't fail)
+    - srp,dry: Rule class coordinates analyzer, config, and ignore checking. Method count
+        exceeds limit due to comprehensive 5-level ignore system support.
 """
 
 from pathlib import Path

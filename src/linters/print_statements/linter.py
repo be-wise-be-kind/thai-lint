@@ -24,6 +24,8 @@ Implementation: Composition pattern with helper classes (analyzers, violation bu
 
 Suppressions:
     - too-many-arguments,too-many-positional-arguments: Violation creation with related fields
+    - srp: Rule class coordinates multiple language analyzers and violation building.
+        Method count exceeds limit due to dual-language support (Python + TypeScript).
 """
 
 import ast

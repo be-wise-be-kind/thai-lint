@@ -18,6 +18,10 @@ Exports: MethodPropertyConfig dataclass, DEFAULT_EXCLUDE_PREFIXES, DEFAULT_EXCLU
 Interfaces: from_dict(config, language) -> MethodPropertyConfig for configuration loading
 
 Implementation: Dataclass with defaults matching Pythonic conventions and common use cases
+
+Suppressions:
+    - dry: MethodPropertyConfig includes extensive exclusion lists that share patterns with
+        other config classes. Lists are maintained separately for clear documentation.
 """
 
 from dataclasses import dataclass, field

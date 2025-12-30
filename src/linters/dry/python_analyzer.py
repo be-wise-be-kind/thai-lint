@@ -20,6 +20,8 @@ Implementation: Uses custom tokenizer that filters docstrings before hashing
 Suppressions:
     - too-many-arguments,too-many-positional-arguments: Line processing with related params
     - type:ignore[arg-type]: ast.get_docstring returns str|None, typing limitation
+    - srp.violation: Complex AST analysis algorithm for duplicate detection. See SRP Exception below.
+    - nesting.excessive-depth: analyze method uses nested loops for docstring extraction.
 
 SRP Exception: PythonDuplicateAnalyzer has 32 methods and 358 lines (exceeds max 8 methods/200 lines)
     Justification: Complex AST analysis algorithm for duplicate code detection with sophisticated

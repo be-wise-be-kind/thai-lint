@@ -21,6 +21,10 @@ Interfaces: CollectionPipelineRule.check(context) -> list[Violation], rule metad
 
 Implementation: Uses PipelinePatternDetector for AST analysis, composition pattern with
     config loading and comprehensive ignore checking via IgnoreDirectiveParser
+
+Suppressions:
+    - srp,dry: Rule class coordinates detector, config, and comprehensive ignore system.
+        Method count exceeds limit due to 5-level ignore pattern support.
 """
 
 from pathlib import Path

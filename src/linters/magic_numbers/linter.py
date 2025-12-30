@@ -24,6 +24,8 @@ Implementation: Composition pattern with helper classes, AST-based analysis with
 
 Suppressions:
     - too-many-arguments,too-many-positional-arguments: TypeScript violation creation with related params
+    - srp: Rule class coordinates analyzers and violation builders. Method count exceeds limit
+        due to complexity refactoring. All methods support magic number detection.
 """
 
 import ast

@@ -18,6 +18,10 @@ Exports: PythonMethodAnalyzer class, PropertyCandidate dataclass
 Interfaces: find_property_candidates(tree) -> list[PropertyCandidate]
 
 Implementation: AST walk pattern with comprehensive method body analysis and exclusion checks
+
+Suppressions:
+    - srp: Analyzer class implements comprehensive exclusion rules requiring many helper methods.
+        All methods support single responsibility of property candidate detection.
 """
 
 import ast
