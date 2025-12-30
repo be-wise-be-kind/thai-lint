@@ -8,7 +8,7 @@ Overview: Analyzes Python source files to extract code blocks for duplicate dete
     Filters out docstrings at the tokenization level to prevent false positive duplication
     detection on documentation strings.
 
-Dependencies: BaseTokenAnalyzer, CodeBlock, DRYConfig, pathlib.Path, ast, TokenHasher
+Dependencies: BaseTokenAnalyzer, CodeBlock, DRYConfig, pathlib.Path, ast, token_hasher module
 
 Exports: PythonDuplicateAnalyzer class
 
@@ -37,6 +37,7 @@ SRP Exception: PythonDuplicateAnalyzer has 32 methods and 358 lines (exceeds max
 import ast
 from pathlib import Path
 
+from . import token_hasher
 from .base_token_analyzer import BaseTokenAnalyzer
 from .block_filter import BlockFilterRegistry, create_default_registry
 from .cache import CodeBlock
@@ -235,11 +236,11 @@ class PythonDuplicateAnalyzer(BaseTokenAnalyzer):  # thailint: ignore[srp.violat
         Returns:
             Tuple of (new_import_state, normalized_line or None if should skip)
         """
-        normalized = self._hasher.normalize_line(line)
+        normalized = token_hasher.normalize_line(line)
         if not normalized:
             return in_multiline_import, None
 
-        new_state, should_skip = self._hasher.should_skip_import_line(
+        new_state, should_skip = token_hasher.should_skip_import_line(
             normalized, in_multiline_import
         )
         if should_skip:

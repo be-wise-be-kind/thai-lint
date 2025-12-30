@@ -33,8 +33,8 @@ Suppressions:
 
 from src.core.types import Severity, Violation
 
+from . import context_filter
 from .config import StringlyTypedConfig
-from .context_filter import FunctionCallFilter
 from .function_call_violation_builder import build_function_call_violations
 from .ignore_checker import IgnoreChecker
 from .ignore_utils import is_ignored
@@ -58,7 +58,6 @@ class ViolationGenerator:  # thailint: ignore[srp]
 
     def __init__(self) -> None:
         """Initialize with helper filters."""
-        self._call_filter = FunctionCallFilter()
         self._ignore_checker = IgnoreChecker()
 
     def generate_violations(
@@ -157,7 +156,7 @@ class ViolationGenerator:  # thailint: ignore[srp]
             (name, idx, vals)
             for name, idx, vals in limited_funcs
             if not _is_allowed_value_set(vals, config)
-            and self._call_filter.should_include(name, idx, vals)
+            and context_filter.should_include(name, idx, vals)
         ]
 
     def _build_call_violations(
@@ -184,7 +183,7 @@ class ViolationGenerator:  # thailint: ignore[srp]
         if self._is_pattern_allowed(first, config):
             return True
         # Skip if all values match excluded patterns (numeric strings, etc.)
-        if self._call_filter.are_all_values_excluded(set(first.string_values)):
+        if context_filter.are_all_values_excluded(set(first.string_values)):
             return True
         return False
 
@@ -310,7 +309,7 @@ class ViolationGenerator:  # thailint: ignore[srp]
             return True
         if _is_allowed_value_set(unique_values, config):
             return True
-        if self._call_filter.are_all_values_excluded(unique_values):
+        if context_filter.are_all_values_excluded(unique_values):
             return True
         return False
 

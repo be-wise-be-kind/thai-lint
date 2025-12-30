@@ -40,6 +40,7 @@ from pathlib import Path
 
 from src.analyzers.typescript_base import TREE_SITTER_AVAILABLE
 
+from . import token_hasher
 from .base_token_analyzer import BaseTokenAnalyzer
 from .block_filter import BlockFilterRegistry, create_default_registry
 from .cache import CodeBlock
@@ -233,11 +234,11 @@ class TypeScriptDuplicateAnalyzer(BaseTokenAnalyzer):  # thailint: ignore[srp.vi
         Returns:
             Tuple of (new_import_state, normalized_line or None if should skip)
         """
-        normalized = self._hasher.normalize_line(line)
+        normalized = token_hasher.normalize_line(line)
         if not normalized:
             return in_multiline_import, None
 
-        new_state, should_skip = self._hasher.should_skip_import_line(
+        new_state, should_skip = token_hasher.should_skip_import_line(
             normalized, in_multiline_import
         )
         if should_skip:
