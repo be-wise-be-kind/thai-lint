@@ -12,7 +12,7 @@ Overview: Implements magic numbers linter rule following BaseLintRule interface.
     because refactoring for A-grade complexity requires extracting helper methods. Class maintains
     single responsibility of magic number detection - all methods support this core purpose.
 
-Dependencies: BaseLintRule, BaseLintContext, PythonMagicNumberAnalyzer, ContextAnalyzer,
+Dependencies: BaseLintRule, BaseLintContext, PythonMagicNumberAnalyzer, is_acceptable_context,
     ViolationBuilder, MagicNumberConfig, IgnoreDirectiveParser
 
 Exports: MagicNumberRule class
@@ -39,7 +39,7 @@ from src.core.violation_utils import get_violation_line, has_python_noqa
 from src.linter_config.ignore import get_ignore_parser
 
 from .config import MagicNumberConfig
-from .context_analyzer import ContextAnalyzer
+from .context_analyzer import is_acceptable_context
 from .python_analyzer import PythonMagicNumberAnalyzer
 from .typescript_analyzer import TypeScriptMagicNumberAnalyzer
 from .typescript_ignore_checker import TypeScriptIgnoreChecker
@@ -53,7 +53,6 @@ class MagicNumberRule(MultiLanguageLintRule):  # thailint: ignore[srp]
         """Initialize the magic numbers rule."""
         self._ignore_parser = get_ignore_parser()
         self._violation_builder = ViolationBuilder(self.rule_id)
-        self._context_analyzer = ContextAnalyzer()
         self._typescript_ignore_checker = TypeScriptIgnoreChecker()
 
     @property
@@ -254,9 +253,7 @@ class MagicNumberRule(MultiLanguageLintRule):  # thailint: ignore[srp]
             "allowed_numbers": config.allowed_numbers,
         }
 
-        if self._context_analyzer.is_acceptable_context(
-            node, parent, context.file_path, config_dict
-        ):
+        if is_acceptable_context(node, parent, context.file_path, config_dict):
             return False
 
         return True
