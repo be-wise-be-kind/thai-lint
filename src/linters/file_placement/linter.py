@@ -20,6 +20,10 @@ Interfaces: lint_path(file_path) -> list[Violation], check_file_allowed(file_pat
 Implementation: Composition pattern with helper classes for each responsibility
     (ConfigLoader, PathResolver, PatternMatcher, PatternValidator, RuleChecker,
     ViolationFactory)
+
+Suppressions:
+    - srp.violation: Rule class coordinates multiple helper classes for comprehensive
+        file placement validation. Method count reflects composition orchestration.
 """
 
 import json

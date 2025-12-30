@@ -21,6 +21,8 @@ Implementation: Tree-sitter node traversal with binary_expression node handling 
 
 Suppressions:
     - type:ignore[assignment,misc]: Tree-sitter Node type alias (optional dependency fallback)
+    - srp: Tracker implements tree-sitter traversal with helper methods for node extraction.
+        Methods support single responsibility of comparison pattern detection.
 """
 
 from dataclasses import dataclass

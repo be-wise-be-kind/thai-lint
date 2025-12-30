@@ -36,6 +36,8 @@ Suppressions:
     - too-many-lines: Storage module for three related data types with dataclasses, SQL schemas, and CRUD methods
     - too-many-instance-attributes: StoredPattern is a pure DTO with 8 necessary fields for SQLite storage
     - consider-using-with: NamedTemporaryFile must remain open for SQLite connection lifetime (closed in close())
+    - srp: Storage class manages SQLite for three pattern types (validations, calls, comparisons).
+        Splitting would fragment related storage operations.
 """
 
 from __future__ import annotations
@@ -281,7 +283,7 @@ class StoredPattern:  # pylint: disable=too-many-instance-attributes
     """Human-readable description of the detected pattern."""
 
 
-class StringlyTypedStorage:  # thailint: ignore srp
+class StringlyTypedStorage:  # thailint: ignore[srp]
     """SQLite-backed storage for stringly-typed pattern detection.
 
     Stores patterns from analyzed files and provides queries to find patterns

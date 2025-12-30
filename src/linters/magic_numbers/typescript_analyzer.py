@@ -23,6 +23,8 @@ Implementation: Tree-sitter node traversal with visitor pattern, context-aware f
 
 Suppressions:
     - type:ignore: Tree-sitter Node type alias (optional dependency fallback)
+    - srp: Analyzer implements tree-sitter traversal with context detection methods.
+        Methods support single responsibility of magic number detection in TypeScript.
 """
 
 from typing import Any

@@ -22,6 +22,10 @@ Interfaces: PythonStringlyTypedAnalyzer.analyze(code, file_path) -> list[Analysi
     PythonStringlyTypedAnalyzer.analyze_function_calls(code, file_path) -> list[FunctionCallResult]
 
 Implementation: Facade pattern coordinating multiple detectors with unified result format
+
+Suppressions:
+    - srp: Analyzer coordinates multiple detectors (membership, conditional, call tracker).
+        Facade pattern justifies combining orchestration methods.
 """
 
 import ast
@@ -120,7 +124,7 @@ class ComparisonResult:
     """Column number where the comparison starts (0-indexed)."""
 
 
-class PythonStringlyTypedAnalyzer:  # thailint: ignore srp
+class PythonStringlyTypedAnalyzer:  # thailint: ignore[srp]
     """Analyzes Python code for stringly-typed patterns.
 
     Coordinates detection of various stringly-typed patterns including membership

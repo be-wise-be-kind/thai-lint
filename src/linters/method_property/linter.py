@@ -21,6 +21,10 @@ Interfaces: check(context) -> list[Violation] for rule validation, standard rule
 
 Implementation: Composition pattern with helper classes (analyzer, violation builder),
     AST-based analysis for Python with comprehensive exclusion rules
+
+Suppressions:
+    - srp,dry: Rule class coordinates analyzer, config, and violation building. Method count
+        exceeds limit due to comprehensive ignore directive support.
 """
 
 import ast

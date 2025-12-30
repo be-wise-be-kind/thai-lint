@@ -19,6 +19,10 @@ Interfaces: TokenHasher.tokenize(code: str) -> list[str],
     TokenHasher.should_skip_import_line(line: str, in_multiline_import: bool) -> tuple
 
 Implementation: Token-based normalization with rolling window algorithm, language-agnostic approach
+
+Suppressions:
+    - srp: Hasher implements tokenization, normalization, and rolling hash generation.
+        Methods support single responsibility of code tokenization for duplicate detection.
 """
 
 

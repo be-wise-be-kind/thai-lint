@@ -21,6 +21,8 @@ Implementation: Tree-sitter node traversal with call_expression node handling fo
 
 Suppressions:
     - type:ignore[assignment,misc]: Tree-sitter Node type alias (optional dependency fallback)
+    - srp: Tracker implements tree-sitter traversal with helper methods for call extraction.
+        Methods support single responsibility of function call pattern detection.
 """
 
 from dataclasses import dataclass

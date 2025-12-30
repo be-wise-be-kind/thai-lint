@@ -17,12 +17,16 @@ Interfaces: FunctionCallFilter.should_include(function_name, param_index, string
 
 Implementation: Blocklist-based filtering with function name patterns, parameter position rules,
     and string value pattern detection
+
+Suppressions:
+    - srp: Filter class contains extensive blocklist patterns for multiple categories.
+        Splitting by category would fragment the filtering logic.
 """
 
 import re
 
 
-class FunctionCallFilter:  # thailint: ignore srp - data-heavy class with extensive exclusion pattern lists
+class FunctionCallFilter:  # thailint: ignore[srp] - data-heavy class with extensive exclusion pattern lists
     """Filters function call violations to reduce false positives.
 
     Uses a blocklist approach to exclude known false positive patterns:

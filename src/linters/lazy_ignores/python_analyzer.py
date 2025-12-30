@@ -106,6 +106,22 @@ class PythonIgnoreDetector:
             r"#\s*nosec(?:\s+([A-Z0-9,\s]+))?(?:\s|$)",
             re.IGNORECASE,
         ),
+        IgnoreType.THAILINT_IGNORE: re.compile(
+            r"#\s*thailint:\s*ignore(?!-)(?:\[([^\]]+)\])?",
+            re.IGNORECASE,
+        ),
+        IgnoreType.THAILINT_IGNORE_FILE: re.compile(
+            r"#\s*thailint:\s*ignore-file(?:\[([^\]]+)\])?",
+            re.IGNORECASE,
+        ),
+        IgnoreType.THAILINT_IGNORE_NEXT: re.compile(
+            r"#\s*thailint:\s*ignore-next-line(?:\[([^\]]+)\])?",
+            re.IGNORECASE,
+        ),
+        IgnoreType.THAILINT_IGNORE_BLOCK: re.compile(
+            r"#\s*thailint:\s*ignore-start(?:\[([^\]]+)\])?",
+            re.IGNORECASE,
+        ),
     }
 
     def find_ignores(self, code: str, file_path: Path | None = None) -> list[IgnoreDirective]:

@@ -23,6 +23,8 @@ Implementation: Two-phase pattern: check() stores data, finalize() generates vio
 
 Suppressions:
     - B101: Type narrowing assertions after guards (storage initialized, file_path/content set)
+    - srp: Rule class orchestrates cross-file detection with storage, analyzers, and generators.
+        Splitting would fragment the two-phase detection workflow.
 """
 
 from __future__ import annotations
@@ -134,7 +136,7 @@ class StringlyTypedComponents:
     typescript_analyzer: TypeScriptStringlyTypedAnalyzer
 
 
-class StringlyTypedRule(MultiLanguageLintRule):  # thailint: ignore srp
+class StringlyTypedRule(MultiLanguageLintRule):  # thailint: ignore[srp]
     """Detects stringly-typed patterns across project files.
 
     Uses two-phase pattern:

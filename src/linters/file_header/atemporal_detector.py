@@ -16,6 +16,10 @@ Exports: AtemporalDetector class with detect_violations method
 Interfaces: detect_violations(text) -> list[tuple[str, str, int]] returns pattern matches with line numbers
 
 Implementation: Regex-based pattern matching with predefined patterns organized by category
+
+Suppressions:
+    - nesting: detect_violations iterates over pattern categories and their patterns.
+        Natural grouping by category requires nested loops.
 """
 
 import re

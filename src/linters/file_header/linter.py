@@ -23,6 +23,8 @@ Implementation: Composition pattern with helper classes for parsing, validation,
 
 Suppressions:
     - type:ignore[type-var]: Protocol pattern with generic type matching
+    - srp: Rule class coordinates parsing, validation, and violation building for multiple
+        languages. Methods support single responsibility of file header validation.
 """
 
 from pathlib import Path
