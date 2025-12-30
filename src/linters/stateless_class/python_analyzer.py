@@ -145,10 +145,10 @@ def _has_constructor(class_node: ast.ClassDef) -> bool:
         True if class has constructor
     """
     constructor_names = ("__init__", "__new__")
-    for item in class_node.body:
-        if isinstance(item, ast.FunctionDef) and item.name in constructor_names:
-            return True
-    return False
+    return any(
+        isinstance(item, ast.FunctionDef) and item.name in constructor_names
+        for item in class_node.body
+    )
 
 
 def _is_exception_case(class_node: ast.ClassDef) -> bool:
@@ -174,10 +174,9 @@ def _inherits_from_abc_or_protocol(class_node: ast.ClassDef) -> bool:
     Returns:
         True if inherits from ABC or Protocol
     """
-    for base in class_node.bases:
-        if _get_base_name(base) in ("ABC", "Protocol"):
-            return True
-    return False
+    return any(
+        _get_base_name(base) in ("ABC", "Protocol") for base in class_node.bases
+    )
 
 
 def _get_base_name(base: ast.expr) -> str:
@@ -205,10 +204,7 @@ def _has_class_attributes(class_node: ast.ClassDef) -> bool:
     Returns:
         True if class has class attributes
     """
-    for item in class_node.body:
-        if isinstance(item, (ast.Assign, ast.AnnAssign)):
-            return True
-    return False
+    return any(isinstance(item, (ast.Assign, ast.AnnAssign)) for item in class_node.body)
 
 
 def _has_instance_attributes(class_node: ast.ClassDef) -> bool:
@@ -220,10 +216,10 @@ def _has_instance_attributes(class_node: ast.ClassDef) -> bool:
     Returns:
         True if any method assigns to self
     """
-    for item in class_node.body:
-        if isinstance(item, ast.FunctionDef) and _method_has_self_assignment(item):
-            return True
-    return False
+    return any(
+        isinstance(item, ast.FunctionDef) and _method_has_self_assignment(item)
+        for item in class_node.body
+    )
 
 
 def _method_has_self_assignment(method: ast.FunctionDef) -> bool:
@@ -235,10 +231,7 @@ def _method_has_self_assignment(method: ast.FunctionDef) -> bool:
     Returns:
         True if method assigns to self
     """
-    for node in ast.walk(method):
-        if _is_self_attribute_assignment(node):
-            return True
-    return False
+    return any(_is_self_attribute_assignment(node) for node in ast.walk(method))
 
 
 def _is_self_attribute_assignment(node: ast.AST) -> bool:

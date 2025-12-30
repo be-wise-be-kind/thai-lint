@@ -10,7 +10,8 @@ Overview: Provides helper functions for generating refactoring suggestions when 
 
 Dependencies: ast module for Python AST processing
 
-Exports: build_suggestion, invert_condition, get_target_name
+Exports: build_suggestion, invert_condition, get_target_name, build_any_suggestion,
+    build_all_suggestion, build_filter_map_suggestion, build_takewhile_suggestion
 
 Interfaces: Functions for suggestion generation and condition transformation
 
@@ -61,3 +62,69 @@ def build_suggestion(loop_var: str, iterable: str, conditions: list[str]) -> str
     """
     combined = " and ".join(conditions)
     return f"for {loop_var} in ({loop_var} for {loop_var} in {iterable} if {combined}):"
+
+
+def build_any_suggestion(loop_var: str, iterable: str, condition: str) -> str:
+    """Generate any() refactoring suggestion.
+
+    Args:
+        loop_var: Name of the loop variable
+        iterable: Source representation of the iterable
+        condition: The filter condition
+
+    Returns:
+        Code suggestion for refactoring to any()
+    """
+    return f"return any({condition} for {loop_var} in {iterable})"
+
+
+def build_all_suggestion(loop_var: str, iterable: str, condition: str) -> str:
+    """Generate all() refactoring suggestion.
+
+    Args:
+        loop_var: Name of the loop variable
+        iterable: Source representation of the iterable
+        condition: The filter condition (already inverted to positive form)
+
+    Returns:
+        Code suggestion for refactoring to all()
+    """
+    return f"return all({condition} for {loop_var} in {iterable})"
+
+
+def build_filter_map_suggestion(
+    loop_var: str,
+    iterable: str,
+    transform_var: str,
+    transform_expr: str,
+    use_walrus: bool = True,
+) -> str:
+    """Generate filter-map list comprehension suggestion.
+
+    Args:
+        loop_var: Name of the loop variable
+        iterable: Source representation of the iterable
+        transform_var: Name of the transform result variable
+        transform_expr: The transform expression
+        use_walrus: Whether to use walrus operator (Python 3.8+)
+
+    Returns:
+        Code suggestion for refactoring to list comprehension
+    """
+    if use_walrus:
+        return f"return [{transform_var} for {loop_var} in {iterable} if ({transform_var} := {transform_expr})]"
+    return f"return [{transform_expr} for {loop_var} in {iterable} if {transform_expr}]"
+
+
+def build_takewhile_suggestion(loop_var: str, iterable: str, condition: str) -> str:
+    """Generate takewhile() refactoring suggestion.
+
+    Args:
+        loop_var: Name of the loop variable
+        iterable: Source representation of the iterable
+        condition: The condition for takewhile (positive form)
+
+    Returns:
+        Code suggestion for refactoring to takewhile()
+    """
+    return f"return list(takewhile(lambda {loop_var}: {condition}, {iterable}))"

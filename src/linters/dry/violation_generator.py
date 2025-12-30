@@ -128,10 +128,7 @@ class ViolationGenerator:
             True if file should be ignored
         """
         path_str = str(Path(file_path))
-        for pattern in ignore_patterns:
-            if pattern in path_str:
-                return True
-        return False
+        return any(pattern in path_str for pattern in ignore_patterns)
 
     def _filter_inline_ignored(
         self, violations: list[Violation], inline_ignore: InlineIgnoreParser

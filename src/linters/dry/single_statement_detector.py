@@ -163,17 +163,17 @@ class SingleStatementDetector:  # thailint: ignore[srp.violation]
         self, nodes: set[ast.AST], start_line: int, end_line: int
     ) -> bool:
         """Check if any node matches single-statement pattern."""
-        for node in nodes:
-            if self._is_single_statement_pattern(node, start_line, end_line):
-                return True
-        return False
+        return any(
+            self._is_single_statement_pattern(node, start_line, end_line)
+            for node in nodes
+        )
 
     def _check_nodes_via_walk(self, tree: ast.Module, start_line: int, end_line: int) -> bool:
         """Check nodes using ast.walk() fallback."""
-        for node in ast.walk(tree):
-            if self._node_matches_via_walk(node, start_line, end_line):
-                return True
-        return False
+        return any(
+            self._node_matches_via_walk(node, start_line, end_line)
+            for node in ast.walk(tree)
+        )
 
     def _node_matches_via_walk(self, node: ast.AST, start_line: int, end_line: int) -> bool:
         """Check if a single node overlaps and matches pattern."""
@@ -374,10 +374,10 @@ class SingleStatementDetector:  # thailint: ignore[srp.violation]
 
         def has_decorators(tree: ast.Module, _lookback_start: int) -> bool:
             """Check if any function or class in the tree has decorators."""
-            for stmt in tree.body:
-                if isinstance(stmt, (ast.FunctionDef, ast.ClassDef)) and stmt.decorator_list:
-                    return True
-            return False
+            return any(
+                isinstance(stmt, (ast.FunctionDef, ast.ClassDef)) and stmt.decorator_list
+                for stmt in tree.body
+            )
 
         return self.check_ast_context(lines, start_line, end_line, 10, 10, has_decorators)
 

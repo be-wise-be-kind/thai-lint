@@ -54,10 +54,7 @@ class ViolationFilter:
         Returns:
             True if violation overlaps with any kept violation
         """
-        for kept in kept_violations:
-            if self._overlaps(violation, kept):
-                return True
-        return False
+        return any(self._overlaps(violation, kept) for kept in kept_violations)
 
     def _overlaps(self, v1: Violation, v2: Violation) -> bool:
         """Check if two violations overlap.

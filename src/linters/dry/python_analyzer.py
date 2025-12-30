@@ -105,14 +105,15 @@ class PythonDuplicateAnalyzer(BaseTokenAnalyzer):  # thailint: ignore[srp.violat
         content: str,
     ) -> list[CodeBlock]:
         """Filter hash windows and create valid CodeBlock instances."""
-        blocks = []
-        for hash_val, start_line, end_line, snippet in windows:
-            block = self._create_block_if_valid(
-                file_path, content, hash_val, start_line, end_line, snippet
+        return [
+            block
+            for hash_val, start_line, end_line, snippet in windows
+            if (
+                block := self._create_block_if_valid(
+                    file_path, content, hash_val, start_line, end_line, snippet
+                )
             )
-            if block:
-                blocks.append(block)
-        return blocks
+        ]
 
     def _create_block_if_valid(  # pylint: disable=too-many-arguments,too-many-positional-arguments
         self,

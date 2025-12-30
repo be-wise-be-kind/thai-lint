@@ -421,11 +421,10 @@ def _matches_suffix(function_name: str) -> bool:
 
 def _matches_pattern(func_lower: str) -> bool:
     """Check if function name matches any excluded pattern."""
-    for pattern in _EXCLUDED_FUNCTION_PATTERNS:
-        pattern_lower = pattern.lower()
-        if pattern_lower in func_lower or func_lower.endswith(pattern_lower):
-            return True
-    return False
+    return any(
+        pattern.lower() in func_lower or func_lower.endswith(pattern.lower())
+        for pattern in _EXCLUDED_FUNCTION_PATTERNS
+    )
 
 
 def _is_excluded_param_position(function_name: str, param_index: int) -> bool:
@@ -434,10 +433,10 @@ def _is_excluded_param_position(function_name: str, param_index: int) -> bool:
         return False
 
     func_lower = function_name.lower()
-    for pattern in _EXCLUDE_PARAM_INDEX_1:
-        if pattern.lower() in func_lower or func_lower.endswith(pattern.lower()):
-            return True
-    return False
+    return any(
+        pattern.lower() in func_lower or func_lower.endswith(pattern.lower())
+        for pattern in _EXCLUDE_PARAM_INDEX_1
+    )
 
 
 def _all_values_excluded(unique_values: set[str]) -> bool:
@@ -449,7 +448,4 @@ def _all_values_excluded(unique_values: set[str]) -> bool:
 
 def _is_excluded_value(value: str) -> bool:
     """Check if a single value matches any excluded pattern."""
-    for pattern in _EXCLUDED_VALUE_PATTERNS:
-        if pattern.match(value):
-            return True
-    return False
+    return any(pattern.match(value) for pattern in _EXCLUDED_VALUE_PATTERNS)

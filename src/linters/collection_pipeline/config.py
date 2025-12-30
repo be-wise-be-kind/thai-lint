@@ -38,6 +38,15 @@ class CollectionPipelineConfig:
     ignore: list[str] = field(default_factory=list)
     """File patterns to ignore."""
 
+    detect_any_all: bool = True
+    """Whether to detect any()/all() pattern anti-patterns."""
+
+    detect_filter_map: bool = True
+    """Whether to detect filter-map and takewhile pattern anti-patterns."""
+
+    use_walrus_operator: bool = True
+    """Whether to suggest walrus operator (:=) in filter-map suggestions (Python 3.8+)."""
+
     def __post_init__(self) -> None:
         """Validate configuration values."""
         if self.min_continues < 1:
@@ -60,4 +69,7 @@ class CollectionPipelineConfig:
             enabled=config.get("enabled", True),
             min_continues=config.get("min_continues", DEFAULT_MIN_CONTINUES),
             ignore=config.get("ignore", []),
+            detect_any_all=config.get("detect_any_all", True),
+            detect_filter_map=config.get("detect_filter_map", True),
+            use_walrus_operator=config.get("use_walrus_operator", True),
         )
