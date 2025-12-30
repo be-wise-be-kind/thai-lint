@@ -30,7 +30,7 @@ Suppressions:
 from pathlib import Path
 
 from src.core.base import BaseLintContext, BaseLintRule
-from src.core.constants import IgnoreDirective, Language
+from src.core.constants import HEADER_SCAN_LINES, IgnoreDirective, Language
 from src.core.types import Severity, Violation
 from src.linter_config.ignore import get_ignore_parser
 from src.linter_config.rule_matcher import rule_matches
@@ -183,8 +183,8 @@ class CollectionPipelineRule(BaseLintRule):  # thailint: ignore[srp,dry]
         if not context.file_content:
             return False
 
-        # Check first 10 lines for ignore-file directive
-        lines = context.file_content.splitlines()[:10]
+        # Check first lines for ignore-file directive
+        lines = context.file_content.splitlines()[:HEADER_SCAN_LINES]
         for line in lines:
             if self._is_file_ignore_directive(line):
                 return True

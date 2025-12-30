@@ -17,22 +17,13 @@ Interfaces: calculate_max_depth(func_node) -> tuple[int, int], find_all_function
 
 Implementation: Inherits tree-sitter parsing from base, visitor pattern with depth tracking
 
-Suppressions:
-    - type:ignore: Tree-sitter Node type alias (optional dependency fallback)
 """
 
-from typing import Any
-
-from src.analyzers.typescript_base import TypeScriptBaseAnalyzer
-
-# dry: ignore-block - tree-sitter import pattern (common across TypeScript analyzers)
-try:
-    from tree_sitter import Node
-
-    TREE_SITTER_AVAILABLE = True
-except ImportError:
-    TREE_SITTER_AVAILABLE = False
-    Node = Any  # type: ignore
+from src.analyzers.typescript_base import (
+    TREE_SITTER_AVAILABLE,
+    Node,
+    TypeScriptBaseAnalyzer,
+)
 
 from .typescript_function_extractor import TypeScriptFunctionExtractor
 

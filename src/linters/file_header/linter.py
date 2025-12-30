@@ -31,7 +31,7 @@ from pathlib import Path
 from typing import Protocol
 
 from src.core.base import BaseLintContext, BaseLintRule
-from src.core.constants import Language
+from src.core.constants import HEADER_SCAN_LINES, Language
 from src.core.linter_utils import load_linter_config
 from src.core.types import Violation
 from src.linter_config.directive_markers import check_general_ignore, has_ignore_directive_marker
@@ -167,7 +167,7 @@ class FileHeaderRule(BaseLintRule):  # thailint: ignore[srp]
 
     def _has_standard_ignore(self, file_content: str) -> bool:
         """Check standard ignore parser for file-level ignores."""
-        first_lines = file_content.splitlines()[:10]
+        first_lines = file_content.splitlines()[:HEADER_SCAN_LINES]
         return any(self._line_has_matching_ignore(line) for line in first_lines)
 
     def _line_has_matching_ignore(self, line: str) -> bool:
@@ -178,7 +178,7 @@ class FileHeaderRule(BaseLintRule):  # thailint: ignore[srp]
 
     def _has_custom_ignore_syntax(self, file_content: str) -> bool:
         """Check custom file-level ignore syntax."""
-        first_lines = file_content.splitlines()[:10]
+        first_lines = file_content.splitlines()[:HEADER_SCAN_LINES]
         return any(self._is_ignore_line(line) for line in first_lines)
 
     def _is_ignore_line(self, line: str) -> bool:

@@ -9,15 +9,16 @@ Overview: Package containing base analyzer classes for different programming lan
     (TypeScriptBaseAnalyzer, etc.) that linter-specific analyzers extend. Centralizes
     language parsing infrastructure to improve maintainability and consistency.
 
-Dependencies: tree-sitter, language-specific tree-sitter bindings
+Dependencies: tree-sitter, language-specific tree-sitter bindings, ast module
 
-Exports: TypeScriptBaseAnalyzer
+Exports: TypeScriptBaseAnalyzer, build_parent_map
 
 Interfaces: Base analyzer classes with parse(), walk_tree(), and extract() methods
 
 Implementation: Composition-based design for linter analyzers to use base utilities
 """
 
+from .ast_utils import build_parent_map
 from .typescript_base import TypeScriptBaseAnalyzer
 
-__all__ = ["TypeScriptBaseAnalyzer"]
+__all__ = ["TypeScriptBaseAnalyzer", "build_parent_map"]

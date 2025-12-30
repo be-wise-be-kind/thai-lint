@@ -25,12 +25,14 @@ Suppressions:
     - global-statement: Module-level singleton pattern for parser caching (performance optimization)
 """
 
+import logging
 import re
 from pathlib import Path
 from typing import TYPE_CHECKING
 
 import yaml
 
+from src.core.constants import HEADER_SCAN_LINES
 from src.linter_config.directive_markers import (
     check_general_ignore,
     has_ignore_directive_marker,
@@ -48,6 +50,8 @@ from src.linter_config.rule_matcher import (
 
 if TYPE_CHECKING:
     from src.core.types import Violation
+
+logger = logging.getLogger(__name__)
 
 
 class IgnoreDirectiveParser:
@@ -120,7 +124,8 @@ def _parse_thailintignore_file(ignore_file: Path) -> list[str]:
     try:
         content = ignore_file.read_text(encoding="utf-8")
         return extract_patterns_from_content(content)
-    except (OSError, UnicodeDecodeError):
+    except (OSError, UnicodeDecodeError) as e:
+        logger.warning("Failed to read .thailintignore file %s: %s", ignore_file, e)
         return []
 
 
@@ -129,7 +134,8 @@ def _parse_config_file(config_file: Path) -> list[str]:
     try:
         config = yaml.safe_load(config_file.read_text(encoding="utf-8"))
         return _extract_ignore_patterns(config)
-    except (yaml.YAMLError, OSError, UnicodeDecodeError):
+    except (yaml.YAMLError, OSError, UnicodeDecodeError) as e:
+        logger.warning("Failed to parse config file %s: %s", config_file, e)
         return []
 
 
@@ -144,13 +150,14 @@ def _extract_ignore_patterns(config: dict | None) -> list[str]:
 
 
 def _read_file_first_lines(file_path: Path) -> list[str]:
-    """Read first 10 lines of file, return empty list on error."""
+    """Read first lines of file for header scanning, return empty list on error."""
     if not file_path.exists():
         return []
     try:
         content = file_path.read_text(encoding="utf-8")
-        return content.splitlines()[:10]
-    except (UnicodeDecodeError, OSError):
+        return content.splitlines()[:HEADER_SCAN_LINES]
+    except (UnicodeDecodeError, OSError) as e:
+        logger.debug("Failed to read file %s: %s", file_path, e)
         return []
 
 
@@ -187,7 +194,7 @@ def _check_specific_rule_in_line(code: str, rule_id: str) -> bool:
 
 def _has_file_ignore_in_content(file_content: str, rule_id: str | None) -> bool:
     """Check if file content has ignore-file directive."""
-    lines = file_content.splitlines()[:10]
+    lines = file_content.splitlines()[:HEADER_SCAN_LINES]
     return any(_check_line_for_ignore(line, rule_id) for line in lines)
 
 

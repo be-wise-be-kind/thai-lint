@@ -10,7 +10,8 @@ Overview: Provides TypeScriptComparisonTracker class that uses tree-sitter to tr
     it suggests the variable should be an enum. Excludes common false positives like template
     literals and typeof comparisons.
 
-Dependencies: TypeScriptBaseAnalyzer for tree-sitter parsing, dataclasses for pattern structure
+Dependencies: TypeScriptBaseAnalyzer for tree-sitter parsing, dataclasses for pattern structure,
+    src.core.constants for MAX_ATTRIBUTE_CHAIN_DEPTH
 
 Exports: TypeScriptComparisonTracker class, TypeScriptComparisonPattern dataclass
 
@@ -29,6 +30,7 @@ from dataclasses import dataclass
 from typing import Any
 
 from src.analyzers.typescript_base import TREE_SITTER_AVAILABLE, TypeScriptBaseAnalyzer
+from src.core.constants import MAX_ATTRIBUTE_CHAIN_DEPTH
 
 if TREE_SITTER_AVAILABLE:
     from tree_sitter import Node
@@ -282,10 +284,9 @@ class TypeScriptComparisonTracker(TypeScriptBaseAnalyzer):  # thailint: ignore[s
             Qualified name or None if too complex
         """
         parts: list[str] = []
-        max_depth = 3
         current: Node | None = node
 
-        for _ in range(max_depth):
+        for _ in range(MAX_ATTRIBUTE_CHAIN_DEPTH):
             if current is None:
                 break
             self._add_property_name(current, parts)

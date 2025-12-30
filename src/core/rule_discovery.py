@@ -19,11 +19,14 @@ Implementation: Package traversal with pkgutil, class introspection with inspect
 
 import importlib
 import inspect
+import logging
 import pkgutil
 from types import ModuleType
 from typing import Any
 
 from .base import BaseLintRule
+
+logger = logging.getLogger(__name__)
 
 
 def discover_from_package(package_path: str) -> list[BaseLintRule]:
@@ -37,7 +40,8 @@ def discover_from_package(package_path: str) -> list[BaseLintRule]:
     """
     try:
         package = importlib.import_module(package_path)
-    except ImportError:
+    except ImportError as e:
+        logger.debug("Failed to import package %s: %s", package_path, e)
         return []
 
     if not hasattr(package, "__path__"):

@@ -10,7 +10,7 @@ Overview: Provides PythonPrintStatementAnalyzer class that traverses Python AST 
     Returns structured data about each print call including the AST node, parent context,
     and line number for violation reporting. Handles both simple print() and builtins.print() calls.
 
-Dependencies: ast module for AST parsing and node types
+Dependencies: ast module for AST parsing and node types, analyzers.ast_utils
 
 Exports: PythonPrintStatementAnalyzer class, is_print_call function, is_main_if_block function
 
@@ -20,6 +20,8 @@ Implementation: AST walk pattern with parent map for context detection and __mai
 """
 
 import ast
+
+from src.analyzers.ast_utils import build_parent_map
 
 # --- Pure helper functions for print call detection ---
 
@@ -117,23 +119,9 @@ class PythonPrintStatementAnalyzer:
             List of tuples (node, parent, line_number)
         """
         self.print_calls = []
-        self.parent_map = {}
-        self._build_parent_map(tree)
+        self.parent_map = build_parent_map(tree)
         self._collect_print_calls(tree)
         return self.print_calls
-
-    def _build_parent_map(self, node: ast.AST, parent: ast.AST | None = None) -> None:
-        """Build a map of nodes to their parents.
-
-        Args:
-            node: Current AST node
-            parent: Parent of current node
-        """
-        if parent is not None:
-            self.parent_map[node] = parent
-
-        for child in ast.iter_child_nodes(node):
-            self._build_parent_map(child, node)
 
     def _collect_print_calls(self, tree: ast.AST) -> None:
         """Walk tree and collect all print() calls.
