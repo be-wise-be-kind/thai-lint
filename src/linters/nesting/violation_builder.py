@@ -17,6 +17,7 @@ Interfaces: create_nesting_violation, create_typescript_nesting_violation, creat
 
 Implementation: Formats messages with depth information, provides targeted refactoring suggestions,
     extends BaseViolationBuilder for consistent violation construction
+
 """
 
 import ast
