@@ -20,6 +20,8 @@ Implementation: AST visitor pattern with delegated pattern matching and suggesti
 
 Suppressions:
     - invalid-name: PatternVisitor inner class follows AST NodeVisitor convention
+    - srp: Class coordinates multiple pattern detection strategies (any/all, filter-map, continue)
+    - nesting: visit_For has deep nesting due to multiple pattern type dispatch
 """
 
 import ast
