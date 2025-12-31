@@ -6,48 +6,89 @@ Purpose: TDD test suite for the string-concat-loop performance rule
 Scope: Python and TypeScript detection of O(n²) string building patterns
 
 Overview: Comprehensive test suite defining expected behavior for the string-concat-loop
-    linter rule. Tests are written before implementation (TDD). Covers detection of
-    string += in for/while loops, ignoring numeric/list operations, edge cases,
-    and TypeScript support.
+    linter rule. Covers detection of string += in for/while loops, ignoring numeric/list
+    operations, edge cases, and TypeScript support.
 
-Dependencies: pytest
+Dependencies: pytest, ast
 
 Exports: Test classes for string concat detection
 
-Related: src/linters/performance/string_concat_analyzer.py (to be implemented)
+Related: src/linters/performance/python_analyzer.py, src/linters/performance/typescript_analyzer.py
 
-Implementation: pytest test classes with skip markers until implementation exists
+Implementation: pytest test classes using real analyzer implementations
 """
+
+import ast
+from dataclasses import dataclass
 
 import pytest
 
-# Will be implemented in PR2
-# from src.linters.performance import lint as perf_lint
-# from src.linters.performance.config import PerformanceConfig
+from src.linters.performance.python_analyzer import PythonStringConcatAnalyzer
+from src.linters.performance.typescript_analyzer import TypeScriptStringConcatAnalyzer
 
 
-def analyze_python_code(code: str) -> list:
-    """
-    Analyze Python code for string concat in loop violations.
+@dataclass
+class ViolationResult:
+    """Simple violation result for test assertions."""
 
-    This is a placeholder that will call the actual linter once implemented.
-    For now, returns empty list so tests can be structured.
-    """
-    # TODO: Replace with actual implementation in PR2
-    # return perf_lint(code, language="python", rules=["string-concat-loop"])
-    pytest.skip("Implementation pending - PR2")
-    return []
+    message: str
+    suggestion: str
+    line: int
 
 
-def analyze_typescript_code(code: str) -> list:
-    """
-    Analyze TypeScript code for string concat in loop violations.
+def analyze_python_code(code: str) -> list[ViolationResult]:
+    """Analyze Python code for string concat in loop violations."""
+    try:
+        tree = ast.parse(code)
+    except SyntaxError:
+        # Return empty list for syntax errors in tests (matches graceful handling)
+        return []
 
-    This is a placeholder that will call the actual linter once implemented.
-    """
-    # TODO: Replace with actual implementation in PR2
-    pytest.skip("Implementation pending - PR2")
-    return []
+    analyzer = PythonStringConcatAnalyzer()
+    raw_violations = analyzer.find_violations(tree)
+    deduped = analyzer.deduplicate_violations(raw_violations)
+
+    results = []
+    for v in deduped:
+        results.append(
+            ViolationResult(
+                message=f"String concatenation in {v.loop_type} loop: '{v.variable_name} +=' "
+                f"creates O(n²) complexity",
+                suggestion=f"Use ''.join() with a list comprehension or generator instead of "
+                f"repeatedly concatenating to '{v.variable_name}'. "
+                f"Example: {v.variable_name} = ''.join(items) or "
+                f"{v.variable_name} = ''.join(str(x) for x in items)",
+                line=v.line_number,
+            )
+        )
+    return results
+
+
+def analyze_typescript_code(code: str) -> list[ViolationResult]:
+    """Analyze TypeScript code for string concat in loop violations."""
+    analyzer = TypeScriptStringConcatAnalyzer()
+    root_node = analyzer.parse_typescript(code)
+
+    if root_node is None:
+        return []
+
+    raw_violations = analyzer.find_violations(root_node)
+    deduped = analyzer.deduplicate_violations(raw_violations)
+
+    results = []
+    for v in deduped:
+        results.append(
+            ViolationResult(
+                message=f"String concatenation in {v.loop_type} loop: '{v.variable_name} +=' "
+                f"creates O(n²) complexity",
+                suggestion=f"Use ''.join() with a list comprehension or generator instead of "
+                f"repeatedly concatenating to '{v.variable_name}'. "
+                f"Example: {v.variable_name} = ''.join(items) or "
+                f"{v.variable_name} = ''.join(str(x) for x in items)",
+                line=v.line_number,
+            )
+        )
+    return results
 
 
 class TestPythonStringConcatDetection:
@@ -497,7 +538,7 @@ def example(items):
         violations = analyze_python_code(code)
         assert len(violations) == 1
         # The += is on line 5 (1-indexed)
-        assert violations[0].line_number == 5
+        assert violations[0].line == 5
 
     def test_suggestion_is_actionable(self):
         """Suggestion provides actionable fix."""
