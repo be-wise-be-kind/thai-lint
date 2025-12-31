@@ -113,10 +113,7 @@ class MethodPropertyRule(MultiLanguageLintRule):  # thailint: ignore[srp,dry]
             return False
 
         file_path = Path(context.file_path)
-        for pattern in config.ignore:
-            if self._matches_pattern(file_path, pattern):
-                return True
-        return False
+        return any(self._matches_pattern(file_path, pattern) for pattern in config.ignore)
 
     # dry: ignore-block
     def _matches_pattern(self, file_path: Path, pattern: str) -> bool:

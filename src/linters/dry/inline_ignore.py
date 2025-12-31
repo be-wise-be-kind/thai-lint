@@ -50,14 +50,11 @@ class InlineIgnoreParser:
         Returns:
             List of (start, end) tuples for ignore ranges
         """
-        ranges = []
-
-        for i, line in enumerate(lines, start=1):
-            ignore_range = self._parse_ignore_directive(line, i, len(lines))
-            if ignore_range:
-                ranges.append(ignore_range)
-
-        return ranges
+        return [
+            ignore_range
+            for i, line in enumerate(lines, start=1)
+            if (ignore_range := self._parse_ignore_directive(line, i, len(lines)))
+        ]
 
     def _parse_ignore_directive(
         self, line: str, line_num: int, total_lines: int
@@ -115,10 +112,7 @@ class InlineIgnoreParser:
         Returns:
             True if ranges overlap
         """
-        for ign_start, ign_end in ranges:
-            if line <= ign_end and end_line >= ign_start:
-                return True
-        return False
+        return any(line <= ign_end and end_line >= ign_start for ign_start, ign_end in ranges)
 
     def _check_single_line(self, line: int, ranges: list[tuple[int, int]]) -> bool:
         """Check if single line is in any ignore range.
@@ -130,10 +124,7 @@ class InlineIgnoreParser:
         Returns:
             True if line is in any range
         """
-        for start, end in ranges:
-            if start <= line <= end:
-                return True
-        return False
+        return any(start <= line <= end for start, end in ranges)
 
     def clear(self) -> None:
         """Clear all stored ignore ranges."""

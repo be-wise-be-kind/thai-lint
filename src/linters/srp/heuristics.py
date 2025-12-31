@@ -84,7 +84,7 @@ def has_property_decorator(func_node: ast.FunctionDef | ast.AsyncFunctionDef) ->
     Returns:
         True if function has @property decorator
     """
-    for decorator in func_node.decorator_list:
-        if isinstance(decorator, ast.Name) and decorator.id == "property":
-            return True
-    return False
+    return any(
+        isinstance(decorator, ast.Name) and decorator.id == "property"
+        for decorator in func_node.decorator_list
+    )

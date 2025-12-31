@@ -150,10 +150,7 @@ class CollectionPipelineRule(BaseLintRule):  # thailint: ignore[srp,dry]
             return False
 
         file_path = Path(context.file_path)
-        for pattern in config.ignore:
-            if self._matches_pattern(file_path, pattern):
-                return True
-        return False
+        return any(self._matches_pattern(file_path, pattern) for pattern in config.ignore)
 
     def _matches_pattern(self, file_path: Path, pattern: str) -> bool:
         """Check if file path matches a glob pattern.
@@ -185,10 +182,7 @@ class CollectionPipelineRule(BaseLintRule):  # thailint: ignore[srp,dry]
 
         # Check first lines for ignore-file directive
         lines = context.file_content.splitlines()[:HEADER_SCAN_LINES]
-        for line in lines:
-            if self._is_file_ignore_directive(line):
-                return True
-        return False
+        return any(self._is_file_ignore_directive(line) for line in lines)
 
     def _is_file_ignore_directive(self, line: str) -> bool:
         """Check if line is a file-level ignore directive.
@@ -274,12 +268,11 @@ class CollectionPipelineRule(BaseLintRule):  # thailint: ignore[srp,dry]
         Returns:
             List of violations after filtering
         """
-        violations: list[Violation] = []
-        for match in matches:
-            violation = self._process_match(match, config, context)
-            if violation:
-                violations.append(violation)
-        return violations
+        return [
+            violation
+            for match in matches
+            if (violation := self._process_match(match, config, context))
+        ]
 
     def _process_match(
         self,
