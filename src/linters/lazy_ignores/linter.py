@@ -28,7 +28,7 @@ from src.core.types import Violation
 from .header_parser import SuppressionsParser
 from .matcher import IgnoreSuppressionMatcher
 from .python_analyzer import PythonIgnoreDetector
-from .test_skip_detector import TestSkipDetector
+from .skip_detector import TestSkipDetector
 from .types import IgnoreDirective
 from .violation_builder import build_orphaned_violation, build_unjustified_violation
 

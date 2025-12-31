@@ -21,7 +21,7 @@ from pathlib import Path
 
 import pytest
 
-from src.linters.lazy_ignores.test_skip_detector import TestSkipDetector
+from src.linters.lazy_ignores.skip_detector import TestSkipDetector
 from src.linters.lazy_ignores.types import IgnoreType
 
 
