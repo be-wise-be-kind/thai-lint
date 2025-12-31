@@ -31,7 +31,7 @@ env/
 .env
 
 # Poetry
-poetry.lock
+# Note: poetry.lock SHOULD be committed for applications to ensure reproducible builds
 
 # Testing
 .pytest_cache/
