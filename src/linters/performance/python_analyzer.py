@@ -163,20 +163,31 @@ class PythonStringConcatAnalyzer:
         self, node: ast.AST, violations: list[StringConcatViolation], loop_type: str | None
     ) -> None:
         """Check if node is a string concatenation in a loop and add violation if so."""
+        if not self._is_add_aug_assign_in_loop(node, loop_type):
+            return
+        assert isinstance(node, ast.AugAssign) and isinstance(node.target, ast.Name)
+        self._add_string_concat_violation(node, node.target.id, loop_type or "", violations)
+
+    def _is_add_aug_assign_in_loop(self, node: ast.AST, loop_type: str | None) -> bool:
+        """Check if node is a += augmented assignment in a loop."""
         if not loop_type or not isinstance(node, ast.AugAssign):
+            return False
+        return isinstance(node.op, ast.Add) and isinstance(node.target, ast.Name)
+
+    def _add_string_concat_violation(
+        self, node: ast.AugAssign, var_name: str, loop_type: str, violations: list[StringConcatViolation]
+    ) -> None:
+        """Add violation if variable is likely a string."""
+        if not self._is_likely_string_variable(var_name, node.value):
             return
-        if not isinstance(node.op, ast.Add) or not isinstance(node.target, ast.Name):
-            return
-        var_name = node.target.id
-        if self._is_likely_string_variable(var_name, node.value):
-            violations.append(
-                StringConcatViolation(
-                    variable_name=var_name,
-                    line_number=node.lineno,
-                    column=node.col_offset,
-                    loop_type=loop_type,
-                )
+        violations.append(
+            StringConcatViolation(
+                variable_name=var_name,
+                line_number=node.lineno,
+                column=node.col_offset,
+                loop_type=loop_type,
             )
+        )
 
     def _is_likely_string_variable(self, var_name: str, value: ast.expr) -> bool:
         """Determine if a variable is likely a string being concatenated.
