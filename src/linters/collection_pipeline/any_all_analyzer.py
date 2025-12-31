@@ -21,6 +21,8 @@ import ast
 from dataclasses import dataclass
 from typing import cast
 
+from . import ast_utils
+
 
 @dataclass
 class AnyAllMatch:
@@ -205,14 +207,9 @@ def _is_next_stmt_return_false(func_body: list[ast.stmt], for_index: int) -> boo
     Returns:
         True if next statement is return False
     """
-    next_index = for_index + 1
-    if next_index >= len(func_body):
+    stmt = ast_utils.get_next_return_stmt(func_body, for_index)
+    if stmt is None:
         return False
-
-    stmt = func_body[next_index]
-    if not isinstance(stmt, ast.Return):
-        return False
-
     return _is_literal_false(stmt.value)
 
 
@@ -226,14 +223,9 @@ def _is_next_stmt_return_true(func_body: list[ast.stmt], for_index: int) -> bool
     Returns:
         True if next statement is return True
     """
-    next_index = for_index + 1
-    if next_index >= len(func_body):
+    stmt = ast_utils.get_next_return_stmt(func_body, for_index)
+    if stmt is None:
         return False
-
-    stmt = func_body[next_index]
-    if not isinstance(stmt, ast.Return):
-        return False
-
     return _is_literal_true(stmt.value)
 
 

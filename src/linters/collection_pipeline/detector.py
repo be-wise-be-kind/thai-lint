@@ -19,9 +19,7 @@ Interfaces: PipelinePatternDetector.detect_patterns() -> list[PatternMatch]
 Implementation: AST visitor pattern with delegated pattern matching and suggestion generation
 
 Suppressions:
-    - invalid-name: PatternVisitor inner class follows AST NodeVisitor convention
-    - srp: Class coordinates multiple pattern detection strategies (any/all, filter-map, continue)
-    - nesting: visit_For has deep nesting due to multiple pattern type dispatch
+    - invalid-name: AST NodeVisitor visit_* methods follow convention, not PEP8
 """
 
 import ast
@@ -76,7 +74,159 @@ class PatternMatch:
     """Type of anti-pattern detected (default: EMBEDDED_FILTER for backward compat)."""
 
 
-class PipelinePatternDetector(ast.NodeVisitor):  # thailint: ignore[srp]
+# Module-level pattern match factory functions (extracted from class to reduce SRP violations)
+
+
+def create_any_match(match: any_all_analyzer.AnyAllMatch) -> PatternMatch:
+    """Create PatternMatch for any() pattern.
+
+    Args:
+        match: AnyAllMatch from analyzer
+
+    Returns:
+        PatternMatch for the any() pattern
+    """
+    loop_var = suggestion_builder.get_target_name(match.for_node.target)
+    iterable = ast.unparse(match.for_node.iter)
+    condition = ast.unparse(match.condition)
+    suggestion = suggestion_builder.build_any_suggestion(loop_var, iterable, condition)
+
+    return PatternMatch(
+        line_number=match.for_node.lineno,
+        loop_var=loop_var,
+        iterable=iterable,
+        conditions=[condition],
+        has_side_effects=False,
+        suggestion=suggestion,
+        pattern_type=PatternType.ANY_PATTERN,
+    )
+
+
+def create_all_match(match: any_all_analyzer.AnyAllMatch) -> PatternMatch:
+    """Create PatternMatch for all() pattern.
+
+    Args:
+        match: AnyAllMatch from analyzer
+
+    Returns:
+        PatternMatch for the all() pattern
+    """
+    loop_var = suggestion_builder.get_target_name(match.for_node.target)
+    iterable = ast.unparse(match.for_node.iter)
+    condition = ast.unparse(match.condition)
+    suggestion = suggestion_builder.build_all_suggestion(loop_var, iterable, condition)
+
+    return PatternMatch(
+        line_number=match.for_node.lineno,
+        loop_var=loop_var,
+        iterable=iterable,
+        conditions=[condition],
+        has_side_effects=False,
+        suggestion=suggestion,
+        pattern_type=PatternType.ALL_PATTERN,
+    )
+
+
+def create_filter_map_match(match: filter_map_analyzer.FilterMapMatch) -> PatternMatch:
+    """Create PatternMatch for filter-map pattern.
+
+    Args:
+        match: FilterMapMatch from analyzer
+
+    Returns:
+        PatternMatch for the filter-map pattern
+    """
+    loop_var = suggestion_builder.get_target_name(match.for_node.target)
+    iterable = ast.unparse(match.for_node.iter)
+    suggestion = suggestion_builder.build_filter_map_suggestion(
+        loop_var, iterable, match.transform_var, match.transform_expr
+    )
+
+    return PatternMatch(
+        line_number=match.for_node.lineno,
+        loop_var=loop_var,
+        iterable=iterable,
+        conditions=[match.transform_expr],
+        has_side_effects=False,
+        suggestion=suggestion,
+        pattern_type=PatternType.FILTER_MAP,
+    )
+
+
+def create_takewhile_match(match: filter_map_analyzer.TakewhileMatch) -> PatternMatch:
+    """Create PatternMatch for takewhile pattern.
+
+    Args:
+        match: TakewhileMatch from analyzer
+
+    Returns:
+        PatternMatch for the takewhile pattern
+    """
+    loop_var = suggestion_builder.get_target_name(match.for_node.target)
+    iterable = ast.unparse(match.for_node.iter)
+    condition = ast.unparse(match.condition)
+    suggestion = suggestion_builder.build_takewhile_suggestion(loop_var, iterable, condition)
+
+    return PatternMatch(
+        line_number=match.for_node.lineno,
+        loop_var=loop_var,
+        iterable=iterable,
+        conditions=[condition],
+        has_side_effects=False,
+        suggestion=suggestion,
+        pattern_type=PatternType.TAKEWHILE,
+    )
+
+
+def create_embedded_filter_match(for_node: ast.For, continues: list[ast.If]) -> PatternMatch:
+    """Create a PatternMatch for embedded filter pattern.
+
+    Args:
+        for_node: AST For node
+        continues: List of continue guard if statements
+
+    Returns:
+        PatternMatch object with detection information
+    """
+    loop_var = suggestion_builder.get_target_name(for_node.target)
+    iterable = ast.unparse(for_node.iter)
+    conditions = [suggestion_builder.invert_condition(c.test) for c in continues]
+    suggestion = suggestion_builder.build_suggestion(loop_var, iterable, conditions)
+
+    return PatternMatch(
+        line_number=for_node.lineno,
+        loop_var=loop_var,
+        iterable=iterable,
+        conditions=conditions,
+        has_side_effects=False,
+        suggestion=suggestion,
+        pattern_type=PatternType.EMBEDDED_FILTER,
+    )
+
+
+def analyze_for_loop(node: ast.For) -> PatternMatch | None:
+    """Analyze a for loop for embedded filtering patterns.
+
+    Args:
+        node: AST For node to analyze
+
+    Returns:
+        PatternMatch if pattern detected, None otherwise
+    """
+    continues = continue_analyzer.extract_continue_patterns(node.body)
+    if not continues:
+        return None
+
+    if continue_analyzer.has_side_effects(continues):
+        return None
+
+    if not continue_analyzer.has_body_after_continues(node.body, len(continues)):
+        return None
+
+    return create_embedded_filter_match(node, continues)
+
+
+class PipelinePatternDetector(ast.NodeVisitor):
     """Detects for loops with embedded filtering via if/continue patterns."""
 
     def __init__(self, source_code: str) -> None:
@@ -122,28 +272,40 @@ class PipelinePatternDetector(ast.NodeVisitor):  # thailint: ignore[srp]
         self.generic_visit(node)
         self._func_body_stack.pop()
 
-    # thailint: ignore-next-line[nesting]
     def visit_For(self, node: ast.For) -> None:  # pylint: disable=invalid-name
         """Visit for loop and check for filtering patterns.
 
         Args:
             node: AST For node to analyze
         """
+        match = self._find_pattern_match(node)
+        if match is not None:
+            self.matches.append(match)
+        self.generic_visit(node)
+
+    def _find_pattern_match(self, node: ast.For) -> PatternMatch | None:
+        """Find the first matching anti-pattern for a for loop.
+
+        Checks patterns in priority order: any/all, filter-map/takewhile, embedded filter.
+
+        Args:
+            node: AST For node to analyze
+
+        Returns:
+            PatternMatch if any pattern detected, None otherwise
+        """
         # Check for any/all patterns (requires function context)
         any_all_match = self._analyze_any_all_pattern(node)
         if any_all_match is not None:
-            self.matches.append(any_all_match)
-        else:
-            # Check for filter-map/takewhile patterns
-            filter_map_match = self._analyze_filter_map_pattern(node)
-            if filter_map_match is not None:
-                self.matches.append(filter_map_match)
-            else:
-                # Check for embedded filter patterns
-                match = self._analyze_for_loop(node)
-                if match is not None:
-                    self.matches.append(match)
-        self.generic_visit(node)
+            return any_all_match
+
+        # Check for filter-map/takewhile patterns
+        filter_map_match = self._analyze_filter_map_pattern(node)
+        if filter_map_match is not None:
+            return filter_map_match
+
+        # Check for embedded filter patterns
+        return analyze_for_loop(node)
 
     def _analyze_any_all_pattern(self, node: ast.For) -> PatternMatch | None:
         """Analyze a for loop for any()/all() patterns.
@@ -162,62 +324,14 @@ class PipelinePatternDetector(ast.NodeVisitor):  # thailint: ignore[srp]
         # Try any() pattern first
         any_match = any_all_analyzer.extract_any_pattern(func_body, node)
         if any_match is not None:
-            return self._create_any_match(any_match)
+            return create_any_match(any_match)
 
         # Try all() pattern
         all_match = any_all_analyzer.extract_all_pattern(func_body, node)
         if all_match is not None:
-            return self._create_all_match(all_match)
+            return create_all_match(all_match)
 
         return None
-
-    def _create_any_match(self, match: any_all_analyzer.AnyAllMatch) -> PatternMatch:
-        """Create PatternMatch for any() pattern.
-
-        Args:
-            match: AnyAllMatch from analyzer
-
-        Returns:
-            PatternMatch for the any() pattern
-        """
-        loop_var = suggestion_builder.get_target_name(match.for_node.target)
-        iterable = ast.unparse(match.for_node.iter)
-        condition = ast.unparse(match.condition)
-        suggestion = suggestion_builder.build_any_suggestion(loop_var, iterable, condition)
-
-        return PatternMatch(
-            line_number=match.for_node.lineno,
-            loop_var=loop_var,
-            iterable=iterable,
-            conditions=[condition],
-            has_side_effects=False,
-            suggestion=suggestion,
-            pattern_type=PatternType.ANY_PATTERN,
-        )
-
-    def _create_all_match(self, match: any_all_analyzer.AnyAllMatch) -> PatternMatch:
-        """Create PatternMatch for all() pattern.
-
-        Args:
-            match: AnyAllMatch from analyzer
-
-        Returns:
-            PatternMatch for the all() pattern
-        """
-        loop_var = suggestion_builder.get_target_name(match.for_node.target)
-        iterable = ast.unparse(match.for_node.iter)
-        condition = ast.unparse(match.condition)
-        suggestion = suggestion_builder.build_all_suggestion(loop_var, iterable, condition)
-
-        return PatternMatch(
-            line_number=match.for_node.lineno,
-            loop_var=loop_var,
-            iterable=iterable,
-            conditions=[condition],
-            has_side_effects=False,
-            suggestion=suggestion,
-            pattern_type=PatternType.ALL_PATTERN,
-        )
 
     def _analyze_filter_map_pattern(self, node: ast.For) -> PatternMatch | None:
         """Analyze a for loop for filter-map/takewhile patterns.
@@ -236,106 +350,11 @@ class PipelinePatternDetector(ast.NodeVisitor):  # thailint: ignore[srp]
         # Try filter-map pattern first
         fm_match = filter_map_analyzer.extract_filter_map_pattern(func_body, node)
         if fm_match is not None:
-            return self._create_filter_map_match(fm_match)
+            return create_filter_map_match(fm_match)
 
         # Try takewhile pattern
         tw_match = filter_map_analyzer.extract_takewhile_pattern(func_body, node)
         if tw_match is not None:
-            return self._create_takewhile_match(tw_match)
+            return create_takewhile_match(tw_match)
 
         return None
-
-    def _create_filter_map_match(self, match: filter_map_analyzer.FilterMapMatch) -> PatternMatch:
-        """Create PatternMatch for filter-map pattern.
-
-        Args:
-            match: FilterMapMatch from analyzer
-
-        Returns:
-            PatternMatch for the filter-map pattern
-        """
-        loop_var = suggestion_builder.get_target_name(match.for_node.target)
-        iterable = ast.unparse(match.for_node.iter)
-        suggestion = suggestion_builder.build_filter_map_suggestion(
-            loop_var, iterable, match.transform_var, match.transform_expr
-        )
-
-        return PatternMatch(
-            line_number=match.for_node.lineno,
-            loop_var=loop_var,
-            iterable=iterable,
-            conditions=[match.transform_expr],
-            has_side_effects=False,
-            suggestion=suggestion,
-            pattern_type=PatternType.FILTER_MAP,
-        )
-
-    def _create_takewhile_match(self, match: filter_map_analyzer.TakewhileMatch) -> PatternMatch:
-        """Create PatternMatch for takewhile pattern.
-
-        Args:
-            match: TakewhileMatch from analyzer
-
-        Returns:
-            PatternMatch for the takewhile pattern
-        """
-        loop_var = suggestion_builder.get_target_name(match.for_node.target)
-        iterable = ast.unparse(match.for_node.iter)
-        condition = ast.unparse(match.condition)
-        suggestion = suggestion_builder.build_takewhile_suggestion(loop_var, iterable, condition)
-
-        return PatternMatch(
-            line_number=match.for_node.lineno,
-            loop_var=loop_var,
-            iterable=iterable,
-            conditions=[condition],
-            has_side_effects=False,
-            suggestion=suggestion,
-            pattern_type=PatternType.TAKEWHILE,
-        )
-
-    def _analyze_for_loop(self, node: ast.For) -> PatternMatch | None:
-        """Analyze a for loop for embedded filtering patterns.
-
-        Args:
-            node: AST For node to analyze
-
-        Returns:
-            PatternMatch if pattern detected, None otherwise
-        """
-        continues = continue_analyzer.extract_continue_patterns(node.body)
-        if not continues:
-            return None
-
-        if continue_analyzer.has_side_effects(continues):
-            return None
-
-        if not continue_analyzer.has_body_after_continues(node.body, len(continues)):
-            return None
-
-        return self._create_match(node, continues)
-
-    def _create_match(self, for_node: ast.For, continues: list[ast.If]) -> PatternMatch:
-        """Create a PatternMatch from detected pattern.
-
-        Args:
-            for_node: AST For node
-            continues: List of continue guard if statements
-
-        Returns:
-            PatternMatch object with detection information
-        """
-        loop_var = suggestion_builder.get_target_name(for_node.target)
-        iterable = ast.unparse(for_node.iter)
-        conditions = [suggestion_builder.invert_condition(c.test) for c in continues]
-        suggestion = suggestion_builder.build_suggestion(loop_var, iterable, conditions)
-
-        return PatternMatch(
-            line_number=for_node.lineno,
-            loop_var=loop_var,
-            iterable=iterable,
-            conditions=conditions,
-            has_side_effects=False,
-            suggestion=suggestion,
-            pattern_type=PatternType.EMBEDDED_FILTER,
-        )
