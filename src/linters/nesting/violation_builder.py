@@ -33,7 +33,7 @@ from src.core.violation_builder import BaseViolationBuilder
 from .config import NestingConfig
 
 
-# thailint: ignore-next-line[dry.duplicate-code] Builder pattern has intentional similar structure
+# dry: ignore-block - Builder pattern has intentional similar structure across linters
 class NestingViolationBuilder(BaseViolationBuilder):
     """Builds violations for nesting depth issues."""
 

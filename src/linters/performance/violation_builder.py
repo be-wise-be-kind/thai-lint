@@ -29,7 +29,7 @@ from src.core.types import Severity, Violation
 from src.core.violation_builder import BaseViolationBuilder
 
 
-# thailint: ignore-next-line[dry.duplicate-code] Builder pattern has intentional similar structure
+# dry: ignore-block - Builder pattern has intentional similar structure across linters
 class PerformanceViolationBuilder(BaseViolationBuilder):
     """Builds violations for performance issues."""
 
