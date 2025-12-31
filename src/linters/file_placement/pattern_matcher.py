@@ -42,23 +42,39 @@ class PatternMatcher:
         return self._compiled_patterns[pattern]
 
     def match_deny_patterns(
-        self, path_str: str, deny_patterns: list[dict[str, str]]
+        self, path_str: str, deny_patterns: list[dict[str, str] | str]
     ) -> tuple[bool, str | None]:
         """Check if path matches any deny patterns.
 
         Args:
             path_str: File path to check
-            deny_patterns: List of deny pattern dicts with 'pattern' and 'reason'
+            deny_patterns: List of deny patterns (either dicts with 'pattern'/'reason'
+                or plain regex strings for backward compatibility)
 
         Returns:
             Tuple of (is_denied, reason)
         """
         for deny_item in deny_patterns:
-            compiled = self._get_compiled(deny_item["pattern"])
+            pattern, reason = self._extract_pattern_and_reason(deny_item)
+            compiled = self._get_compiled(pattern)
             if compiled.search(path_str):
-                reason = deny_item.get("reason", "File not allowed in this location")
                 return True, reason
         return False, None
+
+    def _extract_pattern_and_reason(self, deny_item: dict[str, str] | str) -> tuple[str, str]:
+        """Extract pattern and reason from a deny item.
+
+        Args:
+            deny_item: Either a dict with 'pattern' key or a plain string pattern
+
+        Returns:
+            Tuple of (pattern, reason)
+        """
+        if isinstance(deny_item, str):
+            return deny_item, "File not allowed in this location"
+        return deny_item["pattern"], deny_item.get(
+            "reason", deny_item.get("message", "File not allowed in this location")
+        )
 
     def match_allow_patterns(self, path_str: str, allow_patterns: list[str]) -> bool:
         """Check if path matches any allow patterns.
