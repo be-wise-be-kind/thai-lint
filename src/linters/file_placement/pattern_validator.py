@@ -21,6 +21,20 @@ import re
 from typing import Any
 
 
+def _extract_pattern(deny_item: dict[str, str] | str) -> str:
+    """Extract pattern from a deny item.
+
+    Args:
+        deny_item: Either a dict with 'pattern' key or a plain string pattern
+
+    Returns:
+        The pattern string
+    """
+    if isinstance(deny_item, str):
+        return deny_item
+    return deny_item.get("pattern", "")
+
+
 class PatternValidator:
     """Validates regex patterns in file placement configuration."""
 
@@ -32,15 +46,15 @@ class PatternValidator:
         """Validate all regex patterns in configuration.
 
         Args:
-            config: Full configuration dict
+            config: File placement configuration dict (already unwrapped)
 
         Raises:
             ValueError: If any regex pattern is invalid
         """
-        fp_config = config.get("file-placement", {})
-        self._validate_directory_patterns(fp_config)
-        self._validate_global_patterns(fp_config)
-        self._validate_global_deny_patterns(fp_config)
+        # Config is already unwrapped from file-placement key by FilePlacementLinter
+        self._validate_directory_patterns(config)
+        self._validate_global_patterns(config)
+        self._validate_global_deny_patterns(config)
 
     def _validate_pattern(self, pattern: str) -> None:
         """Validate a single regex pattern.
@@ -74,7 +88,7 @@ class PatternValidator:
         """
         if "deny" in rules:
             for deny_item in rules["deny"]:
-                pattern = deny_item.get("pattern", "")
+                pattern = _extract_pattern(deny_item)
                 self._validate_pattern(pattern)
 
     def _validate_directory_patterns(self, fp_config: dict[str, Any]) -> None:
@@ -106,5 +120,5 @@ class PatternValidator:
         """
         if "global_deny" in fp_config:
             for deny_item in fp_config["global_deny"]:
-                pattern = deny_item.get("pattern", "")
+                pattern = _extract_pattern(deny_item)
                 self._validate_pattern(pattern)

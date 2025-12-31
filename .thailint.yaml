@@ -20,6 +20,7 @@ ignore:
   - ".pytest_cache/"
   - ".mypy_cache/"
   - ".ruff_cache/"
+  - ".thailint-cache/"
   - "htmlcov/"
   - "*.egg-info/"
   - "dist/"
@@ -46,22 +47,18 @@ file-placement:
         - 'test_.*\.py$'
         - '.*_test\.py$'
 
-    # Tests directory - only test files and fixtures
+    # Tests directory - test files and fixtures
     tests:
       allow:
         - 'test_.*\.py$'
         - '.*_test\.py$'
         - 'conftest\.py$'
         - '__init__\.py$'
-      deny:
-        - '^(?!test_|.*_test\.py|conftest\.py|__init__\.py).*\.py$'
 
     # Documentation directory
     docs:
       allow:
-        - '.*\.(md|rst|txt|py)$'  # Allow .py for doc generation scripts
-      deny:
-        - '^(?!.*\.(md|rst|txt|py)$).*'
+        - '.*\.(md|rst|txt|py|html|css|js)$'  # Allow doc formats + web assets
 
     # AI context directory
     .ai:

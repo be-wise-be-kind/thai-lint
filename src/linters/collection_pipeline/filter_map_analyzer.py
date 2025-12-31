@@ -21,6 +21,8 @@ Implementation: AST-based pattern matching for filter-map/takewhile pattern iden
 import ast
 from dataclasses import dataclass
 
+from . import ast_utils
+
 
 @dataclass
 class FilterMapMatch:
@@ -377,12 +379,8 @@ def _is_append_call(stmt: ast.stmt, result_var: str, appended_var: str) -> bool:
 
 def _is_return_var_after(func_body: list[ast.stmt], for_index: int, var_name: str) -> bool:
     """Check if the next statement after for loop is return var_name."""
-    next_index = for_index + 1
-    if next_index >= len(func_body):
-        return False
-
-    stmt = func_body[next_index]
-    if not isinstance(stmt, ast.Return):
+    stmt = ast_utils.get_next_return_stmt(func_body, for_index)
+    if stmt is None:
         return False
 
     if stmt.value is None:
