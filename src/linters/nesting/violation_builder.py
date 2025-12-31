@@ -18,9 +18,6 @@ Interfaces: create_nesting_violation, create_typescript_nesting_violation, creat
 Implementation: Formats messages with depth information, provides targeted refactoring suggestions,
     extends BaseViolationBuilder for consistent violation construction
 
-Suppressions:
-    - dry.duplicate-code: Violation builders follow intentional similar structure (build_from_params
-      calls) as part of the builder pattern. Each linter has domain-specific messages and parameters.
 """
 
 import ast
@@ -33,7 +30,6 @@ from src.core.violation_builder import BaseViolationBuilder
 from .config import NestingConfig
 
 
-# dry: ignore-block - Builder pattern has intentional similar structure across linters
 class NestingViolationBuilder(BaseViolationBuilder):
     """Builds violations for nesting depth issues."""
 

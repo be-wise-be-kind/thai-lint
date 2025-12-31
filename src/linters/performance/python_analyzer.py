@@ -167,7 +167,6 @@ class PythonStringConcatAnalyzer:
         """Check if node is a string concatenation in a loop and add violation if so."""
         if not self._is_string_aug_assign(node, loop_type):
             return
-        aug_node = node  # type: ast.AugAssign  # noqa: F841 - type hint for mypy
         self._maybe_add_violation(node, violations, loop_type)  # type: ignore[arg-type]
 
     def _is_string_aug_assign(self, node: ast.AST, loop_type: str | None) -> bool:
