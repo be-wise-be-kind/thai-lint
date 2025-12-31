@@ -29,6 +29,7 @@ from src.core.violation_builder import BaseViolationBuilder
 from .config import NestingConfig
 
 
+# thailint-ignore dry.duplicate-code: Builder pattern has intentional similar structure
 class NestingViolationBuilder(BaseViolationBuilder):
     """Builds violations for nesting depth issues."""
 

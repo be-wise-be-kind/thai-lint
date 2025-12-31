@@ -27,6 +27,7 @@ from src.core.types import Severity, Violation
 from src.core.violation_builder import BaseViolationBuilder
 
 
+# thailint-ignore dry.duplicate-code: Builder pattern has intentional similar structure
 class PerformanceViolationBuilder(BaseViolationBuilder):
     """Builds violations for performance issues."""
 

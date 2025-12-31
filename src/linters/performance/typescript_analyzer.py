@@ -76,23 +76,25 @@ class TypeScriptStringConcatAnalyzer(TypeScriptBaseAnalyzer):
         Args:
             node: AST node to analyze
         """
-        # Look for variable declarations: let x = "", const x = ""
-        if node.type == "variable_declarator":
-            name_node = self.find_child_by_type(node, "identifier")
-            value_node = None
-
-            # Find the value after '='
-            for child in node.children:
-                if child.type in ("string", "template_string"):
-                    value_node = child
-                    break
-
-            if name_node and value_node:
-                self._string_variables.add(self.extract_node_text(name_node))
-
-        # Recurse into children
+        self._check_variable_declarator(node)
         for child in node.children:
             self._identify_string_variables(child)
+
+    def _check_variable_declarator(self, node: Node) -> None:
+        """Check if a variable_declarator node initializes a string variable."""
+        if node.type != "variable_declarator":
+            return
+        name_node = self.find_child_by_type(node, "identifier")
+        value_node = self._find_string_value(node)
+        if name_node and value_node:
+            self._string_variables.add(self.extract_node_text(name_node))
+
+    def _find_string_value(self, node: Node) -> Node | None:
+        """Find a string or template_string child node."""
+        for child in node.children:
+            if child.type in ("string", "template_string"):
+                return child
+        return None
 
     def _find_concat_in_loops(
         self, node: Node, violations: list[StringConcatViolation], loop_type: str | None
@@ -149,11 +151,23 @@ class TypeScriptStringConcatAnalyzer(TypeScriptBaseAnalyzer):
 
     def _get_value_node(self, node: Node) -> Node | None:
         """Get the value node from an augmented assignment."""
-        found_operator = False
-        for child in node.children:
+        children = node.children
+        operator_idx = self._find_plus_equals_index(children)
+        if operator_idx < 0:
+            return None
+        return self._find_value_after_operator(children, operator_idx)
+
+    def _find_plus_equals_index(self, children: list[Node]) -> int:
+        """Find the index of the += operator in children."""
+        for i, child in enumerate(children):
             if child.type == "+=":
-                found_operator = True
-            elif found_operator and child.type != "identifier":
+                return i
+        return -1
+
+    def _find_value_after_operator(self, children: list[Node], operator_idx: int) -> Node | None:
+        """Find the first non-identifier value after the operator."""
+        for child in children[operator_idx + 1 :]:
+            if child.type != "identifier":
                 return child
         return None
 
