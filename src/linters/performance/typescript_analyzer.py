@@ -15,6 +15,10 @@ Exports: TypeScriptStringConcatAnalyzer class with find_violations method
 Interfaces: find_violations(root_node) -> list[dict] with violation info
 
 Implementation: Tree-sitter traversal detecting augmented assignments in loop contexts
+
+Suppressions:
+    - srp.violation: Class uses many small methods to achieve A-grade cyclomatic complexity.
+      This is an intentional tradeoff - low complexity is prioritized over strict SRP adherence.
 """
 
 from dataclasses import dataclass
@@ -38,7 +42,7 @@ class StringConcatViolation:
     loop_type: str  # 'for', 'for_in', 'while', 'do'
 
 
-# thailint-ignore srp.violation: Uses small focused methods to reduce complexity
+# thailint: ignore-next-line[srp.violation] Uses small focused methods to reduce complexity
 class TypeScriptStringConcatAnalyzer(TypeScriptBaseAnalyzer):
     """Detects string concatenation in loops for TypeScript code."""
 

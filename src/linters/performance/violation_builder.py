@@ -20,6 +20,8 @@ Implementation: Formats messages with variable names, provides targeted refactor
 Suppressions:
     - too-many-arguments,too-many-positional-arguments: Violation builder methods inherently
       require multiple parameters (variable_name, line, column, loop_type, context)
+    - dry.duplicate-code: Violation builders follow intentional similar structure (build_from_params
+      calls) as part of the builder pattern. Each linter has domain-specific messages and parameters.
 """
 
 from src.core.base import BaseLintContext
@@ -27,7 +29,7 @@ from src.core.types import Severity, Violation
 from src.core.violation_builder import BaseViolationBuilder
 
 
-# thailint-ignore dry.duplicate-code: Builder pattern has intentional similar structure
+# thailint: ignore-next-line[dry.duplicate-code] Builder pattern has intentional similar structure
 class PerformanceViolationBuilder(BaseViolationBuilder):
     """Builds violations for performance issues."""
 
