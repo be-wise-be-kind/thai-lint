@@ -18,6 +18,7 @@ Implementation: Uses re.search() for pattern matching with IGNORECASE flag
 """
 
 import re
+from collections.abc import Sequence
 from re import Pattern
 
 
@@ -42,7 +43,7 @@ class PatternMatcher:
         return self._compiled_patterns[pattern]
 
     def match_deny_patterns(
-        self, path_str: str, deny_patterns: list[dict[str, str] | str]
+        self, path_str: str, deny_patterns: Sequence[dict[str, str] | str]
     ) -> tuple[bool, str | None]:
         """Check if path matches any deny patterns.
 
