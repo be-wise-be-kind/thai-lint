@@ -19,25 +19,17 @@ Interfaces: find_console_calls(root_node, methods) -> list[tuple[Node, str, int]
 
 Implementation: Tree-sitter node traversal with call_expression and member_expression pattern matching
 
-Suppressions:
-    - type:ignore: Tree-sitter Node type alias (optional dependency fallback)
 """
 
 import logging
-from typing import Any
 
-from src.analyzers.typescript_base import TypeScriptBaseAnalyzer
+from src.analyzers.typescript_base import (
+    TREE_SITTER_AVAILABLE,
+    Node,
+    TypeScriptBaseAnalyzer,
+)
 
 logger = logging.getLogger(__name__)
-
-# dry: ignore-block - tree-sitter import pattern (common across TypeScript analyzers)
-try:
-    from tree_sitter import Node
-
-    TREE_SITTER_AVAILABLE = True
-except ImportError:
-    TREE_SITTER_AVAILABLE = False
-    Node = Any  # type: ignore
 
 
 class TypeScriptPrintStatementAnalyzer(TypeScriptBaseAnalyzer):

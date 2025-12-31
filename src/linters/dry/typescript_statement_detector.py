@@ -76,9 +76,7 @@ def _check_overlapping_nodes(root: Node, start_line: int, end_line: int) -> bool
     ts_start = start_line - 1  # Convert to 0-indexed
     ts_end = end_line - 1
 
-    return any(
-        _node_overlaps_and_matches(node, ts_start, ts_end) for node in _walk_nodes(root)
-    )
+    return any(_node_overlaps_and_matches(node, ts_start, ts_end) for node in _walk_nodes(root))
 
 
 def _walk_nodes(node: Node) -> Generator[Node, None, None]:

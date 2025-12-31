@@ -22,23 +22,15 @@ Implementation: Tree-sitter node traversal with visitor pattern, context-aware f
     for acceptable numeric literal locations
 
 Suppressions:
-    - type:ignore: Tree-sitter Node type alias (optional dependency fallback)
     - srp: Analyzer implements tree-sitter traversal with context detection methods.
         Methods support single responsibility of magic number detection in TypeScript.
 """
 
-from typing import Any
-
-from src.analyzers.typescript_base import TypeScriptBaseAnalyzer
-
-# dry: ignore-block - tree-sitter import pattern (common across TypeScript analyzers)
-try:
-    from tree_sitter import Node
-
-    TREE_SITTER_AVAILABLE = True
-except ImportError:
-    TREE_SITTER_AVAILABLE = False
-    Node = Any  # type: ignore
+from src.analyzers.typescript_base import (
+    TREE_SITTER_AVAILABLE,
+    Node,
+    TypeScriptBaseAnalyzer,
+)
 
 
 class TypeScriptMagicNumberAnalyzer(TypeScriptBaseAnalyzer):  # thailint: ignore[srp]

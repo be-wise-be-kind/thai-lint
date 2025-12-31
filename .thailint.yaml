@@ -30,37 +30,38 @@ ignore:
 file-placement:
   # Global patterns that apply to all directories
   global_patterns:
-    # Python source files should be in src/
+    # Python source files should be in allowed directories
     deny:
-      - pattern: '^(?!src/|tests/|scripts/|docs/|\\.ai/|\\.roadmap/).*\\.py$'
-        message: "Python files should be in src/, tests/, scripts/, docs/, .ai/, or .roadmap/ directories"
+      - pattern: '^(?!src/|tests/|scripts/|docs/|examples/|\.ai/|\.roadmap/).*\.py$'
+        message: "Python files should be in src/, tests/, scripts/, docs/, examples/, .ai/, or .roadmap/ directories"
 
   # Directory-specific rules
   directories:
-    # Source code directory - only Python implementation files
+    # Source code directory - Python files plus templates
     src:
       allow:
-        - '.*\\.py$'
+        - '.*\.py$'
+        - 'templates/.*\.(yaml|yml)$'  # Config templates in src/templates/
       deny:
-        - 'test_.*\\.py$'
-        - '.*_test\\.py$'
+        - 'test_.*\.py$'
+        - '.*_test\.py$'
 
     # Tests directory - only test files and fixtures
     tests:
       allow:
-        - 'test_.*\\.py$'
-        - '.*_test\\.py$'
-        - 'conftest\\.py$'
-        - '__init__\\.py$'
+        - 'test_.*\.py$'
+        - '.*_test\.py$'
+        - 'conftest\.py$'
+        - '__init__\.py$'
       deny:
-        - '^(?!test_|.*_test\\.py|conftest\\.py|__init__\\.py).*\\.py$'
+        - '^(?!test_|.*_test\.py|conftest\.py|__init__\.py).*\.py$'
 
     # Documentation directory
     docs:
       allow:
-        - '.*\\.(md|rst|txt|py)$'  # Allow .py for doc generation scripts
+        - '.*\.(md|rst|txt|py)$'  # Allow .py for doc generation scripts
       deny:
-        - '^(?!.*\\.(md|rst|txt|py)$).*'
+        - '^(?!.*\.(md|rst|txt|py)$).*'
 
     # AI context directory
     .ai:
@@ -183,6 +184,8 @@ dry:
     - "stateless_class/config.py"
     - "collection_pipeline/linter.py"
     - "collection_pipeline/config.py"
+    - "collection_pipeline/any_all_analyzer.py"
+    - "collection_pipeline/filter_map_analyzer.py"
 
   # Block filters (extensible false positive filtering)
   # These filters automatically exclude common non-duplication patterns

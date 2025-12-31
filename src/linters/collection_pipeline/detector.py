@@ -20,6 +20,8 @@ Implementation: AST visitor pattern with delegated pattern matching and suggesti
 
 Suppressions:
     - invalid-name: PatternVisitor inner class follows AST NodeVisitor convention
+    - srp: Class coordinates multiple pattern detection strategies (any/all, filter-map, continue)
+    - nesting: visit_For has deep nesting due to multiple pattern type dispatch
 """
 
 import ast
@@ -74,7 +76,7 @@ class PatternMatch:
     """Type of anti-pattern detected (default: EMBEDDED_FILTER for backward compat)."""
 
 
-class PipelinePatternDetector(ast.NodeVisitor):
+class PipelinePatternDetector(ast.NodeVisitor):  # thailint: ignore[srp]
     """Detects for loops with embedded filtering via if/continue patterns."""
 
     def __init__(self, source_code: str) -> None:
@@ -120,6 +122,7 @@ class PipelinePatternDetector(ast.NodeVisitor):
         self.generic_visit(node)
         self._func_body_stack.pop()
 
+    # thailint: ignore-next-line[nesting]
     def visit_For(self, node: ast.For) -> None:  # pylint: disable=invalid-name
         """Visit for loop and check for filtering patterns.
 

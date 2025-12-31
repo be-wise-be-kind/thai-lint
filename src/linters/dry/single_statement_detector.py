@@ -163,16 +163,12 @@ class SingleStatementDetector:  # thailint: ignore[srp.violation]
         self, nodes: set[ast.AST], start_line: int, end_line: int
     ) -> bool:
         """Check if any node matches single-statement pattern."""
-        return any(
-            self._is_single_statement_pattern(node, start_line, end_line)
-            for node in nodes
-        )
+        return any(self._is_single_statement_pattern(node, start_line, end_line) for node in nodes)
 
     def _check_nodes_via_walk(self, tree: ast.Module, start_line: int, end_line: int) -> bool:
         """Check nodes using ast.walk() fallback."""
         return any(
-            self._node_matches_via_walk(node, start_line, end_line)
-            for node in ast.walk(tree)
+            self._node_matches_via_walk(node, start_line, end_line) for node in ast.walk(tree)
         )
 
     def _node_matches_via_walk(self, node: ast.AST, start_line: int, end_line: int) -> bool:

@@ -23,7 +23,7 @@ from .config import LazyIgnoresConfig
 from .header_parser import SuppressionsParser
 from .linter import LazyIgnoresRule
 from .python_analyzer import PythonIgnoreDetector
-from .test_skip_detector import TestSkipDetector
+from .skip_detector import TestSkipDetector
 from .types import IgnoreDirective, IgnoreType, SuppressionEntry
 from .typescript_analyzer import TypeScriptIgnoreDetector
 from .violation_builder import build_orphaned_violation, build_unjustified_violation

@@ -10,7 +10,8 @@ Overview: Provides FunctionCallTracker class that traverses Python AST to find f
     suggests the parameter should be an enum. Handles both simple function calls
     (foo("value")) and method calls (obj.method("value")).
 
-Dependencies: ast module for AST parsing, dataclasses for pattern structure
+Dependencies: ast module for AST parsing, dataclasses for pattern structure,
+    src.core.constants for MAX_ATTRIBUTE_CHAIN_DEPTH
 
 Exports: FunctionCallTracker class, FunctionCallPattern dataclass
 
@@ -24,6 +25,8 @@ Suppressions:
 
 import ast
 from dataclasses import dataclass
+
+from src.core.constants import MAX_ATTRIBUTE_CHAIN_DEPTH
 
 
 @dataclass
@@ -122,12 +125,9 @@ class FunctionCallTracker(ast.NodeVisitor):
         """
         parts: list[str] = [node.attr]
         current = node.value
-
-        # Limit depth to avoid overly complex names
-        max_depth = 3
         depth = 0
 
-        while depth < max_depth:
+        while depth < MAX_ATTRIBUTE_CHAIN_DEPTH:
             if isinstance(current, ast.Name):
                 parts.append(current.id)
                 break

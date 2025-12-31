@@ -174,9 +174,7 @@ def _inherits_from_abc_or_protocol(class_node: ast.ClassDef) -> bool:
     Returns:
         True if inherits from ABC or Protocol
     """
-    return any(
-        _get_base_name(base) in ("ABC", "Protocol") for base in class_node.bases
-    )
+    return any(_get_base_name(base) in ("ABC", "Protocol") for base in class_node.bases)
 
 
 def _get_base_name(base: ast.expr) -> str:

@@ -10,7 +10,7 @@ Overview: Provides PythonMagicNumberAnalyzer class that traverses Python AST to 
     value, and source location. This analyzer handles Python-specific AST structure and provides
     the foundation for magic number detection by identifying all candidates before context filtering.
 
-Dependencies: ast module for AST parsing and node types
+Dependencies: ast module for AST parsing and node types, analyzers.ast_utils
 
 Exports: PythonMagicNumberAnalyzer class
 
@@ -22,6 +22,8 @@ Implementation: AST NodeVisitor pattern with parent tracking, filters for numeri
 
 import ast
 from typing import Any
+
+from src.analyzers.ast_utils import build_parent_map
 
 
 class PythonMagicNumberAnalyzer(ast.NodeVisitor):
@@ -44,23 +46,9 @@ class PythonMagicNumberAnalyzer(ast.NodeVisitor):
             List of tuples (node, parent, value, line_number)
         """
         self.numeric_literals = []
-        self.parent_map = {}
-        self._build_parent_map(tree)
+        self.parent_map = build_parent_map(tree)
         self.visit(tree)
         return self.numeric_literals
-
-    def _build_parent_map(self, node: ast.AST, parent: ast.AST | None = None) -> None:
-        """Build a map of nodes to their parents.
-
-        Args:
-            node: Current AST node
-            parent: Parent of current node
-        """
-        if parent is not None:
-            self.parent_map[node] = parent
-
-        for child in ast.iter_child_nodes(node):
-            self._build_parent_map(child, node)
 
     def visit_Constant(self, node: ast.Constant) -> None:
         """Visit a Constant node and check if it's a numeric literal.
