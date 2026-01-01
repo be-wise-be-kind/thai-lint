@@ -299,6 +299,36 @@ lazy-ignores:
   #   - "tests/**"
 
 # ============================================================================
+# PERFORMANCE LINTER
+# ============================================================================
+# Detects performance anti-patterns in loops that cause O(n²) behavior
+#
+performance:
+  enabled: true
+
+  # String concatenation in loops (O(n²) pattern)
+  # Detects: result += str in for/while loops
+  # Suggests: Use "".join() or list append + join
+  string-concat-loop:
+    enabled: true
+    # Report each += separately, or one violation per loop
+    # Default: false (one per loop)
+    report_each_concat: false
+
+  # Regex compilation in loops
+  # Detects: re.match(), re.search(), re.sub() etc. in loops
+  # Suggests: Use re.compile() outside loop
+  regex-in-loop:
+    enabled: true
+
+  # -------------------------------------------------------------------------
+  # OPTIONAL: File patterns to ignore
+  # -------------------------------------------------------------------------
+  # ignore:
+  #   - "tests/**"
+  #   - "scripts/**"
+
+# ============================================================================
 # GLOBAL SETTINGS
 # ============================================================================
 #
