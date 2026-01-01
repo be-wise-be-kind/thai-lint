@@ -100,7 +100,6 @@ class MethodPropertyConfig:  # thailint: ignore[dry]
     exclude_prefixes: tuple[str, ...] = DEFAULT_EXCLUDE_PREFIXES
     exclude_names: frozenset[str] = DEFAULT_EXCLUDE_NAMES
 
-    # dry: ignore-block
     @classmethod
     def from_dict(
         cls, config: dict[str, Any] | None, language: str | None = None

@@ -1,17 +1,19 @@
 """
 Purpose: Shared utility functions for linter framework patterns
 
-Scope: Common config loading, metadata access, and context validation utilities for all linters
+Scope: Common config loading, metadata access, context validation, and AST parsing utilities
 
 Overview: Provides reusable helper functions to eliminate duplication across linter implementations.
     Includes utilities for loading configuration from context metadata with language-specific overrides,
-    extracting metadata fields safely with type validation, and validating context state. Standardizes
-    common patterns used by srp, nesting, dry, and file_placement linters. Reduces boilerplate code
-    while maintaining type safety and proper error handling.
+    extracting metadata fields safely with type validation, validating context state, and parsing
+    Python AST with syntax error handling. Standardizes common patterns used by srp, nesting, dry,
+    performance, and file_placement linters. Reduces boilerplate code while maintaining type safety
+    and proper error handling.
 
-Dependencies: BaseLintContext from src.core.base
+Dependencies: BaseLintContext from src.core.base, ast for Python parsing
 
-Exports: get_metadata, get_metadata_value, load_linter_config, has_file_content
+Exports: get_metadata, get_metadata_value, load_linter_config, has_file_content, parse_python_ast,
+    with_parsed_python
 
 Interfaces: All functions take BaseLintContext and return typed values (dict, str, bool, Any)
 
@@ -20,11 +22,27 @@ Implementation: Type-safe metadata access with fallbacks, generic config loading
 Suppressions:
     - invalid-name: T type variable follows Python generic naming convention
     - type:ignore[return-value]: Generic config factory with runtime type checking
+    - unnecessary-ellipsis: Protocol method bodies use ellipsis per PEP 544
+    - B101: Assert used to narrow type after parse_python_ast returns non-None tree
 """
 
+import ast
+from collections.abc import Callable
 from typing import Any, Protocol, TypeVar
 
 from src.core.base import BaseLintContext
+from src.core.types import Violation
+
+
+# Protocol for violation builders that support syntax error handling
+class SyntaxErrorViolationBuilder(Protocol):
+    """Protocol for violation builders that can create syntax error violations."""
+
+    def create_syntax_error_violation(
+        self, error: SyntaxError, context: BaseLintContext
+    ) -> Violation:
+        """Create a violation for a syntax error."""
+        ...  # pylint: disable=unnecessary-ellipsis
 
 
 # Protocol for config classes that support from_dict
@@ -170,3 +188,70 @@ def should_process_file(context: BaseLintContext) -> bool:
         True if file has both content and path available
     """
     return has_file_content(context) and has_file_path(context)
+
+
+def parse_python_ast(
+    context: BaseLintContext,
+    violation_builder: SyntaxErrorViolationBuilder,
+) -> tuple[ast.Module | None, list[Violation]]:
+    """Parse Python AST from context, handling syntax errors gracefully.
+
+    Provides a standard pattern for Python linters to parse AST and handle
+    syntax errors by returning a violation instead of crashing.
+
+    Args:
+        context: Lint context containing file content
+        violation_builder: Builder to create syntax error violations
+
+    Returns:
+        Tuple of (ast_tree, violations):
+        - On success: (ast.Module, [])
+        - On syntax error: (None, [syntax_error_violation])
+
+    Example:
+        tree, errors = parse_python_ast(context, self._violation_builder)
+        if errors:
+            return errors
+        # ... use tree for analysis
+    """
+    try:
+        tree = ast.parse(context.file_content or "")
+        return tree, []
+    except SyntaxError as e:
+        violation = violation_builder.create_syntax_error_violation(e, context)
+        return None, [violation]
+
+
+def with_parsed_python(
+    context: BaseLintContext,
+    violation_builder: SyntaxErrorViolationBuilder,
+    on_success: Callable[[ast.Module], list[Violation]],
+) -> list[Violation]:
+    """Parse Python and call on_success with the AST, or return parse errors.
+
+    Eliminates the repeated parse-check-assert pattern across Python linters.
+    On parse success, calls on_success with a guaranteed non-None AST tree.
+    On parse failure, returns syntax error violations.
+
+    Args:
+        context: Lint context containing file content
+        violation_builder: Builder to create syntax error violations
+        on_success: Callback receiving the parsed AST tree, returns violations
+
+    Returns:
+        Violations from on_success callback, or syntax error violations
+
+    Example:
+        def _check_python(self, context, config):
+            return with_parsed_python(
+                context,
+                self._violation_builder,
+                lambda tree: self._analyze_tree(tree, config, context),
+            )
+    """
+    tree, errors = parse_python_ast(context, violation_builder)
+    if errors:
+        return errors
+    # tree is guaranteed non-None when errors is empty (parse_python_ast contract)
+    assert tree is not None  # nosec B101
+    return on_success(tree)

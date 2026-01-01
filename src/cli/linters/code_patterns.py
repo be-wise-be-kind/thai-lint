@@ -16,31 +16,15 @@ Exports: print_statements command, method_property command, stateless_class comm
 Interfaces: Click CLI commands registered to main CLI group
 
 Implementation: Click decorators for command definition, orchestrator-based linting execution
-
-SRP Exception: CLI command modules follow Click framework patterns requiring similar command
-    structure across all linter commands. This is intentional design for consistency.
-
-Suppressions:
-    - too-many-arguments,too-many-positional-arguments: Click commands require many parameters by framework design
 """
-# dry: ignore-block - CLI commands follow Click framework pattern with intentional repetition
 
 import logging
 import sys
 from pathlib import Path
 from typing import TYPE_CHECKING, NoReturn
 
-import click
-
-from src.cli.main import cli
-from src.cli.utils import (
-    execute_linting_on_paths,
-    format_option,
-    get_project_root_from_context,
-    handle_linting_error,
-    setup_base_orchestrator,
-    validate_paths_exist,
-)
+from src.cli.linters.shared import ExecuteParams, create_linter_command
+from src.cli.utils import execute_linting_on_paths, setup_base_orchestrator, validate_paths_exist
 from src.core.cli_utils import format_violations
 from src.core.types import Violation
 
@@ -71,88 +55,30 @@ def _run_print_statements_lint(
     return [v for v in all_violations if "print-statement" in v.rule_id]
 
 
-@cli.command("print-statements")
-@click.argument("paths", nargs=-1, type=click.Path())
-@click.option("--config", "-c", "config_file", type=click.Path(), help="Path to config file")
-@format_option
-@click.option("--recursive/--no-recursive", default=True, help="Scan directories recursively")
-@click.pass_context
-def print_statements(  # pylint: disable=too-many-arguments,too-many-positional-arguments
-    ctx: click.Context,
-    paths: tuple[str, ...],
-    config_file: str | None,
-    format: str,
-    recursive: bool,
-) -> None:
-    """Check for print/console statements in code.
-
-    Detects print() calls in Python and console.log/warn/error/debug/info calls
-    in TypeScript/JavaScript that should be replaced with proper logging.
-
-    PATHS: Files or directories to lint (defaults to current directory if none provided)
-
-    Examples:
-
-        \b
-        # Check current directory (all files recursively)
-        thai-lint print-statements
-
-        \b
-        # Check specific directory
-        thai-lint print-statements src/
-
-        \b
-        # Check single file
-        thai-lint print-statements src/app.py
-
-        \b
-        # Check multiple files
-        thai-lint print-statements src/app.py src/utils.ts tests/test_app.py
-
-        \b
-        # Get JSON output
-        thai-lint print-statements --format json .
-
-        \b
-        # Use custom config file
-        thai-lint print-statements --config .thailint.yaml src/
-    """
-    verbose: bool = ctx.obj.get("verbose", False)
-    project_root = get_project_root_from_context(ctx)
-
-    if not paths:
-        paths = (".",)
-
-    path_objs = [Path(p) for p in paths]
-
-    try:
-        _execute_print_statements_lint(
-            path_objs, config_file, format, recursive, verbose, project_root
-        )
-    except Exception as e:
-        handle_linting_error(e, verbose)
-
-
-def _execute_print_statements_lint(  # pylint: disable=too-many-arguments,too-many-positional-arguments
-    path_objs: list[Path],
-    config_file: str | None,
-    format: str,
-    recursive: bool,
-    verbose: bool,
-    project_root: Path | None = None,
-) -> NoReturn:
+def _execute_print_statements_lint(params: ExecuteParams) -> NoReturn:
     """Execute print-statements lint."""
-    validate_paths_exist(path_objs)
+    validate_paths_exist(params.path_objs)
     orchestrator = _setup_print_statements_orchestrator(
-        path_objs, config_file, verbose, project_root
+        params.path_objs, params.config_file, params.verbose, params.project_root
     )
-    print_statements_violations = _run_print_statements_lint(orchestrator, path_objs, recursive)
+    print_statements_violations = _run_print_statements_lint(
+        orchestrator, params.path_objs, params.recursive
+    )
 
-    if verbose:
+    if params.verbose:
         logger.info(f"Found {len(print_statements_violations)} print statement violation(s)")
 
-    format_violations(print_statements_violations, format)
+    format_violations(print_statements_violations, params.format)
     sys.exit(1 if print_statements_violations else 0)
+
+
+print_statements = create_linter_command(
+    "print-statements",
+    _execute_print_statements_lint,
+    "Check for print/console statements in code.",
+    "Detects print() calls in Python and console.log/warn/error/debug/info calls\n"
+    "    in TypeScript/JavaScript that should be replaced with proper logging.",
+)
 
 
 # =============================================================================
@@ -175,95 +101,31 @@ def _run_method_property_lint(
     return [v for v in all_violations if "method-property" in v.rule_id]
 
 
-@cli.command("method-property")
-@click.argument("paths", nargs=-1, type=click.Path())
-@click.option("--config", "-c", "config_file", type=click.Path(), help="Path to config file")
-@format_option
-@click.option("--recursive/--no-recursive", default=True, help="Scan directories recursively")
-@click.pass_context
-def method_property(
-    ctx: click.Context,
-    paths: tuple[str, ...],
-    config_file: str | None,
-    format: str,
-    recursive: bool,
-) -> None:
-    """Check for methods that should be @property decorators.
-
-    Detects Python methods that could be converted to properties following
-    Pythonic conventions:
-    - Methods returning only self._attribute or self.attribute
-    - get_* prefixed methods (Java-style getters)
-    - Simple computed values with no side effects
-
-    PATHS: Files or directories to lint (defaults to current directory if none provided)
-
-    Examples:
-
-        \b
-        # Check current directory (all files recursively)
-        thai-lint method-property
-
-        \b
-        # Check specific directory
-        thai-lint method-property src/
-
-        \b
-        # Check single file
-        thai-lint method-property src/models.py
-
-        \b
-        # Check multiple files
-        thai-lint method-property src/models.py src/services.py
-
-        \b
-        # Get JSON output
-        thai-lint method-property --format json .
-
-        \b
-        # Get SARIF output for CI/CD integration
-        thai-lint method-property --format sarif src/
-
-        \b
-        # Use custom config file
-        thai-lint method-property --config .thailint.yaml src/
-    """
-    verbose: bool = ctx.obj.get("verbose", False)
-    project_root = get_project_root_from_context(ctx)
-
-    if not paths:
-        paths = (".",)
-
-    path_objs = [Path(p) for p in paths]
-
-    try:
-        _execute_method_property_lint(
-            path_objs, config_file, format, recursive, verbose, project_root
-        )
-    except Exception as e:
-        handle_linting_error(e, verbose)
-
-
-def _execute_method_property_lint(  # pylint: disable=too-many-arguments,too-many-positional-arguments
-    path_objs: list[Path],
-    config_file: str | None,
-    format: str,
-    recursive: bool,
-    verbose: bool,
-    project_root: Path | None = None,
-) -> NoReturn:
+def _execute_method_property_lint(params: ExecuteParams) -> NoReturn:
     """Execute method-property lint."""
-    validate_paths_exist(path_objs)
+    validate_paths_exist(params.path_objs)
     orchestrator = _setup_method_property_orchestrator(
-        path_objs, config_file, verbose, project_root
+        params.path_objs, params.config_file, params.verbose, params.project_root
     )
-    method_property_violations = _run_method_property_lint(orchestrator, path_objs, recursive)
+    method_property_violations = _run_method_property_lint(
+        orchestrator, params.path_objs, params.recursive
+    )
 
-    if verbose:
+    if params.verbose:
         logger.info(f"Found {len(method_property_violations)} method-property violation(s)")
 
-    format_violations(method_property_violations, format)
+    format_violations(method_property_violations, params.format)
     sys.exit(1 if method_property_violations else 0)
+
+
+method_property = create_linter_command(
+    "method-property",
+    _execute_method_property_lint,
+    "Check for methods that should be @property decorators.",
+    "Detects Python methods that could be converted to properties following\n"
+    "    Pythonic conventions: methods returning self._attribute, get_* prefixed\n"
+    "    methods (Java-style getters), or simple computed values with no side effects.",
+)
 
 
 # =============================================================================
@@ -286,93 +148,31 @@ def _run_stateless_class_lint(
     return [v for v in all_violations if "stateless-class" in v.rule_id]
 
 
-@cli.command("stateless-class")
-@click.argument("paths", nargs=-1, type=click.Path())
-@click.option("--config", "-c", "config_file", type=click.Path(), help="Path to config file")
-@format_option
-@click.option("--recursive/--no-recursive", default=True, help="Scan directories recursively")
-@click.pass_context
-def stateless_class(
-    ctx: click.Context,
-    paths: tuple[str, ...],
-    config_file: str | None,
-    format: str,
-    recursive: bool,
-) -> None:
-    """Check for stateless classes that should be module functions.
-
-    Detects Python classes that have no constructor (__init__), no instance
-    state, and 2+ methods - indicating they should be refactored to module-level
-    functions instead of using a class as a namespace.
-
-    PATHS: Files or directories to lint (defaults to current directory if none provided)
-
-    Examples:
-
-        \b
-        # Check current directory (all files recursively)
-        thai-lint stateless-class
-
-        \b
-        # Check specific directory
-        thai-lint stateless-class src/
-
-        \b
-        # Check single file
-        thai-lint stateless-class src/utils.py
-
-        \b
-        # Check multiple files
-        thai-lint stateless-class src/utils.py src/helpers.py
-
-        \b
-        # Get JSON output
-        thai-lint stateless-class --format json .
-
-        \b
-        # Get SARIF output for CI/CD integration
-        thai-lint stateless-class --format sarif src/
-
-        \b
-        # Use custom config file
-        thai-lint stateless-class --config .thailint.yaml src/
-    """
-    verbose: bool = ctx.obj.get("verbose", False)
-    project_root = get_project_root_from_context(ctx)
-
-    if not paths:
-        paths = (".",)
-
-    path_objs = [Path(p) for p in paths]
-
-    try:
-        _execute_stateless_class_lint(
-            path_objs, config_file, format, recursive, verbose, project_root
-        )
-    except Exception as e:
-        handle_linting_error(e, verbose)
-
-
-def _execute_stateless_class_lint(  # pylint: disable=too-many-arguments,too-many-positional-arguments
-    path_objs: list[Path],
-    config_file: str | None,
-    format: str,
-    recursive: bool,
-    verbose: bool,
-    project_root: Path | None = None,
-) -> NoReturn:
+def _execute_stateless_class_lint(params: ExecuteParams) -> NoReturn:
     """Execute stateless-class lint."""
-    validate_paths_exist(path_objs)
+    validate_paths_exist(params.path_objs)
     orchestrator = _setup_stateless_class_orchestrator(
-        path_objs, config_file, verbose, project_root
+        params.path_objs, params.config_file, params.verbose, params.project_root
     )
-    stateless_class_violations = _run_stateless_class_lint(orchestrator, path_objs, recursive)
+    stateless_class_violations = _run_stateless_class_lint(
+        orchestrator, params.path_objs, params.recursive
+    )
 
-    if verbose:
+    if params.verbose:
         logger.info(f"Found {len(stateless_class_violations)} stateless-class violation(s)")
 
-    format_violations(stateless_class_violations, format)
+    format_violations(stateless_class_violations, params.format)
     sys.exit(1 if stateless_class_violations else 0)
+
+
+stateless_class = create_linter_command(
+    "stateless-class",
+    _execute_stateless_class_lint,
+    "Check for stateless classes that should be module functions.",
+    "Detects Python classes that have no constructor (__init__), no instance\n"
+    "    state, and 2+ methods - indicating they should be refactored to module-level\n"
+    "    functions instead of using a class as a namespace.",
+)
 
 
 # =============================================================================
@@ -395,86 +195,28 @@ def _run_lazy_ignores_lint(
     return [v for v in all_violations if v.rule_id.startswith("lazy-ignores")]
 
 
-@cli.command("lazy-ignores")
-@click.argument("paths", nargs=-1, type=click.Path())
-@click.option("--config", "-c", "config_file", type=click.Path(), help="Path to config file")
-@format_option
-@click.option("--recursive/--no-recursive", default=True, help="Scan directories recursively")
-@click.pass_context
-def lazy_ignores(
-    ctx: click.Context,
-    paths: tuple[str, ...],
-    config_file: str | None,
-    format: str,
-    recursive: bool,
-) -> None:
-    """Check for unjustified linting suppressions.
-
-    Detects ignore directives (noqa, type:ignore, pylint:disable, nosec) that lack
-    corresponding entries in the file header's Suppressions section. Enforces a
-    header-based suppression model requiring human approval for all linting bypasses.
-
-    PATHS: Files or directories to lint (defaults to current directory if none provided)
-
-    Examples:
-
-        \b
-        # Check current directory (all files recursively)
-        thai-lint lazy-ignores
-
-        \b
-        # Check specific directory
-        thai-lint lazy-ignores src/
-
-        \b
-        # Check single file
-        thai-lint lazy-ignores src/routes.py
-
-        \b
-        # Check multiple files
-        thai-lint lazy-ignores src/routes.py src/utils.py
-
-        \b
-        # Get JSON output
-        thai-lint lazy-ignores --format json .
-
-        \b
-        # Get SARIF output for CI/CD integration
-        thai-lint lazy-ignores --format sarif src/
-
-        \b
-        # Use custom config file
-        thai-lint lazy-ignores --config .thailint.yaml src/
-    """
-    verbose: bool = ctx.obj.get("verbose", False)
-    project_root = get_project_root_from_context(ctx)
-
-    if not paths:
-        paths = (".",)
-
-    path_objs = [Path(p) for p in paths]
-
-    try:
-        _execute_lazy_ignores_lint(path_objs, config_file, format, recursive, verbose, project_root)
-    except Exception as e:
-        handle_linting_error(e, verbose)
-
-
-def _execute_lazy_ignores_lint(  # pylint: disable=too-many-arguments,too-many-positional-arguments
-    path_objs: list[Path],
-    config_file: str | None,
-    format: str,
-    recursive: bool,
-    verbose: bool,
-    project_root: Path | None = None,
-) -> NoReturn:
+def _execute_lazy_ignores_lint(params: ExecuteParams) -> NoReturn:
     """Execute lazy-ignores lint."""
-    validate_paths_exist(path_objs)
-    orchestrator = _setup_lazy_ignores_orchestrator(path_objs, config_file, verbose, project_root)
-    lazy_ignores_violations = _run_lazy_ignores_lint(orchestrator, path_objs, recursive)
+    validate_paths_exist(params.path_objs)
+    orchestrator = _setup_lazy_ignores_orchestrator(
+        params.path_objs, params.config_file, params.verbose, params.project_root
+    )
+    lazy_ignores_violations = _run_lazy_ignores_lint(
+        orchestrator, params.path_objs, params.recursive
+    )
 
-    if verbose:
+    if params.verbose:
         logger.info(f"Found {len(lazy_ignores_violations)} lazy-ignores violation(s)")
 
-    format_violations(lazy_ignores_violations, format)
+    format_violations(lazy_ignores_violations, params.format)
     sys.exit(1 if lazy_ignores_violations else 0)
+
+
+lazy_ignores = create_linter_command(
+    "lazy-ignores",
+    _execute_lazy_ignores_lint,
+    "Check for unjustified linting suppressions.",
+    "Detects ignore directives (noqa, type:ignore, pylint:disable, nosec) that lack\n"
+    "    corresponding entries in the file header's Suppressions section. Enforces a\n"
+    "    header-based suppression model requiring human approval for all linting bypasses.",
+)

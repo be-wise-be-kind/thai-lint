@@ -23,7 +23,6 @@ SRP Exception: CLI command modules follow Click framework patterns requiring sim
 Suppressions:
     - too-many-arguments,too-many-positional-arguments: Click commands require many parameters by framework design
 """
-# dry: ignore-block - CLI commands follow Click framework pattern with intentional repetition
 
 import logging
 import sys
@@ -32,12 +31,15 @@ from typing import TYPE_CHECKING, NoReturn
 
 import click
 
-from src.cli.linters.shared import ensure_config_section, set_config_value
+from src.cli.linters.shared import (
+    ensure_config_section,
+    extract_command_context,
+    set_config_value,
+)
 from src.cli.main import cli
 from src.cli.utils import (
     execute_linting_on_paths,
     format_option,
-    get_project_root_from_context,
     handle_linting_error,
     parallel_option,
     setup_base_orchestrator,
@@ -153,20 +155,21 @@ def nesting(  # pylint: disable=too-many-arguments,too-many-positional-arguments
         # Use custom config file
         thai-lint nesting --config .thailint.yaml src/
     """
-    verbose: bool = ctx.obj.get("verbose", False)
-    project_root = get_project_root_from_context(ctx)
-
-    if not paths:
-        paths = (".",)
-
-    path_objs = [Path(p) for p in paths]
+    cmd_ctx = extract_command_context(ctx, paths)
 
     try:
         _execute_nesting_lint(
-            path_objs, config_file, format, max_depth, recursive, parallel, verbose, project_root
+            cmd_ctx.path_objs,
+            config_file,
+            format,
+            max_depth,
+            recursive,
+            parallel,
+            cmd_ctx.verbose,
+            cmd_ctx.project_root,
         )
     except Exception as e:
-        handle_linting_error(e, verbose)
+        handle_linting_error(e, cmd_ctx.verbose)
 
 
 def _execute_nesting_lint(  # pylint: disable=too-many-arguments,too-many-positional-arguments
@@ -280,20 +283,21 @@ def srp(  # pylint: disable=too-many-arguments,too-many-positional-arguments
         # Use custom config file
         thai-lint srp --config .thailint.yaml src/
     """
-    verbose: bool = ctx.obj.get("verbose", False)
-    project_root = get_project_root_from_context(ctx)
-
-    if not paths:
-        paths = (".",)
-
-    path_objs = [Path(p) for p in paths]
+    cmd_ctx = extract_command_context(ctx, paths)
 
     try:
         _execute_srp_lint(
-            path_objs, config_file, format, max_methods, max_loc, recursive, verbose, project_root
+            cmd_ctx.path_objs,
+            config_file,
+            format,
+            max_methods,
+            max_loc,
+            recursive,
+            cmd_ctx.verbose,
+            cmd_ctx.project_root,
         )
     except Exception as e:
-        handle_linting_error(e, verbose)
+        handle_linting_error(e, cmd_ctx.verbose)
 
 
 def _execute_srp_lint(  # pylint: disable=too-many-arguments,too-many-positional-arguments
