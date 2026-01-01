@@ -556,6 +556,110 @@ def example(items):
         assert "join" in suggestion.lower() or "comprehension" in suggestion.lower()
 
 
+class TestVariableResetInLoop:
+    """Test that variables reset at start of each iteration are NOT flagged.
+
+    When a string variable is reset to empty string at the beginning of each
+    loop iteration, the += does NOT cause O(n²) behavior because the string
+    doesn't accumulate across iterations.
+    """
+
+    def test_ignores_variable_reset_each_iteration(self):
+        """Do not flag += when variable is reset to empty string each iteration."""
+        code = """
+def format_events(events):
+    for event in events:
+        details = ""
+        if event.type:
+            details += event.type
+        if event.message:
+            details += f": {event.message}"
+        print(details)
+"""
+        violations = analyze_python_code(code)
+        assert len(violations) == 0
+
+    def test_ignores_reset_with_conditional_concat(self):
+        """Do not flag += when variable reset before conditional concatenation."""
+        code = """
+def process_items(items):
+    for item in items:
+        output = ""
+        if item.name:
+            output += item.name
+        if item.value:
+            output += f" = {item.value}"
+        results.append(output)
+"""
+        violations = analyze_python_code(code)
+        assert len(violations) == 0
+
+    def test_ignores_reset_with_fstring_initial(self):
+        """Do not flag += when variable reset to f-string each iteration."""
+        code = """
+def build_messages(items):
+    for item in items:
+        msg = f"Item {item.id}: "
+        if item.active:
+            msg += "[ACTIVE] "
+        msg += item.description
+        messages.append(msg)
+"""
+        violations = analyze_python_code(code)
+        assert len(violations) == 0
+
+    def test_still_flags_accumulating_variable(self):
+        """Still flag variable that accumulates across iterations."""
+        code = """
+def build_all(items):
+    result = ""
+    for item in items:
+        temp = ""  # This is reset, don't flag
+        temp += item.name
+        result += temp  # This accumulates, should flag
+"""
+        violations = analyze_python_code(code)
+        # Only 'result' should be flagged, not 'temp'
+        assert len(violations) == 1
+        assert "result" in violations[0].message
+
+    def test_ignores_reset_in_while_loop(self):
+        """Do not flag += when variable is reset in while loop iteration."""
+        code = """
+def process_stream(stream):
+    while data := stream.read():
+        chunk = ""
+        if data.header:
+            chunk += data.header
+        chunk += data.content
+        yield chunk
+"""
+        violations = analyze_python_code(code)
+        assert len(violations) == 0
+
+    def test_real_world_tb_automation_pattern(self):
+        """Test the exact pattern from tb-automation-py that was a false positive."""
+        code = """
+def show_events(events):
+    for event in events:
+        style = ""
+        if event.event_type == "DELIVERY":
+            style = "green"
+
+        details = ""
+        if event.bounce_type:
+            details = f" ({event.bounce_type}/{event.bounce_subtype})"
+        if event.smtp_response:
+            details += f" - {event.smtp_response[:50]}"
+
+        msg = f"{event.timestamp} - {event.event_type}{details}"
+        print(msg)
+"""
+        violations = analyze_python_code(code)
+        # Should not flag 'details' because it's reset each iteration
+        assert len(violations) == 0
+
+
 class TestRealWorldPatterns:
     """Test patterns found in real codebases (FastAPI)."""
 
