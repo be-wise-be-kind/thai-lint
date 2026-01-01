@@ -75,7 +75,6 @@ class MethodPropertyRule(MultiLanguageLintRule):  # thailint: ignore[srp,dry]
 
         return MethodPropertyConfig()
 
-    # dry: ignore-block
     def _try_load_test_config(self, context: BaseLintContext) -> MethodPropertyConfig | None:
         """Try to load test-style configuration.
 
@@ -95,7 +94,6 @@ class MethodPropertyRule(MultiLanguageLintRule):  # thailint: ignore[srp,dry]
         linter_config = config_attr.get("method-property", config_attr)
         return MethodPropertyConfig.from_dict(linter_config)
 
-    # dry: ignore-block
     def _is_file_ignored(self, context: BaseLintContext, config: MethodPropertyConfig) -> bool:
         """Check if file matches ignore patterns.
 
@@ -115,7 +113,6 @@ class MethodPropertyRule(MultiLanguageLintRule):  # thailint: ignore[srp,dry]
         file_path = Path(context.file_path)
         return any(self._matches_pattern(file_path, pattern) for pattern in config.ignore)
 
-    # dry: ignore-block
     def _matches_pattern(self, file_path: Path, pattern: str) -> bool:
         """Check if file path matches a glob pattern.
 
@@ -132,7 +129,6 @@ class MethodPropertyRule(MultiLanguageLintRule):  # thailint: ignore[srp,dry]
             return True
         return False
 
-    # dry: ignore-block
     def _is_test_file(self, file_path: object) -> bool:
         """Check if file is a test file.
 
@@ -204,7 +200,6 @@ class MethodPropertyRule(MultiLanguageLintRule):  # thailint: ignore[srp,dry]
             return candidates
         return [c for c in candidates if c.method_name not in config.ignore_methods]
 
-    # dry: ignore-block
     def _parse_python_code(self, code: str | None) -> ast.AST | None:
         """Parse Python code into AST.
 
@@ -285,7 +280,6 @@ class MethodPropertyRule(MultiLanguageLintRule):  # thailint: ignore[srp,dry]
             return True
         return False
 
-    # dry: ignore-block
     def _has_inline_ignore(self, violation: Violation, context: BaseLintContext) -> bool:
         """Check for inline ignore directive on method line.
 

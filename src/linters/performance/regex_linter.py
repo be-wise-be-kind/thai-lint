@@ -1,20 +1,20 @@
 """
-Purpose: Main string concatenation in loop linter rule implementation
+Purpose: Regex compilation in loop linter rule implementation
 
-Scope: StringConcatLoopRule class implementing MultiLanguageLintRule interface
+Scope: RegexInLoopRule class implementing MultiLanguageLintRule interface
 
-Overview: Implements string-concat-loop linter rule following MultiLanguageLintRule interface.
-    Orchestrates configuration loading, Python/TypeScript analysis, and violation building
-    through focused helper classes. Detects O(n²) string building patterns using += in loops.
-    Supports configurable enabled flag and ignore directives. Main rule class acts as
-    coordinator for string concatenation detection workflow.
+Overview: Implements regex-in-loop linter rule following MultiLanguageLintRule interface.
+    Orchestrates configuration loading, Python analysis, and violation building through
+    focused helper classes. Detects repeated regex compilation patterns using re.method()
+    calls in loops instead of pre-compiled patterns. Supports configurable enabled flag
+    and ignore directives. Main rule class acts as coordinator for regex detection workflow.
 
-Dependencies: MultiLanguageLintRule, BaseLintContext, PythonStringConcatAnalyzer,
-    TypeScriptStringConcatAnalyzer, PerformanceViolationBuilder
+Dependencies: MultiLanguageLintRule, BaseLintContext, PythonRegexInLoopAnalyzer,
+    PerformanceViolationBuilder
 
-Exports: StringConcatLoopRule class
+Exports: RegexInLoopRule class
 
-Interfaces: StringConcatLoopRule.check(context) -> list[Violation], properties for rule metadata
+Interfaces: RegexInLoopRule.check(context) -> list[Violation], properties for rule metadata
 
 Implementation: Composition pattern with analyzer classes, AST-based analysis
 
@@ -28,36 +28,33 @@ from src.core.types import Violation
 from src.linter_config.ignore import get_ignore_parser
 
 from .config import PerformanceConfig
-from .python_analyzer import PythonStringConcatAnalyzer
-from .typescript_analyzer import TypeScriptStringConcatAnalyzer
+from .regex_analyzer import PythonRegexInLoopAnalyzer
 from .violation_builder import PerformanceViolationBuilder
 
 
-class StringConcatLoopRule(MultiLanguageLintRule):
-    """Detects O(n²) string concatenation in loops."""
+class RegexInLoopRule(MultiLanguageLintRule):
+    """Detects regex compilation in loops."""
 
     def __init__(self) -> None:
-        """Initialize the string concat loop rule."""
+        """Initialize the regex in loop rule."""
         self._ignore_parser = get_ignore_parser()
         self._violation_builder = PerformanceViolationBuilder(self.rule_id)
-        # Singleton analyzers for performance
-        self._python_analyzer = PythonStringConcatAnalyzer()
-        self._typescript_analyzer = TypeScriptStringConcatAnalyzer()
+        self._python_analyzer = PythonRegexInLoopAnalyzer()
 
     @property
     def rule_id(self) -> str:
         """Unique identifier for this rule."""
-        return "performance.string-concat-loop"
+        return "performance.regex-in-loop"
 
     @property
     def rule_name(self) -> str:
         """Human-readable name for this rule."""
-        return "String Concatenation in Loop"
+        return "Regex Compilation in Loop"
 
     @property
     def description(self) -> str:
         """Description of what this rule checks."""
-        return "String += in loops creates O(n²) complexity; use join() instead"
+        return "re.method() in loops recompiles pattern each iteration; use re.compile() instead"
 
     def _load_config(self, context: BaseLintContext) -> PerformanceConfig:
         """Load configuration from context.
@@ -71,7 +68,7 @@ class StringConcatLoopRule(MultiLanguageLintRule):
         return load_linter_config(context, "performance", PerformanceConfig)
 
     def _check_python(self, context: BaseLintContext, config: PerformanceConfig) -> list[Violation]:
-        """Check Python code for string concatenation in loops.
+        """Check Python code for regex compilation in loops.
 
         Args:
             context: Lint context with Python file information
@@ -83,41 +80,34 @@ class StringConcatLoopRule(MultiLanguageLintRule):
         return with_parsed_python(
             context,
             self._violation_builder,
-            lambda tree: self._analyze_python_string_concat(tree, context),
+            lambda tree: self._analyze_python_regex(tree, context),
         )
 
-    def _analyze_python_string_concat(self, tree: Any, context: BaseLintContext) -> list[Violation]:
-        """Analyze parsed Python AST for string concatenation in loops."""
+    def _analyze_python_regex(self, tree: Any, context: BaseLintContext) -> list[Violation]:
+        """Analyze parsed Python AST for regex in loops."""
         violations_raw = self._python_analyzer.find_violations(tree)
-        violations_deduped = self._python_analyzer.deduplicate_violations(violations_raw)
-        return self._build_violations(violations_deduped, context)
+        return self._build_violations(violations_raw, context)
 
     def _check_typescript(
         self, context: BaseLintContext, config: PerformanceConfig
     ) -> list[Violation]:
-        """Check TypeScript code for string concatenation in loops.
+        """Check TypeScript code for regex compilation in loops.
 
         Args:
             context: Lint context with TypeScript file information
             config: Performance configuration
 
         Returns:
-            List of violations found in TypeScript code
+            Empty list - TypeScript regex handling is different from Python
         """
-        root_node = self._typescript_analyzer.parse_typescript(context.file_content or "")
-        if root_node is None:
-            return []
-
-        violations_raw = self._typescript_analyzer.find_violations(root_node)
-        violations_deduped = self._typescript_analyzer.deduplicate_violations(violations_raw)
-
-        return self._build_violations(violations_deduped, context)
+        # TypeScript uses RegExp objects differently, not implemented
+        return []
 
     def _build_violations(self, raw_violations: list, context: BaseLintContext) -> list[Violation]:
         """Build Violation objects from analyzer results.
 
         Args:
-            raw_violations: List of StringConcatViolation dataclass instances
+            raw_violations: List of RegexInLoopViolation dataclass instances
             context: Lint context
 
         Returns:
@@ -125,8 +115,8 @@ class StringConcatLoopRule(MultiLanguageLintRule):
         """
         violations = []
         for v in raw_violations:
-            violation = self._violation_builder.create_string_concat_violation(
-                variable_name=v.variable_name,
+            violation = self._violation_builder.create_regex_in_loop_violation(
+                method_name=v.method_name,
                 line_number=v.line_number,
                 column=v.column,
                 loop_type=v.loop_type,

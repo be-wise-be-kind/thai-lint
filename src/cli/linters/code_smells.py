@@ -18,14 +18,10 @@ Interfaces: Click CLI commands registered to main CLI group
 
 Implementation: Click decorators for command definition, orchestrator-based linting execution
 
-SRP Exception: CLI command modules follow Click framework patterns requiring similar command
-    structure across all linter commands. This is intentional design for consistency.
-
 Suppressions:
-    too-many-arguments: Click commands require many parameters by framework design
-    too-many-positional-arguments: Click positional params match CLI arg structure
+    - too-many-arguments,too-many-positional-arguments: Click commands with custom options require
+        many parameters by framework design (dry command has 8 params for extra options)
 """
-# dry: ignore-block - CLI commands follow Click framework pattern with intentional repetition
 
 import logging
 import sys
@@ -35,7 +31,12 @@ from typing import TYPE_CHECKING, Any, NoReturn
 import click
 import yaml
 
-from src.cli.linters.shared import ensure_config_section, set_config_value
+from src.cli.linters.shared import (
+    ExecuteParams,
+    create_linter_command,
+    ensure_config_section,
+    set_config_value,
+)
 from src.cli.main import cli
 from src.cli.utils import (
     execute_linting_on_paths,
@@ -56,7 +57,7 @@ logger = logging.getLogger(__name__)
 
 
 # =============================================================================
-# DRY Command
+# DRY Command (custom options - cannot use create_linter_command)
 # =============================================================================
 
 
@@ -261,90 +262,30 @@ def _run_magic_numbers_lint(
     return [v for v in all_violations if "magic-number" in v.rule_id]
 
 
-@cli.command("magic-numbers")
-@click.argument("paths", nargs=-1, type=click.Path())
-@click.option("--config", "-c", "config_file", type=click.Path(), help="Path to config file")
-@format_option
-@click.option("--recursive/--no-recursive", default=True, help="Scan directories recursively")
-@click.pass_context
-def magic_numbers(  # pylint: disable=too-many-arguments,too-many-positional-arguments
-    ctx: click.Context,
-    paths: tuple[str, ...],
-    config_file: str | None,
-    format: str,
-    recursive: bool,
-) -> None:
-    """Check for magic numbers in code.
-
-    Detects unnamed numeric literals in Python and TypeScript/JavaScript code
-    that should be extracted as named constants for better readability.
-
-    PATHS: Files or directories to lint (defaults to current directory if none provided)
-
-    Examples:
-
-        \b
-        # Check current directory (all files recursively)
-        thai-lint magic-numbers
-
-        \b
-        # Check specific directory
-        thai-lint magic-numbers src/
-
-        \b
-        # Check single file
-        thai-lint magic-numbers src/app.py
-
-        \b
-        # Check multiple files
-        thai-lint magic-numbers src/app.py src/utils.py tests/test_app.py
-
-        \b
-        # Check mix of files and directories
-        thai-lint magic-numbers src/app.py tests/
-
-        \b
-        # Get JSON output
-        thai-lint magic-numbers --format json .
-
-        \b
-        # Use custom config file
-        thai-lint magic-numbers --config .thailint.yaml src/
-    """
-    verbose: bool = ctx.obj.get("verbose", False)
-    project_root = get_project_root_from_context(ctx)
-
-    if not paths:
-        paths = (".",)
-
-    path_objs = [Path(p) for p in paths]
-
-    try:
-        _execute_magic_numbers_lint(
-            path_objs, config_file, format, recursive, verbose, project_root
-        )
-    except Exception as e:
-        handle_linting_error(e, verbose)
-
-
-def _execute_magic_numbers_lint(  # pylint: disable=too-many-arguments,too-many-positional-arguments
-    path_objs: list[Path],
-    config_file: str | None,
-    format: str,
-    recursive: bool,
-    verbose: bool,
-    project_root: Path | None = None,
-) -> NoReturn:
+def _execute_magic_numbers_lint(params: ExecuteParams) -> NoReturn:
     """Execute magic-numbers lint."""
-    validate_paths_exist(path_objs)
-    orchestrator = _setup_magic_numbers_orchestrator(path_objs, config_file, verbose, project_root)
-    magic_numbers_violations = _run_magic_numbers_lint(orchestrator, path_objs, recursive)
+    validate_paths_exist(params.path_objs)
+    orchestrator = _setup_magic_numbers_orchestrator(
+        params.path_objs, params.config_file, params.verbose, params.project_root
+    )
+    magic_numbers_violations = _run_magic_numbers_lint(
+        orchestrator, params.path_objs, params.recursive
+    )
 
-    if verbose:
+    if params.verbose:
         logger.info(f"Found {len(magic_numbers_violations)} magic number violation(s)")
 
-    format_violations(magic_numbers_violations, format)
+    format_violations(magic_numbers_violations, params.format)
     sys.exit(1 if magic_numbers_violations else 0)
+
+
+magic_numbers = create_linter_command(
+    "magic-numbers",
+    _execute_magic_numbers_lint,
+    "Check for magic numbers in code.",
+    "Detects unnamed numeric literals in Python and TypeScript/JavaScript code\n"
+    "    that should be extracted as named constants for better readability.",
+)
 
 
 # =============================================================================
@@ -367,88 +308,26 @@ def _run_stringly_typed_lint(
     return [v for v in all_violations if "stringly-typed" in v.rule_id]
 
 
-@cli.command("stringly-typed")
-@click.argument("paths", nargs=-1, type=click.Path())
-@click.option("--config", "-c", "config_file", type=click.Path(), help="Path to config file")
-@format_option
-@click.option("--recursive/--no-recursive", default=True, help="Scan directories recursively")
-@click.pass_context
-def stringly_typed(  # pylint: disable=too-many-arguments,too-many-positional-arguments
-    ctx: click.Context,
-    paths: tuple[str, ...],
-    config_file: str | None,
-    format: str,
-    recursive: bool,
-) -> None:
-    """Check for stringly-typed patterns in code.
-
-    Detects string patterns in Python and TypeScript/JavaScript code that should
-    use enums or typed alternatives. Finds membership validation, equality chains,
-    and function calls with limited string values across multiple files.
-
-    PATHS: Files or directories to lint (defaults to current directory if none provided)
-
-    Examples:
-
-        \b
-        # Check current directory (all files recursively)
-        thai-lint stringly-typed
-
-        \b
-        # Check specific directory
-        thai-lint stringly-typed src/
-
-        \b
-        # Check single file
-        thai-lint stringly-typed src/handlers.py
-
-        \b
-        # Check multiple files
-        thai-lint stringly-typed src/handlers.py src/services.py
-
-        \b
-        # Get JSON output
-        thai-lint stringly-typed --format json .
-
-        \b
-        # Get SARIF output for IDE integration
-        thai-lint stringly-typed --format sarif .
-
-        \b
-        # Use custom config file
-        thai-lint stringly-typed --config .thailint.yaml src/
-    """
-    verbose: bool = ctx.obj.get("verbose", False)
-    project_root = get_project_root_from_context(ctx)
-
-    if not paths:
-        paths = (".",)
-
-    path_objs = [Path(p) for p in paths]
-
-    try:
-        _execute_stringly_typed_lint(
-            path_objs, config_file, format, recursive, verbose, project_root
-        )
-    except Exception as e:
-        handle_linting_error(e, verbose)
-
-
-def _execute_stringly_typed_lint(  # pylint: disable=too-many-arguments,too-many-positional-arguments
-    path_objs: list[Path],
-    config_file: str | None,
-    format: str,
-    recursive: bool,
-    verbose: bool,
-    project_root: Path | None = None,
-) -> NoReturn:
+def _execute_stringly_typed_lint(params: ExecuteParams) -> NoReturn:
     """Execute stringly-typed lint."""
-    validate_paths_exist(path_objs)
-    orchestrator = _setup_stringly_typed_orchestrator(path_objs, config_file, verbose, project_root)
-    stringly_violations = _run_stringly_typed_lint(orchestrator, path_objs, recursive)
+    validate_paths_exist(params.path_objs)
+    orchestrator = _setup_stringly_typed_orchestrator(
+        params.path_objs, params.config_file, params.verbose, params.project_root
+    )
+    stringly_violations = _run_stringly_typed_lint(orchestrator, params.path_objs, params.recursive)
 
-    if verbose:
+    if params.verbose:
         logger.info(f"Found {len(stringly_violations)} stringly-typed violation(s)")
 
-    format_violations(stringly_violations, format)
+    format_violations(stringly_violations, params.format)
     sys.exit(1 if stringly_violations else 0)
+
+
+stringly_typed = create_linter_command(
+    "stringly-typed",
+    _execute_stringly_typed_lint,
+    "Check for stringly-typed patterns in code.",
+    "Detects string patterns in Python and TypeScript/JavaScript code that should\n"
+    "    use enums or typed alternatives. Finds membership validation, equality chains,\n"
+    "    and function calls with limited string values across multiple files.",
+)

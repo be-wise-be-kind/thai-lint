@@ -26,10 +26,12 @@ from .config import PerformanceConfig
 from .linter import StringConcatLoopRule
 from .python_analyzer import PythonStringConcatAnalyzer
 from .regex_analyzer import PythonRegexInLoopAnalyzer
+from .regex_linter import RegexInLoopRule
 from .typescript_analyzer import TypeScriptStringConcatAnalyzer
 
 __all__ = [
     "StringConcatLoopRule",
+    "RegexInLoopRule",
     "PerformanceConfig",
     "PythonStringConcatAnalyzer",
     "PythonRegexInLoopAnalyzer",
