@@ -25,12 +25,14 @@ from typing import Any
 from .config import PerformanceConfig
 from .linter import StringConcatLoopRule
 from .python_analyzer import PythonStringConcatAnalyzer
+from .regex_analyzer import PythonRegexInLoopAnalyzer
 from .typescript_analyzer import TypeScriptStringConcatAnalyzer
 
 __all__ = [
     "StringConcatLoopRule",
     "PerformanceConfig",
     "PythonStringConcatAnalyzer",
+    "PythonRegexInLoopAnalyzer",
     "TypeScriptStringConcatAnalyzer",
     "lint",
 ]

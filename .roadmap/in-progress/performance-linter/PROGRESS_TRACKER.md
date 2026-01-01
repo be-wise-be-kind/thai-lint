@@ -28,8 +28,8 @@ This is the **PRIMARY HANDOFF DOCUMENT** for AI agents working on the Performanc
 4. **Update this document** after completing each PR
 
 ## Current Status
-**Current PR**: PR2 Complete - PR3 next
-**Infrastructure State**: Thai-lint v0.13.0 published, string-concat-loop detection implemented
+**Current PR**: PR4 Complete - PR5 next
+**Infrastructure State**: Thai-lint v0.13.0 published, both string-concat-loop and regex-in-loop detection implemented
 **Feature Target**: Two new performance rules: `string-concat-loop` and `regex-in-loop`
 
 ## Required Documents Location
@@ -42,16 +42,15 @@ This is the **PRIMARY HANDOFF DOCUMENT** for AI agents working on the Performanc
 
 ## Next PR to Implement
 
-### START HERE: PR3 - Test Suite for regex-in-loop
+### START HERE: PR5 - CLI Integration
 
 **Quick Summary**:
-Write failing tests that define expected behavior for `regex-in-loop` detection. This follows TDD methodology - tests first, implementation in PR4.
+Add `thailint perf` or `thailint string-concat` / `thailint regex-in-loop` CLI commands to expose the performance linters. Integrate with existing CLI infrastructure.
 
 **Pre-flight Checklist**:
-- [ ] Read AI_CONTEXT.md for feature architecture
-- [ ] Review PR1 test file as template: `tests/unit/linters/performance/test_string_concat_loop.py`
-- [ ] Review regex patterns found in FastAPI: `~/popular-repos/fastapi/`
-- [ ] Understand compiled vs uncompiled regex patterns
+- [ ] Review existing CLI structure: `src/cli_main.py`
+- [ ] Review how other linters add CLI commands (e.g., nesting, magic-numbers)
+- [ ] Determine command naming convention
 
 **Prerequisites Complete**:
 - [x] Thai-lint v0.13.0 published
@@ -59,14 +58,16 @@ Write failing tests that define expected behavior for `regex-in-loop` detection.
 - [x] Test patterns identified from FastAPI analysis
 - [x] **PR1 complete**: 38 test cases for string-concat-loop
 - [x] **PR2 complete**: string-concat-loop detection implemented (Python + TypeScript)
+- [x] **PR3 complete**: 36 test cases for regex-in-loop
+- [x] **PR4 complete**: regex-in-loop detection implemented (Python)
 
 ---
 
 ## Overall Progress
-**Total Completion**: 25% (2/8 PRs completed)
+**Total Completion**: 50% (4/8 PRs completed)
 
 ```
-[██░░░░░░░░] 25% Complete
+[█████░░░░░] 50% Complete
 ```
 
 ---
@@ -77,8 +78,8 @@ Write failing tests that define expected behavior for `regex-in-loop` detection.
 |----|-------|--------|------------|------------|----------|-------|
 | PR1 | Test Suite: string-concat-loop | 🟢 Complete | 100% | Medium | P0 | 38 test cases |
 | PR2 | Implement: string-concat-loop | 🟢 Complete | 100% | Medium | P0 | Python + TypeScript |
-| PR3 | Test Suite: regex-in-loop | 🔴 Not Started | 0% | Medium | P0 | TDD - tests first |
-| PR4 | Implement: regex-in-loop | 🔴 Not Started | 0% | Medium | P0 | Python only |
+| PR3 | Test Suite: regex-in-loop | 🟢 Complete | 100% | Medium | P0 | 36 test cases (TDD) |
+| PR4 | Implement: regex-in-loop | 🟢 Complete | 100% | Medium | P0 | Python only |
 | PR5 | CLI Integration | 🔴 Not Started | 0% | Low | P1 | Add `thailint perf` command |
 | PR6 | Config Template | 🔴 Not Started | 0% | Low | P1 | Update init-config |
 | PR7 | Documentation | 🔴 Not Started | 0% | Low | P1 | PyPI docs, linter docs |
@@ -115,20 +116,27 @@ Write failing tests that define expected behavior for `regex-in-loop` detection.
 - `src/linters/performance/config.py`
 - `src/linters/performance/linter.py`
 
-### PR3: Test Suite - regex-in-loop
+### PR3: Test Suite - regex-in-loop ✅
 **Goal**: Write failing tests for regex pattern
 **Files**: `tests/unit/linters/performance/test_regex_in_loop.py`
-**Key Test Cases**:
-- Detect `re.match()` in loop
-- Detect `re.search()` in loop
-- Detect `re.sub()` in loop
-- Detect `re.findall()` in loop
-- Allow `pattern.match()` (compiled pattern)
-- Allow regex outside loop
+**Status**: Complete - 36 test cases covering:
+- Detect `re.match()`, `re.search()`, `re.sub()`, `re.findall()`, `re.split()`, `re.fullmatch()` in loops
+- Allow `pattern.match()` (compiled pattern) - 6 test cases
+- Allow regex outside loop - 4 test cases
+- Edge cases: nested loops, async functions, import variants - 10 test cases
+- Violation message tests - 4 test cases
+- Real-world patterns from FastAPI - 5 test cases
 
-### PR4: Implement - regex-in-loop
+### PR4: Implement - regex-in-loop ✅
 **Goal**: Make all PR3 tests pass
-**Files**: Extend `src/linters/performance/` with regex detection
+**Files**: Extended `src/linters/performance/` with regex detection
+**Status**: Complete - Implementation includes:
+- `src/linters/performance/regex_analyzer.py` - PythonRegexInLoopAnalyzer class
+- Detects `re.match()`, `re.search()`, `re.sub()`, `re.findall()`, `re.split()`, `re.fullmatch()` in loops
+- Tracks compiled patterns to ignore `pattern.match()` style calls
+- Supports `import re`, `from re import match`, `import re as regex` variants
+- Updated `violation_builder.py` with regex-specific violation messages
+- All 36 tests pass, all 15 lint checks pass
 
 ### PR5: CLI Integration
 **Goal**: Add `thailint perf` CLI command
