@@ -40,7 +40,7 @@ from src.cli.linters.code_patterns import (
 )
 from src.cli.linters.code_smells import dry, magic_numbers
 from src.cli.linters.documentation import file_header
-from src.cli.linters.performance import regex_in_loop, string_concat_loop
+from src.cli.linters.performance import perf, regex_in_loop, string_concat_loop
 from src.cli.linters.structure import file_placement, pipeline
 from src.cli.linters.structure_quality import nesting, srp
 
@@ -61,6 +61,7 @@ __all__ = [
     # Documentation commands
     "file_header",
     # Performance commands
+    "perf",
     "string_concat_loop",
     "regex_in_loop",
 ]

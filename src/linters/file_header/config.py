@@ -111,6 +111,20 @@ class FileHeaderConfig:
         defaults = cls()
         required_fields = config_dict.get("required_fields", {})
 
+        # Handle both list format (applies to all languages) and dict format (language-specific)
+        if isinstance(required_fields, list):
+            # Simple list format: apply same fields to all languages
+            return cls(
+                required_fields_python=required_fields,
+                required_fields_typescript=required_fields,
+                required_fields_bash=required_fields,
+                required_fields_markdown=required_fields,
+                required_fields_css=required_fields,
+                enforce_atemporal=config_dict.get("enforce_atemporal", True),
+                ignore=config_dict.get("ignore", defaults.ignore),
+            )
+
+        # Dict format: language-specific fields
         return cls(
             required_fields_python=required_fields.get("python", defaults.required_fields_python),
             required_fields_typescript=required_fields.get(

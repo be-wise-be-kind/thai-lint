@@ -39,6 +39,7 @@ That's it. See violations, fix them, ship better code.
 | **DRY** | Duplicate code across files | `thailint dry src/` | [Guide](https://thai-lint.readthedocs.io/en/latest/dry-linter/) |
 | **Nesting** | Deeply nested if/for/while blocks | `thailint nesting src/` | [Guide](https://thai-lint.readthedocs.io/en/latest/nesting-linter/) |
 | **Magic Numbers** | Unnamed numeric literals | `thailint magic-numbers src/` | [Guide](https://thai-lint.readthedocs.io/en/latest/magic-numbers-linter/) |
+| **Performance** | O(n²) patterns: string += in loops, regex in loops | `thailint perf src/` | [Guide](https://thai-lint.readthedocs.io/en/latest/performance-linter/) |
 | **SRP** | Classes doing too much | `thailint srp src/` | [Guide](https://thai-lint.readthedocs.io/en/latest/srp-linter/) |
 | **File Header** | Missing documentation headers | `thailint file-header src/` | [Guide](https://thai-lint.readthedocs.io/en/latest/file-header-linter/) |
 | **Stateless Class** | Classes that should be functions | `thailint stateless-class src/` | [Guide](https://thai-lint.readthedocs.io/en/latest/stateless-class-linter/) |

@@ -62,20 +62,26 @@ nav:
       - Configuration: configuration.md
       - Troubleshooting: troubleshooting.md
   - Linters:
-      - File Placement: file-placement-linter.md
+      - Collection Pipeline: collection-pipeline-linter.md
+      - DRY (Duplicate Code): dry-linter.md
       - File Header: file-header-linter.md
+      - File Placement: file-placement-linter.md
+      - Lazy Ignores: lazy-ignores-linter.md
       - Magic Numbers: magic-numbers-linter.md
       - Method Property: method-property-linter.md
       - Nesting Depth: nesting-linter.md
+      - Performance: performance-linter.md
       - Print Statements: print-statements-linter.md
       - Single Responsibility (SRP): srp-linter.md
-      - DRY (Duplicate Code): dry-linter.md
+      - Stateless Class: stateless-class-linter.md
+      - Stringly Typed: stringly-typed-linter.md
   - Usage:
       - CLI Reference: cli-reference.md
       - API Reference: api-reference.md
       - Deployment Modes: deployment-modes.md
       - How to Ignore Violations: how-to-ignore-violations.md
       - Pre-commit Hooks: pre-commit-hooks.md
+      - SARIF Output: sarif-output.md
   - Publishing:
       - Release Workflow: releasing.md
       - Publishing Checklist: publishing-checklist.md
