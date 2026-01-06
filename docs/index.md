@@ -37,6 +37,7 @@ thai-lint complements your existing linting stack by catching the patterns AI to
 - **Magic Numbers Linting** - Detect unnamed numeric literals that should be constants
 - **Method Property Linting** - Detect methods that should be @property decorators
 - **Nesting Depth Linting** - Detect excessive code nesting with AST analysis
+- **Performance Linting** - Detect O(n^2) patterns in loops (string concat, regex)
 - **SRP Linting** - Detect Single Responsibility Principle violations
 - **DRY Linting** - Detect duplicate code across projects
 - **Collection Pipeline Linting** - Detect for loops with embedded filtering
@@ -109,6 +110,9 @@ thailint dry .
 # Check for embedded filtering patterns
 thailint pipeline src/
 
+# Check for performance anti-patterns
+thailint perf src/
+
 # Check for stringly-typed patterns
 thailint stringly-typed src/
 
@@ -151,6 +155,9 @@ Detect methods that should be @property decorators.
 
 ### [Nesting Depth Linter](nesting-linter.md)
 Detect deeply nested code that reduces readability.
+
+### [Performance Linter](performance-linter.md)
+Detect O(n^2) performance anti-patterns: string concatenation and regex compilation in loops.
 
 ### [SRP Linter](srp-linter.md)
 Detect Single Responsibility Principle violations in classes.

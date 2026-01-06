@@ -36,6 +36,8 @@ keywords = [
     "cli",
     "docker",
     "python",
+    "performance",
+    "typescript",
 ]
 classifiers = [
     "Development Status :: 4 - Beta",

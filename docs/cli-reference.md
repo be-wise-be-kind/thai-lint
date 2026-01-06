@@ -495,6 +495,152 @@ thai-lint --verbose nesting src/
 
 ---
 
+### perf
+
+Check for performance anti-patterns in Python and TypeScript code. Detects O(n²) patterns like string concatenation in loops and regex compilation in loops.
+
+```bash
+thai-lint perf [OPTIONS] [PATH...]
+```
+
+**Arguments:**
+
+| Argument | Required | Default | Description |
+|----------|----------|---------|-------------|
+| `PATH...` | No | `.` (current directory) | One or more files/directories to check |
+
+**Options:**
+
+| Option | Short | Type | Default | Description |
+|--------|-------|------|---------|-------------|
+| `--config` | `-c` | PATH | Auto-discover | Path to config file |
+| `--rule` | `-r` | CHOICE | All | Filter to specific rule: `string-concat` or `regex-loop` |
+| `--format` | `-f` | CHOICE | `text` | Output format: `text`, `json`, or `sarif` |
+| `--recursive/--no-recursive` | | BOOLEAN | `true` | Scan directories recursively |
+
+**Examples:**
+
+**Basic usage:**
+```bash
+# Check current directory for all performance issues
+thai-lint perf
+
+# Check specific directory
+thai-lint perf src/
+
+# Check specific file
+thai-lint perf src/utils.py
+```
+
+**With rule filtering:**
+```bash
+# Check only string concatenation patterns
+thai-lint perf --rule string-concat src/
+
+# Check only regex-in-loop patterns
+thai-lint perf --rule regex-loop src/
+```
+
+**Output formats:**
+```bash
+# Text format (default)
+thai-lint perf src/
+
+# JSON format
+thai-lint perf --format json src/
+
+# SARIF format (for GitHub Code Scanning)
+thai-lint perf --format sarif src/ > perf.sarif
+```
+
+**Exit Codes:**
+
+| Code | Meaning |
+|------|---------|
+| `0` | No performance issues found |
+| `1` | Performance violations detected |
+| `2` | Error (file not found, invalid config) |
+
+**See Also:**
+- `docs/performance-linter.md` - Comprehensive performance linter guide
+- Individual commands: `string-concat-loop`, `regex-in-loop`
+
+---
+
+### string-concat-loop
+
+Check for string concatenation in loops (O(n²) pattern).
+
+```bash
+thai-lint string-concat-loop [OPTIONS] [PATH...]
+```
+
+**Arguments:**
+
+| Argument | Required | Default | Description |
+|----------|----------|---------|-------------|
+| `PATH...` | No | `.` (current directory) | One or more files/directories to check |
+
+**Options:**
+
+| Option | Short | Type | Default | Description |
+|--------|-------|------|---------|-------------|
+| `--config` | `-c` | PATH | Auto-discover | Path to config file |
+| `--format` | `-f` | CHOICE | `text` | Output format: `text`, `json`, or `sarif` |
+| `--recursive/--no-recursive` | | BOOLEAN | `true` | Scan directories recursively |
+
+**Examples:**
+
+```bash
+# Check for string concatenation in loops
+thai-lint string-concat-loop src/
+
+# JSON output
+thai-lint string-concat-loop --format json src/
+```
+
+**See Also:**
+- `docs/performance-linter.md` - Refactoring patterns for string building
+
+---
+
+### regex-in-loop
+
+Check for regex compilation in loops (performance anti-pattern).
+
+```bash
+thai-lint regex-in-loop [OPTIONS] [PATH...]
+```
+
+**Arguments:**
+
+| Argument | Required | Default | Description |
+|----------|----------|---------|-------------|
+| `PATH...` | No | `.` (current directory) | One or more files/directories to check |
+
+**Options:**
+
+| Option | Short | Type | Default | Description |
+|--------|-------|------|---------|-------------|
+| `--config` | `-c` | PATH | Auto-discover | Path to config file |
+| `--format` | `-f` | CHOICE | `text` | Output format: `text`, `json`, or `sarif` |
+| `--recursive/--no-recursive` | | BOOLEAN | `true` | Scan directories recursively |
+
+**Examples:**
+
+```bash
+# Check for regex calls in loops
+thai-lint regex-in-loop src/
+
+# SARIF output
+thai-lint regex-in-loop --format sarif src/ > regex.sarif
+```
+
+**See Also:**
+- `docs/performance-linter.md` - How to use re.compile() properly
+
+---
+
 ### method-property
 
 Detect Python methods that should be @property decorators.
@@ -1549,6 +1695,8 @@ Usage:
 ```bash
 # Basic linting
 thai-lint file-placement .
+thai-lint nesting src/
+thai-lint perf src/
 
 # With config
 thai-lint file-placement -c .thailint.yaml .
@@ -1556,15 +1704,18 @@ thai-lint file-placement -c .thailint.yaml .
 # JSON output
 thai-lint file-placement -f json .
 
+# Performance linting with rule filter
+thai-lint perf --rule string-concat src/
+
 # Verbose mode
-thai-lint -v lint file-placement .
+thai-lint -v file-placement .
 
 # Show config
 thai-lint config show
 
 # Help
 thai-lint --help
-thai-lint lint --help
+thai-lint perf --help
 thai-lint file-placement --help
 ```
 
