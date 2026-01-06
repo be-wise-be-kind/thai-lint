@@ -39,6 +39,8 @@ class IgnoreType(Enum):
     THAILINT_IGNORE_FILE = "thailint:ignore-file"
     THAILINT_IGNORE_NEXT = "thailint:ignore-next-line"
     THAILINT_IGNORE_BLOCK = "thailint:ignore-start"
+    # DRY ignore patterns
+    DRY_IGNORE_BLOCK = "dry:ignore-block"
     # Test skip patterns
     PYTEST_SKIP = "pytest:skip"
     PYTEST_SKIPIF = "pytest:skipif"
