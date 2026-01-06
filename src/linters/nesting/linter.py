@@ -16,13 +16,13 @@ Exports: NestingDepthRule class
 Interfaces: NestingDepthRule.check(context) -> list[Violation], properties for rule metadata
 
 Implementation: Composition pattern with helper classes, AST-based analysis with configurable limits
+
 """
 
-import ast
 from typing import Any
 
 from src.core.base import BaseLintContext, MultiLanguageLintRule
-from src.core.linter_utils import load_linter_config
+from src.core.linter_utils import load_linter_config, with_parsed_python
 from src.core.types import Violation
 from src.linter_config.ignore import get_ignore_parser
 
@@ -106,11 +106,16 @@ class NestingDepthRule(MultiLanguageLintRule):
         Returns:
             List of violations found in Python code
         """
-        try:
-            tree = ast.parse(context.file_content or "")
-        except SyntaxError as e:
-            return [self._violation_builder.create_syntax_error_violation(e, context)]
+        return with_parsed_python(
+            context,
+            self._violation_builder,
+            lambda tree: self._analyze_python_tree(tree, config, context),
+        )
 
+    def _analyze_python_tree(
+        self, tree: Any, config: NestingConfig, context: BaseLintContext
+    ) -> list[Violation]:
+        """Analyze parsed Python AST for nesting violations."""
         functions = self._python_analyzer.find_all_functions(tree)
         return self._process_python_functions(functions, self._python_analyzer, config, context)
 

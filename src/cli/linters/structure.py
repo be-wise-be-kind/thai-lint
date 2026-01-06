@@ -23,7 +23,6 @@ SRP Exception: CLI command modules follow Click framework patterns requiring sim
 Suppressions:
     - too-many-arguments,too-many-positional-arguments: Click commands require many parameters by framework design
 """
-# dry: ignore-block - CLI commands follow Click framework pattern with intentional repetition
 
 import json
 import logging
@@ -33,13 +32,16 @@ from typing import TYPE_CHECKING, Any, NoReturn
 
 import click
 
-from src.cli.linters.shared import ensure_config_section, set_config_value
+from src.cli.linters.shared import (
+    ensure_config_section,
+    extract_command_context,
+    set_config_value,
+)
 from src.cli.main import cli
 from src.cli.utils import (
     execute_linting_on_paths,
     format_option,
     get_or_detect_project_root,
-    get_project_root_from_context,
     handle_linting_error,
     load_config_file,
     setup_base_orchestrator,
@@ -155,20 +157,20 @@ def file_placement(  # pylint: disable=too-many-arguments,too-many-positional-ar
         # Inline JSON rules
         thai-lint file-placement --rules '{"allow": [".*\\.py$"]}' .
     """
-    verbose: bool = ctx.obj.get("verbose", False)
-    project_root = get_project_root_from_context(ctx)
-
-    if not paths:
-        paths = (".",)
-
-    path_objs = [Path(p) for p in paths]
+    cmd_ctx = extract_command_context(ctx, paths)
 
     try:
         _execute_file_placement_lint(
-            path_objs, config_file, rules, format, recursive, verbose, project_root
+            cmd_ctx.path_objs,
+            config_file,
+            rules,
+            format,
+            recursive,
+            cmd_ctx.verbose,
+            cmd_ctx.project_root,
         )
     except Exception as e:
-        handle_linting_error(e, verbose)
+        handle_linting_error(e, cmd_ctx.verbose)
 
 
 def _execute_file_placement_lint(  # pylint: disable=too-many-arguments,too-many-positional-arguments
@@ -278,20 +280,20 @@ def pipeline(  # pylint: disable=too-many-arguments,too-many-positional-argument
         # Use custom config file
         thai-lint pipeline --config .thailint.yaml src/
     """
-    verbose: bool = ctx.obj.get("verbose", False)
-    project_root = get_project_root_from_context(ctx)
-
-    if not paths:
-        paths = (".",)
-
-    path_objs = [Path(p) for p in paths]
+    cmd_ctx = extract_command_context(ctx, paths)
 
     try:
         _execute_pipeline_lint(
-            path_objs, config_file, format, min_continues, recursive, verbose, project_root
+            cmd_ctx.path_objs,
+            config_file,
+            format,
+            min_continues,
+            recursive,
+            cmd_ctx.verbose,
+            cmd_ctx.project_root,
         )
     except Exception as e:
-        handle_linting_error(e, verbose)
+        handle_linting_error(e, cmd_ctx.verbose)
 
 
 def _execute_pipeline_lint(  # pylint: disable=too-many-arguments,too-many-positional-arguments
