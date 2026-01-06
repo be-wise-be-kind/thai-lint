@@ -46,6 +46,7 @@ help:
     @echo "  just lint-stateless [FILES...] - Stateless class detection (classes → module functions)"
     @echo "  just lint-print [FILES...]     - Print statement detection (debug output in production)"
     @echo "  just lint-stringly [FILES...]  - Stringly-typed detection (strings → enums)"
+    @echo "  just lint-perf [FILES...]      - Performance anti-patterns (string concat/regex in loops)"
     @echo "  just lint-lazy-ignores [FILES...] - Lazy ignore detection (unjustified suppressions)"
     @echo "  just clean-cache               - Clear DRY linter cache"
     @echo "  just lint-full [FILES...]      - ALL quality checks (includes all thai-lint linters)"
@@ -479,6 +480,23 @@ lint-stringly +files="src/ tests/":
         fi \
     fi
 
+# Performance anti-pattern linting (string concat in loops, regex in loops)
+lint-perf +files="src/ tests/":
+    @echo ""
+    @echo "{{BLUE}}{{BOLD}}════════════════════════════════════════════════════════════{{NC}}"
+    @echo "{{BOLD}}  PERFORMANCE (Loop Anti-Patterns){{NC}}"
+    @echo "{{BLUE}}{{BOLD}}════════════════════════════════════════════════════════════{{NC}}"
+    @echo ""
+    @SRC_TARGETS=$(just _get-src-targets {{files}}); \
+    if [ -n "$SRC_TARGETS" ]; then \
+        if poetry run thai-lint perf $SRC_TARGETS --config .thailint.yaml 2>&1; then \
+            echo "{{GREEN}}✓ Performance checks passed{{NC}}"; \
+        else \
+            echo "{{RED}}✗ Performance checks failed{{NC}}"; \
+            exit 1; \
+        fi \
+    fi
+
 # Lazy ignore detection (unjustified suppressions without header documentation)
 lint-lazy-ignores +files="src/ tests/":
     @echo ""
@@ -615,6 +633,13 @@ lint-full +files="src/ tests/":
         PASSED+=("Stringly-Typed")
     else
         FAILED+=("Stringly-Typed")
+    fi
+
+    echo ""
+    if just lint-perf {{files}}; then
+        PASSED+=("Performance")
+    else
+        FAILED+=("Performance")
     fi
 
     echo ""
