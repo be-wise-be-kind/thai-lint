@@ -136,7 +136,11 @@ class PythonStringConcatAnalyzer:
         return isinstance(node, ast.Constant) and isinstance(node.value, (int, float))
 
     def _find_concat_in_loops(
-        self, node: ast.AST, violations: list[StringConcatViolation], in_loop: str | None = None
+        self,
+        node: ast.AST,
+        violations: list[StringConcatViolation],
+        in_loop: str | None = None,
+        reset_vars: set[str] | None = None,
     ) -> None:
         """Recursively find string concatenation in loops.
 
@@ -144,12 +148,28 @@ class PythonStringConcatAnalyzer:
             node: Current AST node
             violations: List to append violations to
             in_loop: Type of enclosing loop ('for' or 'while'), None if not in loop
+            reset_vars: Variables reset to string values in current loop body
         """
-        current_loop = self._get_loop_type(node) or in_loop
-        self._check_for_string_concat(node, violations, current_loop)
+        if reset_vars is None:
+            reset_vars = set()
+
+        # When entering a new loop, find variables reset in its body
+        loop_type = self._get_loop_type(node)
+        current_loop: str | None
+        current_reset_vars: set[str]
+        if loop_type:
+            # Find variables assigned to strings in this loop's body
+            loop_reset_vars = self._find_vars_reset_in_loop(node)
+            current_loop = loop_type
+            current_reset_vars = loop_reset_vars
+        else:
+            current_loop = in_loop
+            current_reset_vars = reset_vars
+
+        self._check_for_string_concat(node, violations, current_loop, current_reset_vars)
 
         for child in ast.iter_child_nodes(node):
-            self._find_concat_in_loops(child, violations, current_loop)
+            self._find_concat_in_loops(child, violations, current_loop, current_reset_vars)
 
     def _get_loop_type(self, node: ast.AST) -> str | None:
         """Get the loop type if node is a loop, else None."""
@@ -159,15 +179,108 @@ class PythonStringConcatAnalyzer:
             return "while"
         return None
 
+    def _find_vars_reset_in_loop(self, loop_node: ast.AST) -> set[str]:
+        """Find variables that are assigned to string values in a loop body.
+
+        These variables are "reset" each iteration and should not be flagged
+        for O(n²) string concatenation since they don't accumulate across iterations.
+
+        Args:
+            loop_node: A For or While loop AST node
+
+        Returns:
+            Set of variable names that are reset to strings in the loop body
+        """
+        reset_vars: set[str] = set()
+
+        # Get the loop body
+        if isinstance(loop_node, (ast.For, ast.While)):
+            body = loop_node.body
+        else:
+            return reset_vars
+
+        # Scan assignments in the loop body (not nested loops)
+        for stmt in body:
+            self._collect_string_assigns(stmt, reset_vars)
+
+        return reset_vars
+
+    def _collect_string_assigns(self, node: ast.AST, reset_vars: set[str]) -> None:
+        """Collect variable names assigned to string values in a node.
+
+        Args:
+            node: AST node to scan
+            reset_vars: Set to add found variable names to
+        """
+        self._check_simple_assign(node, reset_vars)
+        self._check_annotated_assign(node, reset_vars)
+        self._recurse_control_flow(node, reset_vars)
+
+    def _check_simple_assign(self, node: ast.AST, reset_vars: set[str]) -> None:
+        """Check if node is a simple assignment to a string value."""
+        if not isinstance(node, ast.Assign):
+            return
+        for target in node.targets:
+            if isinstance(target, ast.Name) and self._is_string_value(node.value):
+                reset_vars.add(target.id)
+
+    def _check_annotated_assign(self, node: ast.AST, reset_vars: set[str]) -> None:
+        """Check if node is an annotated assignment to a string value."""
+        if not isinstance(node, ast.AnnAssign):
+            return
+        if node.value and isinstance(node.target, ast.Name) and self._is_string_value(node.value):
+            reset_vars.add(node.target.id)
+
+    def _recurse_control_flow(self, node: ast.AST, reset_vars: set[str]) -> None:
+        """Recurse into control flow (if/else, try/except) but NOT into nested loops."""
+        if isinstance(node, ast.If):
+            self._recurse_if_node(node, reset_vars)
+        elif isinstance(node, ast.Try):
+            self._recurse_try_node(node, reset_vars)
+
+    def _recurse_if_node(self, node: ast.If, reset_vars: set[str]) -> None:
+        """Recurse into if/else branches."""
+        for stmt in node.body + node.orelse:
+            self._collect_string_assigns(stmt, reset_vars)
+
+    def _recurse_try_node(self, node: ast.Try, reset_vars: set[str]) -> None:
+        """Recurse into try/except/finally branches."""
+        for stmt in node.body + node.orelse + node.finalbody:
+            self._collect_string_assigns(stmt, reset_vars)
+        for handler in node.handlers:
+            for stmt in handler.body:
+                self._collect_string_assigns(stmt, reset_vars)
+
     def _check_for_string_concat(
-        self, node: ast.AST, violations: list[StringConcatViolation], loop_type: str | None
+        self,
+        node: ast.AST,
+        violations: list[StringConcatViolation],
+        loop_type: str | None,
+        reset_vars: set[str] | None = None,
     ) -> None:
         """Check if node is a string concatenation in a loop and add violation if so."""
         if not self._is_add_aug_assign_in_loop(node, loop_type):
             return
-        # Type guaranteed by _is_add_aug_assign_in_loop check above
-        if isinstance(node, ast.AugAssign) and isinstance(node.target, ast.Name):
-            self._add_string_concat_violation(node, node.target.id, loop_type or "", violations)
+        self._process_aug_assign(node, violations, loop_type or "", reset_vars)
+
+    def _process_aug_assign(
+        self,
+        node: ast.AST,
+        violations: list[StringConcatViolation],
+        loop_type: str,
+        reset_vars: set[str] | None,
+    ) -> None:
+        """Process an augmented assignment node for potential violations."""
+        if not isinstance(node, ast.AugAssign) or not isinstance(node.target, ast.Name):
+            return
+        var_name = node.target.id
+        if self._should_skip_reset_var(var_name, reset_vars):
+            return
+        self._add_string_concat_violation(node, var_name, loop_type, violations)
+
+    def _should_skip_reset_var(self, var_name: str, reset_vars: set[str] | None) -> bool:
+        """Check if variable is reset in the loop and should be skipped."""
+        return reset_vars is not None and var_name in reset_vars
 
     def _is_add_aug_assign_in_loop(self, node: ast.AST, loop_type: str | None) -> bool:
         """Check if node is a += augmented assignment in a loop."""
