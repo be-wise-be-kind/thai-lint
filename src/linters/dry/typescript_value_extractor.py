@@ -19,6 +19,7 @@ Suppressions:
     - type:ignore[assignment,misc]: Tree-sitter Node type alias (optional dependency fallback)
 """
 
+from contextlib import suppress
 from typing import Any
 
 from src.analyzers.typescript_base import TREE_SITTER_AVAILABLE
@@ -46,7 +47,7 @@ class TypeScriptValueExtractor:
         """Get string representation of a value node."""
         if node.type in self.LITERAL_TYPES:
             return self.get_node_text(node, content)
-        if node.type in self.FIXED_REPRESENTATIONS:
+        with suppress(KeyError):
             return self.FIXED_REPRESENTATIONS[node.type]
         if node.type == "call_expression":
             return self._get_call_string(node, content)

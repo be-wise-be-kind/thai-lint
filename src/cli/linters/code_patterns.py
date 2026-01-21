@@ -1,17 +1,18 @@
 """
-Purpose: CLI commands for code pattern linters (print-statements, method-property, stateless-class, lazy-ignores)
+Purpose: CLI commands for code pattern linters (print-statements, method-property, stateless-class, lazy-ignores, lbyl)
 
 Scope: Commands that detect code patterns and anti-patterns in Python code
 
 Overview: Provides CLI commands for code pattern linting: print-statements detects print() and
     console.log calls that should use proper logging, method-property finds methods that should be
     @property decorators, stateless-class detects classes without state that should be module
-    functions, and lazy-ignores detects unjustified linting suppressions. Each command supports
-    standard options (config, format, recursive) and integrates with the orchestrator for execution.
+    functions, lazy-ignores detects unjustified linting suppressions, and lbyl detects Look Before
+    You Leap anti-patterns. Each command supports standard options (config, format, recursive) and
+    integrates with the orchestrator for execution.
 
 Dependencies: click for CLI framework, src.cli.main for CLI group, src.cli.utils for shared utilities
 
-Exports: print_statements command, method_property command, stateless_class command, lazy_ignores command
+Exports: print_statements, method_property, stateless_class, lazy_ignores, lbyl commands
 
 Interfaces: Click CLI commands registered to main CLI group
 
@@ -219,4 +220,49 @@ lazy_ignores = create_linter_command(
     "Detects ignore directives (noqa, type:ignore, pylint:disable, nosec) that lack\n"
     "    corresponding entries in the file header's Suppressions section. Enforces a\n"
     "    header-based suppression model requiring human approval for all linting bypasses.",
+)
+
+
+# =============================================================================
+# LBYL Command
+# =============================================================================
+
+
+def _setup_lbyl_orchestrator(
+    path_objs: list[Path], config_file: str | None, verbose: bool, project_root: Path | None = None
+) -> "Orchestrator":
+    """Set up orchestrator for lbyl command."""
+    return setup_base_orchestrator(path_objs, config_file, verbose, project_root)
+
+
+def _run_lbyl_lint(
+    orchestrator: "Orchestrator", path_objs: list[Path], recursive: bool
+) -> list[Violation]:
+    """Execute lbyl lint on files or directories."""
+    all_violations = execute_linting_on_paths(orchestrator, path_objs, recursive)
+    return [v for v in all_violations if v.rule_id.startswith("lbyl")]
+
+
+def _execute_lbyl_lint(params: ExecuteParams) -> NoReturn:
+    """Execute lbyl lint."""
+    validate_paths_exist(params.path_objs)
+    orchestrator = _setup_lbyl_orchestrator(
+        params.path_objs, params.config_file, params.verbose, params.project_root
+    )
+    lbyl_violations = _run_lbyl_lint(orchestrator, params.path_objs, params.recursive)
+
+    if params.verbose:
+        logger.info(f"Found {len(lbyl_violations)} LBYL violation(s)")
+
+    format_violations(lbyl_violations, params.format)
+    sys.exit(1 if lbyl_violations else 0)
+
+
+lbyl = create_linter_command(
+    "lbyl",
+    _execute_lbyl_lint,
+    "Check for Look Before You Leap anti-patterns.",
+    "Detects LBYL (Look Before You Leap) anti-patterns in Python code that should\n"
+    "    be refactored to EAFP (Easier to Ask Forgiveness than Permission) style.\n"
+    "    Examples: 'if key in dict: dict[key]' should use try/except KeyError.",
 )

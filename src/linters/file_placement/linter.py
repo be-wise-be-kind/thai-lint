@@ -27,6 +27,7 @@ Suppressions:
 """
 
 import json
+from contextlib import suppress
 from pathlib import Path
 from typing import Any
 
@@ -327,10 +328,10 @@ class FilePlacementRule(BaseLintRule):  # thailint: ignore[srp.violation]
         if not hasattr(context, "metadata"):
             return None
         # Try hyphenated format first (original format)
-        if "file-placement" in context.metadata:
+        with suppress(KeyError):
             return context.metadata["file-placement"]
         # Try underscored format (normalized format)
-        if "file_placement" in context.metadata:
+        with suppress(KeyError):
             return context.metadata["file_placement"]
         return None
 
@@ -364,7 +365,7 @@ class FilePlacementRule(BaseLintRule):  # thailint: ignore[srp.violation]
             FilePlacementLinter instance
         """
         # Check if cached linter exists for this project root
-        if project_root in self._linter_cache:
+        with suppress(KeyError):
             return self._linter_cache[project_root]
 
         # Try to get config from context metadata (orchestrator passes config here)
@@ -420,11 +421,10 @@ class FilePlacementRule(BaseLintRule):  # thailint: ignore[srp.violation]
             config = self._parse_layout_file(layout_path)
 
             # Unwrap file-placement key if present (try both formats for backward compatibility)
-            if "file-placement" in config:
+            with suppress(KeyError):
                 return config["file-placement"]
-            if "file_placement" in config:
+            with suppress(KeyError):
                 return config["file_placement"]
-
             return config
         except Exception:
             return {}

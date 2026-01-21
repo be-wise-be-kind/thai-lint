@@ -19,6 +19,7 @@ Implementation: Uses cached IgnoreDirectiveParser singleton, reads file content 
     supports both stringly-typed.* and stringly-typed specific rule matching
 """
 
+from contextlib import suppress
 from pathlib import Path
 
 from src.core.types import Violation
@@ -73,7 +74,7 @@ class IgnoreChecker:
         Returns:
             File content or empty string if unreadable
         """
-        if file_path in self._file_content_cache:
+        with suppress(KeyError):
             return self._file_content_cache[file_path]
 
         content = self._read_file_content(file_path)

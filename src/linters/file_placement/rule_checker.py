@@ -19,6 +19,7 @@ Implementation: Checks deny before allow, delegates directory matching to Direct
     uses RuleCheckContext dataclass to reduce parameter duplication
 """
 
+from contextlib import suppress
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -76,17 +77,17 @@ class RuleChecker:
         """
         violations: list[Violation] = []
 
-        if "directories" in fp_config:
+        with suppress(KeyError):
             dir_violations = self._check_directory_rules(
                 path_str, rel_path, fp_config["directories"]
             )
             violations.extend(dir_violations)
 
-        if "global_deny" in fp_config:
+        with suppress(KeyError):
             deny_violations = self._check_global_deny(path_str, rel_path, fp_config["global_deny"])
             violations.extend(deny_violations)
 
-        if "global_patterns" in fp_config:
+        with suppress(KeyError):
             global_violations = self._check_global_patterns(
                 path_str, rel_path, fp_config["global_patterns"]
             )
@@ -209,21 +210,25 @@ class RuleChecker:
             List of violations
         """
         # Check deny patterns first
-        if "deny" in global_patterns:
+        try:
             is_denied, reason = self.pattern_matcher.match_deny_patterns(
                 path_str, global_patterns["deny"]
             )
             if is_denied:
                 violation = self.violation_factory.create_global_deny_violation(rel_path, reason)
                 return self._wrap_violation(violation)
+        except KeyError:
+            pass  # No deny patterns
 
         # Check allow patterns
-        if "allow" in global_patterns:
+        try:
             is_allowed = self.pattern_matcher.match_allow_patterns(
                 path_str, global_patterns["allow"]
             )
             if not is_allowed:
                 violation = self.violation_factory.create_global_allow_violation(rel_path)
                 return self._wrap_violation(violation)
+        except KeyError:
+            pass  # No allow patterns
 
         return []

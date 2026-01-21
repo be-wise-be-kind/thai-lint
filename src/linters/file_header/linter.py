@@ -27,6 +27,7 @@ Suppressions:
         languages. Methods support single responsibility of file header validation.
 """
 
+from contextlib import suppress
 from pathlib import Path
 from typing import Protocol
 
@@ -302,7 +303,7 @@ class FileHeaderRule(BaseLintRule):  # thailint: ignore[srp]
         prose_parts = []
 
         for field_name in prose_fields:
-            if field_name in fields:
+            with suppress(KeyError):
                 prose_parts.append(f"{field_name}: {fields[field_name]}")
 
         return "\n".join(prose_parts)

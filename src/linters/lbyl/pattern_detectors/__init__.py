@@ -10,7 +10,7 @@ Overview: Exports pattern detector classes for the LBYL linter. Each detector is
 
 Dependencies: ast module, base detector class
 
-Exports: BaseLBYLDetector, LBYLPattern
+Exports: BaseLBYLDetector, LBYLPattern, DictKeyDetector, DictKeyPattern
 
 Interfaces: find_patterns(tree: ast.AST) -> list[LBYLPattern]
 
@@ -18,8 +18,11 @@ Implementation: Modular detector pattern for extensible LBYL detection
 """
 
 from .base import BaseLBYLDetector, LBYLPattern
+from .dict_key_detector import DictKeyDetector, DictKeyPattern
 
 __all__ = [
     "BaseLBYLDetector",
     "LBYLPattern",
+    "DictKeyDetector",
+    "DictKeyPattern",
 ]
