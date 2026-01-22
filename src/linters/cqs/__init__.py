@@ -20,11 +20,17 @@ Implementation: AST-based pattern detection with configurable ignore rules
 """
 
 from .config import CQSConfig
+from .input_detector import InputDetector
+from .output_detector import OutputDetector
+from .python_analyzer import PythonCQSAnalyzer
 from .types import CQSPattern, InputOperation, OutputOperation
 
 __all__ = [
     "CQSConfig",
     "CQSPattern",
+    "InputDetector",
     "InputOperation",
+    "OutputDetector",
     "OutputOperation",
+    "PythonCQSAnalyzer",
 ]
