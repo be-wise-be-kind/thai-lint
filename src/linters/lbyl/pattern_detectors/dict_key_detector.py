@@ -62,25 +62,12 @@ def _extract_in_check(test: ast.expr) -> tuple[ast.expr | None, ast.expr | None]
     return test.comparators[0], test.left
 
 
-class DictKeyDetector(BaseLBYLDetector):
+class DictKeyDetector(BaseLBYLDetector[DictKeyPattern]):
     """Detects 'if key in dict: dict[key]' LBYL patterns."""
 
     def __init__(self) -> None:
         """Initialize the detector."""
         self._patterns: list[DictKeyPattern] = []
-
-    def find_patterns(self, tree: ast.AST) -> list[LBYLPattern]:
-        """Find dict key LBYL patterns in AST.
-
-        Args:
-            tree: Python AST to analyze
-
-        Returns:
-            List of detected DictKeyPattern objects
-        """
-        self._patterns = []
-        self.visit(tree)
-        return list(self._patterns)
 
     def visit_If(self, node: ast.If) -> None:  # noqa: N802  # pylint: disable=invalid-name
         """Visit if statement to check for dict key LBYL pattern.

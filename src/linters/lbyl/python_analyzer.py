@@ -24,7 +24,13 @@ from src.core.types import Violation
 
 from .config import LBYLConfig
 from .pattern_detectors.dict_key_detector import DictKeyDetector, DictKeyPattern
-from .violation_builder import build_dict_key_violation
+from .pattern_detectors.hasattr_detector import HasattrDetector, HasattrPattern
+from .pattern_detectors.isinstance_detector import IsinstanceDetector, IsinstancePattern
+from .violation_builder import (
+    build_dict_key_violation,
+    build_hasattr_violation,
+    build_isinstance_violation,
+)
 
 
 class PythonLBYLAnalyzer:
@@ -33,6 +39,8 @@ class PythonLBYLAnalyzer:
     def __init__(self) -> None:
         """Initialize the analyzer with pattern detectors."""
         self._dict_key_detector = DictKeyDetector()
+        self._hasattr_detector = HasattrDetector()
+        self._isinstance_detector = IsinstanceDetector()
 
     def analyze(self, code: str, file_path: str, config: LBYLConfig) -> list[Violation]:
         """Analyze Python code for LBYL patterns.
@@ -45,17 +53,30 @@ class PythonLBYLAnalyzer:
         Returns:
             List of violations for detected LBYL patterns
         """
-        if not code or not code.strip():
-            return []
-
-        tree = self._parse_ast(code)
+        tree = self._parse_code(code)
         if tree is None:
             return []
 
+        return self._run_enabled_detectors(tree, file_path, config)
+
+    def _parse_code(self, code: str) -> ast.Module | None:
+        """Parse Python code into AST, returning None if empty or invalid."""
+        if not code or not code.strip():
+            return None
+        return self._parse_ast(code)
+
+    def _run_enabled_detectors(
+        self, tree: ast.Module, file_path: str, config: LBYLConfig
+    ) -> list[Violation]:
+        """Run all enabled pattern detectors and collect violations."""
         violations: list[Violation] = []
 
         if config.detect_dict_key:
             violations.extend(self._detect_dict_key_patterns(tree, file_path))
+        if config.detect_hasattr:
+            violations.extend(self._detect_hasattr_patterns(tree, file_path))
+        if config.detect_isinstance:
+            violations.extend(self._detect_isinstance_patterns(tree, file_path))
 
         return violations
 
@@ -79,6 +100,42 @@ class PythonLBYLAnalyzer:
                     column=pattern.column,
                     dict_name=pattern.dict_name,
                     key_expression=pattern.key_expression,
+                )
+                violations.append(violation)
+
+        return violations
+
+    def _detect_hasattr_patterns(self, tree: ast.Module, file_path: str) -> list[Violation]:
+        """Detect hasattr LBYL patterns and convert to violations."""
+        violations: list[Violation] = []
+        patterns = self._hasattr_detector.find_patterns(tree)
+
+        for pattern in patterns:
+            if isinstance(pattern, HasattrPattern):
+                violation = build_hasattr_violation(
+                    file_path=file_path,
+                    line=pattern.line_number,
+                    column=pattern.column,
+                    object_name=pattern.object_name,
+                    attribute_name=pattern.attribute_name,
+                )
+                violations.append(violation)
+
+        return violations
+
+    def _detect_isinstance_patterns(self, tree: ast.Module, file_path: str) -> list[Violation]:
+        """Detect isinstance LBYL patterns and convert to violations."""
+        violations: list[Violation] = []
+        patterns = self._isinstance_detector.find_patterns(tree)
+
+        for pattern in patterns:
+            if isinstance(pattern, IsinstancePattern):
+                violation = build_isinstance_violation(
+                    file_path=file_path,
+                    line=pattern.line_number,
+                    column=pattern.column,
+                    object_name=pattern.object_name,
+                    type_name=pattern.type_name,
                 )
                 violations.append(violation)
 

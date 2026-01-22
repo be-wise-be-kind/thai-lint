@@ -7,19 +7,21 @@ Overview: Defines BaseLBYLDetector abstract class that all pattern detectors ext
     Inherits from ast.NodeVisitor for AST traversal. Defines LBYLPattern base dataclass
     for representing detected patterns with line number and column information. Each
     concrete detector implements find_patterns() to identify specific LBYL anti-patterns.
+    Uses Generic TypeVar for type-safe subclass pattern storage.
 
-Dependencies: abc, ast, dataclasses
+Dependencies: abc, ast, dataclasses, typing
 
 Exports: BaseLBYLDetector, LBYLPattern
 
 Interfaces: find_patterns(tree: ast.AST) -> list[LBYLPattern]
 
-Implementation: Abstract base with NodeVisitor pattern for extensibility
+Implementation: Abstract base with NodeVisitor pattern for extensibility, Generic for type safety
 """
 
 import ast
-from abc import ABC, abstractmethod
+from abc import ABC
 from dataclasses import dataclass
+from typing import Generic, TypeVar
 
 
 @dataclass
@@ -30,10 +32,23 @@ class LBYLPattern:
     column: int
 
 
-class BaseLBYLDetector(ast.NodeVisitor, ABC):
-    """Base class for LBYL pattern detectors."""
+PatternT = TypeVar("PatternT", bound=LBYLPattern)
 
-    @abstractmethod
+
+class BaseLBYLDetector(ast.NodeVisitor, ABC, Generic[PatternT]):
+    """Base class for LBYL pattern detectors.
+
+    Subclasses must initialize self._patterns as an empty list in __init__
+    and populate it in visit methods. The _patterns attribute stores subclass-
+    specific pattern types (DictKeyPattern, HasattrPattern, etc.) which all
+    inherit from LBYLPattern.
+
+    Type Parameters:
+        PatternT: The specific pattern type used by this detector
+    """
+
+    _patterns: list[PatternT]
+
     def find_patterns(self, tree: ast.AST) -> list[LBYLPattern]:
         """Find LBYL patterns in AST.
 
@@ -43,4 +58,6 @@ class BaseLBYLDetector(ast.NodeVisitor, ABC):
         Returns:
             List of detected LBYL patterns
         """
-        raise NotImplementedError
+        self._patterns = []
+        self.visit(tree)
+        return list(self._patterns)

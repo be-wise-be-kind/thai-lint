@@ -11,7 +11,8 @@ Overview: Provides module-level functions that create Violation objects for LBYL
 
 Dependencies: src.core.types for Violation, src.core.base for BaseLintContext
 
-Exports: build_dict_key_violation, create_syntax_error_violation
+Exports: build_dict_key_violation, build_hasattr_violation, build_isinstance_violation,
+    create_syntax_error_violation
 
 Interfaces: Module functions for building LBYL violations
 
@@ -53,6 +54,80 @@ def build_dict_key_violation(
 
     return Violation(
         rule_id="lbyl.dict-key-check",
+        file_path=file_path,
+        line=line,
+        column=column,
+        message=message,
+        suggestion=suggestion,
+    )
+
+
+def build_hasattr_violation(
+    file_path: str,
+    line: int,
+    column: int,
+    object_name: str,
+    attribute_name: str,
+) -> Violation:
+    """Build a violation for hasattr LBYL pattern.
+
+    Args:
+        file_path: Path to the file containing the violation
+        line: Line number (1-indexed)
+        column: Column number (0-indexed)
+        object_name: Name of the object being checked
+        attribute_name: Name of the attribute being checked
+
+    Returns:
+        Violation object with EAFP suggestion
+    """
+    message = (
+        f"LBYL pattern: 'if hasattr({object_name}, '{attribute_name}')' followed by "
+        f"'{object_name}.{attribute_name}'"
+    )
+
+    suggestion = f"Use EAFP: 'try: {object_name}.{attribute_name} except AttributeError: ...'"
+
+    return Violation(
+        rule_id="lbyl.hasattr-check",
+        file_path=file_path,
+        line=line,
+        column=column,
+        message=message,
+        suggestion=suggestion,
+    )
+
+
+def build_isinstance_violation(
+    file_path: str,
+    line: int,
+    column: int,
+    object_name: str,
+    type_name: str,
+) -> Violation:
+    """Build a violation for isinstance LBYL pattern.
+
+    Args:
+        file_path: Path to the file containing the violation
+        line: Line number (1-indexed)
+        column: Column number (0-indexed)
+        object_name: Name of the object being checked
+        type_name: Name of the type being checked against
+
+    Returns:
+        Violation object with EAFP suggestion
+    """
+    message = (
+        f"LBYL pattern: 'if isinstance({object_name}, {type_name})' before type-specific operation"
+    )
+
+    suggestion = (
+        "Consider EAFP: 'try: ... except (TypeError, AttributeError): ...' "
+        "instead of isinstance check"
+    )
+
+    return Violation(
+        rule_id="lbyl.isinstance-check",
         file_path=file_path,
         line=line,
         column=column,
