@@ -222,6 +222,14 @@ collection-pipeline:
 stringly-typed:
   enabled: true
   min_occurrences: 2  # Require cross-file occurrences
+  # Exclude AST node attribute comparisons - comparing node.func.id to builtin
+  # function names ("hasattr", "isinstance", "print") is standard AST analysis
+  exclude_variables:
+    - "node.func.id"
+  # Ignore pattern detectors that compare AST builtin function names
+  ignore:
+    - "**/pattern_detectors/**"
+    - "**/print_statements/**"
 
 # LBYL (Look Before You Leap) linter configuration
 lbyl:
