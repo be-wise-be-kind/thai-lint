@@ -48,6 +48,7 @@ help:
     @echo "  just lint-stringly [FILES...]  - Stringly-typed detection (strings → enums)"
     @echo "  just lint-perf [FILES...]      - Performance anti-patterns (string concat/regex in loops)"
     @echo "  just lint-lazy-ignores [FILES...] - Lazy ignore detection (unjustified suppressions)"
+    @echo "  just lint-lbyl [FILES...]      - LBYL anti-pattern detection (Look Before You Leap)"
     @echo "  just clean-cache               - Clear DRY linter cache"
     @echo "  just lint-full [FILES...]      - ALL quality checks (includes all thai-lint linters)"
     @echo "  just format                    - Auto-fix formatting and linting issues"
@@ -514,6 +515,23 @@ lint-lazy-ignores +files="src/ tests/":
         fi \
     fi
 
+# LBYL (Look Before You Leap) linting - detect anti-patterns
+lint-lbyl +files="src/ tests/":
+    @echo ""
+    @echo "{{BLUE}}{{BOLD}}════════════════════════════════════════════════════════════{{NC}}"
+    @echo "{{BOLD}}  LBYL (Look Before You Leap Anti-Patterns){{NC}}"
+    @echo "{{BLUE}}{{BOLD}}════════════════════════════════════════════════════════════{{NC}}"
+    @echo ""
+    @SRC_TARGETS=$(just _get-src-targets {{files}}); \
+    if [ -n "$SRC_TARGETS" ]; then \
+        if poetry run thai-lint lbyl $SRC_TARGETS --config .thailint.yaml 2>&1; then \
+            echo "{{GREEN}}✓ LBYL checks passed{{NC}}"; \
+        else \
+            echo "{{RED}}✗ LBYL checks failed{{NC}}"; \
+            exit 1; \
+        fi \
+    fi
+
 # Clear DRY linter cache
 clean-cache:
     @echo "{{BLUE}}Clearing DRY linter cache...{{NC}}"
@@ -647,6 +665,13 @@ lint-full +files="src/ tests/":
         PASSED+=("Lazy Ignores")
     else
         FAILED+=("Lazy Ignores")
+    fi
+
+    echo ""
+    if just lint-lbyl {{files}}; then
+        PASSED+=("LBYL Anti-Patterns")
+    else
+        FAILED+=("LBYL Anti-Patterns")
     fi
 
     # Print summary
@@ -944,6 +969,18 @@ _publish-pypi-only:
         echo "❌ Publishing to PyPI failed!"
         exit 1
     fi
+
+# Show PyPI download statistics for thailint
+pypi-stats:
+    @echo "{{BLUE}}{{BOLD}}════════════════════════════════════════════════════════════{{NC}}"
+    @echo "{{BOLD}}  PyPI Download Statistics for thailint{{NC}}"
+    @echo "{{BLUE}}{{BOLD}}════════════════════════════════════════════════════════════{{NC}}"
+    @echo ""
+    @echo "{{BOLD}}Overall Downloads:{{NC}}"
+    @poetry run pypistats overall thailint
+    @echo ""
+    @echo "{{BOLD}}Recent Downloads (last 30 days):{{NC}}"
+    @poetry run pypistats recent thailint
 
 # Publish to Docker Hub (runs tests, linting, and version bump first)
 publish-docker:

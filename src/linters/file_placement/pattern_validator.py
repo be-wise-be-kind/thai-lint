@@ -18,6 +18,7 @@ Implementation: Uses re.compile() to test pattern validity, provides detailed er
 """
 
 import re
+from contextlib import suppress
 from typing import Any
 
 
@@ -76,7 +77,7 @@ class PatternValidator:
         Args:
             rules: Rules dictionary containing allow patterns
         """
-        if "allow" in rules:
+        with suppress(KeyError):
             for pattern in rules["allow"]:
                 self._validate_pattern(pattern)
 
@@ -86,7 +87,7 @@ class PatternValidator:
         Args:
             rules: Rules dictionary containing deny patterns
         """
-        if "deny" in rules:
+        with suppress(KeyError):
             for deny_item in rules["deny"]:
                 pattern = _extract_pattern(deny_item)
                 self._validate_pattern(pattern)
@@ -97,7 +98,7 @@ class PatternValidator:
         Args:
             fp_config: File placement configuration section
         """
-        if "directories" in fp_config:
+        with suppress(KeyError):
             for _dir_path, rules in fp_config["directories"].items():
                 self._validate_allow_patterns(rules)
                 self._validate_deny_patterns(rules)
@@ -108,7 +109,7 @@ class PatternValidator:
         Args:
             fp_config: File placement configuration section
         """
-        if "global_patterns" in fp_config:
+        with suppress(KeyError):
             self._validate_allow_patterns(fp_config["global_patterns"])
             self._validate_deny_patterns(fp_config["global_patterns"])
 
@@ -118,7 +119,7 @@ class PatternValidator:
         Args:
             fp_config: File placement configuration section
         """
-        if "global_deny" in fp_config:
+        with suppress(KeyError):
             for deny_item in fp_config["global_deny"]:
                 pattern = _extract_pattern(deny_item)
                 self._validate_pattern(pattern)

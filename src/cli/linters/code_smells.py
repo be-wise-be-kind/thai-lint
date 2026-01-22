@@ -81,11 +81,13 @@ def _load_dry_config_file(orchestrator: "Orchestrator", config_file: str, verbos
     with config_path.open("r", encoding="utf-8") as f:
         config: dict[str, Any] = yaml.safe_load(f)
 
-    if "dry" in config:
-        orchestrator.config.update({"dry": config["dry"]})
-
-        if verbose:
-            logger.info(f"Loaded DRY config from {config_file}")
+    try:
+        dry_config = config["dry"]
+    except KeyError:
+        return  # No DRY config in file
+    orchestrator.config.update({"dry": dry_config})
+    if verbose:
+        logger.info(f"Loaded DRY config from {config_file}")
 
 
 def _apply_dry_config_override(

@@ -12,7 +12,7 @@ Overview: Package providing LBYL pattern detection for Python code. Identifies c
 
 Dependencies: ast module for Python parsing, src.core for base classes
 
-Exports: LBYLConfig, LBYLPattern, BaseLBYLDetector
+Exports: LBYLConfig, LBYLPattern, BaseLBYLDetector, LBYLRule
 
 Interfaces: LBYLConfig.from_dict() for YAML configuration loading
 
@@ -20,10 +20,12 @@ Implementation: AST-based pattern detection with configurable pattern toggles
 """
 
 from .config import LBYLConfig
+from .linter import LBYLRule
 from .pattern_detectors.base import BaseLBYLDetector, LBYLPattern
 
 __all__ = [
     "LBYLConfig",
     "LBYLPattern",
     "BaseLBYLDetector",
+    "LBYLRule",
 ]

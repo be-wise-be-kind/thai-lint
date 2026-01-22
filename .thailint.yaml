@@ -222,3 +222,17 @@ collection-pipeline:
 stringly-typed:
   enabled: true
   min_occurrences: 2  # Require cross-file occurrences
+
+# LBYL (Look Before You Leap) linter configuration
+lbyl:
+  enabled: true  # Enable LBYL pattern detection
+  detect_dict_key: true  # Detect 'if key in dict: dict[key]' patterns
+  detect_hasattr: true  # Detect 'if hasattr(obj, attr): obj.attr' patterns
+  detect_isinstance: false  # Disabled by default (controversial)
+  detect_file_exists: true  # Detect 'if os.path.exists(f): open(f)' patterns
+  detect_len_check: true  # Detect 'if len(x) > 0: x[0]' patterns
+  detect_none_check: false  # Disabled by default (controversial)
+  detect_string_validation: true  # Detect string check before parse patterns
+  detect_division_check: true  # Detect 'if x != 0: y/x' patterns
+  ignore:
+    - "tests/"  # Test files often have intentional LBYL for test clarity

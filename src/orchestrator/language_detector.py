@@ -23,6 +23,7 @@ Implementation: Dictionary-based extension lookup for O(1) detection, first-line
     parsing with substring matching, lazy file reading only when extension unknown
 """
 
+from contextlib import suppress
 from pathlib import Path
 
 # Extension to language mapping
@@ -70,7 +71,7 @@ def detect_language(file_path: Path) -> str:
         Language identifier (python, javascript, typescript, java, go, unknown).
     """
     ext = file_path.suffix.lower()
-    if ext in EXTENSION_MAP:
+    with suppress(KeyError):
         return EXTENSION_MAP[ext]
 
     if file_path.exists() and file_path.stat().st_size > 0:

@@ -26,6 +26,7 @@ Suppressions:
 
 import logging
 import sys
+from contextlib import suppress
 from pathlib import Path
 from typing import TYPE_CHECKING, NoReturn
 
@@ -85,7 +86,7 @@ def _apply_nesting_config_override(
 def _apply_nesting_to_languages(nesting_config: dict, max_depth: int) -> None:
     """Apply max_depth to language-specific configs."""
     for lang in ["python", "typescript", "javascript"]:
-        if lang in nesting_config:
+        with suppress(KeyError):
             nesting_config[lang]["max_nesting_depth"] = max_depth
 
 
