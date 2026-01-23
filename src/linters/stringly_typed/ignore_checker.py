@@ -91,12 +91,9 @@ class IgnoreChecker:
             File content or empty string if unreadable
         """
         try:
-            path = Path(file_path)
-            if path.exists():
-                return path.read_text(encoding="utf-8")
+            return Path(file_path).read_text(encoding="utf-8")
         except (OSError, UnicodeDecodeError):
-            pass
-        return ""
+            return ""
 
     def clear_cache(self) -> None:
         """Clear file content cache."""
