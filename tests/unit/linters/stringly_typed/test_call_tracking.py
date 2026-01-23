@@ -566,3 +566,41 @@ class TestViolationGeneratorFunctionCalls:
 
         # Should not flag since require_cross_file=True and both calls in same file
         assert len(violations) == 0
+
+    def test_strings_with_spaces_not_flagged(
+        self,
+        storage: StringlyTypedStorage,
+        generator: ViolationGenerator,
+        config: StringlyTypedConfig,
+    ) -> None:
+        """Test that strings containing spaces are not flagged as enum candidates.
+
+        SQL queries, templates, and other multi-word strings should not be treated
+        as enum candidates since enum values are typically single words.
+        """
+        calls = [
+            StoredFunctionCall(
+                file_path=Path("file1.py"),
+                line_number=10,
+                column=4,
+                function_name="execute_sql",
+                param_index=0,
+                string_value="SELECT id, name FROM users",
+            ),
+            StoredFunctionCall(
+                file_path=Path("file2.py"),
+                line_number=20,
+                column=4,
+                function_name="execute_sql",
+                param_index=0,
+                string_value="SELECT * FROM products",
+            ),
+        ]
+        storage.add_function_calls(calls)
+
+        violations = generator.generate_violations(
+            storage, "stringly-typed.repeated-validation", config
+        )
+
+        # Should NOT generate violations for SQL queries (contain spaces)
+        assert len(violations) == 0
