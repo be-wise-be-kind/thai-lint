@@ -80,6 +80,11 @@ def _should_skip_patterns(patterns: list[StoredPattern], config: StringlyTypedCo
     return False
 
 
+def _has_template_strings(vals: set[str]) -> bool:
+    """Check if any value looks like a template/SQL (contains spaces)."""
+    return any(" " in v for v in vals)
+
+
 def _should_skip_comparison(unique_values: set[str], config: StringlyTypedConfig) -> bool:
     """Check if a comparison pattern should be skipped based on config."""
     if len(unique_values) > config.max_values_for_enum:
@@ -87,6 +92,8 @@ def _should_skip_comparison(unique_values: set[str], config: StringlyTypedConfig
     if _is_allowed_value_set(unique_values, config):
         return True
     if context_filter.are_all_values_excluded(unique_values):
+        return True
+    if _has_template_strings(unique_values):
         return True
     return False
 
@@ -266,6 +273,7 @@ def _get_valid_functions(
         (name, idx, vals)
         for name, idx, vals in limited_funcs
         if not _is_allowed_value_set(vals, config)
+        and not _has_template_strings(vals)
         and context_filter.should_include(name, idx, vals)
     ]
 
