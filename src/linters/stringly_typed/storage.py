@@ -461,7 +461,7 @@ class StringlyTypedStorage:  # thailint: ignore[srp]
             List of (function_name, param_index, unique_values) tuples
         """
         cursor = self._db.execute(
-            """SELECT function_name, param_index, GROUP_CONCAT(DISTINCT string_value)
+            """SELECT function_name, param_index, json_group_array(DISTINCT string_value)
                FROM function_calls
                GROUP BY function_name, param_index
                HAVING COUNT(DISTINCT string_value) >= ?
@@ -470,12 +470,7 @@ class StringlyTypedStorage:  # thailint: ignore[srp]
             (min_values, max_values, min_files),
         )
 
-        results: list[tuple[str, int, set[str]]] = []
-        for row in cursor.fetchall():
-            values = set(row[2].split(",")) if row[2] else set()
-            results.append((row[0], row[1], values))
-
-        return results
+        return [(row[0], row[1], set(json.loads(row[2]))) for row in cursor.fetchall()]
 
     def get_calls_by_function(
         self, function_name: str, param_index: int
@@ -566,7 +561,7 @@ class StringlyTypedStorage:  # thailint: ignore[srp]
             List of (variable_name, unique_values) tuples
         """
         cursor = self._db.execute(
-            """SELECT variable_name, GROUP_CONCAT(DISTINCT compared_value)
+            """SELECT variable_name, json_group_array(DISTINCT compared_value)
                FROM string_comparisons
                GROUP BY variable_name
                HAVING COUNT(DISTINCT compared_value) >= ?
@@ -574,12 +569,7 @@ class StringlyTypedStorage:  # thailint: ignore[srp]
             (min_values, min_files),
         )
 
-        results: list[tuple[str, set[str]]] = []
-        for row in cursor.fetchall():
-            values = set(row[1].split(",")) if row[1] else set()
-            results.append((row[0], values))
-
-        return results
+        return [(row[0], set(json.loads(row[1]))) for row in cursor.fetchall()]
 
     def get_comparisons_by_variable(self, variable_name: str) -> list[StoredComparison]:
         """Get all comparisons for a specific variable.
