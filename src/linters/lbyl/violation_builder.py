@@ -6,13 +6,13 @@ Scope: Creates violations for detected LBYL anti-patterns with fix suggestions
 Overview: Provides module-level functions that create Violation objects for LBYL
     anti-patterns detected in Python code. Each violation includes the rule ID, location,
     descriptive message, and an EAFP suggestion showing how to refactor the code using
-    try/except. Supports dict key check patterns with extensibility for additional
-    pattern types.
+    try/except. Supports dict key check, hasattr, isinstance, file exists, and len check
+    patterns.
 
 Dependencies: src.core.types for Violation, src.core.base for BaseLintContext
 
 Exports: build_dict_key_violation, build_hasattr_violation, build_isinstance_violation,
-    create_syntax_error_violation
+    build_file_exists_violation, build_len_check_violation, create_syntax_error_violation
 
 Interfaces: Module functions for building LBYL violations
 
@@ -157,4 +157,80 @@ def create_syntax_error_violation(error: SyntaxError, context: BaseLintContext) 
         column=column,
         message=f"Syntax error: {error.msg}",
         suggestion="Fix the syntax error before running LBYL analysis",
+    )
+
+
+def build_file_exists_violation(
+    file_path: str,
+    line: int,
+    column: int,
+    path_expression: str,
+    check_type: str,
+) -> Violation:
+    """Build a violation for file exists LBYL pattern.
+
+    Args:
+        file_path: Path to the file containing the violation
+        line: Line number (1-indexed)
+        column: Column number (0-indexed)
+        path_expression: Expression representing the file path being checked
+        check_type: Type of check ("os.path.exists", "Path.exists", "exists")
+
+    Returns:
+        Violation object with EAFP suggestion
+    """
+    message = (
+        f"LBYL pattern: 'if {check_type}({path_expression})' followed by "
+        f"file operation on '{path_expression}'"
+    )
+
+    suggestion = (
+        f"Use EAFP: 'try: with open({path_expression}) as f: ... except FileNotFoundError: ...'"
+    )
+
+    return Violation(
+        rule_id="lbyl.file-exists-check",
+        file_path=file_path,
+        line=line,
+        column=column,
+        message=message,
+        suggestion=suggestion,
+    )
+
+
+def build_len_check_violation(
+    file_path: str,
+    line: int,
+    column: int,
+    collection_name: str,
+    index_expression: str,
+) -> Violation:
+    """Build a violation for len check LBYL pattern.
+
+    Args:
+        file_path: Path to the file containing the violation
+        line: Line number (1-indexed)
+        column: Column number (0-indexed)
+        collection_name: Name of the collection being checked
+        index_expression: Expression used as index
+
+    Returns:
+        Violation object with EAFP suggestion
+    """
+    message = (
+        f"LBYL pattern: 'if len({collection_name}) > {index_expression}' followed by "
+        f"'{collection_name}[...]'"
+    )
+
+    suggestion = (
+        f"Use EAFP: 'try: value = {collection_name}[{index_expression}] except IndexError: ...'"
+    )
+
+    return Violation(
+        rule_id="lbyl.len-check",
+        file_path=file_path,
+        line=line,
+        column=column,
+        message=message,
+        suggestion=suggestion,
     )
