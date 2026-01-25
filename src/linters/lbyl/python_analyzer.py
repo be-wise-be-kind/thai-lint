@@ -15,26 +15,44 @@ Exports: PythonLBYLAnalyzer
 
 Interfaces: analyze(code: str, file_path: str, config: LBYLConfig) -> list[Violation]
 
-Implementation: Detector coordination with config-driven pattern selection
+Implementation: Detector coordination with config-driven pattern selection using
+    generic detector runner for code reuse
 """
 
 import ast
+from collections.abc import Callable
+from typing import Any, TypeVar
 
 from src.core.types import Violation
 
 from .config import LBYLConfig
+from .pattern_detectors.base import BaseLBYLDetector, LBYLPattern
 from .pattern_detectors.dict_key_detector import DictKeyDetector, DictKeyPattern
+from .pattern_detectors.division_check_detector import (
+    DivisionCheckDetector,
+    DivisionCheckPattern,
+)
 from .pattern_detectors.file_exists_detector import FileExistsDetector, FileExistsPattern
 from .pattern_detectors.hasattr_detector import HasattrDetector, HasattrPattern
 from .pattern_detectors.isinstance_detector import IsinstanceDetector, IsinstancePattern
 from .pattern_detectors.len_check_detector import LenCheckDetector, LenCheckPattern
+from .pattern_detectors.none_check_detector import NoneCheckDetector, NoneCheckPattern
+from .pattern_detectors.string_validator_detector import (
+    StringValidatorDetector,
+    StringValidatorPattern,
+)
 from .violation_builder import (
     build_dict_key_violation,
+    build_division_check_violation,
     build_file_exists_violation,
     build_hasattr_violation,
     build_isinstance_violation,
     build_len_check_violation,
+    build_none_check_violation,
+    build_string_validator_violation,
 )
+
+PatternT = TypeVar("PatternT", bound=LBYLPattern)
 
 
 def _parse_python_code(code: str) -> ast.Module | None:
@@ -47,7 +65,20 @@ def _parse_python_code(code: str) -> ast.Module | None:
         return None
 
 
-def _convert_dict_key_pattern(pattern: DictKeyPattern, file_path: str) -> Violation:
+def _run_detector(
+    detector: BaseLBYLDetector[PatternT],
+    tree: ast.Module,
+    file_path: str,
+    converter: Callable[[PatternT, str], Violation],
+    pattern_type: type[PatternT],
+) -> list[Violation]:
+    """Run a detector and convert patterns to violations."""
+    return [
+        converter(p, file_path) for p in detector.find_patterns(tree) if isinstance(p, pattern_type)
+    ]
+
+
+def _build_dict_key(pattern: DictKeyPattern, file_path: str) -> Violation:
     """Convert DictKeyPattern to Violation."""
     return build_dict_key_violation(
         file_path=file_path,
@@ -58,29 +89,18 @@ def _convert_dict_key_pattern(pattern: DictKeyPattern, file_path: str) -> Violat
     )
 
 
-def _convert_hasattr_pattern(pattern: HasattrPattern, file_path: str) -> Violation:
-    """Convert HasattrPattern to Violation."""
-    return build_hasattr_violation(
+def _build_division_check(pattern: DivisionCheckPattern, file_path: str) -> Violation:
+    """Convert DivisionCheckPattern to Violation."""
+    return build_division_check_violation(
         file_path=file_path,
         line=pattern.line_number,
         column=pattern.column,
-        object_name=pattern.object_name,
-        attribute_name=pattern.attribute_name,
+        divisor_name=pattern.divisor_name,
+        operation=pattern.operation,
     )
 
 
-def _convert_isinstance_pattern(pattern: IsinstancePattern, file_path: str) -> Violation:
-    """Convert IsinstancePattern to Violation."""
-    return build_isinstance_violation(
-        file_path=file_path,
-        line=pattern.line_number,
-        column=pattern.column,
-        object_name=pattern.object_name,
-        type_name=pattern.type_name,
-    )
-
-
-def _convert_file_exists_pattern(pattern: FileExistsPattern, file_path: str) -> Violation:
+def _build_file_exists(pattern: FileExistsPattern, file_path: str) -> Violation:
     """Convert FileExistsPattern to Violation."""
     return build_file_exists_violation(
         file_path=file_path,
@@ -91,7 +111,29 @@ def _convert_file_exists_pattern(pattern: FileExistsPattern, file_path: str) -> 
     )
 
 
-def _convert_len_check_pattern(pattern: LenCheckPattern, file_path: str) -> Violation:
+def _build_hasattr(pattern: HasattrPattern, file_path: str) -> Violation:
+    """Convert HasattrPattern to Violation."""
+    return build_hasattr_violation(
+        file_path=file_path,
+        line=pattern.line_number,
+        column=pattern.column,
+        object_name=pattern.object_name,
+        attribute_name=pattern.attribute_name,
+    )
+
+
+def _build_isinstance(pattern: IsinstancePattern, file_path: str) -> Violation:
+    """Convert IsinstancePattern to Violation."""
+    return build_isinstance_violation(
+        file_path=file_path,
+        line=pattern.line_number,
+        column=pattern.column,
+        object_name=pattern.object_name,
+        type_name=pattern.type_name,
+    )
+
+
+def _build_len_check(pattern: LenCheckPattern, file_path: str) -> Violation:
     """Convert LenCheckPattern to Violation."""
     return build_len_check_violation(
         file_path=file_path,
@@ -102,16 +144,46 @@ def _convert_len_check_pattern(pattern: LenCheckPattern, file_path: str) -> Viol
     )
 
 
+def _build_none_check(pattern: NoneCheckPattern, file_path: str) -> Violation:
+    """Convert NoneCheckPattern to Violation."""
+    return build_none_check_violation(
+        file_path=file_path,
+        line=pattern.line_number,
+        column=pattern.column,
+        variable_name=pattern.variable_name,
+    )
+
+
+def _build_string_validator(pattern: StringValidatorPattern, file_path: str) -> Violation:
+    """Convert StringValidatorPattern to Violation."""
+    return build_string_validator_violation(
+        file_path=file_path,
+        line=pattern.line_number,
+        column=pattern.column,
+        string_name=pattern.string_name,
+        validator_method=pattern.validator_method,
+        conversion_func=pattern.conversion_func,
+    )
+
+
 class PythonLBYLAnalyzer:
     """Coordinates LBYL pattern detection for Python code."""
 
     def __init__(self) -> None:
         """Initialize the analyzer with pattern detectors."""
-        self._dict_key_detector = DictKeyDetector()
-        self._file_exists_detector = FileExistsDetector()
-        self._hasattr_detector = HasattrDetector()
-        self._isinstance_detector = IsinstanceDetector()
-        self._len_check_detector = LenCheckDetector()
+        # Each tuple: (detector, converter, pattern_type)
+        self._detector_configs: list[
+            tuple[BaseLBYLDetector[Any], Callable[..., Violation], type]
+        ] = [
+            (DictKeyDetector(), _build_dict_key, DictKeyPattern),
+            (DivisionCheckDetector(), _build_division_check, DivisionCheckPattern),
+            (FileExistsDetector(), _build_file_exists, FileExistsPattern),
+            (HasattrDetector(), _build_hasattr, HasattrPattern),
+            (IsinstanceDetector(), _build_isinstance, IsinstancePattern),
+            (LenCheckDetector(), _build_len_check, LenCheckPattern),
+            (NoneCheckDetector(), _build_none_check, NoneCheckPattern),
+            (StringValidatorDetector(), _build_string_validator, StringValidatorPattern),
+        ]
 
     def analyze(self, code: str, file_path: str, config: LBYLConfig) -> list[Violation]:
         """Analyze Python code for LBYL patterns."""
@@ -124,55 +196,20 @@ class PythonLBYLAnalyzer:
         self, tree: ast.Module, file_path: str, config: LBYLConfig
     ) -> list[Violation]:
         """Run all enabled pattern detectors and collect violations."""
-        detectors = [
-            (config.detect_dict_key, self._run_dict_key),
-            (config.detect_file_exists, self._run_file_exists),
-            (config.detect_hasattr, self._run_hasattr),
-            (config.detect_isinstance, self._run_isinstance),
-            (config.detect_len_check, self._run_len_check),
-        ]
+        # Map detector types to their config flags
+        enabled_flags = {
+            DictKeyDetector: config.detect_dict_key,
+            DivisionCheckDetector: config.detect_division_check,
+            FileExistsDetector: config.detect_file_exists,
+            HasattrDetector: config.detect_hasattr,
+            IsinstanceDetector: config.detect_isinstance,
+            LenCheckDetector: config.detect_len_check,
+            NoneCheckDetector: config.detect_none_check,
+            StringValidatorDetector: config.detect_string_validation,
+        }
+
         violations: list[Violation] = []
-        for enabled, runner in detectors:
-            if enabled:
-                violations.extend(runner(tree, file_path))
+        for detector, converter, pattern_type in self._detector_configs:
+            if enabled_flags.get(type(detector), False):
+                violations.extend(_run_detector(detector, tree, file_path, converter, pattern_type))
         return violations
-
-    def _run_dict_key(self, tree: ast.Module, file_path: str) -> list[Violation]:
-        """Run dict key detector and convert patterns to violations."""
-        return [
-            _convert_dict_key_pattern(p, file_path)
-            for p in self._dict_key_detector.find_patterns(tree)
-            if isinstance(p, DictKeyPattern)
-        ]
-
-    def _run_file_exists(self, tree: ast.Module, file_path: str) -> list[Violation]:
-        """Run file exists detector and convert patterns to violations."""
-        return [
-            _convert_file_exists_pattern(p, file_path)
-            for p in self._file_exists_detector.find_patterns(tree)
-            if isinstance(p, FileExistsPattern)
-        ]
-
-    def _run_hasattr(self, tree: ast.Module, file_path: str) -> list[Violation]:
-        """Run hasattr detector and convert patterns to violations."""
-        return [
-            _convert_hasattr_pattern(p, file_path)
-            for p in self._hasattr_detector.find_patterns(tree)
-            if isinstance(p, HasattrPattern)
-        ]
-
-    def _run_isinstance(self, tree: ast.Module, file_path: str) -> list[Violation]:
-        """Run isinstance detector and convert patterns to violations."""
-        return [
-            _convert_isinstance_pattern(p, file_path)
-            for p in self._isinstance_detector.find_patterns(tree)
-            if isinstance(p, IsinstancePattern)
-        ]
-
-    def _run_len_check(self, tree: ast.Module, file_path: str) -> list[Violation]:
-        """Run len check detector and convert patterns to violations."""
-        return [
-            _convert_len_check_pattern(p, file_path)
-            for p in self._len_check_detector.find_patterns(tree)
-            if isinstance(p, LenCheckPattern)
-        ]

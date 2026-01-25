@@ -6,17 +6,23 @@ Scope: Creates violations for detected LBYL anti-patterns with fix suggestions
 Overview: Provides module-level functions that create Violation objects for LBYL
     anti-patterns detected in Python code. Each violation includes the rule ID, location,
     descriptive message, and an EAFP suggestion showing how to refactor the code using
-    try/except. Supports dict key check, hasattr, isinstance, file exists, and len check
-    patterns.
+    try/except. Supports dict key check, hasattr, isinstance, file exists, len check,
+    None check, string validator, and division zero-check patterns.
 
 Dependencies: src.core.types for Violation, src.core.base for BaseLintContext
 
 Exports: build_dict_key_violation, build_hasattr_violation, build_isinstance_violation,
-    build_file_exists_violation, build_len_check_violation, create_syntax_error_violation
+    build_file_exists_violation, build_len_check_violation, create_syntax_error_violation,
+    build_none_check_violation, build_string_validator_violation, build_division_check_violation
 
 Interfaces: Module functions for building LBYL violations
 
 Implementation: Factory functions for each violation type with descriptive suggestions
+
+Suppressions:
+    too-many-arguments, too-many-positional-arguments: build_string_validator_violation
+        requires 6 parameters (file_path, line, column, string_name, validator_method,
+        conversion_func) to create accurate violation messages and suggestions
 """
 
 from src.core.base import BaseLintContext
@@ -228,6 +234,118 @@ def build_len_check_violation(
 
     return Violation(
         rule_id="lbyl.len-check",
+        file_path=file_path,
+        line=line,
+        column=column,
+        message=message,
+        suggestion=suggestion,
+    )
+
+
+def build_none_check_violation(
+    file_path: str,
+    line: int,
+    column: int,
+    variable_name: str,
+) -> Violation:
+    """Build a violation for None check LBYL pattern.
+
+    Args:
+        file_path: Path to the file containing the violation
+        line: Line number (1-indexed)
+        column: Column number (0-indexed)
+        variable_name: Name of the variable being checked for None
+
+    Returns:
+        Violation object with EAFP suggestion
+    """
+    message = (
+        f"LBYL pattern: 'if {variable_name} is not None' followed by '{variable_name}.<method>()'"
+    )
+
+    suggestion = (
+        f"Use EAFP: 'try: {variable_name}.<method>() except AttributeError: ...' "
+        f"or check if None is a valid state to handle differently"
+    )
+
+    return Violation(
+        rule_id="lbyl.none-check",
+        file_path=file_path,
+        line=line,
+        column=column,
+        message=message,
+        suggestion=suggestion,
+    )
+
+
+def build_string_validator_violation(  # pylint: disable=too-many-arguments,too-many-positional-arguments
+    file_path: str,
+    line: int,
+    column: int,
+    string_name: str,
+    validator_method: str,
+    conversion_func: str,
+) -> Violation:
+    """Build a violation for string validator LBYL pattern.
+
+    Args:
+        file_path: Path to the file containing the violation
+        line: Line number (1-indexed)
+        column: Column number (0-indexed)
+        string_name: Name of the string being validated
+        validator_method: Validation method used (isnumeric, isdigit, etc.)
+        conversion_func: Conversion function used (int, float)
+
+    Returns:
+        Violation object with EAFP suggestion
+    """
+    message = (
+        f"LBYL pattern: 'if {string_name}.{validator_method}()' followed by "
+        f"'{conversion_func}({string_name})'"
+    )
+
+    suggestion = f"Use EAFP: 'try: value = {conversion_func}({string_name}) except ValueError: ...'"
+
+    return Violation(
+        rule_id="lbyl.string-validator",
+        file_path=file_path,
+        line=line,
+        column=column,
+        message=message,
+        suggestion=suggestion,
+    )
+
+
+def build_division_check_violation(
+    file_path: str,
+    line: int,
+    column: int,
+    divisor_name: str,
+    operation: str,
+) -> Violation:
+    """Build a violation for division zero-check LBYL pattern.
+
+    Args:
+        file_path: Path to the file containing the violation
+        line: Line number (1-indexed)
+        column: Column number (0-indexed)
+        divisor_name: Name of the divisor being checked for zero
+        operation: Division operation used (/, //, %, /=, //=, %=)
+
+    Returns:
+        Violation object with EAFP suggestion
+    """
+    message = (
+        f"LBYL pattern: 'if {divisor_name} != 0' followed by "
+        f"'{operation}' operation with '{divisor_name}'"
+    )
+
+    suggestion = (
+        f"Use EAFP: 'try: result = ... {operation} {divisor_name} except ZeroDivisionError: ...'"
+    )
+
+    return Violation(
+        rule_id="lbyl.division-check",
         file_path=file_path,
         line=line,
         column=column,

@@ -150,12 +150,14 @@ def config_get(ctx: click.Context, key: str) -> None:
 
 def _convert_value_type(value: str) -> bool | int | float | str:
     """Convert string value to appropriate type."""
+    from contextlib import suppress
+
     if value.lower() in ["true", "false"]:
         return value.lower() == "true"
-    if value.isdigit():
-        return int(value)
-    if value.replace(".", "", 1).isdigit() and value.count(".") == 1:
-        return float(value)
+    # Use EAFP pattern for numeric conversion
+    for converter in (int, float):
+        with suppress(ValueError):
+            return converter(value)
     return value
 
 
