@@ -25,12 +25,12 @@ Suppressions:
 """
 
 import json
-import logging
 import sys
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, NoReturn
 
 import click
+from loguru import logger
 
 from src.cli.linters.shared import (
     ensure_config_section,
@@ -53,10 +53,6 @@ from src.core.types import Violation
 
 if TYPE_CHECKING:
     from src.orchestrator.core import Orchestrator
-
-# Configure module logger
-logger = logging.getLogger(__name__)
-
 
 # =============================================================================
 # File Placement Command
@@ -93,8 +89,7 @@ def _apply_inline_rules(orchestrator: "Orchestrator", rules: str, verbose: bool)
     """Parse and apply inline JSON rules."""
     rules_config = _parse_json_rules(rules)
     orchestrator.config.update(rules_config)
-    if verbose:
-        logger.debug(f"Applied inline rules: {rules_config}")
+    logger.debug(f"Applied inline rules: {rules_config}")
 
 
 def _parse_json_rules(rules: str) -> dict[str, Any]:
@@ -195,8 +190,7 @@ def _execute_file_placement_lint(  # pylint: disable=too-many-arguments,too-many
     # Filter to only file-placement violations
     violations = [v for v in all_violations if v.rule_id.startswith("file-placement")]
 
-    if verbose:
-        logger.info(f"Found {len(violations)} violation(s)")
+    logger.debug(f"Found {len(violations)} violation(s)")
 
     format_violations(violations, format)
     sys.exit(1 if violations else 0)
@@ -320,8 +314,7 @@ def _execute_pipeline_lint(  # pylint: disable=too-many-arguments,too-many-posit
     _apply_pipeline_config_override(orchestrator, min_continues, verbose)
     pipeline_violations = _run_pipeline_lint(orchestrator, path_objs, recursive, parallel)
 
-    if verbose:
-        logger.info(f"Found {len(pipeline_violations)} collection-pipeline violation(s)")
+    logger.debug(f"Found {len(pipeline_violations)} collection-pipeline violation(s)")
 
     format_violations(pipeline_violations, format)
     sys.exit(1 if pipeline_violations else 0)

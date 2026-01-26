@@ -24,13 +24,13 @@ Suppressions:
     - too-many-arguments,too-many-positional-arguments: Click commands require many parameters by framework design
 """
 
-import logging
 import sys
 from contextlib import suppress
 from pathlib import Path
 from typing import TYPE_CHECKING, NoReturn
 
 import click
+from loguru import logger
 
 from src.cli.linters.shared import (
     ensure_config_section,
@@ -51,10 +51,6 @@ from src.core.types import Violation
 
 if TYPE_CHECKING:
     from src.orchestrator.core import Orchestrator
-
-# Configure module logger
-logger = logging.getLogger(__name__)
-
 
 # =============================================================================
 # Nesting Command
@@ -79,8 +75,7 @@ def _apply_nesting_config_override(
     nesting_config["max_nesting_depth"] = max_depth
     _apply_nesting_to_languages(nesting_config, max_depth)
 
-    if verbose:
-        logger.debug(f"Overriding max_nesting_depth to {max_depth}")
+    logger.debug(f"Overriding max_nesting_depth to {max_depth}")
 
 
 def _apply_nesting_to_languages(nesting_config: dict, max_depth: int) -> None:
@@ -189,8 +184,7 @@ def _execute_nesting_lint(  # pylint: disable=too-many-arguments,too-many-positi
     _apply_nesting_config_override(orchestrator, max_depth, verbose)
     nesting_violations = _run_nesting_lint(orchestrator, path_objs, recursive, parallel)
 
-    if verbose:
-        logger.info(f"Found {len(nesting_violations)} nesting violation(s)")
+    logger.debug(f"Found {len(nesting_violations)} nesting violation(s)")
 
     format_violations(nesting_violations, format)
     sys.exit(1 if nesting_violations else 0)
@@ -321,8 +315,7 @@ def _execute_srp_lint(  # pylint: disable=too-many-arguments,too-many-positional
     _apply_srp_config_override(orchestrator, max_methods, max_loc, verbose)
     srp_violations = _run_srp_lint(orchestrator, path_objs, recursive, parallel)
 
-    if verbose:
-        logger.info(f"Found {len(srp_violations)} SRP violation(s)")
+    logger.debug(f"Found {len(srp_violations)} SRP violation(s)")
 
     format_violations(srp_violations, format)
     sys.exit(1 if srp_violations else 0)

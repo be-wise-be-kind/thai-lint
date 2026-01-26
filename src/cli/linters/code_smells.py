@@ -23,13 +23,13 @@ Suppressions:
         many parameters by framework design (dry command has 8 params for extra options)
 """
 
-import logging
 import sys
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, NoReturn
 
 import click
 import yaml
+from loguru import logger
 
 from src.cli.linters.shared import (
     ExecuteParams,
@@ -52,10 +52,6 @@ from src.core.types import Violation
 
 if TYPE_CHECKING:
     from src.orchestrator.core import Orchestrator
-
-# Configure module logger
-logger = logging.getLogger(__name__)
-
 
 # =============================================================================
 # DRY Command (custom options - cannot use create_linter_command)
@@ -87,8 +83,7 @@ def _load_dry_config_file(orchestrator: "Orchestrator", config_file: str, verbos
     except KeyError:
         return  # No DRY config in file
     orchestrator.config.update({"dry": dry_config})
-    if verbose:
-        logger.info(f"Loaded DRY config from {config_file}")
+    logger.debug(f"Loaded DRY config from {config_file}")
 
 
 def _apply_dry_config_override(
@@ -108,10 +103,9 @@ def _clear_dry_cache(orchestrator: "Orchestrator", verbose: bool) -> None:
 
     if cache_path.exists():
         cache_path.unlink()
-        if verbose:
-            logger.info(f"Cleared cache: {cache_path}")
-    elif verbose:
-        logger.info("Cache file does not exist, nothing to clear")
+        logger.debug(f"Cleared cache: {cache_path}")
+    else:
+        logger.debug("Cache file does not exist, nothing to clear")
 
 
 def _run_dry_lint(
@@ -242,8 +236,7 @@ def _execute_dry_lint(  # pylint: disable=too-many-arguments,too-many-positional
 
     dry_violations = _run_dry_lint(orchestrator, path_objs, recursive, parallel)
 
-    if verbose:
-        logger.info(f"Found {len(dry_violations)} DRY violation(s)")
+    logger.debug(f"Found {len(dry_violations)} DRY violation(s)")
 
     format_violations(dry_violations, format)
     sys.exit(1 if dry_violations else 0)
@@ -279,8 +272,7 @@ def _execute_magic_numbers_lint(params: ExecuteParams) -> NoReturn:
         orchestrator, params.path_objs, params.recursive, params.parallel
     )
 
-    if params.verbose:
-        logger.info(f"Found {len(magic_numbers_violations)} magic number violation(s)")
+    logger.debug(f"Found {len(magic_numbers_violations)} magic number violation(s)")
 
     format_violations(magic_numbers_violations, params.format)
     sys.exit(1 if magic_numbers_violations else 0)
@@ -325,8 +317,7 @@ def _execute_stringly_typed_lint(params: ExecuteParams) -> NoReturn:
         orchestrator, params.path_objs, params.recursive, params.parallel
     )
 
-    if params.verbose:
-        logger.info(f"Found {len(stringly_violations)} stringly-typed violation(s)")
+    logger.debug(f"Found {len(stringly_violations)} stringly-typed violation(s)")
 
     format_violations(stringly_violations, params.format)
     sys.exit(1 if stringly_violations else 0)

@@ -225,7 +225,7 @@ class TestViolationDetails:
         context.language = "python"
 
         violations = rule.check(context)
-        assert violations[0].rule_id == "print-statements.detected"
+        assert violations[0].rule_id == "improper-logging.print-statement"
 
     def test_violation_has_correct_line_number(self):
         """Should set correct line number on violations."""

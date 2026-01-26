@@ -21,7 +21,6 @@ Implementation: Uses Click decorators for option definitions, deferred imports f
     to support test environments, caches project root in context for efficiency
 """
 
-import logging
 import sys
 from collections.abc import Callable
 from contextlib import suppress
@@ -29,12 +28,10 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any, TypeVar, cast
 
 import click
+from loguru import logger
 
 if TYPE_CHECKING:
     from src.orchestrator.core import Orchestrator
-
-# Configure module logger
-logger = logging.getLogger(__name__)
 
 
 # =============================================================================
@@ -132,8 +129,7 @@ def _resolve_explicit_project_root(explicit_root: str, verbose: bool) -> Path:
     # Now resolve after validation
     root = root.resolve()
 
-    if verbose:
-        logger.debug(f"Using explicit project root: {root}")
+    logger.debug(f"Using explicit project root: {root}")
     return root
 
 
@@ -150,8 +146,7 @@ def _infer_root_from_config(config_path: str, verbose: bool) -> Path:
     config_file = Path(config_path).resolve()
     inferred_root = config_file.parent
 
-    if verbose:
-        logger.debug(f"Inferred project root from config path: {inferred_root}")
+    logger.debug(f"Inferred project root from config path: {inferred_root}")
     return inferred_root
 
 
@@ -168,8 +163,7 @@ def _autodetect_project_root(
         Auto-detected project root
     """
     auto_root = get_project_root(None)
-    if verbose:
-        logger.debug(f"Auto-detected project root: {auto_root}")
+    logger.debug(f"Auto-detected project root: {auto_root}")
     return auto_root
 
 
@@ -217,8 +211,7 @@ def _determine_project_root_for_context(ctx: click.Context) -> Path | None:
         return _infer_root_from_config(config_path, verbose)
 
     # No explicit root - return None for auto-detection from target paths
-    if verbose:
-        logger.debug("No explicit project root, will auto-detect from target paths")
+    logger.debug("No explicit project root, will auto-detect from target paths")
     return None
 
 
@@ -262,8 +255,7 @@ def handle_linting_error(error: Exception, verbose: bool) -> None:
         verbose: Whether verbose logging is enabled
     """
     click.echo(f"Error during linting: {error}", err=True)
-    if verbose:
-        logger.exception("Linting failed with exception")
+    logger.exception("Linting failed with exception")
     sys.exit(2)
 
 
@@ -334,8 +326,7 @@ def load_config_file(orchestrator: "Orchestrator", config_file: str, verbose: bo
     # Load config into orchestrator
     orchestrator.config = orchestrator.config_loader.load(config_path)
 
-    if verbose:
-        logger.debug(f"Loaded config from: {config_file}")
+    logger.debug(f"Loaded config from: {config_file}")
 
 
 # =============================================================================

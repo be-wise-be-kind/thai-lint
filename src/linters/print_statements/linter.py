@@ -54,12 +54,12 @@ class PrintStatementRule(MultiLanguageLintRule):  # thailint: ignore[srp]
     @property
     def rule_id(self) -> str:
         """Unique identifier for this rule."""
-        return "print-statements.detected"
+        return "improper-logging.print-statement"
 
     @property
     def rule_name(self) -> str:
         """Human-readable name for this rule."""
-        return "Print Statements"
+        return "Improper Logging - Print Statement"
 
     @property
     def description(self) -> str:

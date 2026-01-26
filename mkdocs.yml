@@ -66,13 +66,14 @@ nav:
       - DRY (Duplicate Code): dry-linter.md
       - File Header: file-header-linter.md
       - File Placement: file-placement-linter.md
+      - Improper Logging: improper-logging-linter.md
       - Lazy Ignores: lazy-ignores-linter.md
       - LBYL (Look Before You Leap): lbyl-linter.md
       - Magic Numbers: magic-numbers-linter.md
       - Method Property: method-property-linter.md
       - Nesting Depth: nesting-linter.md
       - Performance: performance-linter.md
-      - Print Statements: print-statements-linter.md
+      - Print Statements (deprecated): print-statements-linter.md
       - Single Responsibility (SRP): srp-linter.md
       - Stateless Class: stateless-class-linter.md
       - Stringly Typed: stringly-typed-linter.md

@@ -21,21 +21,17 @@ Implementation: Uses Click decorators for command definition, supports multiple 
     validates configuration changes before saving, uses template file for init-config generation
 """
 
-import logging
 import sys
 from pathlib import Path
 
 import click
 import yaml
+from loguru import logger
 
 from src.config import ConfigError, save_config, validate_config
 
 from .config_merge import perform_merge
 from .main import cli
-
-# Configure module logger
-logger = logging.getLogger(__name__)
-
 
 # =============================================================================
 # Config Command Group
@@ -177,8 +173,7 @@ def _save_and_report_success(
     """Save configuration and report success."""
     save_config(cfg, config_path)
     click.echo(f"Set {key} = {value}")
-    if verbose:
-        logger.info(f"Configuration updated: {key}={value}")
+    logger.debug(f"Configuration updated: {key}={value}")
 
 
 @config.command("set")
@@ -256,8 +251,7 @@ def config_reset(ctx: click.Context, yes: bool) -> None:
         save_config(DEFAULT_CONFIG.copy(), config_path)
         click.echo("Configuration reset to defaults")
 
-        if ctx.obj.get("verbose"):
-            logger.info("Configuration reset to defaults")
+        logger.debug("Configuration reset to defaults")
     except ConfigError as e:
         click.echo(f"Error resetting configuration: {e}", err=True)
         sys.exit(1)
@@ -462,7 +456,6 @@ def hello(ctx: click.Context, name: str, uppercase: bool) -> None:
         thai-lint hello --name Bob --uppercase
     """
     config = ctx.obj["config"]
-    verbose = ctx.obj.get("verbose", False)
 
     # Get greeting from config or use default
     greeting_template = config.get("greeting", "Hello")
@@ -476,5 +469,4 @@ def hello(ctx: click.Context, name: str, uppercase: bool) -> None:
     # Output greeting
     click.echo(message)
 
-    if verbose:
-        logger.info(f"Greeted {name} with template '{greeting_template}'")
+    logger.debug(f"Greeted {name} with template '{greeting_template}'")

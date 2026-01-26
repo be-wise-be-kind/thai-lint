@@ -1245,6 +1245,98 @@ thai-lint --verbose pipeline src/
 
 ---
 
+### improper-logging
+
+Check for improper logging patterns in Python and TypeScript/JavaScript code. Detects print()/console statements and conditional verbose patterns that should use proper logging configuration.
+
+```bash
+thai-lint improper-logging [OPTIONS] [PATH...]
+```
+
+**Arguments:**
+
+| Argument | Required | Default | Description |
+|----------|----------|---------|-------------|
+| `PATH...` | No | `.` (current directory) | One or more files/directories to check |
+
+**Options:**
+
+| Option | Short | Type | Default | Description |
+|--------|-------|------|---------|-------------|
+| `--config` | `-c` | PATH | Auto-discover | Path to config file |
+| `--format` | `-f` | CHOICE | `text` | Output format: `text`, `json`, or `sarif` |
+| `--recursive/--no-recursive` | | BOOLEAN | `true` | Scan directories recursively |
+
+**Examples:**
+
+**Basic usage:**
+```bash
+# Check current directory for all improper logging patterns
+thai-lint improper-logging
+
+# Check specific directory
+thai-lint improper-logging src/
+
+# Check specific file
+thai-lint improper-logging src/utils.py
+```
+
+**Output formats:**
+```bash
+# Text format (default)
+thai-lint improper-logging src/
+
+# JSON format
+thai-lint improper-logging --format json src/
+
+# SARIF format (for GitHub Code Scanning)
+thai-lint improper-logging --format sarif src/ > logging.sarif
+```
+
+**Detected patterns:**
+
+1. **Print statements** (Python: `print()`, TypeScript/JavaScript: `console.log/warn/error`):
+   ```python
+   # Flagged
+   print("Debug info")
+
+   # OK - in main block (configurable)
+   if __name__ == "__main__":
+       print("Running script")
+   ```
+
+2. **Conditional verbose patterns** (Python only):
+   ```python
+   # Flagged - use log level configuration instead
+   if verbose:
+       logger.debug("Processing item")
+
+   # OK - no conditional wrapper
+   logger.debug("Processing item")  # Control via logger.setLevel()
+   ```
+
+**Exit Codes:**
+
+| Code | Meaning |
+|------|---------|
+| `0` | No improper logging patterns found |
+| `1` | Violations detected |
+| `2` | Error (file not found, invalid config) |
+
+**Backward Compatibility:**
+
+The `print-statements` command is a deprecated alias for `improper-logging`:
+```bash
+# These are equivalent
+thai-lint improper-logging src/
+thai-lint print-statements src/  # deprecated, use improper-logging
+```
+
+**See Also:**
+- `docs/improper-logging-linter.md` - Comprehensive improper logging linter guide
+
+---
+
 ### config
 
 Configuration management commands.

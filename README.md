@@ -47,7 +47,7 @@ That's it. See violations, fix them, ship better code.
 | **Method Property** | Methods that should be @property | `thailint method-property src/` | [Guide](https://thai-lint.readthedocs.io/en/latest/method-property-linter/) |
 | **File Placement** | Files in wrong directories | `thailint file-placement src/` | [Guide](https://thai-lint.readthedocs.io/en/latest/file-placement-linter/) |
 | **Lazy Ignores** | Unjustified linting suppressions | `thailint lazy-ignores src/` | [Guide](https://thai-lint.readthedocs.io/en/latest/lazy-ignores-linter/) |
-| **Print Statements** | Debug prints left in code | `thailint print-statements src/` | [Guide](https://thai-lint.readthedocs.io/en/latest/print-statements-linter/) |
+| **Improper Logging** | Print statements and conditional verbose patterns | `thailint improper-logging src/` | [Guide](https://thai-lint.readthedocs.io/en/latest/improper-logging-linter/) |
 | **Stringly Typed** | Strings that should be enums | `thailint stringly-typed src/` | [Guide](https://thai-lint.readthedocs.io/en/latest/stringly-typed-linter/) |
 | **LBYL** | Look Before You Leap anti-patterns | `thailint lbyl src/` | [Guide](https://thai-lint.readthedocs.io/en/latest/lbyl-linter/) |
 

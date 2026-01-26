@@ -6,8 +6,9 @@ Scope: Export and registration of all linter CLI commands (nesting, srp, dry, ma
 Overview: Package initialization that imports all linter command modules to trigger their registration
     with the main CLI group via Click decorators. Each submodule defines commands using @cli.command()
     decorators that automatically register with the CLI when imported. Organized by logical grouping:
-    structure_quality (nesting, srp), code_smells (dry, magic-numbers), code_patterns (print-statements,
+    structure_quality (nesting, srp), code_smells (dry, magic-numbers), code_patterns (improper-logging,
     method-property, stateless-class), structure (file-placement, pipeline), documentation (file-header).
+    Note: print-statements is a deprecated alias for improper-logging.
 
 Dependencies: Click for CLI framework, src.cli.main for CLI group, individual linter modules
 
@@ -34,6 +35,7 @@ from src.cli.linters import (  # noqa: F401
 
 # Re-export command functions for testing and reference
 from src.cli.linters.code_patterns import (
+    improper_logging,
     method_property,
     print_statements,
     stateless_class,
@@ -52,7 +54,8 @@ __all__ = [
     "dry",
     "magic_numbers",
     # Code pattern commands
-    "print_statements",
+    "improper_logging",
+    "print_statements",  # deprecated alias for improper_logging
     "method_property",
     "stateless_class",
     # Structure commands

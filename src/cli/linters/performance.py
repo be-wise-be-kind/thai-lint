@@ -24,12 +24,12 @@ Suppressions:
       --rule option for 6 total parameters - framework design requirement for CLI extensibility.
 """
 
-import logging
 import sys
 from pathlib import Path
 from typing import TYPE_CHECKING, NoReturn
 
 import click
+from loguru import logger
 
 from src.cli.linters.shared import (
     ExecuteParams,
@@ -45,9 +45,6 @@ from src.core.types import Violation
 
 if TYPE_CHECKING:
     from src.orchestrator.core import Orchestrator
-
-# Configure module logger
-logger = logging.getLogger(__name__)
 
 
 # =============================================================================
@@ -88,8 +85,7 @@ def _execute_string_concat_lint(params: ExecuteParams) -> NoReturn:
         orchestrator, params.path_objs, params.recursive, params.parallel
     )
 
-    if params.verbose:
-        logger.info(f"Found {len(violations)} string-concat-loop violation(s)")
+    logger.debug(f"Found {len(violations)} string-concat-loop violation(s)")
 
     format_violations(violations, params.format)
     sys.exit(1 if violations else 0)
@@ -124,8 +120,7 @@ def _execute_regex_in_loop_lint(params: ExecuteParams) -> NoReturn:
         orchestrator, params.path_objs, params.recursive, params.parallel
     )
 
-    if params.verbose:
-        logger.info(f"Found {len(violations)} regex-in-loop violation(s)")
+    logger.debug(f"Found {len(violations)} regex-in-loop violation(s)")
 
     format_violations(violations, params.format)
     sys.exit(1 if violations else 0)
@@ -207,8 +202,7 @@ def _execute_perf_lint(params: ExecuteParams, rule: str | None) -> NoReturn:
         orchestrator, params.path_objs, params.recursive, rule, params.parallel
     )
 
-    if params.verbose:
-        logger.info(f"Found {len(violations)} performance violation(s)")
+    logger.debug(f"Found {len(violations)} performance violation(s)")
 
     format_violations(violations, params.format)
     sys.exit(1 if violations else 0)
