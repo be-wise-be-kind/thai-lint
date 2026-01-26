@@ -13,12 +13,14 @@ Overview: Package providing CQS violation detection for Python and TypeScript co
 Dependencies: ast module for Python parsing, tree-sitter for TypeScript parsing
 
 Exports: CQSConfig, CQSPattern, CQSRule, FunctionAnalyzer, InputOperation, OutputOperation,
-    PythonCQSAnalyzer, build_cqs_violation
+    PythonCQSAnalyzer, TypeScriptCQSAnalyzer, TypeScriptFunctionAnalyzer,
+    TypeScriptInputDetector, TypeScriptOutputDetector, build_cqs_violation
 
 Interfaces: CQSConfig.from_dict() for YAML configuration loading,
     CQSRule.check() for BaseLintRule interface
 
-Implementation: AST-based pattern detection with configurable ignore rules
+Implementation: AST-based pattern detection for Python, tree-sitter for TypeScript,
+    with configurable ignore rules
 """
 
 from .config import CQSConfig
@@ -28,6 +30,10 @@ from .linter import CQSRule
 from .output_detector import OutputDetector
 from .python_analyzer import PythonCQSAnalyzer
 from .types import CQSPattern, InputOperation, OutputOperation
+from .typescript_cqs_analyzer import TypeScriptCQSAnalyzer
+from .typescript_function_analyzer import TypeScriptFunctionAnalyzer
+from .typescript_input_detector import TypeScriptInputDetector
+from .typescript_output_detector import TypeScriptOutputDetector
 from .violation_builder import build_cqs_violation
 
 __all__ = [
@@ -40,5 +46,9 @@ __all__ = [
     "OutputDetector",
     "OutputOperation",
     "PythonCQSAnalyzer",
+    "TypeScriptCQSAnalyzer",
+    "TypeScriptFunctionAnalyzer",
+    "TypeScriptInputDetector",
+    "TypeScriptOutputDetector",
     "build_cqs_violation",
 ]
