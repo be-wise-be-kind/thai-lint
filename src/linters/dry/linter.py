@@ -21,7 +21,9 @@ Interfaces: DRYRule.check(context) -> list[Violation], finalize() -> list[Violat
 Implementation: Delegates all logic to helper classes, maintains only orchestration and state
 
 Suppressions:
-    - too-many-instance-attributes: DRYComponents groups related helper dependencies
+    - too-many-instance-attributes: DRYComponents groups helper dependencies; DRYRule has 8
+        attributes due to stateful caching requirements (storage, config, constants, file contents
+        for ignore directive processing)
     - B101: Type narrowing assertions after guards (storage initialized, file_path/content set)
 """
 
@@ -34,6 +36,7 @@ from pathlib import Path
 from src.core.base import BaseLintContext, BaseLintRule
 from src.core.linter_utils import should_process_file
 from src.core.types import Violation
+from src.linter_config.ignore import IgnoreDirectiveParser
 
 from .config import DRYConfig
 from .config_loader import ConfigLoader
@@ -46,7 +49,7 @@ from .inline_ignore import InlineIgnoreParser
 from .python_constant_extractor import extract_python_constants
 from .storage_initializer import StorageInitializer
 from .typescript_constant_extractor import TypeScriptConstantExtractor
-from .violation_generator import ViolationGenerator
+from .violation_generator import IgnoreContext, ViolationGenerator
 
 
 @dataclass
@@ -62,7 +65,7 @@ class DRYComponents:  # pylint: disable=too-many-instance-attributes
     constant_violation_builder: ConstantViolationBuilder
 
 
-class DRYRule(BaseLintRule):
+class DRYRule(BaseLintRule):  # pylint: disable=too-many-instance-attributes
     """Detects duplicate code across project files."""
 
     def __init__(self) -> None:
@@ -71,9 +74,13 @@ class DRYRule(BaseLintRule):
         self._initialized = False
         self._config: DRYConfig | None = None
         self._file_analyzer: FileAnalyzer | None = None
+        self._project_root: Path | None = None
 
         # Collected constants for cross-file detection: list of (file_path, ConstantInfo)
         self._constants: list[tuple[Path, ConstantInfo]] = []
+
+        # Cache file contents for ignore directive checking during finalize
+        self._file_contents: dict[str, str] = {}
 
         # Helper components grouped to reduce instance attributes
         self._helpers = DRYComponents(
@@ -133,6 +140,12 @@ class DRYRule(BaseLintRule):
         assert context.file_content is not None  # nosec B101
 
         file_path = context.file_path
+        # Cache file content for ignore directive checking in finalize
+        self._file_contents[str(file_path)] = context.file_content
+        # Get project root from context metadata if available
+        if self._project_root is None:
+            self._project_root = self._get_project_root(context)
+
         self._helpers.inline_ignore.parse_file(file_path, context.file_content)
         self._ensure_storage_initialized(context, config)
         self._analyze_and_store(context, config)
@@ -182,21 +195,56 @@ class DRYRule(BaseLintRule):
         if extract_fn:
             self._constants.extend((file_path, c) for c in extract_fn(context.file_content))
 
+    def _get_project_root(self, context: BaseLintContext) -> Path | None:
+        """Get project root from context if available.
+
+        Args:
+            context: Lint context
+
+        Returns:
+            Project root path or None if not available
+        """
+        # Try to get from metadata (orchestrator sets this)
+        if hasattr(context, "metadata") and isinstance(context.metadata, dict):
+            project_root = context.metadata.get("project_root")
+            if project_root:
+                return Path(project_root)
+
+        # Fallback: derive from file path
+        if context.file_path:
+            return Path(context.file_path).parent
+
+        return None
+
     def finalize(self) -> list[Violation]:
         """Generate violations after all files processed."""
         if not self._storage or not self._config:
             return []
+
+        # Create ignore context for violation filtering
+        ignore_parser = IgnoreDirectiveParser(self._project_root)
+        ignore_ctx = IgnoreContext(
+            inline_ignore=self._helpers.inline_ignore,
+            shared_parser=ignore_parser,
+            file_contents=self._file_contents,
+        )
+
         violations = self._helpers.violation_generator.generate_violations(
-            self._storage, self.rule_id, self._config, self._helpers.inline_ignore
+            self._storage, self.rule_id, self._config, ignore_ctx
         )
         if self._config.detect_duplicate_constants and self._constants:
-            violations.extend(
-                _generate_constant_violations(
-                    self._constants, self._config, self._helpers, self.rule_id
-                )
+            constant_violations = _generate_constant_violations(
+                self._constants, self._config, self._helpers, self.rule_id
             )
+            # Filter constant violations through shared ignore parser
+            constant_violations = _filter_ignored_violations(
+                constant_violations, ignore_parser, self._file_contents
+            )
+            violations.extend(constant_violations)
+
         self._helpers.inline_ignore.clear()
         self._constants = []
+        self._file_contents = {}
         return violations
 
 
@@ -225,3 +273,26 @@ def _generate_constant_violations(
     groups = find_constant_groups(constants)
     helpers.constant_violation_builder.min_occurrences = config.min_constant_occurrences
     return helpers.constant_violation_builder.build_violations(groups, rule_id)
+
+
+def _filter_ignored_violations(
+    violations: list[Violation],
+    ignore_parser: IgnoreDirectiveParser,
+    file_contents: dict[str, str],
+) -> list[Violation]:
+    """Filter violations through the shared ignore directive parser.
+
+    Args:
+        violations: List of violations to filter
+        ignore_parser: Shared ignore directive parser
+        file_contents: Cached file contents for checking ignore directives
+
+    Returns:
+        Filtered list of violations not matching ignore directives
+    """
+    filtered = []
+    for violation in violations:
+        file_content = file_contents.get(violation.file_path, "")
+        if not ignore_parser.should_ignore_violation(violation, file_content):
+            filtered.append(violation)
+    return filtered

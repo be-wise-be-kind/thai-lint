@@ -896,6 +896,8 @@ dry:
 
 ## Ignoring Violations
 
+All ignore directives work for both duplicate code detection and duplicate constants detection.
+
 ### Line-Level Ignore
 
 ```python
@@ -903,6 +905,9 @@ def legacy_function():  # thailint: ignore dry
     # Duplicate code ignored for this function
     if condition:
         process()
+
+# Ignore a constant
+API_TIMEOUT = 30  # thailint: ignore dry
 ```
 
 ### File-Level Ignore
@@ -926,6 +931,15 @@ def legacy_function1():
 def legacy_function2():
     pass
 # thailint: ignore-end dry
+```
+
+### Block Ignore for Constants
+
+```python
+# thailint: ignore-start dry
+STT_SAMPLE_RATE = 24000  # Won't be flagged as duplicate constant
+TTS_SAMPLE_RATE = 22050
+# thailint: ignore-end
 ```
 
 ### TypeScript Ignores
