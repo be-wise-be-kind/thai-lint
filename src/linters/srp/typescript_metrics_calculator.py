@@ -4,9 +4,10 @@ Purpose: TypeScript class metrics calculation for SRP analysis
 Scope: Calculates method count and lines of code for TypeScript classes
 
 Overview: Provides metrics calculation functionality for TypeScript classes in SRP analysis. Counts
-    public methods in class bodies (excludes constructors), calculates lines of code from AST node
-    positions, and identifies class body nodes. Uses tree-sitter AST node types. Isolates metrics
-    calculation from class analysis and tree traversal logic.
+    public methods in class bodies (excludes constructors and private methods starting with _),
+    calculates lines of code from AST node positions, and identifies class body nodes. Uses
+    tree-sitter AST node types. Isolates metrics calculation from class analysis and tree
+    traversal logic.
 
 Dependencies: typing
 
@@ -72,22 +73,45 @@ def _get_class_body(class_node: Any) -> Any:
 
 
 def _is_countable_method(node: Any) -> bool:
-    """Check if node is a method that should be counted.
+    """Check if node is a public method that should be counted.
+
+    Excludes constructors and private methods (names starting with _).
 
     Args:
         node: Tree-sitter node to check
 
     Returns:
-        True if node is a countable method
+        True if node is a countable public method
     """
     if node.type != "method_definition":
         return False
 
-    # Check if it's a constructor
-    return all(
-        not (child.type == "property_identifier" and child.text.decode() == "constructor")
-        for child in node.children
-    )
+    method_name = _get_method_name(node)
+
+    # Don't count constructors
+    if method_name == "constructor":
+        return False
+
+    # Don't count private methods (underscore prefix convention)
+    if method_name and method_name.startswith("_"):
+        return False
+
+    return True
+
+
+def _get_method_name(node: Any) -> str | None:
+    """Extract method name from method_definition node.
+
+    Args:
+        node: Method definition tree-sitter node
+
+    Returns:
+        Method name or None if not found
+    """
+    for child in node.children:
+        if child.type == "property_identifier":
+            return child.text.decode()
+    return None
 
 
 # Legacy class wrapper for backward compatibility
