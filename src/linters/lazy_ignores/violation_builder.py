@@ -72,8 +72,12 @@ def _build_unjustified_suggestion(rule_id: str) -> str:
 
     suppression_entries = "\n".join(f"    {rid}: [Your justification here]" for rid in rule_ids)
 
-    return f"""To fix, add an entry to the file header Suppressions section:
+    return f"""To fix, either:
 
+1. Add an inline justification (10+ chars) after the ignore directive:
+   # noqa: {rule_ids[0]} - [Your justification here]
+
+2. Or add an entry to the file header Suppressions section:
     Suppressions:
 {suppression_entries}
 

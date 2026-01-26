@@ -59,6 +59,7 @@ class IgnoreDirective:
     column: int
     raw_text: str  # Original comment text
     file_path: Path
+    inline_justification: str | None = None  # Justification after " - " delimiter
 
 
 @dataclass(frozen=True)
