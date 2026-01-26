@@ -1,28 +1,30 @@
 """
-Purpose: CLI commands for code pattern linters (print-statements, method-property, stateless-class, lazy-ignores, lbyl)
+Purpose: CLI commands for code pattern linters (improper-logging, method-property, stateless-class, lazy-ignores, lbyl)
 
 Scope: Commands that detect code patterns and anti-patterns in Python code
 
-Overview: Provides CLI commands for code pattern linting: print-statements detects print() and
-    console.log calls that should use proper logging, method-property finds methods that should be
-    @property decorators, stateless-class detects classes without state that should be module
-    functions, lazy-ignores detects unjustified linting suppressions, and lbyl detects Look Before
-    You Leap anti-patterns. Each command supports standard options (config, format, recursive) and
-    integrates with the orchestrator for execution.
+Overview: Provides CLI commands for code pattern linting: improper-logging detects print() and
+    console.log calls that should use proper logging as well as conditional verbose patterns,
+    method-property finds methods that should be @property decorators, stateless-class detects
+    classes without state that should be module functions, lazy-ignores detects unjustified linting
+    suppressions, and lbyl detects Look Before You Leap anti-patterns. Each command supports
+    standard options (config, format, recursive) and integrates with the orchestrator for execution.
+    Note: print-statements is a deprecated alias for improper-logging.
 
 Dependencies: click for CLI framework, src.cli.main for CLI group, src.cli.utils for shared utilities
 
-Exports: print_statements, method_property, stateless_class, lazy_ignores, lbyl commands
+Exports: improper_logging, print_statements (alias), method_property, stateless_class, lazy_ignores, lbyl commands
 
 Interfaces: Click CLI commands registered to main CLI group
 
 Implementation: Click decorators for command definition, orchestrator-based linting execution
 """
 
-import logging
 import sys
 from pathlib import Path
 from typing import TYPE_CHECKING, NoReturn
+
+from loguru import logger
 
 from src.cli.linters.shared import ExecuteParams, create_linter_command
 from src.cli.utils import execute_linting_on_paths, setup_base_orchestrator, validate_paths_exist
@@ -32,53 +34,59 @@ from src.core.types import Violation
 if TYPE_CHECKING:
     from src.orchestrator.core import Orchestrator
 
-# Configure module logger
-logger = logging.getLogger(__name__)
-
 
 # =============================================================================
-# Print Statements Command
+# Improper Logging Command (formerly print-statements)
 # =============================================================================
 
 
-def _setup_print_statements_orchestrator(
+def _setup_improper_logging_orchestrator(
     path_objs: list[Path], config_file: str | None, verbose: bool, project_root: Path | None = None
 ) -> "Orchestrator":
-    """Set up orchestrator for print-statements command."""
+    """Set up orchestrator for improper-logging command."""
     return setup_base_orchestrator(path_objs, config_file, verbose, project_root)
 
 
-def _run_print_statements_lint(
+def _run_improper_logging_lint(
     orchestrator: "Orchestrator", path_objs: list[Path], recursive: bool, parallel: bool = False
 ) -> list[Violation]:
-    """Execute print-statements lint on files or directories."""
+    """Execute improper-logging lint on files or directories."""
     all_violations = execute_linting_on_paths(orchestrator, path_objs, recursive, parallel)
-    return [v for v in all_violations if "print-statement" in v.rule_id]
+    return [v for v in all_violations if v.rule_id.startswith("improper-logging.")]
 
 
-def _execute_print_statements_lint(params: ExecuteParams) -> NoReturn:
-    """Execute print-statements lint."""
+def _execute_improper_logging_lint(params: ExecuteParams) -> NoReturn:
+    """Execute improper-logging lint."""
     validate_paths_exist(params.path_objs)
-    orchestrator = _setup_print_statements_orchestrator(
+    orchestrator = _setup_improper_logging_orchestrator(
         params.path_objs, params.config_file, params.verbose, params.project_root
     )
-    print_statements_violations = _run_print_statements_lint(
+    improper_logging_violations = _run_improper_logging_lint(
         orchestrator, params.path_objs, params.recursive, params.parallel
     )
 
-    if params.verbose:
-        logger.info(f"Found {len(print_statements_violations)} print statement violation(s)")
+    logger.debug(f"Found {len(improper_logging_violations)} improper logging violation(s)")
 
-    format_violations(print_statements_violations, params.format)
-    sys.exit(1 if print_statements_violations else 0)
+    format_violations(improper_logging_violations, params.format)
+    sys.exit(1 if improper_logging_violations else 0)
 
 
+# Primary command
+improper_logging = create_linter_command(
+    "improper-logging",
+    _execute_improper_logging_lint,
+    "Check for improper logging patterns in code.",
+    "Detects print()/console statements and conditional verbose patterns that should\n"
+    "    be replaced with proper logging configuration.",
+)
+
+# Backward-compatible alias (deprecated)
 print_statements = create_linter_command(
     "print-statements",
-    _execute_print_statements_lint,
-    "Check for print/console statements in code.",
-    "Detects print() calls in Python and console.log/warn/error/debug/info calls\n"
-    "    in TypeScript/JavaScript that should be replaced with proper logging.",
+    _execute_improper_logging_lint,  # Same executor as improper-logging
+    "Alias for improper-logging (deprecated).",
+    "DEPRECATED: Use 'improper-logging' instead. Detects print() calls in Python and\n"
+    "    console.log/warn/error/debug/info calls in TypeScript/JavaScript.",
 )
 
 
@@ -112,8 +120,7 @@ def _execute_method_property_lint(params: ExecuteParams) -> NoReturn:
         orchestrator, params.path_objs, params.recursive, params.parallel
     )
 
-    if params.verbose:
-        logger.info(f"Found {len(method_property_violations)} method-property violation(s)")
+    logger.debug(f"Found {len(method_property_violations)} method-property violation(s)")
 
     format_violations(method_property_violations, params.format)
     sys.exit(1 if method_property_violations else 0)
@@ -159,8 +166,7 @@ def _execute_stateless_class_lint(params: ExecuteParams) -> NoReturn:
         orchestrator, params.path_objs, params.recursive, params.parallel
     )
 
-    if params.verbose:
-        logger.info(f"Found {len(stateless_class_violations)} stateless-class violation(s)")
+    logger.debug(f"Found {len(stateless_class_violations)} stateless-class violation(s)")
 
     format_violations(stateless_class_violations, params.format)
     sys.exit(1 if stateless_class_violations else 0)
@@ -206,8 +212,7 @@ def _execute_lazy_ignores_lint(params: ExecuteParams) -> NoReturn:
         orchestrator, params.path_objs, params.recursive, params.parallel
     )
 
-    if params.verbose:
-        logger.info(f"Found {len(lazy_ignores_violations)} lazy-ignores violation(s)")
+    logger.debug(f"Found {len(lazy_ignores_violations)} lazy-ignores violation(s)")
 
     format_violations(lazy_ignores_violations, params.format)
     sys.exit(1 if lazy_ignores_violations else 0)
@@ -253,8 +258,7 @@ def _execute_lbyl_lint(params: ExecuteParams) -> NoReturn:
         orchestrator, params.path_objs, params.recursive, params.parallel
     )
 
-    if params.verbose:
-        logger.info(f"Found {len(lbyl_violations)} LBYL violation(s)")
+    logger.debug(f"Found {len(lbyl_violations)} LBYL violation(s)")
 
     format_violations(lbyl_violations, params.format)
     sys.exit(1 if lbyl_violations else 0)

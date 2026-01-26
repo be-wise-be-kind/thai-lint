@@ -78,6 +78,7 @@ tree-sitter = "^0.25.2"
 tree-sitter-typescript = "^0.23.2"
 tree-sitter-rust = "^0.23.2"
 pyprojroot = "^0.3.0"
+loguru = "^0.7.3"
 
 [tool.poetry.group.dev.dependencies]
 # Core testing and linting
@@ -104,7 +105,6 @@ xenon = "^0.9.3"
 # Comprehensive security
 safety = "^3.2.11"
 pip-audit = "^2.8.0"
-loguru = "^0.7.3"
 pytest-xdist = "^3.8.0"
 
 [tool.poetry.scripts]

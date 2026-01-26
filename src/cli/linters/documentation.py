@@ -18,10 +18,11 @@ Interfaces: Click CLI commands registered to main CLI group
 Implementation: Click decorators for command definition, orchestrator-based linting execution
 """
 
-import logging
 import sys
 from pathlib import Path
 from typing import TYPE_CHECKING, NoReturn
+
+from loguru import logger
 
 from src.cli.linters.shared import ExecuteParams, create_linter_command
 from src.cli.utils import execute_linting_on_paths, setup_base_orchestrator, validate_paths_exist
@@ -30,9 +31,6 @@ from src.core.types import Violation
 
 if TYPE_CHECKING:
     from src.orchestrator.core import Orchestrator
-
-# Configure module logger
-logger = logging.getLogger(__name__)
 
 
 # =============================================================================
@@ -65,8 +63,7 @@ def _execute_file_header_lint(params: ExecuteParams) -> NoReturn:
         orchestrator, params.path_objs, params.recursive, params.parallel
     )
 
-    if params.verbose:
-        logger.info(f"Found {len(file_header_violations)} file header violation(s)")
+    logger.debug(f"Found {len(file_header_violations)} file header violation(s)")
 
     format_violations(file_header_violations, params.format)
     sys.exit(1 if file_header_violations else 0)

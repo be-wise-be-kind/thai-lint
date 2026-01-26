@@ -4,32 +4,46 @@ Purpose: Rule ID matching utilities for ignore directive processing
 Scope: Pattern matching between rule IDs and ignore patterns
 
 Overview: Provides functions for matching rule IDs against ignore patterns. Supports
-    exact matching, wildcard matching (*.suffix), and prefix matching (category matches
-    category.specific). All comparisons are case-insensitive to handle variations in
-    rule ID formatting.
+    exact matching, wildcard matching (*.suffix), prefix matching (category matches
+    category.specific), and alias resolution for backward compatibility with renamed
+    rules. All comparisons are case-insensitive to handle variations in rule ID formatting.
 
-Dependencies: re for regex operations
+Dependencies: re for regex operations, src.core.rule_aliases for alias resolution
 
 Exports: rule_matches, check_bracket_rules, check_space_separated_rules
 
 Interfaces: rule_matches(rule_id, pattern) -> bool for checking if rule matches pattern
 
-Implementation: String-based pattern matching with wildcard and prefix support
+Implementation: String-based pattern matching with wildcard, prefix, and alias support
 """
 
 import re
 
+from src.core.rule_aliases import RULE_ID_ALIASES
+
 
 def rule_matches(rule_id: str, pattern: str) -> bool:
-    """Check if rule ID matches pattern (supports wildcards and prefixes).
+    """Check if rule ID matches pattern (supports wildcards, prefixes, and aliases).
+
+    Supports backward compatibility through alias resolution:
+    - Pattern "print-statements" matches rule_id "improper-logging.print-statement"
+    - Pattern "print-statements.*" matches rule_id "improper-logging.print-statement"
 
     Args:
-        rule_id: Rule ID to check (e.g., "nesting.excessive-depth").
-        pattern: Pattern with optional wildcard (e.g., "nesting.*" or "nesting").
+        rule_id: Rule ID to check (e.g., "improper-logging.print-statement").
+        pattern: Pattern with optional wildcard (e.g., "nesting.*" or "print-statements").
 
     Returns:
         True if rule matches pattern.
     """
+    if _matches_pattern_directly(rule_id, pattern):
+        return True
+
+    return _matches_via_alias(rule_id, pattern)
+
+
+def _matches_pattern_directly(rule_id: str, pattern: str) -> bool:
+    """Check if rule ID matches pattern without alias resolution."""
     rule_id_lower = rule_id.lower()
     pattern_lower = pattern.lower()
 
@@ -41,6 +55,37 @@ def rule_matches(rule_id: str, pattern: str) -> bool:
         return True
 
     if rule_id_lower.startswith(pattern_lower + "."):
+        return True
+
+    return False
+
+
+def _matches_via_alias(rule_id: str, pattern: str) -> bool:
+    """Check if rule ID matches pattern through alias resolution."""
+    pattern_lower = pattern.lower()
+    rule_id_lower = rule_id.lower()
+
+    # Find deprecated IDs that alias to our rule_id and check pattern match
+    return any(
+        _pattern_matches_deprecated_id(pattern_lower, deprecated_id)
+        for deprecated_id, canonical_id in RULE_ID_ALIASES.items()
+        if canonical_id.lower() == rule_id_lower
+    )
+
+
+def _pattern_matches_deprecated_id(pattern_lower: str, deprecated_id: str) -> bool:
+    """Check if pattern matches a deprecated rule ID."""
+    deprecated_id_lower = deprecated_id.lower()
+
+    # Pattern exactly matches deprecated ID
+    if pattern_lower == deprecated_id_lower:
+        return True
+
+    # Pattern is prefix/wildcard that matches deprecated ID's category
+    deprecated_category = deprecated_id.split(".", maxsplit=1)[0].lower()
+    if pattern_lower == deprecated_category:
+        return True
+    if pattern_lower == deprecated_category + ".*":
         return True
 
     return False

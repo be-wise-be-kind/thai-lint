@@ -27,12 +27,12 @@ Suppressions:
         by Click framework design (ctx, paths, config_file, format, recursive, parallel = 6 params)
 """
 
-import logging
 from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 import click
+from loguru import logger
 
 from src.cli.utils import (
     format_option,
@@ -185,10 +185,6 @@ def run_linter_command(
         handle_linting_error(e, params.verbose)
 
 
-# Configure module logger
-logger = logging.getLogger(__name__)
-
-
 def ensure_config_section(orchestrator: "Orchestrator", section: str) -> dict[str, Any]:
     """Ensure a config section exists and return it.
 
@@ -219,8 +215,7 @@ def set_config_value(config: dict[str, Any], key: str, value: Any, verbose: bool
     if value is None:
         return
     config[key] = value
-    if verbose:
-        logger.debug(f"Overriding {key} to {value}")
+    logger.debug(f"Overriding {key} to {value}")
 
 
 def filter_violations_by_prefix(violations: list[Violation], prefix: str) -> list[Violation]:

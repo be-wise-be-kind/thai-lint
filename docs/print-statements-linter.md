@@ -1,5 +1,14 @@
 # Print Statements Linter
 
+!!! warning "Deprecated - Use improper-logging"
+    The `print-statements` command has been renamed to `improper-logging`. The new command includes additional features like conditional verbose detection. See **[Improper Logging Linter](improper-logging-linter.md)** for the updated documentation.
+
+    **Migration:**
+    - Replace `thailint print-statements` with `thailint improper-logging`
+    - The old command continues to work as an alias
+    - Configuration key `print-statements:` is still supported
+    - Rule ID `print-statements.detected` is aliased to `improper-logging.print-statement`
+
 ??? info "AI Agent Context (click to expand)"
     **Purpose**: Complete guide to using the print statements linter for detecting debug print and console statements that should be replaced with proper logging
 

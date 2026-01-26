@@ -177,8 +177,11 @@ Enforce comprehensive documentation headers across all source files.
 ### [Lazy Ignores Linter](lazy-ignores-linter.md)
 Detect unjustified linting suppressions (noqa, type: ignore, etc.) that lack proper documentation.
 
-### [Print Statements Linter](print-statements-linter.md)
-Detect debug print/console statements that should be replaced with proper logging.
+### [Improper Logging Linter](improper-logging-linter.md)
+Detect improper logging patterns: print/console statements and conditional verbose guards that should use proper logging configuration.
+
+### [Print Statements Linter](print-statements-linter.md) *(deprecated)*
+Deprecated alias for Improper Logging Linter. See [Improper Logging Linter](improper-logging-linter.md).
 
 ### [Stateless Class Linter](stateless-class-linter.md)
 Detect classes without state that should be module-level functions.

@@ -21,32 +21,29 @@ Implementation: Uses Click decorators for group definition, stores parsed option
     in test environments.
 """
 
-import logging
 import sys
 from pathlib import Path
 
 import click
+from loguru import logger
 
 from src import __version__
 from src.config import ConfigError, load_config
 
-# Configure module logger
-logger = logging.getLogger(__name__)
-
 
 def setup_logging(verbose: bool = False) -> None:
-    """Configure logging for the CLI application.
+    """Configure loguru for the CLI application.
 
     Args:
-        verbose: Enable DEBUG level logging if True, INFO otherwise.
+        verbose: Enable DEBUG level logging if True, WARNING otherwise.
     """
-    level = logging.DEBUG if verbose else logging.INFO
-
-    logging.basicConfig(
+    logger.remove()  # Remove default handler
+    level = "DEBUG" if verbose else "WARNING"
+    logger.add(
+        sys.stderr,
         level=level,
-        format="%(asctime)s | %(levelname)-8s | %(message)s",
-        datefmt="%Y-%m-%d %H:%M:%S",
-        stream=sys.stdout,
+        format="<green>{time:YYYY-MM-DD HH:mm:ss}</green> | <level>{level:<8}</level> | <level>{message}</level>",
+        colorize=True,
     )
 
 
