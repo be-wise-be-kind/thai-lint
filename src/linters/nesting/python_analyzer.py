@@ -24,6 +24,33 @@ Implementation: AST visitor pattern with depth tracking, elif detection via pare
 import ast
 
 
+# Control structure types that increase nesting depth
+_CONTROL_STRUCTURES = (
+    ast.For,
+    ast.While,
+    ast.With,
+    ast.AsyncWith,
+    ast.Try,
+    ast.Match,
+    ast.match_case,
+)
+
+
+class _DepthTracker:
+    """Tracks maximum nesting depth during AST traversal."""
+
+    def __init__(self, default_line: int) -> None:
+        """Initialize tracker with default line number."""
+        self.max_depth = 0
+        self.max_depth_line = default_line
+
+    def record(self, node: ast.AST, depth: int, default_line: int) -> None:
+        """Record depth if it's the new maximum."""
+        if depth > self.max_depth:
+            self.max_depth = depth
+            self.max_depth_line = getattr(node, "lineno", default_line)
+
+
 class PythonNestingAnalyzer:
     """Calculates maximum nesting depth in Python functions."""
 
@@ -42,65 +69,12 @@ class PythonNestingAnalyzer:
         Returns:
             Tuple of (max_depth, line_number_of_max_depth)
         """
-        max_depth = 0
-        max_depth_line = func_node.lineno
+        tracker = _DepthTracker(func_node.lineno)
 
-        def _record_depth(node: ast.AST, depth: int) -> None:
-            """Record max depth if this depth is the highest seen."""
-            nonlocal max_depth, max_depth_line
-            if depth > max_depth:
-                max_depth = depth
-                max_depth_line = getattr(node, "lineno", func_node.lineno)
-
-        def visit_node(node: ast.AST, current_depth: int = 0, is_elif: bool = False) -> None:
-            """Visit AST node, tracking nesting depth for control structures only."""
-            # Only record max depth when entering a control structure
-            # Skip depth increment for If nodes in elif position
-            if isinstance(node, ast.If):
-                if not is_elif:
-                    current_depth += 1
-                    _record_depth(node, current_depth)
-                _visit_if_children(node, current_depth)
-            elif isinstance(
-                node,
-                (
-                    ast.For,
-                    ast.While,
-                    ast.With,
-                    ast.AsyncWith,
-                    ast.Try,
-                    ast.Match,
-                    ast.match_case,
-                ),
-            ):
-                current_depth += 1
-                _record_depth(node, current_depth)
-                for child in ast.iter_child_nodes(node):
-                    visit_node(child, current_depth, is_elif=False)
-            else:
-                # Non-control-structure nodes: just visit children, no depth recording
-                for child in ast.iter_child_nodes(node):
-                    visit_node(child, current_depth, is_elif=False)
-
-        def _visit_if_children(node: ast.If, current_depth: int) -> None:
-            """Visit If node children with special handling for elif chains."""
-            # Visit body normally
-            for child in node.body:
-                visit_node(child, current_depth, is_elif=False)
-
-            # Check if orelse is an elif (single If node in orelse)
-            if _is_elif_chain(node.orelse):
-                visit_node(node.orelse[0], current_depth, is_elif=True)
-            else:
-                # Regular else block - visit all children normally
-                for child in node.orelse:
-                    visit_node(child, current_depth, is_elif=False)
-
-        # Start at depth 0 - control structures increment when entered
         for stmt in func_node.body:
-            visit_node(stmt, 0)
+            _visit_node(stmt, 0, tracker, func_node.lineno)
 
-        return max_depth, max_depth_line
+        return tracker.max_depth, tracker.max_depth_line
 
     def find_all_functions(self, tree: ast.AST) -> list[ast.FunctionDef | ast.AsyncFunctionDef]:
         """Find all function definitions in AST.
@@ -116,6 +90,55 @@ class PythonNestingAnalyzer:
             if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
                 functions.append(node)
         return functions
+
+
+def _visit_node(
+    node: ast.AST, current_depth: int, tracker: _DepthTracker, default_line: int, is_elif: bool = False
+) -> None:
+    """Visit AST node, tracking nesting depth for control structures only."""
+    if isinstance(node, ast.If):
+        _visit_if_node(node, current_depth, tracker, default_line, is_elif)
+    elif isinstance(node, _CONTROL_STRUCTURES):
+        _visit_control_structure(node, current_depth, tracker, default_line)
+    else:
+        _visit_children(node, current_depth, tracker, default_line)
+
+
+def _visit_if_node(
+    node: ast.If, current_depth: int, tracker: _DepthTracker, default_line: int, is_elif: bool
+) -> None:
+    """Visit If node with special elif handling."""
+    if not is_elif:
+        current_depth += 1
+        tracker.record(node, current_depth, default_line)
+
+    # Visit body
+    for child in node.body:
+        _visit_node(child, current_depth, tracker, default_line)
+
+    # Handle orelse - check for elif chain
+    if _is_elif_chain(node.orelse):
+        _visit_node(node.orelse[0], current_depth, tracker, default_line, is_elif=True)
+    else:
+        for child in node.orelse:
+            _visit_node(child, current_depth, tracker, default_line)
+
+
+def _visit_control_structure(
+    node: ast.AST, current_depth: int, tracker: _DepthTracker, default_line: int
+) -> None:
+    """Visit a control structure node that increases depth."""
+    current_depth += 1
+    tracker.record(node, current_depth, default_line)
+    _visit_children(node, current_depth, tracker, default_line)
+
+
+def _visit_children(
+    node: ast.AST, current_depth: int, tracker: _DepthTracker, default_line: int
+) -> None:
+    """Visit all children of a node without incrementing depth."""
+    for child in ast.iter_child_nodes(node):
+        _visit_node(child, current_depth, tracker, default_line)
 
 
 def _is_elif_chain(orelse: list[ast.stmt]) -> bool:
