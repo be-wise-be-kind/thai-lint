@@ -83,7 +83,7 @@ The linter uses Abstract Syntax Tree (AST) parsing for accurate analysis:
 2. **Find all classes** in the file
 
 3. **Calculate metrics** for each class:
-   - Count methods (excluding properties in Python)
+   - Count public methods (excluding properties and private methods)
    - Count lines of code (excluding blank lines and comments)
    - Check for responsibility keywords in class name
 
@@ -117,6 +117,37 @@ class DataProcessor:  # 250+ LOC - Violation (max: 200)
 class UserManager:    # Violation - contains "Manager"
 class DataHandler:    # Violation - contains "Handler"
 class RequestProcessor:  # Violation - contains "Processor"
+```
+
+### Method Counting Rules
+
+The SRP linter counts **public methods** to determine if a class has too many responsibilities.
+
+**Counted as methods:**
+- Regular public methods (`def process(self)`)
+- Static methods and class methods (if public)
+
+**NOT counted as methods:**
+- Private methods (methods starting with `_` like `_helper()`)
+- Dunder methods (`__init__`, `__str__`, `__eq__`, etc.)
+- Properties decorated with `@property`
+- TypeScript methods starting with `_`
+
+**Rationale:** Classes with clean public interfaces but complex internal implementations
+are considered legitimate. The SRP heuristic focuses on the complexity exposed to
+consumers of the class, not internal implementation details. Large classes with many
+private methods are still penalized via the lines of code (LOC) threshold.
+
+**Example - Passes SRP check (2 public methods):**
+```python
+class DataProcessor:
+    def process(self): pass          # Counted
+    def validate(self): pass         # Counted
+    def __init__(self): pass         # NOT counted (dunder)
+    def __str__(self): return ""     # NOT counted (dunder)
+    def _parse_json(self): pass      # NOT counted (private)
+    def _validate_schema(self): pass # NOT counted (private)
+    def _log_debug(self): pass       # NOT counted (private)
 ```
 
 ## Configuration
