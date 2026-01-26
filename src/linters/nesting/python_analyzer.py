@@ -23,7 +23,6 @@ Implementation: AST visitor pattern with depth tracking, elif detection via pare
 
 import ast
 
-
 # Control structure types that increase nesting depth
 _CONTROL_STRUCTURES = (
     ast.For,
@@ -93,7 +92,11 @@ class PythonNestingAnalyzer:
 
 
 def _visit_node(
-    node: ast.AST, current_depth: int, tracker: _DepthTracker, default_line: int, is_elif: bool = False
+    node: ast.AST,
+    current_depth: int,
+    tracker: _DepthTracker,
+    default_line: int,
+    is_elif: bool = False,
 ) -> None:
     """Visit AST node, tracking nesting depth for control structures only."""
     if isinstance(node, ast.If):
