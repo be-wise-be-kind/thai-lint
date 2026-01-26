@@ -19,12 +19,7 @@ Interfaces: MagicNumberConfig(allowed_numbers: set, max_small_integer: int, enab
     from_dict class method for loading configuration from dictionary
 
 Implementation: Dataclass with validation and defaults, matches reference implementation patterns
-
-Suppressions:
-    - magic-numbers: This file defines the default allowed numbers constant, which by nature
-        contains the literal port numbers and common integers that form the allowlist itself.
 """
-# thailint: ignore-file[magic-numbers]
 
 from dataclasses import dataclass, field
 from typing import Any
@@ -59,9 +54,8 @@ class MagicNumberConfig:
     """Configuration for magic numbers linter."""
 
     enabled: bool = True
-    # pylint: disable-next=unnecessary-lambda
     allowed_numbers: set[int | float] = field(
-        default_factory=lambda: DEFAULT_ALLOWED_NUMBERS.copy()  # Need lambda to call .copy()
+        default_factory=lambda: DEFAULT_ALLOWED_NUMBERS.copy()  # pylint: disable=unnecessary-lambda
     )
     max_small_integer: int = 10
     ignore: list[str] = field(default_factory=list)
