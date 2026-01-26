@@ -701,8 +701,8 @@ git commit --no-verify -m "..."
 ## Resources
 
 - **Pre-commit Framework**: https://pre-commit.com/
-- **thai-lint Documentation**: [README.md](../README.md)
-- **Configuration Reference**: [.pre-commit-config.yaml](../.pre-commit-config.yaml)
+- **thai-lint Documentation**: [README.md](https://github.com/be-wise-be-kind/thai-lint/blob/main/README.md)
+- **Configuration Reference**: [.pre-commit-config.yaml](https://github.com/be-wise-be-kind/thai-lint/blob/main/.pre-commit-config.yaml)
 - **Makefile Targets**: `just help`
 
 ## Support

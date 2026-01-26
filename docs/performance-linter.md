@@ -1,18 +1,21 @@
 # Performance Linter
 
-**Purpose**: Complete guide to using the performance linter for detecting and fixing performance anti-patterns in loops
+??? info "AI Agent Context (click to expand)"
+    **Purpose**: Complete guide to using the performance linter for detecting and fixing performance anti-patterns in loops
 
-**Scope**: Configuration, usage, refactoring patterns, and best practices for performance analysis
+    **Scope**: Configuration, usage, refactoring patterns, and best practices for performance analysis
 
-**Overview**: Comprehensive documentation for the performance linter that detects O(n^2) anti-patterns in Python and TypeScript code. Covers two key rules: string-concat-loop (detecting += string concatenation in loops) and regex-in-loop (detecting uncompiled regex calls in loops). Includes AST-based analysis, configuration options, CLI and library usage, common refactoring patterns, and CI/CD integration.
+    **Overview**: Comprehensive documentation for the performance linter that detects O(n^2) anti-patterns in Python and TypeScript code. Covers two key rules: string-concat-loop (detecting += string concatenation in loops) and regex-in-loop (detecting uncompiled regex calls in loops). Includes AST-based analysis, configuration options, CLI and library usage, common refactoring patterns, and CI/CD integration.
 
-**Dependencies**: tree-sitter (Python parser), tree-sitter-typescript (TypeScript parser)
+    **Dependencies**: tree-sitter (Python parser), tree-sitter-typescript (TypeScript parser)
 
-**Exports**: Usage documentation, configuration examples, refactoring patterns
+    **Exports**: Usage documentation, configuration examples, refactoring patterns
 
-**Related**: cli-reference.md for CLI commands, configuration.md for config format
+    **Related**: cli-reference.md for CLI commands, configuration.md for config format
 
-**Implementation**: AST-based pattern detection with helpful violation messages and refactoring suggestions
+    **Implementation**: AST-based pattern detection with helpful violation messages and refactoring suggestions
+
+    *This follows the [AI-Optimized Documentation Standard](ai-doc-standard.md).*
 
 ---
 

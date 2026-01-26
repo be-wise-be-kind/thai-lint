@@ -1,18 +1,21 @@
 # Lazy Ignores Linter
 
-**Purpose**: Complete guide to using the lazy-ignores linter for detecting and fixing unjustified linting suppressions
+??? info "AI Agent Context (click to expand)"
+    **Purpose**: Complete guide to using the lazy-ignores linter for detecting and fixing unjustified linting suppressions
 
-**Scope**: Configuration, usage, suppression declaration, and best practices for AI-generated code governance
+    **Scope**: Configuration, usage, suppression declaration, and best practices for AI-generated code governance
 
-**Overview**: Comprehensive documentation for the lazy-ignores linter that detects when AI agents add linting suppressions (`# noqa`, `# type: ignore`, `# pylint: disable`, `@ts-ignore`, etc.) without proper justification. Uses a header-based declaration model where all suppressions must be documented in the file header's `Suppressions:` section with human-approved justifications. This enforces that AI assistants cannot silently bypass quality gates. The linter also detects orphaned entries (declared but not used) and test skips without reasons.
+    **Overview**: Comprehensive documentation for the lazy-ignores linter that detects when AI agents add linting suppressions (`# noqa`, `# type: ignore`, `# pylint: disable`, `@ts-ignore`, etc.) without proper justification. Uses a header-based declaration model where all suppressions must be documented in the file header's `Suppressions:` section with human-approved justifications. This enforces that AI assistants cannot silently bypass quality gates. The linter also detects orphaned entries (declared but not used) and test skips without reasons.
 
-**Dependencies**: tree-sitter (TypeScript parser), Python AST module, file header linter infrastructure
+    **Dependencies**: tree-sitter (TypeScript parser), Python AST module, file header linter infrastructure
 
-**Exports**: Usage documentation, configuration examples, suppression declaration patterns
+    **Exports**: Usage documentation, configuration examples, suppression declaration patterns
 
-**Related**: cli-reference.md for CLI commands, configuration.md for config format, FILE_HEADER_STANDARDS.md for Suppressions section format
+    **Related**: cli-reference.md for CLI commands, configuration.md for config format, FILE_HEADER_STANDARDS.md for Suppressions section format
 
-**Implementation**: Header-based suppression declaration model with AST-based detection and orphaned entry validation
+    **Implementation**: Header-based suppression declaration model with AST-based detection and orphaned entry validation
+
+    *This follows the [AI-Optimized Documentation Standard](ai-doc-standard.md).*
 
 ---
 

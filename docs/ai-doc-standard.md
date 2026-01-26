@@ -140,19 +140,19 @@ Modern AI coding tools operate in three stages:
 
 Context window constraints are real. Simple math illustrates the impact:
 
-| Model | Advertised Context | Reliable Context* |
-|-------|-------------------|-------------------|
-| GPT-4 | 128K tokens | ~100K tokens |
-| Claude 3.5 Sonnet | 200K tokens | ~130K tokens |
-| Claude Opus 4.5 | 200K tokens | ~150K tokens |
+| Model | Advertised Context |
+|-------|--------------------|
+| GPT-4 | 128K tokens |
+| Claude 3.5 Sonnet | 200K tokens |
+| Claude Opus 4.5 | 200K tokens |
 
-*Per [IBM Research](https://research.ibm.com/blog/larger-context-window): "Most models break much earlier than advertised... with sudden performance drops rather than gradual degradation."
+Per [IBM Research](https://research.ibm.com/blog/larger-context-window): "LLMs are more apt to pick up on important information appearing at the start or end of a long prompt rather than buried in the middle."
 
-**Key Insight:** If structured headers use fewer tokens than verbose prose, more files fit in context. The exact multiplier depends on your codebase, but the direction is clear.
+**Key Insight:** If structured headers use fewer tokens than verbose prose, more files fit in context. Front-loading critical metadata ensures it's in the high-attention zone of the context window.
 
 ### Embedding Quality
 
-Vector embeddings power semantic search (as used by [Cursor](https://docs.cursor.com/context/codebase-indexing)). Structured metadata produces cleaner embeddings:
+Vector embeddings power semantic search (as used by [Cursor](https://cursor.com/docs/context/codebase-indexing)). Structured metadata produces cleaner embeddings:
 
 **Structured:**
 ```
@@ -282,7 +282,7 @@ The following is based on publicly available documentation and observed behavior
 
 ### Cursor - Codebase Indexing
 
-From [Cursor's official documentation](https://docs.cursor.com/context/codebase-indexing):
+From [Cursor's official documentation](https://cursor.com/docs/context/codebase-indexing):
 
 - Cursor indexes codebases by computing **embeddings** for each file
 - Files are **chunked into semantically meaningful pieces** using tools like tree-sitter
@@ -304,12 +304,12 @@ From [Microsoft's Visual Studio Blog](https://devblogs.microsoft.com/visualstudi
 
 ### Anthropic Claude - Prompt Engineering
 
-From [Anthropic's prompt engineering documentation](https://docs.anthropic.com/en/docs/build-with-claude/prompt-engineering/overview):
+From [Anthropic's long context tips](https://docs.anthropic.com/en/docs/build-with-claude/prompt-engineering/long-context-tips):
 
-- Claude 4.x models are trained for **precise instruction following**
-- **Structured formats** (JSON, YAML frontmatter) help Claude understand schema requirements
-- Agent skills use **YAML frontmatter with name and description** as "the first level of progressive disclosure"
-- Claude features **context awareness** to track remaining token budget
+- **Put longform data at the top** of prompts, above queries and instructions
+- **Queries at the end can improve response quality by up to 30%** in tests with complex inputs
+- **Structure document content with XML tags** for clarity when using multiple documents
+- Claude's 200K token context window enables handling complex, data-rich tasks
 
 **Implication:** Front-loaded structured metadata aligns with how Claude processes information progressively.
 
@@ -318,7 +318,7 @@ From [Anthropic's prompt engineering documentation](https://docs.anthropic.com/e
 From [IBM Research blog on context windows](https://research.ibm.com/blog/larger-context-window):
 
 - LLMs are **more apt to pick up on important information appearing at the start or end** of a long prompt rather than buried in the middle
-- Most models **break much earlier than advertised** (e.g., 200K claimed → ~130K reliable)
+- **Quality of examples matters** more than simply expanding context windows
 - Larger context windows improve coding tasks by allowing more documentation to be ingested
 
 **Implication:** Front-loading critical metadata ensures it's in the high-attention zone of the context window.
@@ -1486,8 +1486,8 @@ try {
 - [RabbitMQ Documentation](https://www.rabbitmq.com/documentation.html)
 - [Event-Driven Architecture Patterns (Martin Fowler)](https://martinfowler.com/articles/201701-event-driven.html)
 - [Internal Schema Registry API](http://schema-registry.internal/docs)
-- [ADR-015: Message Broker Selection](../adr/015-message-broker-selection.md)
-- [Runbook: Message Queue Troubleshooting](../runbooks/message-queue-troubleshooting.md)
+- ADR-015: Message Broker Selection *(example internal link)*
+- Runbook: Message Queue Troubleshooting *(example internal link)*
 
 ---
 
@@ -1762,14 +1762,14 @@ Focus documentation on hand-written source code that developers need to understa
 
 ### Official Documentation (Verified)
 
-1. **Cursor Codebase Indexing Documentation.** https://docs.cursor.com/context/codebase-indexing
+1. **Cursor Codebase Indexing Documentation.** https://cursor.com/docs/context/codebase-indexing
    - Explains embedding-based indexing, chunking with tree-sitter, and RAG retrieval
 
 2. **Microsoft Visual Studio Blog - GitHub Copilot Comments.** https://devblogs.microsoft.com/visualstudio/how-to-use-comments-to-prompt-github-copilot-visual-studio/
    - Documents how Copilot uses comments and file structure for context
 
-3. **Anthropic Prompt Engineering Guide.** https://docs.anthropic.com/en/docs/build-with-claude/prompt-engineering/overview
-   - Claude 4.x best practices, structured formats, progressive disclosure
+3. **Anthropic Long Context Tips.** https://docs.anthropic.com/en/docs/build-with-claude/prompt-engineering/long-context-tips
+   - Recommends putting data at top of prompts, structured formats, up to 30% quality improvement
 
 4. **Anthropic Claude Code Best Practices.** https://www.anthropic.com/engineering/claude-code-best-practices
    - How Anthropic teams use Claude for codebase understanding
