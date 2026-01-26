@@ -1,46 +1,40 @@
 """
-Purpose: Coordinator for Python CQS analysis combining INPUT and OUTPUT detection
+Purpose: Coordinator for Python CQS analysis returning per-function CQSPattern objects
 
-Scope: High-level analyzer that orchestrates detection and handles parsing
+Scope: High-level analyzer that orchestrates FunctionAnalyzer for function-level detection
 
-Overview: Provides PythonCQSAnalyzer class that coordinates InputDetector and OutputDetector
-    to analyze Python code for CQS patterns. Handles AST parsing with proper SyntaxError
-    handling, returning empty results for unparseable code rather than raising exceptions.
-    Returns raw INPUT and OUTPUT operations for further analysis. PR3 will build on this
-    to aggregate operations per function and detect CQS violations.
+Overview: Provides PythonCQSAnalyzer class that coordinates CQS pattern detection in Python
+    code. Handles AST parsing with proper SyntaxError handling, returning empty results for
+    unparseable code rather than raising exceptions. Delegates to FunctionAnalyzer to build
+    CQSPattern objects for each function/method, which contain INPUT and OUTPUT operations
+    along with function metadata (name, class context, async status).
 
-Dependencies: ast module, InputDetector, OutputDetector, CQSConfig
+Dependencies: ast module, FunctionAnalyzer, CQSConfig, CQSPattern
 
 Exports: PythonCQSAnalyzer
 
-Interfaces: PythonCQSAnalyzer.analyze(code, file_path, config) -> (inputs, outputs)
+Interfaces: PythonCQSAnalyzer.analyze(code, file_path, config) -> list[CQSPattern]
 
-Implementation: Coordinates detectors with error handling for AST parsing failures
+Implementation: Coordinates FunctionAnalyzer with error handling for AST parsing failures
 """
 
 import ast
 
 from .config import CQSConfig
-from .input_detector import InputDetector
-from .output_detector import OutputDetector
-from .types import InputOperation, OutputOperation
+from .function_analyzer import FunctionAnalyzer
+from .types import CQSPattern
 
 
 class PythonCQSAnalyzer:
-    """Analyzes Python code for CQS INPUT and OUTPUT operations."""
-
-    def __init__(self) -> None:
-        """Initialize the analyzer with detectors."""
-        self._input_detector = InputDetector()
-        self._output_detector = OutputDetector()
+    """Analyzes Python code for CQS patterns, returning per-function results."""
 
     def analyze(
         self,
         code: str,
         file_path: str,
         config: CQSConfig,
-    ) -> tuple[list[InputOperation], list[OutputOperation]]:
-        """Analyze Python code for INPUT and OUTPUT operations.
+    ) -> list[CQSPattern]:
+        """Analyze Python code for CQS patterns in each function.
 
         Args:
             code: Python source code to analyze
@@ -48,18 +42,13 @@ class PythonCQSAnalyzer:
             config: CQS configuration settings
 
         Returns:
-            Tuple of (inputs, outputs) lists. Returns empty lists if code
-            cannot be parsed due to SyntaxError.
+            List of CQSPattern objects, one per function/method.
+            Returns empty list if code cannot be parsed due to SyntaxError.
         """
-        # Config parameter reserved for PR3 filtering logic
-        _ = config
-
         try:
             tree = ast.parse(code, filename=file_path)
         except SyntaxError:
-            return [], []
+            return []
 
-        inputs = self._input_detector.find_inputs(tree)
-        outputs = self._output_detector.find_outputs(tree)
-
-        return inputs, outputs
+        analyzer = FunctionAnalyzer(file_path, config)
+        return analyzer.analyze(tree)
