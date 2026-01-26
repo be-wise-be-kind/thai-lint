@@ -581,11 +581,14 @@ The linter includes extensive false positive filtering to reduce noise:
 
 | Pattern | Examples | Why Excluded |
 |---------|----------|--------------|
+| Strings with spaces | `"SELECT * FROM users"` | SQL queries, templates, sentences |
 | Numeric strings | `"0"`, `"123"` | Often IDs or counts |
 | HTTP methods | `"GET"`, `"POST"` | Standard protocol |
 | File modes | `"r"`, `"w"`, `"rb"` | Standard I/O |
 | strftime formats | `"%Y-%m-%d"` | Date formatting |
 | Empty strings | `""` | Common default |
+
+> **Note**: Strings containing spaces are automatically excluded because enum values are typically single words. This prevents false positives from SQL queries, error messages, and template strings.
 
 ## Ignore Directives
 

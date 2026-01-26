@@ -54,6 +54,11 @@ def _is_allowed_value_set(values: set[str], config: StringlyTypedConfig) -> bool
     return any(values == set(allowed) for allowed in config.allowed_string_sets)
 
 
+def _has_spaces(values: set[str]) -> bool:
+    """Check if any value contains spaces (indicates SQL/templates, not enums)."""
+    return any(" " in v for v in values)
+
+
 def _is_enum_candidate(pattern: StoredPattern, config: StringlyTypedConfig) -> bool:
     """Check if pattern's value count is within enum range."""
     value_count = len(pattern.string_values)
@@ -77,6 +82,8 @@ def _should_skip_patterns(patterns: list[StoredPattern], config: StringlyTypedCo
     # Skip if all values match excluded patterns (numeric strings, etc.)
     if context_filter.are_all_values_excluded(set(first.string_values)):
         return True
+    if _has_spaces(set(first.string_values)):
+        return True
     return False
 
 
@@ -87,6 +94,8 @@ def _should_skip_comparison(unique_values: set[str], config: StringlyTypedConfig
     if _is_allowed_value_set(unique_values, config):
         return True
     if context_filter.are_all_values_excluded(unique_values):
+        return True
+    if _has_spaces(unique_values):
         return True
     return False
 
@@ -266,6 +275,7 @@ def _get_valid_functions(
         (name, idx, vals)
         for name, idx, vals in limited_funcs
         if not _is_allowed_value_set(vals, config)
+        and not _has_spaces(vals)
         and context_filter.should_include(name, idx, vals)
     ]
 

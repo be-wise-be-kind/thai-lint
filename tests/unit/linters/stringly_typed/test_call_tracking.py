@@ -207,7 +207,7 @@ class TestStorageFunctionCalls:
                 column=4,
                 function_name="process",
                 param_index=0,
-                string_value="active",
+                string_value="active, ready",  # comma in value (issue #145)
             ),
             StoredFunctionCall(
                 file_path=Path("file2.py"),
@@ -220,14 +220,14 @@ class TestStorageFunctionCalls:
         ]
         storage.add_function_calls(calls)
 
-        # Should find process with 2 unique values
+        # Should find process with 2 unique values (not 3 - comma shouldn't split)
         limited = storage.get_limited_value_functions(min_values=2, max_values=6, min_files=1)
 
         assert len(limited) == 1
         func_name, param_idx, values = limited[0]
         assert func_name == "process"
         assert param_idx == 0
-        assert values == {"active", "inactive"}
+        assert values == {"active, ready", "inactive"}
 
     def test_get_limited_value_functions_respects_thresholds(
         self, storage: StringlyTypedStorage
@@ -565,4 +565,42 @@ class TestViolationGeneratorFunctionCalls:
         )
 
         # Should not flag since require_cross_file=True and both calls in same file
+        assert len(violations) == 0
+
+    def test_strings_with_spaces_not_flagged(
+        self,
+        storage: StringlyTypedStorage,
+        generator: ViolationGenerator,
+        config: StringlyTypedConfig,
+    ) -> None:
+        """Test that strings containing spaces are not flagged as enum candidates.
+
+        SQL queries, templates, and other multi-word strings should not be treated
+        as enum candidates since enum values are typically single words.
+        """
+        calls = [
+            StoredFunctionCall(
+                file_path=Path("file1.py"),
+                line_number=10,
+                column=4,
+                function_name="execute_sql",
+                param_index=0,
+                string_value="SELECT id, name FROM users",
+            ),
+            StoredFunctionCall(
+                file_path=Path("file2.py"),
+                line_number=20,
+                column=4,
+                function_name="execute_sql",
+                param_index=0,
+                string_value="SELECT * FROM products",
+            ),
+        ]
+        storage.add_function_calls(calls)
+
+        violations = generator.generate_violations(
+            storage, "stringly-typed.repeated-validation", config
+        )
+
+        # Should NOT generate violations for SQL queries (contain spaces)
         assert len(violations) == 0
