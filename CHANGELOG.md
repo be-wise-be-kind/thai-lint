@@ -28,6 +28,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **Stateless Class Linter** - Detect Python classes without state that should be module-level functions
 
+## [0.15.4] - 2026-01-26
+
+### Added
+
+- **Inline Justifications for Lazy-Ignores** (#147) - Allow inline justifications directly next to ignore statements
+  - Syntax: `# noqa: PLR0912 - state machine inherently complex`
+  - Delimiter: ` - ` (space-dash-space) followed by justification text
+  - Inline justifications take precedence over header-based Suppressions
+  - Minimum justification length: 10 characters (configurable)
+  - New config options: `allow_inline_justifications`, `min_justification_length`
+  - Supports all ignore types: noqa, type:ignore, pylint:disable, nosec, pyright:ignore
+  - 27 new tests for inline justification functionality
+
 ## [0.15.3] - 2026-01-26
 
 ### Fixed
