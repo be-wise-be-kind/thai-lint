@@ -49,6 +49,7 @@ That's it. See violations, fix them, ship better code.
 | **Lazy Ignores** | Unjustified linting suppressions | `thailint lazy-ignores src/` | [Guide](https://thai-lint.readthedocs.io/en/latest/lazy-ignores-linter/) |
 | **Print Statements** | Debug prints left in code | `thailint print-statements src/` | [Guide](https://thai-lint.readthedocs.io/en/latest/print-statements-linter/) |
 | **Stringly Typed** | Strings that should be enums | `thailint stringly-typed src/` | [Guide](https://thai-lint.readthedocs.io/en/latest/stringly-typed-linter/) |
+| **LBYL** | Look Before You Leap anti-patterns | `thailint lbyl src/` | [Guide](https://thai-lint.readthedocs.io/en/latest/lbyl-linter/) |
 
 ## Configuration
 
