@@ -21,6 +21,10 @@ Interfaces: Orchestrator config dict manipulation, violation list filtering, CLI
     help text generation
 
 Implementation: Pure helper functions with no side effects beyond config mutation and logging
+
+Suppressions:
+    - too-many-arguments,too-many-positional-arguments: CLI helper functions require many parameters
+        by Click framework design (ctx, paths, config_file, format, recursive, parallel = 6 params)
 """
 
 import logging
@@ -30,7 +34,12 @@ from typing import TYPE_CHECKING, Any
 
 import click
 
-from src.cli.utils import format_option, get_project_root_from_context, handle_linting_error
+from src.cli.utils import (
+    format_option,
+    get_project_root_from_context,
+    handle_linting_error,
+    parallel_option,
+)
 from src.core.types import Violation
 
 if TYPE_CHECKING:
@@ -47,15 +56,17 @@ def standard_linter_options(f: Any) -> Any:
     - config file option
     - format option
     - recursive option
+    - parallel option
     - pass_context
 
     Usage:
         @cli.command("my-linter")
         @standard_linter_options
-        def my_linter(ctx, paths, config_file, format, recursive):
+        def my_linter(ctx, paths, config_file, format, recursive, parallel):
             ...
     """
     f = click.pass_context(f)
+    f = parallel_option(f)
     f = click.option(
         "--recursive/--no-recursive", default=True, help="Scan directories recursively"
     )(f)
@@ -93,6 +104,7 @@ class ExecuteParams:
     recursive: bool
     verbose: bool
     project_root: Path | None
+    parallel: bool = False
 
 
 def extract_command_context(ctx: click.Context, paths: tuple[str, ...]) -> CommandContext:
@@ -119,17 +131,18 @@ def extract_command_context(ctx: click.Context, paths: tuple[str, ...]) -> Comma
     return CommandContext(verbose=verbose, project_root=project_root, path_objs=path_objs)
 
 
-def prepare_standard_command(
+def prepare_standard_command(  # pylint: disable=too-many-arguments,too-many-positional-arguments
     ctx: click.Context,
     paths: tuple[str, ...],
     config_file: str | None,
     format: str,
     recursive: bool,
+    parallel: bool = False,
 ) -> ExecuteParams:
     """Prepare standard linter command execution parameters.
 
     Combines context extraction and ExecuteParams creation into a single call.
-    Use with commands that have the standard options (config, format, recursive).
+    Use with commands that have the standard options (config, format, recursive, parallel).
 
     Args:
         ctx: Click context from command invocation
@@ -137,6 +150,7 @@ def prepare_standard_command(
         config_file: Optional config file path
         format: Output format
         recursive: Whether to scan recursively
+        parallel: Whether to use parallel processing
 
     Returns:
         ExecuteParams ready for _execute_*_lint function
@@ -149,6 +163,7 @@ def prepare_standard_command(
         recursive=recursive,
         verbose=cmd_ctx.verbose,
         project_root=cmd_ctx.project_root,
+        parallel=parallel,
     )
 
 
@@ -258,14 +273,15 @@ def create_linter_command(
 
     @cli.command(name, help=make_linter_help(name, brief, description))
     @standard_linter_options
-    def command(
+    def command(  # pylint: disable=too-many-arguments,too-many-positional-arguments
         ctx: click.Context,
         paths: tuple[str, ...],
         config_file: str | None,
         format: str,
         recursive: bool,
+        parallel: bool,
     ) -> None:
-        params = prepare_standard_command(ctx, paths, config_file, format, recursive)
+        params = prepare_standard_command(ctx, paths, config_file, format, recursive, parallel)
         run_linter_command(execute_fn, params)
 
     return command

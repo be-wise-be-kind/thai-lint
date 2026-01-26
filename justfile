@@ -267,7 +267,7 @@ lint-complexity +files="src/ tests/":
     @echo "{{BOLD}}[3/3] Nesting depth{{NC}}"
     @SRC_TARGETS=$(just _get-src-targets {{files}}); \
     if [ -n "$SRC_TARGETS" ]; then \
-        if poetry run thai-lint nesting $SRC_TARGETS --config .thailint.yaml 2>&1; then \
+        if poetry run thai-lint nesting $SRC_TARGETS --config .thailint.yaml --parallel 2>&1; then \
             echo "{{GREEN}}✓ Nesting depth checks passed{{NC}}"; \
         else \
             echo "{{RED}}✗ Nesting depth checks failed{{NC}}"; \
@@ -283,7 +283,7 @@ lint-placement path=".":
     @echo "{{BLUE}}{{BOLD}}════════════════════════════════════════════════════════════{{NC}}"
     @echo ""
     @PLACEMENT_TARGET=$(just _get-placement-target {{path}}); \
-    if poetry run thai-lint file-placement $PLACEMENT_TARGET 2>&1; then \
+    if poetry run thai-lint file-placement $PLACEMENT_TARGET --parallel 2>&1; then \
         echo "{{GREEN}}✓ File placement checks passed{{NC}}"; \
     else \
         echo "{{RED}}✗ File placement checks failed{{NC}}"; \
@@ -299,7 +299,7 @@ lint-nesting +files="src/ tests/":
     @echo ""
     @SRC_TARGETS=$(just _get-src-targets {{files}}); \
     if [ -n "$SRC_TARGETS" ]; then \
-        if poetry run thai-lint nesting $SRC_TARGETS --config .thailint.yaml 2>&1; then \
+        if poetry run thai-lint nesting $SRC_TARGETS --config .thailint.yaml --parallel 2>&1; then \
             echo "{{GREEN}}✓ Nesting depth checks passed{{NC}}"; \
         else \
             echo "{{RED}}✗ Nesting depth checks failed{{NC}}"; \
@@ -316,7 +316,7 @@ lint-solid +files="src/ tests/":
     @echo ""
     @SRC_TARGETS=$(just _get-src-targets {{files}}); \
     if [ -n "$SRC_TARGETS" ]; then \
-        if poetry run thai-lint srp $SRC_TARGETS --config .thailint.yaml 2>&1; then \
+        if poetry run thai-lint srp $SRC_TARGETS --config .thailint.yaml --parallel 2>&1; then \
             echo "{{GREEN}}✓ SRP checks passed{{NC}}"; \
         else \
             echo "{{RED}}✗ SRP checks failed{{NC}}"; \
@@ -335,7 +335,7 @@ lint-dry +files="src/ tests/":
     @echo ""
     @SRC_TARGETS=$(just _get-src-targets {{files}}); \
     if [ -n "$SRC_TARGETS" ]; then \
-        if poetry run thai-lint dry $SRC_TARGETS --config .thailint.yaml 2>&1; then \
+        if poetry run thai-lint dry $SRC_TARGETS --config .thailint.yaml --parallel 2>&1; then \
             echo "{{GREEN}}✓ DRY checks passed{{NC}}"; \
         else \
             echo "{{RED}}✗ DRY checks failed{{NC}}"; \
@@ -354,7 +354,7 @@ lint-constants +files="src/ tests/":
     @echo ""
     @SRC_TARGETS=$(just _get-src-targets {{files}}); \
     if [ -n "$SRC_TARGETS" ]; then \
-        if poetry run thai-lint dry $SRC_TARGETS --config .thailint.yaml 2>&1; then \
+        if poetry run thai-lint dry $SRC_TARGETS --config .thailint.yaml --parallel 2>&1; then \
             echo "{{GREEN}}✓ Duplicate constants checks passed{{NC}}"; \
         else \
             echo "{{RED}}✗ Duplicate constants checks failed{{NC}}"; \
@@ -371,7 +371,7 @@ lint-pipeline +files="src/ tests/":
     @echo ""
     @SRC_TARGETS=$(just _get-src-targets {{files}}); \
     if [ -n "$SRC_TARGETS" ]; then \
-        if poetry run thai-lint pipeline $SRC_TARGETS --config .thailint.yaml 2>&1; then \
+        if poetry run thai-lint pipeline $SRC_TARGETS --config .thailint.yaml --parallel 2>&1; then \
             echo "{{GREEN}}✓ Collection pipeline checks passed{{NC}}"; \
         else \
             echo "{{RED}}✗ Collection pipeline checks failed{{NC}}"; \
@@ -388,7 +388,7 @@ lint-magic-numbers +files="src/ tests/":
     @echo ""
     @SRC_TARGETS=$(just _get-src-targets {{files}}); \
     if [ -n "$SRC_TARGETS" ]; then \
-        if poetry run thai-lint magic-numbers $SRC_TARGETS --config .thailint.yaml 2>&1; then \
+        if poetry run thai-lint magic-numbers $SRC_TARGETS --config .thailint.yaml --parallel 2>&1; then \
             echo "{{GREEN}}✓ Magic numbers checks passed{{NC}}"; \
         else \
             echo "{{RED}}✗ Magic numbers checks failed{{NC}}"; \
@@ -405,7 +405,7 @@ lint-method-property +files="src/ tests/":
     @echo ""
     @SRC_TARGETS=$(just _get-src-targets {{files}}); \
     if [ -n "$SRC_TARGETS" ]; then \
-        if poetry run thai-lint method-property $SRC_TARGETS --config .thailint.yaml 2>&1; then \
+        if poetry run thai-lint method-property $SRC_TARGETS --config .thailint.yaml --parallel 2>&1; then \
             echo "{{GREEN}}✓ Method property checks passed{{NC}}"; \
         else \
             echo "{{RED}}✗ Method property checks failed{{NC}}"; \
@@ -422,7 +422,7 @@ lint-file-header +files="src/ tests/":
     @echo ""
     @SRC_TARGETS=$(just _get-src-targets {{files}}); \
     if [ -n "$SRC_TARGETS" ]; then \
-        if poetry run thai-lint file-header $SRC_TARGETS --config .thailint.yaml 2>&1; then \
+        if poetry run thai-lint file-header $SRC_TARGETS --config .thailint.yaml --parallel 2>&1; then \
             echo "{{GREEN}}✓ File header checks passed{{NC}}"; \
         else \
             echo "{{RED}}✗ File header checks failed{{NC}}"; \
@@ -439,7 +439,7 @@ lint-stateless +files="src/ tests/":
     @echo ""
     @SRC_TARGETS=$(just _get-src-targets {{files}}); \
     if [ -n "$SRC_TARGETS" ]; then \
-        if poetry run thai-lint stateless-class $SRC_TARGETS --config .thailint.yaml 2>&1; then \
+        if poetry run thai-lint stateless-class $SRC_TARGETS --config .thailint.yaml --parallel 2>&1; then \
             echo "{{GREEN}}✓ Stateless class checks passed{{NC}}"; \
         else \
             echo "{{RED}}✗ Stateless class checks failed{{NC}}"; \
@@ -456,7 +456,7 @@ lint-print +files="src/ tests/":
     @echo ""
     @SRC_TARGETS=$(just _get-src-targets {{files}}); \
     if [ -n "$SRC_TARGETS" ]; then \
-        if poetry run thai-lint print-statements $SRC_TARGETS --config .thailint.yaml 2>&1; then \
+        if poetry run thai-lint print-statements $SRC_TARGETS --config .thailint.yaml --parallel 2>&1; then \
             echo "{{GREEN}}✓ Print statement checks passed{{NC}}"; \
         else \
             echo "{{RED}}✗ Print statement checks failed{{NC}}"; \
@@ -473,7 +473,7 @@ lint-stringly +files="src/ tests/":
     @echo ""
     @SRC_TARGETS=$(just _get-src-targets {{files}}); \
     if [ -n "$SRC_TARGETS" ]; then \
-        if poetry run thai-lint stringly-typed $SRC_TARGETS --config .thailint.yaml 2>&1; then \
+        if poetry run thai-lint stringly-typed $SRC_TARGETS --config .thailint.yaml --parallel 2>&1; then \
             echo "{{GREEN}}✓ Stringly-typed checks passed{{NC}}"; \
         else \
             echo "{{RED}}✗ Stringly-typed checks failed{{NC}}"; \
@@ -490,7 +490,7 @@ lint-perf +files="src/ tests/":
     @echo ""
     @SRC_TARGETS=$(just _get-src-targets {{files}}); \
     if [ -n "$SRC_TARGETS" ]; then \
-        if poetry run thai-lint perf $SRC_TARGETS --config .thailint.yaml 2>&1; then \
+        if poetry run thai-lint perf $SRC_TARGETS --config .thailint.yaml --parallel 2>&1; then \
             echo "{{GREEN}}✓ Performance checks passed{{NC}}"; \
         else \
             echo "{{RED}}✗ Performance checks failed{{NC}}"; \
@@ -507,7 +507,7 @@ lint-lazy-ignores +files="src/ tests/":
     @echo ""
     @SRC_TARGETS=$(just _get-src-targets {{files}}); \
     if [ -n "$SRC_TARGETS" ]; then \
-        if poetry run thai-lint lazy-ignores $SRC_TARGETS --config .thailint.yaml 2>&1; then \
+        if poetry run thai-lint lazy-ignores $SRC_TARGETS --config .thailint.yaml --parallel 2>&1; then \
             echo "{{GREEN}}✓ Lazy ignores checks passed{{NC}}"; \
         else \
             echo "{{RED}}✗ Lazy ignores checks failed{{NC}}"; \
@@ -524,7 +524,7 @@ lint-lbyl +files="src/ tests/":
     @echo ""
     @SRC_TARGETS=$(just _get-src-targets {{files}}); \
     if [ -n "$SRC_TARGETS" ]; then \
-        if poetry run thai-lint lbyl $SRC_TARGETS --config .thailint.yaml 2>&1; then \
+        if poetry run thai-lint lbyl $SRC_TARGETS --config .thailint.yaml --parallel 2>&1; then \
             echo "{{GREEN}}✓ LBYL checks passed{{NC}}"; \
         else \
             echo "{{RED}}✗ LBYL checks failed{{NC}}"; \

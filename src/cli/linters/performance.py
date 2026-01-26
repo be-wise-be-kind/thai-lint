@@ -74,17 +74,19 @@ def _setup_and_validate(params: ExecuteParams) -> "Orchestrator":
 
 
 def _run_string_concat_lint(
-    orchestrator: "Orchestrator", path_objs: list[Path], recursive: bool
+    orchestrator: "Orchestrator", path_objs: list[Path], recursive: bool, parallel: bool = False
 ) -> list[Violation]:
     """Execute string-concat-loop lint on files or directories."""
-    all_violations = execute_linting_on_paths(orchestrator, path_objs, recursive)
+    all_violations = execute_linting_on_paths(orchestrator, path_objs, recursive, parallel)
     return [v for v in all_violations if v.rule_id == "performance.string-concat-loop"]
 
 
 def _execute_string_concat_lint(params: ExecuteParams) -> NoReturn:
     """Execute string-concat-loop lint."""
     orchestrator = _setup_and_validate(params)
-    violations = _run_string_concat_lint(orchestrator, params.path_objs, params.recursive)
+    violations = _run_string_concat_lint(
+        orchestrator, params.path_objs, params.recursive, params.parallel
+    )
 
     if params.verbose:
         logger.info(f"Found {len(violations)} string-concat-loop violation(s)")
@@ -108,17 +110,19 @@ string_concat_loop = create_linter_command(
 
 
 def _run_regex_in_loop_lint(
-    orchestrator: "Orchestrator", path_objs: list[Path], recursive: bool
+    orchestrator: "Orchestrator", path_objs: list[Path], recursive: bool, parallel: bool = False
 ) -> list[Violation]:
     """Execute regex-in-loop lint on files or directories."""
-    all_violations = execute_linting_on_paths(orchestrator, path_objs, recursive)
+    all_violations = execute_linting_on_paths(orchestrator, path_objs, recursive, parallel)
     return [v for v in all_violations if v.rule_id == "performance.regex-in-loop"]
 
 
 def _execute_regex_in_loop_lint(params: ExecuteParams) -> NoReturn:
     """Execute regex-in-loop lint."""
     orchestrator = _setup_and_validate(params)
-    violations = _run_regex_in_loop_lint(orchestrator, params.path_objs, params.recursive)
+    violations = _run_regex_in_loop_lint(
+        orchestrator, params.path_objs, params.recursive, params.parallel
+    )
 
     if params.verbose:
         logger.info(f"Found {len(violations)} regex-in-loop violation(s)")
@@ -173,7 +177,11 @@ def _filter_by_rule(violations: list[Violation], rule: str | None) -> list[Viola
 
 
 def _run_all_perf_lint(
-    orchestrator: "Orchestrator", path_objs: list[Path], recursive: bool, rule: str | None
+    orchestrator: "Orchestrator",
+    path_objs: list[Path],
+    recursive: bool,
+    rule: str | None,
+    parallel: bool = False,
 ) -> list[Violation]:
     """Execute all performance lints on files or directories.
 
@@ -182,11 +190,12 @@ def _run_all_perf_lint(
         path_objs: List of paths to analyze
         recursive: Whether to scan directories recursively
         rule: Optional rule filter (string-concat, regex-loop, or full rule names)
+        parallel: Whether to use parallel processing
 
     Returns:
         List of performance-related violations
     """
-    all_violations = execute_linting_on_paths(orchestrator, path_objs, recursive)
+    all_violations = execute_linting_on_paths(orchestrator, path_objs, recursive, parallel)
     perf_violations = [v for v in all_violations if v.rule_id.startswith("performance.")]
     return _filter_by_rule(perf_violations, rule)
 
@@ -194,7 +203,9 @@ def _run_all_perf_lint(
 def _execute_perf_lint(params: ExecuteParams, rule: str | None) -> NoReturn:
     """Execute combined performance lint."""
     orchestrator = _setup_and_validate(params)
-    violations = _run_all_perf_lint(orchestrator, params.path_objs, params.recursive, rule)
+    violations = _run_all_perf_lint(
+        orchestrator, params.path_objs, params.recursive, rule, params.parallel
+    )
 
     if params.verbose:
         logger.info(f"Found {len(violations)} performance violation(s)")
@@ -254,6 +265,7 @@ def perf(  # pylint: disable=too-many-arguments,too-many-positional-arguments
     config_file: str | None,
     format: str,
     recursive: bool,
+    parallel: bool,
     rule: str | None,
 ) -> None:
     """Run all performance linters.
@@ -264,9 +276,10 @@ def perf(  # pylint: disable=too-many-arguments,too-many-positional-arguments
         config_file: Optional path to config file
         format: Output format (text, json, sarif)
         recursive: Whether to scan directories recursively
+        parallel: Whether to use parallel processing
         rule: Optional rule filter (string-concat or regex-loop)
     """
-    params = prepare_standard_command(ctx, paths, config_file, format, recursive)
+    params = prepare_standard_command(ctx, paths, config_file, format, recursive, parallel)
 
     def execute_with_rule(p: ExecuteParams) -> None:
         _execute_perf_lint(p, rule)
