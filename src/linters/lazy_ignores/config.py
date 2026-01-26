@@ -4,7 +4,7 @@ Purpose: Configuration for lazy-ignores linter
 Scope: All configurable options for ignore detection
 
 Overview: Provides LazyIgnoresConfig dataclass with pattern-specific toggles for each
-    ignore type (noqa, type:ignore, pylint, nosec, typescript, eslint, thailint). Includes
+    ignore type (noqa, type:ignore, pyright, pylint, nosec, typescript, eslint, thailint). Includes
     orphaned detection toggle and file pattern ignores. Configuration can be loaded from
     dictionary (YAML) with sensible defaults for all options.
 
@@ -31,6 +31,7 @@ class LazyIgnoresConfig:  # pylint: disable=too-many-instance-attributes
     # Pattern detection toggles
     check_noqa: bool = True
     check_type_ignore: bool = True
+    check_pyright_ignore: bool = True
     check_pylint_disable: bool = True
     check_nosec: bool = True
     check_ts_ignore: bool = True
@@ -55,6 +56,7 @@ class LazyIgnoresConfig:  # pylint: disable=too-many-instance-attributes
         return cls(
             check_noqa=config_dict.get("check_noqa", True),
             check_type_ignore=config_dict.get("check_type_ignore", True),
+            check_pyright_ignore=config_dict.get("check_pyright_ignore", True),
             check_pylint_disable=config_dict.get("check_pylint_disable", True),
             check_nosec=config_dict.get("check_nosec", True),
             check_ts_ignore=config_dict.get("check_ts_ignore", True),

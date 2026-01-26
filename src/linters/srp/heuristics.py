@@ -5,7 +5,8 @@ Scope: Helper functions for method counting, LOC calculation, and keyword detect
 
 Overview: Provides heuristic-based analysis functions for detecting Single Responsibility
     Principle violations. Implements method counting that excludes property decorators and
-    special methods. Provides LOC calculation that filters out blank lines and comments.
+    private methods (underscore-prefixed). Provides LOC calculation that filters out blank
+    lines and comments.
     Includes keyword detection for identifying generic class names that often indicate SRP
     violations (Manager, Handler, etc.). Supports both Python AST and TypeScript tree-sitter
     nodes. These heuristics enable practical SRP detection without requiring perfect semantic
@@ -23,24 +24,32 @@ Implementation: AST walking with filtering logic, heuristic-based thresholds
 import ast
 
 
+def _is_public_method(node: ast.FunctionDef | ast.AsyncFunctionDef) -> bool:
+    """Check if a method is a public method (not property, not private)."""
+    if has_property_decorator(node):
+        return False
+    if node.name.startswith("_"):
+        return False
+    return True
+
+
 def count_methods(class_node: ast.ClassDef) -> int:
-    """Count methods in a class (excludes properties and special methods).
+    """Count public methods in a class (excludes properties and private methods).
+
+    Only counts public methods (not starting with underscore) since private
+    methods are implementation details. Classes with clean public interfaces
+    but complex private implementations should not be penalized.
 
     Args:
         class_node: AST node representing a class definition
 
     Returns:
-        Number of methods in the class
+        Number of public methods in the class
     """
-    methods = 0
     func_nodes = (
         n for n in class_node.body if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef))
     )
-    for node in func_nodes:
-        # Don't count @property decorators as methods
-        if not has_property_decorator(node):
-            methods += 1
-    return methods
+    return sum(1 for node in func_nodes if _is_public_method(node))
 
 
 def count_loc(class_node: ast.ClassDef, source: str) -> int:

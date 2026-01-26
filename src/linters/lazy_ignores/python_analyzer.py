@@ -1,7 +1,7 @@
 """
 Purpose: Detect Python linting ignore directives in source code
 
-Scope: noqa, type:ignore, pylint:disable, nosec, dry:ignore-block pattern detection
+Scope: noqa, type:ignore, pyright:ignore, pylint:disable, nosec, dry:ignore-block pattern detection
 
 Overview: Provides PythonIgnoreDetector class that scans Python source code for common
     linting ignore patterns. Detects bare patterns (e.g., # noqa) and rule-specific
@@ -97,6 +97,9 @@ class PythonIgnoreDetector:
         ),
         IgnoreType.TYPE_IGNORE: re.compile(
             r"#\s*type:\s*ignore(?:\[([^\]]+)\])?",
+        ),
+        IgnoreType.PYRIGHT_IGNORE: re.compile(
+            r"#\s*pyright:\s*ignore(?:\[([^\]]+)\])?",
         ),
         IgnoreType.PYLINT_DISABLE: re.compile(
             r"#\s*pylint:\s*disable=([a-z0-9\-,\s]+)",

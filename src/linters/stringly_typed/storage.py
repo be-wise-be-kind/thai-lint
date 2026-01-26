@@ -50,6 +50,10 @@ from pathlib import Path
 
 from src.core.constants import StorageMode
 
+# Unit Separator (ASCII 31) used as GROUP_CONCAT delimiter
+# Avoids issues with commas in string values (like SQL queries)
+_UNIT_SEPARATOR = chr(31)
+
 # Row index constants for SQLite query results
 _COL_FILE_PATH = 0
 _COL_LINE_NUMBER = 1
@@ -460,19 +464,23 @@ class StringlyTypedStorage:  # thailint: ignore[srp]
         Returns:
             List of (function_name, param_index, unique_values) tuples
         """
+        # Use subquery to get distinct values, then GROUP_CONCAT with safe separator
+        # SQLite's GROUP_CONCAT(DISTINCT x) doesn't support custom separators
         cursor = self._db.execute(
-            """SELECT function_name, param_index, GROUP_CONCAT(DISTINCT string_value)
-               FROM function_calls
+            """SELECT function_name, param_index, GROUP_CONCAT(string_value, CHAR(31))
+               FROM (SELECT DISTINCT function_name, param_index, string_value FROM function_calls)
                GROUP BY function_name, param_index
-               HAVING COUNT(DISTINCT string_value) >= ?
-                  AND COUNT(DISTINCT string_value) <= ?
-                  AND COUNT(DISTINCT file_path) >= ?""",
+               HAVING COUNT(string_value) >= ?
+                  AND COUNT(string_value) <= ?
+                  AND (SELECT COUNT(DISTINCT file_path) FROM function_calls fc2
+                       WHERE fc2.function_name = function_name
+                         AND fc2.param_index = param_index) >= ?""",
             (min_values, max_values, min_files),
         )
 
         results: list[tuple[str, int, set[str]]] = []
         for row in cursor.fetchall():
-            values = set(row[2].split(",")) if row[2] else set()
+            values = set(row[2].split(_UNIT_SEPARATOR)) if row[2] else set()
             results.append((row[0], row[1], values))
 
         return results
@@ -565,18 +573,21 @@ class StringlyTypedStorage:  # thailint: ignore[srp]
         Returns:
             List of (variable_name, unique_values) tuples
         """
+        # Use subquery to get distinct values, then GROUP_CONCAT with safe separator
+        # SQLite's GROUP_CONCAT(DISTINCT x) doesn't support custom separators
         cursor = self._db.execute(
-            """SELECT variable_name, GROUP_CONCAT(DISTINCT compared_value)
-               FROM string_comparisons
+            """SELECT variable_name, GROUP_CONCAT(compared_value, CHAR(31))
+               FROM (SELECT DISTINCT variable_name, compared_value FROM string_comparisons)
                GROUP BY variable_name
-               HAVING COUNT(DISTINCT compared_value) >= ?
-                  AND COUNT(DISTINCT file_path) >= ?""",
+               HAVING COUNT(compared_value) >= ?
+                  AND (SELECT COUNT(DISTINCT file_path) FROM string_comparisons sc2
+                       WHERE sc2.variable_name = variable_name) >= ?""",
             (min_values, min_files),
         )
 
         results: list[tuple[str, set[str]]] = []
         for row in cursor.fetchall():
-            values = set(row[1].split(",")) if row[1] else set()
+            values = set(row[1].split(_UNIT_SEPARATOR)) if row[1] else set()
             results.append((row[0], values))
 
         return results

@@ -896,45 +896,49 @@ dry:
 
 ## Ignoring Violations
 
-### Line-Level Ignore
+### Inline Ignore Directives
+
+The DRY linter supports inline ignore directives for duplicate **code blocks** (not constants):
+
+#### Block Ignore
+
+Use `# dry: ignore-block` to ignore the next 10 lines of code:
 
 ```python
-def legacy_function():  # thailint: ignore dry
-    # Duplicate code ignored for this function
-    if condition:
-        process()
-```
-
-### File-Level Ignore
-
-```python
-# thailint: ignore-file dry
-
-# Entire file exempt from DRY checking
-def function1():
-    pass
-```
-
-### Block Ignore
-
-```python
-# thailint: ignore-start dry
+# dry: ignore-block
 def legacy_function1():
-    # Duplicates allowed in this block
+    # Duplicates allowed for next 10 lines
     pass
 
 def legacy_function2():
     pass
-# thailint: ignore-end dry
 ```
 
-### TypeScript Ignores
+#### Next-Line Ignore
+
+Use `# dry: ignore-next` to ignore just the immediately following line:
+
+```python
+# dry: ignore-next
+def single_legacy_function():  # Only this line is ignored
+    pass
+```
+
+**Important limitations:**
+- Inline ignores apply to **duplicate code blocks only**, not to similar constants detection
+- `ignore-block` ignores the next 10 lines after the directive (not arbitrary start/end markers)
+- For constants, use configuration-based ignores or add the constant name to an exclude list
+
+### TypeScript Inline Ignores
 
 ```typescript
-// thailint: ignore dry
-function legacyHelper() {
-  // Duplicate allowed
+// dry: ignore-block
+function legacyHelper1() {
+  // Duplicates allowed
 }
+
+// dry: ignore-next
+function legacyHelper2() {}
 ```
 
 ### Configuration-Based Ignore

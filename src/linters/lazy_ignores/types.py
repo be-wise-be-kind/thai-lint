@@ -29,6 +29,7 @@ class IgnoreType(Enum):
 
     NOQA = "noqa"
     TYPE_IGNORE = "type:ignore"
+    PYRIGHT_IGNORE = "pyright:ignore"
     PYLINT_DISABLE = "pylint:disable"
     NOSEC = "nosec"
     TS_IGNORE = "ts-ignore"

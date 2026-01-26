@@ -119,6 +119,7 @@ subprocess.run(cmd, shell=True)  # nosec B602
 |---------|---------|-------------------|
 | `# noqa` | `# noqa: PLR0912, PLR0915` | `PLR0912`, `PLR0915` |
 | `# type: ignore` | `# type: ignore[arg-type]` | `arg-type` |
+| `# pyright: ignore` | `# pyright: ignore[reportPrivateImportUsage]` | `reportPrivateImportUsage` |
 | `# pylint: disable` | `# pylint: disable=no-member` | `no-member` |
 | `# nosec` | `# nosec B602` | `B602` |
 | `# thailint: ignore` | `# thailint: ignore[nesting]` | `nesting` |
