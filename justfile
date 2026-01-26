@@ -810,7 +810,7 @@ show-version:
     echo "Current version: $VERSION"
 
 # Interactive version bump with validation
-bump-version:
+bump-version version="":
     #!/usr/bin/env bash
     echo "=========================================="
     echo "Version Bump"
@@ -819,25 +819,27 @@ bump-version:
     CURRENT_VERSION=$(grep '^version = ' pyproject.toml | cut -d'"' -f2)
     echo "Current version: $CURRENT_VERSION"
     echo ""
-    echo "Enter new version (semver format: major.minor.patch):"
-    read -r NEW_VERSION
-    echo ""
+    NEW_VERSION="{{version}}"
     if [ -z "$NEW_VERSION" ]; then
-        echo "❌ Version cannot be empty!"
-        exit 1
+        echo "Enter new version (semver format: major.minor.patch):"
+        read -r NEW_VERSION
+        echo ""
+        if [ -z "$NEW_VERSION" ]; then
+            echo "❌ Version cannot be empty!"
+            exit 1
+        fi
+        echo "Confirm update to $NEW_VERSION? [y/N]"
+        read -r CONFIRM
+        if [ "$CONFIRM" != "y" ] && [ "$CONFIRM" != "Y" ]; then
+            echo "❌ Version update cancelled"
+            exit 1
+        fi
     fi
     if ! echo "$NEW_VERSION" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+$'; then
         echo "❌ Invalid version format! Must be semver (e.g., 1.2.3)"
         exit 1
     fi
     echo "Updating version from $CURRENT_VERSION to $NEW_VERSION"
-    echo ""
-    echo "Confirm update? [y/N]"
-    read -r CONFIRM
-    if [ "$CONFIRM" != "y" ] && [ "$CONFIRM" != "Y" ]; then
-        echo "❌ Version update cancelled"
-        exit 1
-    fi
     echo ""
     echo "Updating pyproject.toml..."
     sed -i "s/^version = \"$CURRENT_VERSION\"/version = \"$NEW_VERSION\"/" pyproject.toml
@@ -898,7 +900,9 @@ update-test-badges:
     fi
 
 # Publish to PyPI (runs tests, linting, and version bump first)
-publish-pypi:
+# Usage: just publish-pypi          (interactive version prompt)
+#        just publish-pypi 1.2.3    (non-interactive with specified version)
+publish-pypi version="":
     @echo "=========================================="
     @echo "Publishing to PyPI"
     @echo "=========================================="
@@ -916,7 +920,7 @@ publish-pypi:
     @echo "✓ Linting passed"
     @echo ""
     @echo "Step 4: Version bump..."
-    just bump-version
+    just bump-version {{version}}
     @echo ""
     just _publish-pypi-only
 
