@@ -19,6 +19,12 @@ Interfaces: MagicNumberConfig(allowed_numbers: set, max_small_integer: int, enab
     from_dict class method for loading configuration from dictionary
 
 Implementation: Dataclass with validation and defaults, matches reference implementation patterns
+
+Suppressions:
+    - unnecessary-lambda: The lambda is required here because dataclass field default_factory
+        needs a callable, and DEFAULT_ALLOWED_NUMBERS.copy() is a method call, not a callable.
+        Using `default_factory=DEFAULT_ALLOWED_NUMBERS.copy` would call the method at class
+        definition time, not at instance creation time.
 """
 
 from dataclasses import dataclass, field
