@@ -75,16 +75,15 @@ def _should_skip_patterns(patterns: list[StoredPattern], config: StringlyTypedCo
     if not patterns:
         return True
     first = patterns[0]
-    if not _is_enum_candidate(first, config):
-        return True
-    if _is_pattern_allowed(first, config):
-        return True
-    # Skip if all values match excluded patterns (numeric strings, etc.)
-    if context_filter.are_all_values_excluded(set(first.string_values)):
-        return True
-    if _has_spaces(set(first.string_values)):
-        return True
-    return False
+    values = set(first.string_values)
+
+    # Skip if: not enum candidate, allowed, excluded values, or has spaces
+    return (
+        not _is_enum_candidate(first, config)
+        or _is_pattern_allowed(first, config)
+        or context_filter.are_all_values_excluded(values)
+        or _has_spaces(values)
+    )
 
 
 def _should_skip_comparison(unique_values: set[str], config: StringlyTypedConfig) -> bool:
@@ -259,6 +258,17 @@ def _process_pattern_group(
 # --- Helper functions for function call processing ---
 
 
+def _is_valid_function_pattern(
+    vals: set[str], name: str, idx: int, config: StringlyTypedConfig
+) -> bool:
+    """Check if function pattern passes all filters."""
+    if _is_allowed_value_set(vals, config):
+        return False
+    if _has_spaces(vals):
+        return False
+    return context_filter.should_include(name, idx, vals)
+
+
 def _get_valid_functions(
     storage: StringlyTypedStorage,
     config: StringlyTypedConfig,
@@ -274,9 +284,7 @@ def _get_valid_functions(
     return [
         (name, idx, vals)
         for name, idx, vals in limited_funcs
-        if not _is_allowed_value_set(vals, config)
-        and not _has_spaces(vals)
-        and context_filter.should_include(name, idx, vals)
+        if _is_valid_function_pattern(vals, name, idx, config)
     ]
 
 
