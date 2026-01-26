@@ -4,8 +4,9 @@ Purpose: Configuration schema for magic numbers linter
 Scope: MagicNumberConfig dataclass with allowed_numbers and max_small_integer settings
 
 Overview: Defines configuration schema for magic numbers linter. Provides MagicNumberConfig dataclass
-    with allowed_numbers set (default includes common acceptable numbers like -1, 0, 1, 2, 3, 4, 5, 10, 100, 1000)
-    and max_small_integer threshold (default 10) for range() contexts. Supports per-file and per-directory
+    with allowed_numbers set (default includes common acceptable numbers like -1, 0, 1, 2, 3, 4, 5, 10, 100, 1000
+    and standard ports like 80, 443, 22, 21, 8080, 8443, 3000, 5000) and max_small_integer threshold (default 10)
+    for range() contexts. Supports per-file and per-directory
     config overrides through from_dict class method. Validates that configuration values are appropriate
     types. Integrates with orchestrator's configuration system to allow users to customize allowed numbers
     via .thailint.yaml configuration files.
@@ -18,10 +19,40 @@ Interfaces: MagicNumberConfig(allowed_numbers: set, max_small_integer: int, enab
     from_dict class method for loading configuration from dictionary
 
 Implementation: Dataclass with validation and defaults, matches reference implementation patterns
+
+Suppressions:
+    - unnecessary-lambda: The lambda is required here because dataclass field default_factory
+        needs a callable, and DEFAULT_ALLOWED_NUMBERS.copy() is a method call, not a callable.
+        Using `default_factory=DEFAULT_ALLOWED_NUMBERS.copy` would call the method at class
+        definition time, not at instance creation time.
 """
 
 from dataclasses import dataclass, field
 from typing import Any
+
+# Default allowed numbers including common small integers and standard ports
+DEFAULT_ALLOWED_NUMBERS: set[int | float] = {
+    # Common small integers
+    -1,
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    10,
+    100,
+    1000,
+    # Standard ports
+    21,  # FTP
+    22,  # SSH
+    80,  # HTTP
+    443,  # HTTPS
+    3000,  # Common dev server (Node.js, Rails)
+    5000,  # Flask default
+    8080,  # Alternate HTTP
+    8443,  # Alternate HTTPS
+}
 
 
 @dataclass
@@ -30,10 +61,11 @@ class MagicNumberConfig:
 
     enabled: bool = True
     allowed_numbers: set[int | float] = field(
-        default_factory=lambda: {-1, 0, 1, 2, 3, 4, 5, 10, 100, 1000}
+        default_factory=lambda: DEFAULT_ALLOWED_NUMBERS.copy()  # pylint: disable=unnecessary-lambda
     )
     max_small_integer: int = 10
     ignore: list[str] = field(default_factory=list)
+    exempt_definition_files: bool = True
 
     def __post_init__(self) -> None:
         """Validate configuration values."""
@@ -58,16 +90,14 @@ class MagicNumberConfig:
             allowed_numbers = set(
                 lang_config.get(
                     "allowed_numbers",
-                    config.get("allowed_numbers", {-1, 0, 1, 2, 3, 4, 5, 10, 100, 1000}),
+                    config.get("allowed_numbers", DEFAULT_ALLOWED_NUMBERS),
                 )
             )
             max_small_integer = lang_config.get(
                 "max_small_integer", config.get("max_small_integer", 10)
             )
         else:
-            allowed_numbers = set(
-                config.get("allowed_numbers", {-1, 0, 1, 2, 3, 4, 5, 10, 100, 1000})
-            )
+            allowed_numbers = set(config.get("allowed_numbers", DEFAULT_ALLOWED_NUMBERS))
             max_small_integer = config.get("max_small_integer", 10)
 
         ignore_patterns = config.get("ignore", [])
@@ -79,4 +109,5 @@ class MagicNumberConfig:
             allowed_numbers=allowed_numbers,
             max_small_integer=max_small_integer,
             ignore=ignore_patterns,
+            exempt_definition_files=config.get("exempt_definition_files", True),
         )

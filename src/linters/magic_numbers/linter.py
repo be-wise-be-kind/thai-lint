@@ -40,6 +40,7 @@ from src.linter_config.ignore import get_ignore_parser
 
 from .config import MagicNumberConfig
 from .context_analyzer import is_acceptable_context
+from .definition_detector import is_definition_file
 from .python_analyzer import PythonMagicNumberAnalyzer
 from .typescript_analyzer import TypeScriptMagicNumberAnalyzer
 from .typescript_ignore_checker import TypeScriptIgnoreChecker
@@ -172,6 +173,12 @@ class MagicNumberRule(MultiLanguageLintRule):  # thailint: ignore[srp]
             List of violations found in Python code
         """
         if self._is_file_ignored(context, config):
+            return []
+
+        # Check if file is a definition file (status_codes.py, constants.py, etc.)
+        if config.exempt_definition_files and is_definition_file(
+            context.file_path, context.file_content
+        ):
             return []
 
         tree = self._parse_python_code(context.file_content)

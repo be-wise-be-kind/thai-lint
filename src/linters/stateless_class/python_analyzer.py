@@ -6,14 +6,16 @@ Scope: AST-based analysis of Python class definitions for stateless patterns
 Overview: Analyzes Python source code using AST to detect classes that have no
     constructor (__init__ or __new__), no instance state (self.attr assignments),
     and 2+ methods - indicating they should be refactored to module-level functions.
-    Excludes legitimate patterns like ABC, Protocol, decorated classes, and classes
-    with class-level attributes.
+    Excludes legitimate patterns like ABC, Protocol, decorated classes, classes
+    with class-level attributes, test classes (Test* prefix or TestCase inheritance),
+    and mixin classes (name contains "Mixin").
 
 Dependencies: Python AST module
 
-Exports: analyze_code function, ClassInfo dataclass
+Exports: analyze_code function, ClassInfo dataclass, is_test_class function
 
-Interfaces: analyze_code(code) -> list[ClassInfo] returning detected stateless classes
+Interfaces: analyze_code(code) -> list[ClassInfo] returning detected stateless classes,
+    is_test_class(class_node) -> bool for test class detection
 
 Implementation: AST visitor pattern with focused helper functions for different checks
 """
@@ -260,6 +262,86 @@ def _is_self_attribute(node: ast.expr) -> bool:
     if not isinstance(node.value, ast.Name):
         return False
     return node.value.id == "self"
+
+
+def is_test_class(class_node: ast.ClassDef) -> bool:
+    """Check if class is a test class that should be exempt.
+
+    Test classes are exempt because they commonly have multiple methods
+    without instance state (setup/teardown patterns, assertion methods).
+
+    Criteria:
+    - Class name starts with "Test"
+    - Class inherits from unittest.TestCase or TestCase
+
+    Args:
+        class_node: AST ClassDef node
+
+    Returns:
+        True if class is a test class
+    """
+    # Check class name
+    if class_node.name.startswith("Test"):
+        return True
+
+    # Check base classes for TestCase
+    for base in class_node.bases:
+        base_name = _get_base_name(base)
+        if base_name in ("TestCase", "unittest.TestCase"):
+            return True
+
+    return False
+
+
+def is_test_file(file_path: str | None) -> bool:
+    """Check if file is a test file based on path.
+
+    Args:
+        file_path: Path to the file
+
+    Returns:
+        True if file is in tests/ directory or named test_*.py
+    """
+    if not file_path:
+        return False
+
+    path_str = str(file_path)
+    return _is_in_tests_directory(path_str) or _has_test_filename(path_str)
+
+
+def _is_in_tests_directory(path_str: str) -> bool:
+    """Check if path is in a tests/ directory."""
+    return (
+        "/tests/" in path_str
+        or "\\tests\\" in path_str
+        or path_str.startswith("tests/")
+        or path_str.startswith("tests\\")
+    )
+
+
+def _has_test_filename(path_str: str) -> bool:
+    """Check if path has a test_*.py filename."""
+    file_name = path_str.rsplit("/", maxsplit=1)[-1].rsplit("\\", maxsplit=1)[-1]
+    return file_name.startswith("test_")
+
+
+def is_mixin_class(class_node: ast.ClassDef) -> bool:
+    """Check if class is a mixin class that should be exempt.
+
+    Mixin classes provide reusable methods intended to be combined with other
+    classes via multiple inheritance. They commonly have multiple methods without
+    instance state, which is an intentional pattern.
+
+    Criteria:
+    - Class name contains "Mixin" (case-insensitive)
+
+    Args:
+        class_node: AST ClassDef node
+
+    Returns:
+        True if class is a mixin class
+    """
+    return "mixin" in class_node.name.lower()
 
 
 # Legacy class wrapper for backward compatibility with linter.py

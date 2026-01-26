@@ -27,6 +27,8 @@ Suppressions:
         exceeds limit due to comprehensive 5-level ignore system support.
 """
 
+import ast
+from collections.abc import Callable
 from pathlib import Path
 
 from src.core.base import BaseLintContext, BaseLintRule
@@ -36,7 +38,13 @@ from src.linter_config.ignore import get_ignore_parser
 from src.linter_config.rule_matcher import rule_matches
 
 from .config import StatelessClassConfig
-from .python_analyzer import ClassInfo, StatelessClassAnalyzer
+from .python_analyzer import (
+    ClassInfo,
+    StatelessClassAnalyzer,
+    is_mixin_class,
+    is_test_class,
+    is_test_file,
+)
 
 
 class StatelessClassRule(BaseLintRule):  # thailint: ignore[srp,dry]
@@ -74,16 +82,41 @@ class StatelessClassRule(BaseLintRule):  # thailint: ignore[srp,dry]
             return []
 
         config = self._load_config(context)
-        if not config.enabled or self._should_skip_file(context, config):
+        if not config.enabled:
+            return []
+        if self._should_skip_file(context, config):
             return []
 
         # _should_analyze ensures file_content is set
         assert context.file_content is not None  # nosec B101
 
-        analyzer = StatelessClassAnalyzer(min_methods=config.min_methods)
-        stateless_classes = analyzer.analyze(context.file_content)
-
+        stateless_classes = self._find_stateless_classes(context, config)
         return self._filter_ignored_violations(stateless_classes, context)
+
+    def _find_stateless_classes(
+        self, context: BaseLintContext, config: StatelessClassConfig
+    ) -> list[ClassInfo]:
+        """Find stateless classes and apply exemptions.
+
+        Args:
+            context: Lint context
+            config: Configuration
+
+        Returns:
+            List of stateless classes after applying exemptions
+        """
+        assert context.file_content is not None  # nosec B101
+
+        analyzer = StatelessClassAnalyzer(min_methods=config.min_methods)
+        classes = analyzer.analyze(context.file_content)
+
+        if config.exempt_test_classes:
+            classes = self._filter_test_classes(classes, context)
+
+        if config.exempt_mixins:
+            classes = self._filter_mixin_classes(classes, context)
+
+        return classes
 
     def _should_skip_file(self, context: BaseLintContext, config: StatelessClassConfig) -> bool:
         """Check if file should be skipped due to ignore patterns or directives.
@@ -229,6 +262,85 @@ class StatelessClassRule(BaseLintRule):  # thailint: ignore[srp,dry]
             True if pattern matches this rule
         """
         return rule_matches(self.rule_id, rule_pattern)
+
+    def _parse_class_nodes(self, context: BaseLintContext) -> dict[str, ast.ClassDef] | None:
+        """Parse code and build map of class names to AST nodes.
+
+        Args:
+            context: Lint context
+
+        Returns:
+            Dict mapping class names to ClassDef nodes, or None if parsing fails
+        """
+        if not context.file_content:
+            return None
+        try:
+            tree = ast.parse(context.file_content)
+        except SyntaxError:
+            return None
+        return {node.name: node for node in ast.walk(tree) if isinstance(node, ast.ClassDef)}
+
+    def _filter_test_classes(
+        self, classes: list[ClassInfo], context: BaseLintContext
+    ) -> list[ClassInfo]:
+        """Filter out test classes from stateless class list.
+
+        Args:
+            classes: List of stateless classes found
+            context: Lint context
+
+        Returns:
+            List of classes with test classes removed
+        """
+        # If file is a test file, exempt all classes
+        if is_test_file(str(context.file_path) if context.file_path else None):
+            return []
+
+        class_nodes = self._parse_class_nodes(context)
+        if class_nodes is None:
+            return classes
+
+        return self._filter_by_predicate(classes, class_nodes, is_test_class)
+
+    def _filter_by_predicate(
+        self,
+        classes: list[ClassInfo],
+        class_nodes: dict[str, ast.ClassDef],
+        predicate: Callable[[ast.ClassDef], bool],
+    ) -> list[ClassInfo]:
+        """Filter classes based on a predicate function.
+
+        Args:
+            classes: List of class info to filter
+            class_nodes: Map of class names to AST nodes
+            predicate: Function that returns True for classes to exclude
+
+        Returns:
+            List of classes not matching the predicate
+        """
+        return [
+            info
+            for info in classes
+            if info.name not in class_nodes or not predicate(class_nodes[info.name])
+        ]
+
+    def _filter_mixin_classes(
+        self, classes: list[ClassInfo], context: BaseLintContext
+    ) -> list[ClassInfo]:
+        """Filter out mixin classes from stateless class list.
+
+        Args:
+            classes: List of stateless classes found
+            context: Lint context
+
+        Returns:
+            List of classes with mixin classes removed
+        """
+        class_nodes = self._parse_class_nodes(context)
+        if class_nodes is None:
+            return classes
+
+        return self._filter_by_predicate(classes, class_nodes, is_mixin_class)
 
     def _filter_ignored_violations(
         self, classes: list[ClassInfo], context: BaseLintContext

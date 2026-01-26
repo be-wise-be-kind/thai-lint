@@ -83,14 +83,16 @@ def deep_function(data):
 
     def test_cli_with_custom_max_depth(self, tmp_path):
         """CLI should support --max-depth option."""
-        # Create file with depth=3
+        # Create file with depth=3 (for + if + while)
         test_file = tmp_path / "test.py"
         test_file.write_text(
             """
-def shallow_function(data):
+def nested_function(data):
     for item in data:
         if item:
-            print(item)  # depth 3
+            while item.next:
+                print(item)  # depth 3
+                item = item.next
 """
         )
 
@@ -100,6 +102,6 @@ def shallow_function(data):
         result_pass = runner.invoke(cli, ["nesting", str(test_file)])
         assert result_pass.exit_code == 0, "Should pass with default max_depth=4"
 
-        # Test with --max-depth=2 (should fail)
+        # Test with --max-depth=2 (should fail because depth=3 > 2)
         result_fail = runner.invoke(cli, ["nesting", "--max-depth", "2", str(test_file)])
         assert result_fail.exit_code == 1, "Should fail with --max-depth=2"

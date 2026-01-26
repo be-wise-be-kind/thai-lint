@@ -82,20 +82,24 @@ def complex_function(data):  # thailint: ignore file-placement
         """Function-level ignore should apply to whole function."""
         from src.linters.nesting.linter import NestingDepthRule
 
+        # Need depth > 4 (default limit) to trigger violation
+        # 5 nested for loops = depth 5
         code = """
 def first_function():  # thailint: ignore nesting
     for i in range(5):
         for j in range(5):
             for k in range(5):
                 for m in range(5):
-                    print("ignored")
+                    for n in range(5):
+                        print("ignored")
 
 def second_function():
     for i in range(5):
         for j in range(5):
             for k in range(5):
                 for m in range(5):
-                    print("not ignored")
+                    for n in range(5):
+                        print("not ignored")
 """
         rule = NestingDepthRule()
         context = Mock()
@@ -105,7 +109,7 @@ def second_function():
         context.metadata = {}
 
         violations = rule.check(context)
-        # Should have 1 violation from second_function only
+        # Should have 1 violation from second_function only (depth 5 > limit 4)
         assert len(violations) >= 1, "Should have violation from second_function"
         # Verify the violation is from second_function, not first
         assert all(
