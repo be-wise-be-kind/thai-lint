@@ -28,8 +28,8 @@ This is the **PRIMARY HANDOFF DOCUMENT** for AI agents working on the CQS Linter
 4. **Update this document** after completing each PR
 
 ## Current Status
-**Current PR**: PR2 - Python INPUT/OUTPUT Detection
-**Infrastructure State**: Core infrastructure complete
+**Current PR**: PR4 - TypeScript Detection Support
+**Infrastructure State**: Python detection complete
 **Feature Target**: CQS001 rule detecting functions that mix INPUT (queries) and OUTPUT (commands)
 
 ## Required Documents Location
@@ -42,29 +42,29 @@ This is the **PRIMARY HANDOFF DOCUMENT** for AI agents working on the CQS Linter
 
 ## Next PR to Implement
 
-### START HERE: PR2 - Python INPUT/OUTPUT Detection
+### START HERE: PR4 - TypeScript Detection Support
 
 **Quick Summary**:
-Implement AST-based detection of INPUT and OUTPUT operations in Python code. This PR will make the INPUT and OUTPUT detection tests pass.
+Implement tree-sitter-based detection of INPUT and OUTPUT operations in TypeScript code. This PR will add TypeScript support to the CQS linter.
 
 **Pre-flight Checklist**:
-- [ ] Review test_input_detection.py for expected INPUT patterns
-- [ ] Review test_output_detection.py for expected OUTPUT patterns
-- [ ] Review LBYL pattern detectors at `src/linters/lbyl/pattern_detectors/`
+- [ ] Review tree-sitter usage in existing TypeScript analyzers
+- [ ] Review TypeScript detection patterns in other linters
+- [ ] Review `src/analyzers/typescript_base.py` for tree-sitter patterns
 
 **Prerequisites Complete**:
-- [x] Types defined in `src/linters/cqs/types.py`
-- [x] Config defined in `src/linters/cqs/config.py`
-- [x] Test fixtures defined in `tests/unit/linters/cqs/conftest.py`
-- [x] TDD tests ready in test_input_detection.py and test_output_detection.py
+- [x] Python INPUT/OUTPUT detection working (PR2)
+- [x] Python CQS violation detection working (PR3)
+- [x] FunctionAnalyzer and ViolationBuilder implemented
+- [x] CQSRule implementing PythonOnlyLintRule base class
 
 ---
 
 ## Overall Progress
-**Total Completion**: 12.5% (1/8 PRs completed)
+**Total Completion**: 37.5% (3/8 PRs completed)
 
 ```
-[██░░░░░░░░░░░░░░░░░░] 12.5% Complete
+[███████░░░░░░░░░░░░░] 37.5% Complete
 ```
 
 ---
@@ -74,8 +74,8 @@ Implement AST-based detection of INPUT and OUTPUT operations in Python code. Thi
 | PR | Title | Status | Completion | Complexity | Priority | Notes |
 |----|-------|--------|------------|------------|----------|-------|
 | PR1 | Core Infrastructure & Tests (TDD) | 🟢 Complete | 100% | Medium | P0 | 115 unit tests (19 pass, 96 TDD skip) |
-| PR2 | Python INPUT/OUTPUT Detection | 🔴 Not Started | 0% | High | P0 | 25+ unit tests |
-| PR3 | Python CQS Violation Detection | 🔴 Not Started | 0% | High | P0 | 25+ unit tests |
+| PR2 | Python INPUT/OUTPUT Detection | 🟢 Complete | 100% | High | P0 | InputDetector, OutputDetector implemented |
+| PR3 | Python CQS Violation Detection | 🟢 Complete | 100% | High | P0 | FunctionAnalyzer, CQSRule, PythonOnlyLintRule base |
 | PR4 | TypeScript Detection Support | 🔴 Not Started | 0% | Medium | P0 | 20+ unit tests |
 | PR5 | CLI Integration & Output Formats | 🔴 Not Started | 0% | Medium | P0 | 15+ integration tests |
 | PR6 | Dogfooding - Internal Validation | 🔴 Not Started | 0% | Low | P1 | 5+ validation tests |
@@ -118,19 +118,71 @@ Implement AST-based detection of INPUT and OUTPUT operations in Python code. Thi
 
 ---
 
+## PR2: Python INPUT/OUTPUT Detection ✅ COMPLETE
+
+### Checklist
+- [x] Create `input_detector.py` with InputDetector class
+- [x] Create `output_detector.py` with OutputDetector class
+- [x] Implement AST-based INPUT detection (assignments from calls)
+- [x] Implement AST-based OUTPUT detection (standalone call expressions)
+- [x] Handle tuple unpacking in INPUT detection
+- [x] Handle async/await patterns
+- [x] Handle walrus operator (:=)
+- [x] Exclude return statements from OUTPUT detection
+- [x] Exclude conditional expressions from OUTPUT detection
+- [x] All 39 test_input_detection.py and test_output_detection.py tests pass
+- [x] Pylint 10.00/10
+- [x] `just lint-full` passes
+
+### Success Criteria ✅
+- InputDetector finds assignments where RHS is a function call
+- OutputDetector finds call expressions used as statements
+- All 39 INPUT/OUTPUT tests pass
+
+---
+
+## PR3: Python CQS Violation Detection ✅ COMPLETE
+
+### Checklist
+- [x] Create `function_analyzer.py` with FunctionAnalyzer class
+- [x] Create `violation_builder.py` with build_cqs_violation function
+- [x] Create `linter.py` with CQSRule implementing BaseLintRule
+- [x] Modify `python_analyzer.py` to return list[CQSPattern]
+- [x] Update `__init__.py` with new exports
+- [x] Create `src/core/python_lint_rule.py` for shared Python linter boilerplate
+- [x] Refactor LBYL linter to use PythonOnlyLintRule base class
+- [x] Implement config filtering (ignore_methods, ignore_decorators)
+- [x] Implement fluent interface detection (return self)
+- [x] Implement min_operations threshold
+- [x] Implement ignore_patterns file filtering
+- [x] All 115 CQS unit tests pass
+- [x] Pylint 10.00/10
+- [x] `just lint-full` passes (all 17 checks)
+
+### Success Criteria ✅
+- FunctionAnalyzer builds CQSPattern per function
+- CQSRule integrates with BaseLintRule interface
+- PythonOnlyLintRule eliminates DRY violations across linters
+- All 115 unit tests pass
+- All 17 quality checks pass
+
+---
+
 ## Implementation Strategy
 
 ### TDD Workflow
-1. **PR1**: Write all tests (failing)
-2. **PR2-PR4**: Implement to pass tests
+1. **PR1**: Write all tests (failing) ✅
+2. **PR2-PR4**: Implement to pass tests (PR2, PR3 ✅)
 3. **PR5**: Integration tests
 4. **PR6-PR7**: Validation
 
 ### Architecture Pattern
 Follow LBYL linter pattern:
-- `linter.py` → BaseLintRule implementation
-- `python_analyzer.py` → Orchestrates detection
-- `*_detector.py` → Individual pattern detectors
+- `linter.py` → PythonOnlyLintRule implementation
+- `python_analyzer.py` → Orchestrates FunctionAnalyzer
+- `function_analyzer.py` → Per-function CQS pattern detection
+- `input_detector.py` → INPUT operation detection
+- `output_detector.py` → OUTPUT operation detection
 - `violation_builder.py` → Creates Violation objects
 - `config.py` → CQSConfig with `from_dict()`
 
@@ -143,15 +195,15 @@ Follow LBYL linter pattern:
 ## Success Metrics
 
 ### Technical Metrics
-- [ ] 80+ unit tests passing
+- [x] 80+ unit tests passing (115 passing)
 - [ ] 20+ integration tests passing
 - [ ] 15+ SARIF tests passing
-- [ ] Pylint 10.00/10
-- [ ] MyPy zero errors
-- [ ] `just lint-full` passes
+- [x] Pylint 10.00/10
+- [x] MyPy zero errors
+- [x] `just lint-full` passes
 
 ### Feature Metrics
-- [ ] Detects Python CQS violations
+- [x] Detects Python CQS violations
 - [ ] Detects TypeScript CQS violations
 - [ ] CLI command `thailint cqs` works
 - [ ] All 3 output formats (text, json, sarif) valid
@@ -174,6 +226,7 @@ After completing each PR:
 - **Supported Languages**: Python and TypeScript (both required for initial release)
 - **Development Methodology**: Strict TDD
 - **Reference Implementation**: `src/linters/lbyl/` - follow this pattern exactly
+- **New Base Class**: `src/core/python_lint_rule.py` provides PythonOnlyLintRule for shared boilerplate
 
 ### Common Pitfalls to Avoid
 - Don't implement code before tests (TDD)
@@ -184,7 +237,7 @@ After completing each PR:
 
 ### Resources
 - LBYL linter: `src/linters/lbyl/`
-- Base classes: `src/core/base.py`
+- Base classes: `src/core/base.py`, `src/core/python_lint_rule.py`
 - CLI registration: `src/cli/linters/code_patterns.py`
 - Config template: `src/templates/thailint_config_template.yaml`
 - File header standards: `.ai/docs/FILE_HEADER_STANDARDS.md`

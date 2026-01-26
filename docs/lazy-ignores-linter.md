@@ -95,7 +95,7 @@ subprocess.run(cmd, shell=True)  # nosec B602
 ### Detection Process
 
 1. **Scan source files** for ignore directive patterns:
-   - Python: `# noqa`, `# type: ignore`, `# pylint: disable`, `# nosec`
+   - Python: `# noqa`, `# type: ignore`, `# pylint: disable`, `# nosec`, `# pyright: ignore`
    - TypeScript/JavaScript: `@ts-ignore`, `@ts-nocheck`, `@ts-expect-error`, `eslint-disable`
    - thai-lint: `# thailint: ignore`
    - Test skips: `@pytest.mark.skip` without reason, `it.skip()`, `describe.skip()`
@@ -121,6 +121,7 @@ subprocess.run(cmd, shell=True)  # nosec B602
 | `# type: ignore` | `# type: ignore[arg-type]` | `arg-type` |
 | `# pylint: disable` | `# pylint: disable=no-member` | `no-member` |
 | `# nosec` | `# nosec B602` | `B602` |
+| `# pyright: ignore` | `# pyright: ignore[reportPrivateImportUsage]` | `reportPrivateImportUsage` |
 | `# thailint: ignore` | `# thailint: ignore[nesting]` | `nesting` |
 
 #### TypeScript/JavaScript Patterns
@@ -171,6 +172,7 @@ lazy-ignores:
 | `check_type_ignore` | boolean | `true` | Detect `# type: ignore` patterns |
 | `check_pylint_disable` | boolean | `true` | Detect `# pylint: disable` patterns |
 | `check_nosec` | boolean | `true` | Detect `# nosec` patterns |
+| `check_pyright_ignore` | boolean | `true` | Detect `# pyright: ignore` patterns |
 | `check_ts_ignore` | boolean | `true` | Detect `@ts-ignore`, `@ts-nocheck`, `@ts-expect-error` |
 | `check_eslint_disable` | boolean | `true` | Detect `eslint-disable` patterns |
 | `check_thailint_ignore` | boolean | `true` | Detect `# thailint: ignore` patterns |
@@ -189,6 +191,7 @@ lazy-ignores:
   check_type_ignore: true
   check_pylint_disable: true
   check_nosec: true
+  check_pyright_ignore: true
   check_ts_ignore: true
   check_eslint_disable: true
   check_thailint_ignore: true
@@ -247,6 +250,7 @@ lazy-ignores:
     "check_type_ignore": true,
     "check_pylint_disable": true,
     "check_nosec": true,
+    "check_pyright_ignore": true,
     "check_ts_ignore": true,
     "check_eslint_disable": true,
     "check_test_skips": true,
@@ -629,6 +633,7 @@ lint-full: lint lint-lazy-ignores lint-complexity lint-solid
 - `# type: ignore` with optional error codes (e.g., `# type: ignore[arg-type]`)
 - `# pylint: disable=rule-name` (e.g., `# pylint: disable=no-member`)
 - `# nosec` with optional rule IDs (e.g., `# nosec B602`)
+- `# pyright: ignore` with optional codes (e.g., `# pyright: ignore[reportPrivateImportUsage]`)
 - `# thailint: ignore[rule]` (thai-lint's own ignore directive)
 - `@pytest.mark.skip` without reason
 - `pytest.skip()` without reason string
@@ -775,6 +780,7 @@ class LazyIgnoresConfig:
     check_type_ignore: bool = True
     check_pylint_disable: bool = True
     check_nosec: bool = True
+    check_pyright_ignore: bool = True
     check_ts_ignore: bool = True
     check_eslint_disable: bool = True
     check_thailint_ignore: bool = True

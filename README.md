@@ -2,7 +2,7 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
-[![PyPI](https://img.shields.io/pypi/v/thai-lint)](https://pypi.org/project/thai-lint/)
+[![PyPI](https://img.shields.io/pypi/v/thailint)](https://pypi.org/project/thailint/)
 [![Documentation](https://readthedocs.org/projects/thai-lint/badge/?version=latest)](https://thai-lint.readthedocs.io/)
 
 **The AI Linter** - Catch the mistakes AI coding assistants keep making.
@@ -12,7 +12,7 @@ thailint detects anti-patterns that AI tools frequently introduce: duplicate cod
 ## Installation
 
 ```bash
-pip install thai-lint
+pip install thailint
 ```
 
 Or with Docker:
@@ -49,6 +49,7 @@ That's it. See violations, fix them, ship better code.
 | **Lazy Ignores** | Unjustified linting suppressions | `thailint lazy-ignores src/` | [Guide](https://thai-lint.readthedocs.io/en/latest/lazy-ignores-linter/) |
 | **Print Statements** | Debug prints left in code | `thailint print-statements src/` | [Guide](https://thai-lint.readthedocs.io/en/latest/print-statements-linter/) |
 | **Stringly Typed** | Strings that should be enums | `thailint stringly-typed src/` | [Guide](https://thai-lint.readthedocs.io/en/latest/stringly-typed-linter/) |
+| **LBYL** | Look Before You Leap anti-patterns | `thailint lbyl src/` | [Guide](https://thai-lint.readthedocs.io/en/latest/lbyl-linter/) |
 
 ## Configuration
 
