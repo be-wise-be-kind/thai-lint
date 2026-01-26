@@ -1,18 +1,21 @@
 # Print Statements Linter
 
-**Purpose**: Complete guide to using the print statements linter for detecting debug print and console statements that should be replaced with proper logging
+??? info "AI Agent Context (click to expand)"
+    **Purpose**: Complete guide to using the print statements linter for detecting debug print and console statements that should be replaced with proper logging
 
-**Scope**: Configuration, usage, language support, and best practices for print/console statement detection
+    **Scope**: Configuration, usage, language support, and best practices for print/console statement detection
 
-**Overview**: Comprehensive documentation for the print statements linter that detects print() calls in Python and console.* calls in TypeScript/JavaScript. Covers how the linter works using AST analysis for Python and tree-sitter for TypeScript, configuration options including allow_in_scripts and console_methods, CLI and library usage, ignore patterns, and integration with CI/CD pipelines. Helps teams maintain production-ready code by replacing debug statements with proper logging.
+    **Overview**: Comprehensive documentation for the print statements linter that detects print() calls in Python and console.* calls in TypeScript/JavaScript. Covers how the linter works using AST analysis for Python and tree-sitter for TypeScript, configuration options including allow_in_scripts and console_methods, CLI and library usage, ignore patterns, and integration with CI/CD pipelines. Helps teams maintain production-ready code by replacing debug statements with proper logging.
 
-**Dependencies**: Python AST (Python), tree-sitter (TypeScript/JavaScript)
+    **Dependencies**: Python AST (Python), tree-sitter (TypeScript/JavaScript)
 
-**Exports**: Usage documentation, configuration examples, violation messages, refactoring patterns
+    **Exports**: Usage documentation, configuration examples, violation messages, refactoring patterns
 
-**Related**: cli-reference.md for CLI commands, configuration.md for config format, how-to-ignore-violations.md for ignore patterns
+    **Related**: cli-reference.md for CLI commands, configuration.md for config format, how-to-ignore-violations.md for ignore patterns
 
-**Implementation**: AST-based analysis for Python print() calls, tree-sitter for TypeScript/JavaScript console.* methods
+    **Implementation**: AST-based analysis for Python print() calls, tree-sitter for TypeScript/JavaScript console.* methods
+
+    *This follows the [AI-Optimized Documentation Standard](ai-doc-standard.md).*
 
 ---
 

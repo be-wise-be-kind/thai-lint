@@ -1,18 +1,21 @@
 # Single Responsibility Principle (SRP) Linter
 
-**Purpose**: Complete guide to using the SRP linter for detecting and fixing Single Responsibility Principle violations
+??? info "AI Agent Context (click to expand)"
+    **Purpose**: Complete guide to using the SRP linter for detecting and fixing Single Responsibility Principle violations
 
-**Scope**: Configuration, usage, refactoring patterns, and best practices for SRP analysis
+    **Scope**: Configuration, usage, refactoring patterns, and best practices for SRP analysis
 
-**Overview**: Comprehensive documentation for the SRP linter that detects classes violating the Single Responsibility Principle in Python and TypeScript code. Covers how the linter works using AST analysis and heuristics, configuration options, CLI and library usage, common refactoring patterns discovered during dogfooding, and integration with CI/CD pipelines. Helps teams maintain modular, maintainable code by enforcing configurable SRP thresholds.
+    **Overview**: Comprehensive documentation for the SRP linter that detects classes violating the Single Responsibility Principle in Python and TypeScript code. Covers how the linter works using AST analysis and heuristics, configuration options, CLI and library usage, common refactoring patterns discovered during dogfooding, and integration with CI/CD pipelines. Helps teams maintain modular, maintainable code by enforcing configurable SRP thresholds.
 
-**Dependencies**: Python ast module (Python parser), tree-sitter-typescript (TypeScript parser)
+    **Dependencies**: Python ast module (Python parser), tree-sitter-typescript (TypeScript parser)
 
-**Exports**: Usage documentation, configuration examples, refactoring patterns
+    **Exports**: Usage documentation, configuration examples, refactoring patterns
 
-**Related**: cli-reference.md for CLI commands, configuration.md for config format
+    **Related**: cli-reference.md for CLI commands, configuration.md for config format
 
-**Implementation**: AST-based class analysis with heuristic metrics and configurable thresholds
+    **Implementation**: AST-based class analysis with heuristic metrics and configurable thresholds
+
+    *This follows the [AI-Optimized Documentation Standard](ai-doc-standard.md).*
 
 ---
 

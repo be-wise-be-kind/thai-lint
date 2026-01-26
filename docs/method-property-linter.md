@@ -1,18 +1,21 @@
 # Method Property Linter
 
-**Purpose**: Complete guide to using the method-property linter for detecting methods that should be @property decorators
+??? info "AI Agent Context (click to expand)"
+    **Purpose**: Complete guide to using the method-property linter for detecting methods that should be @property decorators
 
-**Scope**: Configuration, usage, refactoring patterns, and best practices for Pythonic property usage
+    **Scope**: Configuration, usage, refactoring patterns, and best practices for Pythonic property usage
 
-**Overview**: Comprehensive documentation for the method-property linter that detects Python methods that should be converted to @property decorators. Covers detection patterns, exclusion rules, configuration options, CLI usage, and refactoring guidance. Follows PEP 8 conventions that prefer properties over getter/setter methods for simple attribute access.
+    **Overview**: Comprehensive documentation for the method-property linter that detects Python methods that should be converted to @property decorators. Covers detection patterns, exclusion rules, configuration options, CLI usage, and refactoring guidance. Follows PEP 8 conventions that prefer properties over getter/setter methods for simple attribute access.
 
-**Dependencies**: ast module (Python parser)
+    **Dependencies**: ast module (Python parser)
 
-**Exports**: Usage documentation, configuration examples, refactoring patterns
+    **Exports**: Usage documentation, configuration examples, refactoring patterns
 
-**Related**: cli-reference.md for CLI commands, configuration.md for config format, how-to-ignore-violations.md for ignore patterns
+    **Related**: cli-reference.md for CLI commands, configuration.md for config format, how-to-ignore-violations.md for ignore patterns
 
-**Implementation**: AST-based detection with comprehensive exclusion rules to minimize false positives
+    **Implementation**: AST-based detection with comprehensive exclusion rules to minimize false positives
+
+    *This follows the [AI-Optimized Documentation Standard](ai-doc-standard.md).*
 
 ---
 

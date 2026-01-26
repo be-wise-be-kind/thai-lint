@@ -1,18 +1,21 @@
 # DRY Linter (Don't Repeat Yourself)
 
-**Purpose**: Complete guide to using the DRY linter for detecting and eliminating duplicate code
+??? info "AI Agent Context (click to expand)"
+    **Purpose**: Complete guide to using the DRY linter for detecting and eliminating duplicate code
 
-**Scope**: Configuration, usage, storage modes, refactoring patterns, and best practices for duplicate code detection
+    **Scope**: Configuration, usage, storage modes, refactoring patterns, and best practices for duplicate code detection
 
-**Overview**: Comprehensive documentation for the DRY linter that detects duplicate code across projects using token-based hashing with SQLite storage. Covers how the linter works, configuration options, CLI and library usage, storage modes, performance characteristics, language support, and integration with CI/CD pipelines. Helps teams maintain DRY principles by identifying and eliminating code duplication at scale.
+    **Overview**: Comprehensive documentation for the DRY linter that detects duplicate code across projects using token-based hashing with SQLite storage. Covers how the linter works, configuration options, CLI and library usage, storage modes, performance characteristics, language support, and integration with CI/CD pipelines. Helps teams maintain DRY principles by identifying and eliminating code duplication at scale.
 
-**Dependencies**: Python ast module, tree-sitter-typescript, sqlite3 (Python stdlib), tempfile (Python stdlib)
+    **Dependencies**: Python ast module, tree-sitter-typescript, sqlite3 (Python stdlib), tempfile (Python stdlib)
 
-**Exports**: Usage documentation, configuration examples, storage mode guide, refactoring patterns
+    **Exports**: Usage documentation, configuration examples, storage mode guide, refactoring patterns
 
-**Related**: cli-reference.md for CLI commands, configuration.md for config format, api-reference.md for programmatic usage
+    **Related**: cli-reference.md for CLI commands, configuration.md for config format, api-reference.md for programmatic usage
 
-**Implementation**: Token-based hash detection with SQLite storage (in-memory or tempfile), extensible false-positive filtering
+    **Implementation**: Token-based hash detection with SQLite storage (in-memory or tempfile), extensible false-positive filtering
+
+    *This follows the [AI-Optimized Documentation Standard](ai-doc-standard.md).*
 
 ---
 

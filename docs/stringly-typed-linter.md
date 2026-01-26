@@ -1,18 +1,21 @@
 # Stringly-Typed Linter
 
-**Purpose**: Complete guide to using the stringly-typed linter for detecting string-based type patterns that should use enums
+??? info "AI Agent Context (click to expand)"
+    **Purpose**: Complete guide to using the stringly-typed linter for detecting string-based type patterns that should use enums
 
-**Scope**: Configuration, usage, refactoring patterns, and best practices for stringly-typed code detection
+    **Scope**: Configuration, usage, refactoring patterns, and best practices for stringly-typed code detection
 
-**Overview**: Comprehensive documentation for the stringly-typed linter that detects code patterns where plain strings are used instead of proper enums or typed alternatives. Covers how the linter works using AST and tree-sitter analysis, configuration options, CLI and library usage, false positive filtering, ignore directives, and common refactoring patterns. Helps teams improve type safety by identifying repeated string validation patterns that indicate missing enum types.
+    **Overview**: Comprehensive documentation for the stringly-typed linter that detects code patterns where plain strings are used instead of proper enums or typed alternatives. Covers how the linter works using AST and tree-sitter analysis, configuration options, CLI and library usage, false positive filtering, ignore directives, and common refactoring patterns. Helps teams improve type safety by identifying repeated string validation patterns that indicate missing enum types.
 
-**Dependencies**: ast module (Python parser), tree-sitter-typescript (TypeScript parser), SQLite (cross-file storage)
+    **Dependencies**: ast module (Python parser), tree-sitter-typescript (TypeScript parser), SQLite (cross-file storage)
 
-**Exports**: Usage documentation, configuration examples, refactoring patterns
+    **Exports**: Usage documentation, configuration examples, refactoring patterns
 
-**Related**: cli-reference.md for CLI commands, configuration.md for config format, how-to-ignore-violations.md for ignore patterns
+    **Related**: cli-reference.md for CLI commands, configuration.md for config format, how-to-ignore-violations.md for ignore patterns
 
-**Implementation**: AST-based detection with cross-file analysis using SQLite for pattern aggregation
+    **Implementation**: AST-based detection with cross-file analysis using SQLite for pattern aggregation
+
+    *This follows the [AI-Optimized Documentation Standard](ai-doc-standard.md).*
 
 ---
 

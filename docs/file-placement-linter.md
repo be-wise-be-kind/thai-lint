@@ -1,22 +1,21 @@
 # File Placement Linter Guide
 
-**Purpose**: Complete guide to the file placement linter including rules, patterns, and best practices
+??? info "AI Agent Context (click to expand)"
+    **Purpose**: Complete guide to the file placement linter including rules, patterns, and best practices
 
-**Scope**: File placement rule system, pattern matching, directory scoping, and configuration
+    **Scope**: File placement rule system, pattern matching, directory scoping, and configuration
 
-**Overview**: Comprehensive documentation for the file placement linter that enforces project structure
-    conventions and file organization rules. Covers the rule system, regex pattern matching, allow/deny
-    precedence, directory-specific scoping, ignore directives, and violation detection. Includes
-    practical examples for common project layouts (Python, TypeScript, monorepo), troubleshooting
-    guides, and best practices for maintaining clean project structure.
+    **Overview**: Comprehensive documentation for the file placement linter that enforces project structure conventions and file organization rules. Covers the rule system, regex pattern matching, allow/deny precedence, directory-specific scoping, ignore directives, and violation detection. Includes practical examples for common project layouts (Python, TypeScript, monorepo), troubleshooting guides, and best practices for maintaining clean project structure.
 
-**Dependencies**: File placement linter implementation, pattern matching engine, configuration system
+    **Dependencies**: File placement linter implementation, pattern matching engine, configuration system
 
-**Exports**: Linter usage documentation and configuration examples
+    **Exports**: Linter usage documentation and configuration examples
 
-**Related**: configuration.md for config reference, getting-started.md for basic usage
+    **Related**: configuration.md for config reference, getting-started.md for basic usage
 
-**Implementation**: Rule documentation with examples, pattern guides, and troubleshooting
+    **Implementation**: Rule documentation with examples, pattern guides, and troubleshooting
+
+    *This follows the [AI-Optimized Documentation Standard](ai-doc-standard.md).*
 
 ---
 

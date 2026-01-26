@@ -143,6 +143,24 @@ def _load_json_config(config_file: Path) -> dict[str, Any]:
         return dict(result) if isinstance(result, dict) else {}
 
 
+def _sanitize_string(text: str) -> str:
+    """Remove or replace surrogate characters that can't be encoded to UTF-8.
+
+    Surrogate characters (U+D800-U+DFFF) appear when Python reads filesystem paths
+    or file content with invalid UTF-8 bytes using surrogateescape error handling.
+    These characters cannot be encoded to UTF-8 and cause UnicodeEncodeError.
+
+    Args:
+        text: String that may contain surrogate characters
+
+    Returns:
+        String with surrogates replaced by the Unicode replacement character
+    """
+    # Encode with surrogateescape to handle surrogates, then decode back
+    # This effectively replaces surrogates with a replacement representation
+    return text.encode("utf-8", errors="surrogateescape").decode("utf-8", errors="replace")
+
+
 def format_violations(violations: list, output_format: str) -> None:
     """Format and print violations to console.
 
@@ -168,10 +186,10 @@ def _output_json(violations: list) -> None:
         "violations": [
             {
                 "rule_id": v.rule_id,
-                "file_path": str(v.file_path),
+                "file_path": _sanitize_string(str(v.file_path)),
                 "line": v.line,
                 "column": v.column,
-                "message": v.message,
+                "message": _sanitize_string(v.message),
                 "severity": v.severity.name,
             }
             for v in violations
@@ -215,9 +233,11 @@ def _print_violation(v: Any) -> None:
     Args:
         v: Violation object with file_path, line, column, severity, rule_id, message
     """
-    location = f"{v.file_path}:{v.line}" if v.line else str(v.file_path)
+    file_path = _sanitize_string(str(v.file_path))
+    message = _sanitize_string(v.message)
+    location = f"{file_path}:{v.line}" if v.line else file_path
     if v.column:
         location += f":{v.column}"
     click.echo(f"  {location}")
-    click.echo(f"    [{v.severity.name}] {v.rule_id}: {v.message}")
+    click.echo(f"    [{v.severity.name}] {v.rule_id}: {message}")
     click.echo()

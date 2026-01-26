@@ -1,18 +1,21 @@
 # Collection Pipeline Linter
 
-**Purpose**: Complete guide to using the collection-pipeline linter for detecting for loops with embedded filtering that should use collection pipelines
+??? info "AI Agent Context (click to expand)"
+    **Purpose**: Complete guide to using the collection-pipeline linter for detecting for loops with embedded filtering that should use collection pipelines
 
-**Scope**: Configuration, usage, language support, and best practices for detecting imperative loop patterns with embedded filtering
+    **Scope**: Configuration, usage, language support, and best practices for detecting imperative loop patterns with embedded filtering
 
-**Overview**: Comprehensive documentation for the collection-pipeline linter that detects for loops containing if/continue patterns that could be refactored to use generator expressions, filter(), or comprehensions. Based on Martin Fowler's "Replace Loop with Pipeline" refactoring pattern. Covers how the linter works using AST analysis, configuration options including min_continues threshold, CLI and library usage, ignore patterns, and integration with CI/CD pipelines. Helps teams maintain clean, readable code by separating filtering logic from processing logic.
+    **Overview**: Comprehensive documentation for the collection-pipeline linter that detects for loops containing if/continue patterns that could be refactored to use generator expressions, filter(), or comprehensions. Based on Martin Fowler's "Replace Loop with Pipeline" refactoring pattern. Covers how the linter works using AST analysis, configuration options including min_continues threshold, CLI and library usage, ignore patterns, and integration with CI/CD pipelines. Helps teams maintain clean, readable code by separating filtering logic from processing logic.
 
-**Dependencies**: Python AST module for parsing and pattern detection
+    **Dependencies**: Python AST module for parsing and pattern detection
 
-**Exports**: Usage documentation, configuration examples, violation messages, refactoring patterns
+    **Exports**: Usage documentation, configuration examples, violation messages, refactoring patterns
 
-**Related**: cli-reference.md for CLI commands, configuration.md for config format, how-to-ignore-violations.md for ignore patterns
+    **Related**: cli-reference.md for CLI commands, configuration.md for config format, how-to-ignore-violations.md for ignore patterns
 
-**Implementation**: AST-based analysis for Python for loops with embedded if/continue filtering patterns
+    **Implementation**: AST-based analysis for Python for loops with embedded if/continue filtering patterns
+
+    *This follows the [AI-Optimized Documentation Standard](ai-doc-standard.md).*
 
 ---
 
