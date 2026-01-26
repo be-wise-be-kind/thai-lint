@@ -1,18 +1,21 @@
 # Stateless Class Linter
 
-**Purpose**: Complete guide to using the stateless-class linter for detecting classes that should be module-level functions
+??? info "AI Agent Context (click to expand)"
+    **Purpose**: Complete guide to using the stateless-class linter for detecting classes that should be module-level functions
 
-**Scope**: Configuration, usage, refactoring patterns, and best practices for avoiding unnecessary class usage
+    **Scope**: Configuration, usage, refactoring patterns, and best practices for avoiding unnecessary class usage
 
-**Overview**: Comprehensive documentation for the stateless-class linter that detects Python classes without constructors or instance state that should be refactored to module-level functions. Covers detection patterns, exclusion rules, configuration options, CLI usage, and refactoring guidance. Follows functional programming principles that prefer functions over stateless classes.
+    **Overview**: Comprehensive documentation for the stateless-class linter that detects Python classes without constructors or instance state that should be refactored to module-level functions. Covers detection patterns, exclusion rules, configuration options, CLI usage, and refactoring guidance. Follows functional programming principles that prefer functions over stateless classes.
 
-**Dependencies**: ast module (Python parser)
+    **Dependencies**: ast module (Python parser)
 
-**Exports**: Usage documentation, configuration examples, refactoring patterns
+    **Exports**: Usage documentation, configuration examples, refactoring patterns
 
-**Related**: cli-reference.md for CLI commands, configuration.md for config format, how-to-ignore-violations.md for ignore patterns
+    **Related**: cli-reference.md for CLI commands, configuration.md for config format, how-to-ignore-violations.md for ignore patterns
 
-**Implementation**: AST-based detection with comprehensive exclusion rules to minimize false positives
+    **Implementation**: AST-based detection with comprehensive exclusion rules to minimize false positives
+
+    *This follows the [AI-Optimized Documentation Standard](ai-doc-standard.md).*
 
 ---
 

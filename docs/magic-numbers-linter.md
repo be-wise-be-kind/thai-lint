@@ -1,18 +1,21 @@
 # Magic Numbers Linter
 
-**Purpose**: Complete guide to using the magic numbers linter for detecting and eliminating unnamed numeric literals
+??? info "AI Agent Context (click to expand)"
+    **Purpose**: Complete guide to using the magic numbers linter for detecting and eliminating unnamed numeric literals
 
-**Scope**: Configuration, usage, refactoring patterns, and best practices for magic number detection
+    **Scope**: Configuration, usage, refactoring patterns, and best practices for magic number detection
 
-**Overview**: Comprehensive documentation for the magic numbers linter that detects unnamed numeric literals (magic numbers) in Python and TypeScript code. Covers how the linter works using AST analysis, configuration options, CLI and library usage, acceptable contexts, common refactoring patterns, and integration with CI/CD pipelines. Helps teams improve code maintainability by encouraging named constants instead of magic numbers.
+    **Overview**: Comprehensive documentation for the magic numbers linter that detects unnamed numeric literals (magic numbers) in Python and TypeScript code. Covers how the linter works using AST analysis, configuration options, CLI and library usage, acceptable contexts, common refactoring patterns, and integration with CI/CD pipelines. Helps teams improve code maintainability by encouraging named constants instead of magic numbers.
 
-**Dependencies**: ast module (Python parser), tree-sitter-typescript (TypeScript parser)
+    **Dependencies**: ast module (Python parser), tree-sitter-typescript (TypeScript parser)
 
-**Exports**: Usage documentation, configuration examples, refactoring patterns
+    **Exports**: Usage documentation, configuration examples, refactoring patterns
 
-**Related**: cli-reference.md for CLI commands, configuration.md for config format, how-to-ignore-violations.md for ignore patterns
+    **Related**: cli-reference.md for CLI commands, configuration.md for config format, how-to-ignore-violations.md for ignore patterns
 
-**Implementation**: AST-based detection with context-aware filtering and configurable acceptable numbers
+    **Implementation**: AST-based detection with context-aware filtering and configurable acceptable numbers
+
+    *This follows the [AI-Optimized Documentation Standard](ai-doc-standard.md).*
 
 ---
 
@@ -842,7 +845,7 @@ TIMEOUT_SECONDS = int(os.getenv('TIMEOUT_SECONDS', '30'))
 
 ## Examples Repository
 
-See **[examples/magic_numbers_usage.py](../examples/magic_numbers_usage.py)** for complete working examples.
+See **[examples/magic_numbers_usage.py](https://github.com/be-wise-be-kind/thai-lint/blob/main/examples/magic_numbers_usage.py)** for complete working examples.
 
 ## Related Documentation
 

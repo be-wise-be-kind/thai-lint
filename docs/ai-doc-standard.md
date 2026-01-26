@@ -1486,8 +1486,8 @@ try {
 - [RabbitMQ Documentation](https://www.rabbitmq.com/documentation.html)
 - [Event-Driven Architecture Patterns (Martin Fowler)](https://martinfowler.com/articles/201701-event-driven.html)
 - [Internal Schema Registry API](http://schema-registry.internal/docs)
-- [ADR-015: Message Broker Selection](../adr/015-message-broker-selection.md)
-- [Runbook: Message Queue Troubleshooting](../runbooks/message-queue-troubleshooting.md)
+- ADR-015: Message Broker Selection *(example internal link)*
+- Runbook: Message Queue Troubleshooting *(example internal link)*
 
 ---
 

@@ -1,18 +1,21 @@
 # Nesting Depth Linter
 
-**Purpose**: Complete guide to using the nesting depth linter for detecting and fixing excessive code nesting
+??? info "AI Agent Context (click to expand)"
+    **Purpose**: Complete guide to using the nesting depth linter for detecting and fixing excessive code nesting
 
-**Scope**: Configuration, usage, refactoring patterns, and best practices for nesting depth analysis
+    **Scope**: Configuration, usage, refactoring patterns, and best practices for nesting depth analysis
 
-**Overview**: Comprehensive documentation for the nesting depth linter that detects excessive nesting in Python and TypeScript code. Covers how the linter works using AST analysis, configuration options, CLI and library usage, common refactoring patterns, and integration with CI/CD pipelines. Helps teams maintain readable, maintainable code by enforcing configurable nesting depth limits.
+    **Overview**: Comprehensive documentation for the nesting depth linter that detects excessive nesting in Python and TypeScript code. Covers how the linter works using AST analysis, configuration options, CLI and library usage, common refactoring patterns, and integration with CI/CD pipelines. Helps teams maintain readable, maintainable code by enforcing configurable nesting depth limits.
 
-**Dependencies**: tree-sitter (Python parser), tree-sitter-typescript (TypeScript parser)
+    **Dependencies**: tree-sitter (Python parser), tree-sitter-typescript (TypeScript parser)
 
-**Exports**: Usage documentation, configuration examples, refactoring patterns
+    **Exports**: Usage documentation, configuration examples, refactoring patterns
 
-**Related**: cli-reference.md for CLI commands, configuration.md for config format
+    **Related**: cli-reference.md for CLI commands, configuration.md for config format
 
-**Implementation**: AST-based depth analysis with configurable limits and helpful violation messages
+    **Implementation**: AST-based depth analysis with configurable limits and helpful violation messages
+
+    *This follows the [AI-Optimized Documentation Standard](ai-doc-standard.md).*
 
 ---
 

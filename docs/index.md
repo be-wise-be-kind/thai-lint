@@ -171,6 +171,21 @@ Detect for loops with embedded filtering that should use collection pipelines.
 ### [Stringly-Typed Linter](stringly-typed-linter.md)
 Detect string-based type patterns that should use enums or typed alternatives.
 
+### [File Header Linter](file-header-linter.md)
+Enforce comprehensive documentation headers across all source files.
+
+### [Lazy Ignores Linter](lazy-ignores-linter.md)
+Detect unjustified linting suppressions (noqa, type: ignore, etc.) that lack proper documentation.
+
+### [Print Statements Linter](print-statements-linter.md)
+Detect debug print/console statements that should be replaced with proper logging.
+
+### [Stateless Class Linter](stateless-class-linter.md)
+Detect classes without state that should be module-level functions.
+
+### [LBYL Linter](lbyl-linter.md)
+Detect "Look Before You Leap" anti-patterns that should use EAFP (try/except).
+
 ## Documentation
 
 - **[Getting Started](getting-started.md)** - Installation and first lint

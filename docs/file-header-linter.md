@@ -1,32 +1,21 @@
 # File Header Linter
 
-**Purpose**: Complete guide to using the file header linter for enforcing comprehensive documentation headers across all source files
+??? info "AI Agent Context (click to expand)"
+    **Purpose**: Complete guide to using the file header linter for enforcing comprehensive documentation headers across all source files
 
-**Scope**: Configuration, usage, mandatory fields, atemporal language detection, and best practices for file header validation
+    **Scope**: Configuration, usage, mandatory fields, atemporal language detection, and best practices for file header validation
 
-**Overview**: Comprehensive documentation for the file header linter that validates documentation headers in source files. Covers how the linter works using language-specific parsers, mandatory field requirements, atemporal language detection, configuration options, CLI and library usage, supported file types (Python, TypeScript, JavaScript, Bash, Markdown, CSS), and integration with CI/CD pipelines. Helps teams maintain consistent, AI-optimized documentation across entire codebases.
+    **Overview**: Comprehensive documentation for the file header linter that validates documentation headers in source files. Covers how the linter works using language-specific parsers, mandatory field requirements, atemporal language detection, configuration options, CLI and library usage, supported file types (Python, TypeScript, JavaScript, Bash, Markdown, CSS), and integration with CI/CD pipelines. Helps teams maintain consistent, AI-optimized documentation across entire codebases.
 
-**Dependencies**: Python AST (Python), regex-based parsers (TypeScript, Bash, CSS), PyYAML (Markdown frontmatter)
+    **Dependencies**: Python AST (Python), regex-based parsers (TypeScript, Bash, CSS), PyYAML (Markdown frontmatter)
 
-**Exports**: Usage documentation, configuration examples, mandatory field specifications, atemporal language patterns
+    **Exports**: Usage documentation, configuration examples, mandatory field specifications, atemporal language patterns
 
-**Related**: cli-reference.md for CLI commands, configuration.md for config format, how-to-ignore-violations.md for ignore patterns, ai-doc-standard.md for AI-optimized header format
+    **Related**: cli-reference.md for CLI commands, configuration.md for config format, how-to-ignore-violations.md for ignore patterns, ai-doc-standard.md for AI-optimized header format
 
-**Implementation**: Language-specific header parsing with unified validation logic and configurable mandatory fields
+    **Implementation**: Language-specific header parsing with unified validation logic and configurable mandatory fields
 
----
-
-## Why This Documentation Format?
-
-> **This documentation follows the [AI-Optimized Documentation Standard](ai-doc-standard.md).**
->
-> The structured header at the top of this page is intentional - it's designed to help AI coding assistants (Cursor, Copilot, Claude) understand and navigate the codebase more effectively. Research shows:
->
-> - **2-3x more files scanned** per context window with structured vs. prose headers
-> - **First 5 lines contain 80%** of what AI needs for initial file assessment
-> - **Cleaner vector embeddings** for semantic search (RAG systems)
->
-> See [AI-Optimized Documentation Standard](ai-doc-standard.md) for the full technical justification with citations from Cursor, GitHub Copilot, Anthropic, and IBM Research.
+    *This follows the [AI-Optimized Documentation Standard](ai-doc-standard.md).*
 
 ---
 
@@ -1134,7 +1123,7 @@ Implementation: ${7:Notable patterns or decisions}
 
 ## Examples Repository
 
-See **[examples/file_header_usage.py](../examples/file_header_usage.py)** for complete working examples.
+See **[examples/file_header_usage.py](https://github.com/be-wise-be-kind/thai-lint/blob/main/examples/file_header_usage.py)** for complete working examples.
 
 ## Version History
 

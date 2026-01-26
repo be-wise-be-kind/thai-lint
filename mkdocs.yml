@@ -67,6 +67,7 @@ nav:
       - File Header: file-header-linter.md
       - File Placement: file-placement-linter.md
       - Lazy Ignores: lazy-ignores-linter.md
+      - LBYL (Look Before You Leap): lbyl-linter.md
       - Magic Numbers: magic-numbers-linter.md
       - Method Property: method-property-linter.md
       - Nesting Depth: nesting-linter.md

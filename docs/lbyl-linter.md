@@ -1,18 +1,21 @@
 # LBYL Linter
 
-**Purpose**: Complete guide to using the LBYL linter for detecting "Look Before You Leap" anti-patterns
+??? info "AI Agent Context (click to expand)"
+    **Purpose**: Complete guide to using the LBYL linter for detecting "Look Before You Leap" anti-patterns
 
-**Scope**: Configuration, usage, refactoring patterns, and best practices for LBYL detection in Python code
+    **Scope**: Configuration, usage, refactoring patterns, and best practices for LBYL detection in Python code
 
-**Overview**: Comprehensive documentation for the LBYL linter that detects "Look Before You Leap" anti-patterns in Python code. LBYL patterns involve checking a condition before performing an operation that could raise an exception. The Pythonic alternative is EAFP (Easier to Ask Forgiveness than Permission) - using try/except blocks. Covers the 8 detected patterns, configuration options, CLI usage, false positive filtering, and refactoring guidance.
+    **Overview**: Comprehensive documentation for the LBYL linter that detects "Look Before You Leap" anti-patterns in Python code. LBYL patterns involve checking a condition before performing an operation that could raise an exception. The Pythonic alternative is EAFP (Easier to Ask Forgiveness than Permission) - using try/except blocks. Covers the 8 detected patterns, configuration options, CLI usage, false positive filtering, and refactoring guidance.
 
-**Dependencies**: ast module (Python parser)
+    **Dependencies**: ast module (Python parser)
 
-**Exports**: Usage documentation, configuration examples, refactoring patterns
+    **Exports**: Usage documentation, configuration examples, refactoring patterns
 
-**Related**: cli-reference.md for CLI commands, configuration.md for config format, how-to-ignore-violations.md for ignore patterns
+    **Related**: cli-reference.md for CLI commands, configuration.md for config format, how-to-ignore-violations.md for ignore patterns
 
-**Implementation**: AST-based detection with pattern-specific detectors for each LBYL anti-pattern
+    **Implementation**: AST-based detection with pattern-specific detectors for each LBYL anti-pattern
+
+    *This follows the [AI-Optimized Documentation Standard](ai-doc-standard.md).*
 
 ---
 
