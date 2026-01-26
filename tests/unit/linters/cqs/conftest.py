@@ -292,3 +292,194 @@ def gen_example() -> None:
     data = fetch()
     yield from process(data)
 """
+
+# =============================================================================
+# TEST DATA - TYPESCRIPT CQS VIOLATIONS
+# =============================================================================
+
+TS_CQS_VIOLATION_BASIC = """
+function processAndSave(userId: number): void {
+    const data = fetchData(userId);  // INPUT
+    saveToDb(data);                   // OUTPUT
+}
+"""
+
+TS_CQS_VIOLATION_ARROW = """
+const processAndSave = (userId: number): void => {
+    const data = fetchData(userId);  // INPUT
+    saveToDb(data);                   // OUTPUT
+};
+"""
+
+TS_CQS_VIOLATION_ASYNC = """
+async function asyncMixed(itemId: number): Promise<void> {
+    const item = await fetchItem(itemId);  // INPUT
+    await saveItem(item);                   // OUTPUT
+}
+"""
+
+TS_CQS_VIOLATION_METHOD = """
+class DataProcessor {
+    process(dataId: number): void {
+        const data = this.loadData(dataId);  // INPUT
+        this.persist();                       // OUTPUT
+    }
+}
+"""
+
+TS_CQS_VIOLATION_DESTRUCTURING = """
+function processUser(): void {
+    const { name, email } = getUser();  // INPUT
+    sendNotification(name, email);       // OUTPUT
+}
+"""
+
+TS_CQS_VIOLATION_ARRAY_DESTRUCTURING = """
+function processItems(): void {
+    const [first, second] = getItems();  // INPUT
+    processFirst(first);                  // OUTPUT
+}
+"""
+
+TS_CQS_VIOLATION_MULTIPLE = """
+function complexOperation(config: object): void {
+    const user = getUser(config);     // INPUT
+    const settings = loadSettings();  // INPUT
+    updateUser(user);                 // OUTPUT
+    notifyAdmin();                    // OUTPUT
+}
+"""
+
+# =============================================================================
+# TEST DATA - TYPESCRIPT VALID PATTERNS
+# =============================================================================
+
+TS_CQS_VALID_QUERY_ONLY = """
+function getUserData(userId: number): object {
+    const user = fetchUser(userId);
+    const settings = loadUserSettings(userId);
+    return { user, settings };
+}
+"""
+
+TS_CQS_VALID_COMMAND_ONLY = """
+function updateAllRecords(): void {
+    updateUsers();
+    notifyAdmins();
+    clearCache();
+}
+"""
+
+TS_CQS_VALID_FLUENT_INTERFACE = """
+class Builder {
+    configure(): Builder {
+        this.setOption("a", 1);
+        this.setOption("b", 2);
+        return this;
+    }
+}
+"""
+
+TS_CQS_VALID_CONSTRUCTOR = """
+class Service {
+    constructor(config: object) {
+        this.config = config;
+        this.data = loadInitialData(config);
+        setupLogging();
+    }
+}
+"""
+
+# =============================================================================
+# TEST DATA - TYPESCRIPT INPUT PATTERNS
+# =============================================================================
+
+TS_INPUT_CONST_ASSIGNMENT = """
+function example(): void {
+    const x = func();
+}
+"""
+
+TS_INPUT_LET_ASSIGNMENT = """
+function example(): void {
+    let x = func();
+}
+"""
+
+TS_INPUT_OBJECT_DESTRUCTURING = """
+function example(): void {
+    const { a, b } = getData();
+}
+"""
+
+TS_INPUT_ARRAY_DESTRUCTURING = """
+function example(): void {
+    const [first, second] = getPair();
+}
+"""
+
+TS_INPUT_AWAIT_ASSIGNMENT = """
+async function example(): Promise<void> {
+    const x = await asyncFunc();
+}
+"""
+
+TS_INPUT_THIS_ASSIGNMENT = """
+class Example {
+    load(): void {
+        this.data = fetchData();
+    }
+}
+"""
+
+# =============================================================================
+# TEST DATA - TYPESCRIPT OUTPUT PATTERNS
+# =============================================================================
+
+TS_OUTPUT_STATEMENT_CALL = """
+function example(): void {
+    doSomething();
+}
+"""
+
+TS_OUTPUT_ASYNC_STATEMENT = """
+async function example(): Promise<void> {
+    await sendNotification();
+}
+"""
+
+TS_OUTPUT_METHOD_CALL = """
+function example(): void {
+    obj.updateState();
+}
+"""
+
+TS_OUTPUT_CHAINED_CALL = """
+function example(): void {
+    service.getClient().sendMessage();
+}
+"""
+
+# =============================================================================
+# TEST DATA - TYPESCRIPT NOT OUTPUT
+# =============================================================================
+
+TS_NOT_OUTPUT_RETURN = """
+function example(): number {
+    return calculate();
+}
+"""
+
+TS_NOT_OUTPUT_IF_CONDITION = """
+function example(): void {
+    if (checkCondition()) {
+        // do something
+    }
+}
+"""
+
+TS_NOT_OUTPUT_ASSIGNMENT = """
+function example(): void {
+    const result = compute();
+}
+"""
