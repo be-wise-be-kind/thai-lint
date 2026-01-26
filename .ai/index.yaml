@@ -55,6 +55,7 @@ howto:
     - documentation-howtos-README.md
     - how-to-add-custom-hook.md
     - how-to-add-linter.md
+    - how-to-address-github-issues.md
     - how-to-configure-code-scanning.md
     - how-to-create-readme.md
     - how-to-debug-failing-hooks.md
