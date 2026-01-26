@@ -10,14 +10,16 @@ Overview: Handles violation generation for duplicate code blocks. Queries storag
 
 Dependencies: DuplicateStorage, ViolationDeduplicator, DRYViolationBuilder, Violation, DRYConfig
 
-Exports: ViolationGenerator class
+Exports: ViolationGenerator class, IgnoreContext dataclass
 
 Interfaces: ViolationGenerator.generate_violations(storage, rule_id, config) -> list[Violation]
 
 Implementation: Queries storage, deduplicates blocks, builds violations, filters by ignore patterns
 """
 
+from dataclasses import dataclass
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 from src.core.types import Violation
 from src.orchestrator.language_detector import detect_language
@@ -27,6 +29,18 @@ from .deduplicator import ViolationDeduplicator
 from .duplicate_storage import DuplicateStorage
 from .inline_ignore import InlineIgnoreParser
 from .violation_builder import DRYViolationBuilder
+
+if TYPE_CHECKING:
+    from src.linter_config.ignore import IgnoreDirectiveParser
+
+
+@dataclass
+class IgnoreContext:
+    """Context for ignore directive filtering."""
+
+    inline_ignore: InlineIgnoreParser
+    shared_parser: "IgnoreDirectiveParser | None" = None
+    file_contents: dict[str, str] | None = None
 
 
 class ViolationGenerator:
@@ -42,7 +56,7 @@ class ViolationGenerator:
         storage: DuplicateStorage,
         rule_id: str,
         config: DRYConfig,
-        inline_ignore: InlineIgnoreParser,
+        ignore_ctx: IgnoreContext,
     ) -> list[Violation]:
         """Generate violations from storage.
 
@@ -50,19 +64,42 @@ class ViolationGenerator:
             storage: Duplicate storage instance
             rule_id: Rule identifier for violations
             config: DRY configuration with ignore patterns
-            inline_ignore: Parser with inline ignore directives
+            ignore_ctx: Context containing ignore parsers and file contents
 
         Returns:
             List of violations filtered by ignore patterns and inline directives
         """
-        duplicate_hashes = storage.duplicate_hashes
-        violations = []
+        raw_violations = self._collect_violations(storage, rule_id, config)
+        deduplicated = self._deduplicator.deduplicate_violations(raw_violations)
+        pattern_filtered = self._filter_ignored(deduplicated, config.ignore_patterns)
+        inline_filtered = self._filter_inline_ignored(pattern_filtered, ignore_ctx.inline_ignore)
 
-        for hash_value in duplicate_hashes:
+        # Apply shared ignore directive filtering for block and line directives
+        if ignore_ctx.shared_parser and ignore_ctx.file_contents:
+            return self._filter_shared_ignored(
+                inline_filtered, ignore_ctx.shared_parser, ignore_ctx.file_contents
+            )
+
+        return inline_filtered
+
+    def _collect_violations(
+        self, storage: DuplicateStorage, rule_id: str, config: DRYConfig
+    ) -> list[Violation]:
+        """Collect raw violations from storage duplicate hashes.
+
+        Args:
+            storage: Duplicate storage instance
+            rule_id: Rule identifier for violations
+            config: DRY configuration
+
+        Returns:
+            List of raw violations before filtering
+        """
+        violations = []
+        for hash_value in storage.duplicate_hashes:
             blocks = storage.get_blocks_for_hash(hash_value)
             dedup_blocks = self._deduplicator.deduplicate_blocks(blocks)
 
-            # Check min_occurrences threshold (language-aware)
             if not self._meets_min_occurrences(dedup_blocks, config):
                 continue
 
@@ -70,9 +107,7 @@ class ViolationGenerator:
                 violation = self._violation_builder.build_violation(block, dedup_blocks, rule_id)
                 violations.append(violation)
 
-        deduplicated = self._deduplicator.deduplicate_violations(violations)
-        pattern_filtered = self._filter_ignored(deduplicated, config.ignore_patterns)
-        return self._filter_inline_ignored(pattern_filtered, inline_ignore)
+        return violations
 
     def _meets_min_occurrences(self, blocks: list, config: DRYConfig) -> bool:
         """Check if blocks meet minimum occurrence threshold for the language.
@@ -169,3 +204,28 @@ class ViolationGenerator:
             return int(message[start:end])
         except (ValueError, IndexError):
             return 1
+
+    def _filter_shared_ignored(
+        self,
+        violations: list[Violation],
+        ignore_parser: "IgnoreDirectiveParser",
+        file_contents: dict[str, str],
+    ) -> list[Violation]:
+        """Filter violations using the shared ignore directive parser.
+
+        This enables standard # thailint: ignore-start/end directives for DRY linter.
+
+        Args:
+            violations: List of violations to filter
+            ignore_parser: Shared ignore directive parser
+            file_contents: Cached file contents for ignore checking
+
+        Returns:
+            Filtered list of violations
+        """
+        filtered = []
+        for violation in violations:
+            file_content = file_contents.get(violation.file_path, "")
+            if not ignore_parser.should_ignore_violation(violation, file_content):
+                filtered.append(violation)
+        return filtered

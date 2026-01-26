@@ -158,3 +158,159 @@ dry:
 
     violation_paths = [v.file_path for v in violations]
     assert not any("__init__.py" in p for p in violation_paths)
+
+
+def test_block_ignore_start_end_suppresses_code_duplicates(tmp_path):
+    """Test # thailint: ignore-start dry / ignore-end works for code duplicates.
+
+    This tests the standard thailint ignore directive syntax that other linters support.
+    """
+    file1 = tmp_path / "file1.py"
+    file1.write_text("""
+# thailint: ignore-start dry
+def process():
+    for item in items:
+        if item.valid:
+            item.save()
+# thailint: ignore-end
+""")
+
+    file2 = tmp_path / "file2.py"
+    file2.write_text("""
+def handle():
+    for item in items:
+        if item.valid:
+            item.save()
+""")
+
+    config = tmp_path / ".thailint.yaml"
+    config.write_text("dry:\n  enabled: true\n  min_duplicate_lines: 3\n  cache_enabled: false")
+
+    linter = Linter(config_file=config, project_root=tmp_path)
+    violations = linter.lint(tmp_path, rules=["dry.duplicate-code"])
+
+    # File1's duplicate block is in ignore-start/end, so should only get violations from file2
+    file1_violations = [v for v in violations if "file1.py" in v.file_path]
+    assert len(file1_violations) == 0, f"Expected no violations from file1, got: {file1_violations}"
+
+
+def test_block_ignore_suppresses_constants(tmp_path):
+    """Test # thailint: ignore-start dry works for constant detection."""
+    file1 = tmp_path / "file1.py"
+    file1.write_text("""
+# thailint: ignore-start dry
+SAMPLE_RATE = 24000
+# thailint: ignore-end
+""")
+
+    file2 = tmp_path / "file2.py"
+    file2.write_text("""
+SAMPLE_RATE = 24000
+""")
+
+    file3 = tmp_path / "file3.py"
+    file3.write_text("""
+SAMPLE_RATE = 24000
+""")
+
+    config = tmp_path / ".thailint.yaml"
+    config.write_text("""
+dry:
+  enabled: true
+  cache_enabled: false
+  detect_duplicate_constants: true
+  min_constant_occurrences: 2
+""")
+
+    linter = Linter(config_file=config, project_root=tmp_path)
+    violations = linter.lint(tmp_path, rules=["dry.duplicate-code"])
+
+    # File1's constant is in ignore block, should not appear in violations
+    file1_violations = [v for v in violations if "file1.py" in v.file_path]
+    assert len(file1_violations) == 0, f"Expected no violations from file1, got: {file1_violations}"
+
+
+def test_inline_ignore_suppresses_constant(tmp_path):
+    """Test # thailint: ignore dry works for constants on the same line."""
+    file1 = tmp_path / "file1.py"
+    file1.write_text("""
+SAMPLE_RATE = 24000  # thailint: ignore dry
+""")
+
+    file2 = tmp_path / "file2.py"
+    file2.write_text("""
+SAMPLE_RATE = 24000
+""")
+
+    file3 = tmp_path / "file3.py"
+    file3.write_text("""
+SAMPLE_RATE = 24000
+""")
+
+    config = tmp_path / ".thailint.yaml"
+    config.write_text("""
+dry:
+  enabled: true
+  cache_enabled: false
+  detect_duplicate_constants: true
+  min_constant_occurrences: 2
+""")
+
+    linter = Linter(config_file=config, project_root=tmp_path)
+    violations = linter.lint(tmp_path, rules=["dry.duplicate-code"])
+
+    # File1's constant has inline ignore, should not appear in violations
+    file1_violations = [v for v in violations if "file1.py" in v.file_path]
+    assert len(file1_violations) == 0, f"Expected no violations from file1, got: {file1_violations}"
+
+
+def test_issue_144_constants_respect_ignore_directives(tmp_path):
+    """Regression test for GitHub issue #144.
+
+    Issue: https://github.com/anthropics/thai-lint/issues/144
+    Problem: DRY linter ignore patterns don't work for similar constants detection
+
+    This test reproduces the exact scenario from the issue:
+    - Constants defined in multiple files
+    - One file has # thailint: ignore-start dry / ignore-end around the constant
+    - The constant should not be flagged as a violation
+    """
+    # Simulate the user's scenario from issue #144
+    audio_config = tmp_path / "audio_config.py"
+    audio_config.write_text("""
+# Audio configuration constants
+# thailint: ignore-start dry
+STT_SAMPLE_RATE = 24000
+# thailint: ignore-end
+""")
+
+    speech_processor = tmp_path / "speech_processor.py"
+    speech_processor.write_text("""
+# Speech processing module
+STT_SAMPLE_RATE = 24000
+""")
+
+    audio_handler = tmp_path / "audio_handler.py"
+    audio_handler.write_text("""
+# Audio handler module
+STT_SAMPLE_RATE = 24000
+""")
+
+    config = tmp_path / ".thailint.yaml"
+    config.write_text("""
+dry:
+  enabled: true
+  cache_enabled: false
+  detect_duplicate_constants: true
+  min_constant_occurrences: 2
+""")
+
+    linter = Linter(config_file=config, project_root=tmp_path)
+    violations = linter.lint(tmp_path, rules=["dry.duplicate-code"])
+
+    # The audio_config.py constant is in an ignore block, should not be flagged
+    audio_config_violations = [v for v in violations if "audio_config.py" in v.file_path]
+    assert len(audio_config_violations) == 0, (
+        f"Expected no violations from audio_config.py (constant is in ignore block), "
+        f"got: {audio_config_violations}"
+    )
