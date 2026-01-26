@@ -169,6 +169,43 @@ thai-lint --project-root ./file.txt magic-numbers .
 # Exit code: 2
 ```
 
+### --parallel, -p
+
+Enable parallel file processing using multiple CPU cores for faster linting on large codebases.
+
+```bash
+thai-lint --parallel nesting src/
+thai-lint -p magic-numbers src/
+```
+
+**Behavior:**
+
+- Uses `ProcessPoolExecutor` with up to 8 workers (or CPU count, whichever is lower)
+- Automatically falls back to sequential processing for small file counts (< 2 × workers)
+- Available on all linter commands
+
+**When to use:**
+
+| Scenario | Recommendation |
+|----------|----------------|
+| Large codebases (100+ files) | Use `--parallel` |
+| CI/CD pipelines | Use `--parallel` |
+| Small projects (< 20 files) | Sequential is faster |
+| Single file linting | Sequential is faster |
+
+**Examples:**
+
+```bash
+# Parallel linting of large codebase
+thai-lint --parallel dry src/
+
+# Parallel with JSON output for CI
+thai-lint -p --format json srp src/ > violations.json
+
+# Combine with verbose
+thai-lint --verbose --parallel nesting src/
+```
+
 ### --help
 
 Show help message and exit.
