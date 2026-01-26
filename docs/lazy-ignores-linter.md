@@ -19,6 +19,20 @@
 
 ---
 
+## Why This Documentation Format?
+
+> **This documentation follows the [AI-Optimized Documentation Standard](ai-doc-standard.md).**
+>
+> The structured header at the top of this page is intentional - it's designed to help AI coding assistants (Cursor, Copilot, Claude) understand and navigate the codebase more effectively. Research shows:
+>
+> - **2-3x more files scanned** per context window with structured vs. prose headers
+> - **First 5 lines contain 80%** of what AI needs for initial file assessment
+> - **Cleaner vector embeddings** for semantic search (RAG systems)
+>
+> See [AI-Optimized Documentation Standard](ai-doc-standard.md) for the full technical justification with citations from Cursor, GitHub Copilot, Anthropic, and IBM Research.
+
+---
+
 ## Try It Now
 
 ```bash
