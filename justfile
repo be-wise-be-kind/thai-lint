@@ -67,6 +67,10 @@ help:
     @echo "  just show-version      - Show current version"
     @echo "  just bump-version      - Interactive version bump with validation"
     @echo ""
+    @echo "Documentation:"
+    @echo "  just docs-build        - Build docs with strict mode (fails on broken links)"
+    @echo "  just docs-serve        - Serve docs locally at http://127.0.0.1:8000/"
+    @echo ""
     @echo "Publishing:"
     @echo "  just publish-pypi      - Publish to PyPI (after tests, linting, and version bump)"
     @echo "  just publish-docker    - Publish to Docker Hub (after tests, linting, and version bump)"
@@ -906,6 +910,25 @@ update-test-badges:
     else
         echo "⚠️  No coverage data found. Run 'just test-coverage' first."
     fi
+
+# ============================================================================
+# Documentation
+# ============================================================================
+
+# Build documentation with strict mode (fails on broken links)
+docs-build:
+    @echo "Building documentation with strict mode..."
+    poetry run mkdocs build --strict
+    @echo "✓ Documentation built successfully (no broken links)"
+
+# Serve documentation locally for preview
+docs-serve:
+    @echo "Serving documentation at http://127.0.0.1:8000/"
+    poetry run mkdocs serve --dev-addr 127.0.0.1:8000
+
+# ============================================================================
+# Publishing
+# ============================================================================
 
 # Publish to PyPI (runs tests, linting, and version bump first)
 # Usage: just publish-pypi          (interactive version prompt)
