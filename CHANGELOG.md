@@ -28,6 +28,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **Stateless Class Linter** - Detect Python classes without state that should be module-level functions
 
+### Documentation
+
+- **Parallel Processing** - Added `--parallel` flag documentation to CLI reference and README
+  - Documents multi-core processing with ProcessPoolExecutor (up to 8 workers)
+  - Explains automatic fallback to sequential for small file counts
+  - Provides usage guidance and performance expectations
+
 ## [0.15.4] - 2026-01-26
 
 ### Added
