@@ -116,9 +116,11 @@ See [How to Ignore Violations](https://thai-lint.readthedocs.io/en/latest/how-to
 - name: Run thailint
   run: |
     pip install thai-lint
-    thailint dry src/
-    thailint nesting src/
+    thailint --parallel dry src/
+    thailint --parallel nesting src/
 ```
+
+Use `--parallel` for faster linting on large codebases (2-4x speedup on multi-core systems).
 
 Exit codes: `0` = success, `1` = violations found, `2` = error.
 
