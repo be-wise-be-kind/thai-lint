@@ -44,6 +44,7 @@ from src.cli.utils import (
     get_or_detect_project_root,
     handle_linting_error,
     load_config_file,
+    parallel_option,
     setup_base_orchestrator,
     validate_paths_exist,
 )
@@ -112,6 +113,7 @@ def _parse_json_rules(rules: str) -> dict[str, Any]:
 @click.option("--rules", "-r", help="Inline JSON rules configuration")
 @format_option
 @click.option("--recursive/--no-recursive", default=True, help="Scan directories recursively")
+@parallel_option
 @click.pass_context
 def file_placement(  # pylint: disable=too-many-arguments,too-many-positional-arguments
     ctx: click.Context,
@@ -120,6 +122,7 @@ def file_placement(  # pylint: disable=too-many-arguments,too-many-positional-ar
     rules: str | None,
     format: str,
     recursive: bool,
+    parallel: bool,
 ) -> None:
     # Justification for Pylint disables:
     # - too-many-arguments/positional: CLI requires 1 ctx + 1 arg + 4 options = 6 params
@@ -166,6 +169,7 @@ def file_placement(  # pylint: disable=too-many-arguments,too-many-positional-ar
             rules,
             format,
             recursive,
+            parallel,
             cmd_ctx.verbose,
             cmd_ctx.project_root,
         )
@@ -179,13 +183,14 @@ def _execute_file_placement_lint(  # pylint: disable=too-many-arguments,too-many
     rules: str | None,
     format: str,
     recursive: bool,
+    parallel: bool,
     verbose: bool,
     project_root: Path | None = None,
 ) -> NoReturn:
     """Execute file placement linting."""
     validate_paths_exist(path_objs)
     orchestrator = _setup_orchestrator(path_objs, config_file, rules, verbose, project_root)
-    all_violations = execute_linting_on_paths(orchestrator, path_objs, recursive)
+    all_violations = execute_linting_on_paths(orchestrator, path_objs, recursive, parallel)
 
     # Filter to only file-placement violations
     violations = [v for v in all_violations if v.rule_id.startswith("file-placement")]
@@ -221,10 +226,10 @@ def _apply_pipeline_config_override(
 
 
 def _run_pipeline_lint(
-    orchestrator: "Orchestrator", path_objs: list[Path], recursive: bool
+    orchestrator: "Orchestrator", path_objs: list[Path], recursive: bool, parallel: bool = False
 ) -> list[Violation]:
     """Execute collection-pipeline lint on files or directories."""
-    all_violations = execute_linting_on_paths(orchestrator, path_objs, recursive)
+    all_violations = execute_linting_on_paths(orchestrator, path_objs, recursive, parallel)
     return [v for v in all_violations if "collection-pipeline" in v.rule_id]
 
 
@@ -234,6 +239,7 @@ def _run_pipeline_lint(
 @format_option
 @click.option("--min-continues", type=int, help="Override min continue guards to flag (default: 1)")
 @click.option("--recursive/--no-recursive", default=True, help="Scan directories recursively")
+@parallel_option
 @click.pass_context
 def pipeline(  # pylint: disable=too-many-arguments,too-many-positional-arguments
     ctx: click.Context,
@@ -242,6 +248,7 @@ def pipeline(  # pylint: disable=too-many-arguments,too-many-positional-argument
     format: str,
     min_continues: int | None,
     recursive: bool,
+    parallel: bool,
 ) -> None:
     """Check for collection pipeline anti-patterns in code.
 
@@ -289,6 +296,7 @@ def pipeline(  # pylint: disable=too-many-arguments,too-many-positional-argument
             format,
             min_continues,
             recursive,
+            parallel,
             cmd_ctx.verbose,
             cmd_ctx.project_root,
         )
@@ -302,6 +310,7 @@ def _execute_pipeline_lint(  # pylint: disable=too-many-arguments,too-many-posit
     format: str,
     min_continues: int | None,
     recursive: bool,
+    parallel: bool,
     verbose: bool,
     project_root: Path | None = None,
 ) -> NoReturn:
@@ -309,7 +318,7 @@ def _execute_pipeline_lint(  # pylint: disable=too-many-arguments,too-many-posit
     validate_paths_exist(path_objs)
     orchestrator = _setup_pipeline_orchestrator(path_objs, config_file, verbose, project_root)
     _apply_pipeline_config_override(orchestrator, min_continues, verbose)
-    pipeline_violations = _run_pipeline_lint(orchestrator, path_objs, recursive)
+    pipeline_violations = _run_pipeline_lint(orchestrator, path_objs, recursive, parallel)
 
     if verbose:
         logger.info(f"Found {len(pipeline_violations)} collection-pipeline violation(s)")

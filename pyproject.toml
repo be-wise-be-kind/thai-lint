@@ -17,7 +17,7 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry]
 name = "thailint"
-version = "0.13.0"
+version = "0.15.1"
 description = "The AI Linter - Enterprise-grade linting and governance for AI-generated code across multiple languages"
 authors = ["Steve Jackson"]
 license = "MIT"
@@ -38,6 +38,7 @@ keywords = [
     "python",
     "performance",
     "typescript",
+    "rust",
 ]
 classifiers = [
     "Development Status :: 4 - Beta",
@@ -75,6 +76,7 @@ click = "^8.1.0"
 pyyaml = "^6.0"
 tree-sitter = "^0.25.2"
 tree-sitter-typescript = "^0.23.2"
+tree-sitter-rust = "^0.23.2"
 pyprojroot = "^0.3.0"
 
 [tool.poetry.group.dev.dependencies]

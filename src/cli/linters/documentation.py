@@ -48,10 +48,10 @@ def _setup_file_header_orchestrator(
 
 
 def _run_file_header_lint(
-    orchestrator: "Orchestrator", path_objs: list[Path], recursive: bool
+    orchestrator: "Orchestrator", path_objs: list[Path], recursive: bool, parallel: bool = False
 ) -> list[Violation]:
     """Execute file-header lint on files or directories."""
-    all_violations = execute_linting_on_paths(orchestrator, path_objs, recursive)
+    all_violations = execute_linting_on_paths(orchestrator, path_objs, recursive, parallel)
     return [v for v in all_violations if "file-header" in v.rule_id]
 
 
@@ -61,7 +61,9 @@ def _execute_file_header_lint(params: ExecuteParams) -> NoReturn:
     orchestrator = _setup_file_header_orchestrator(
         params.path_objs, params.config_file, params.verbose, params.project_root
     )
-    file_header_violations = _run_file_header_lint(orchestrator, params.path_objs, params.recursive)
+    file_header_violations = _run_file_header_lint(
+        orchestrator, params.path_objs, params.recursive, params.parallel
+    )
 
     if params.verbose:
         logger.info(f"Found {len(file_header_violations)} file header violation(s)")

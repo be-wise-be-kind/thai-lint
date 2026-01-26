@@ -26,6 +26,7 @@ Suppressions:
 
 import logging
 import sys
+from contextlib import suppress
 from pathlib import Path
 from typing import TYPE_CHECKING, NoReturn
 
@@ -85,7 +86,7 @@ def _apply_nesting_config_override(
 def _apply_nesting_to_languages(nesting_config: dict, max_depth: int) -> None:
     """Apply max_depth to language-specific configs."""
     for lang in ["python", "typescript", "javascript"]:
-        if lang in nesting_config:
+        with suppress(KeyError):
             nesting_config[lang]["max_nesting_depth"] = max_depth
 
 
@@ -220,10 +221,10 @@ def _apply_srp_config_override(
 
 
 def _run_srp_lint(
-    orchestrator: "Orchestrator", path_objs: list[Path], recursive: bool
+    orchestrator: "Orchestrator", path_objs: list[Path], recursive: bool, parallel: bool = False
 ) -> list[Violation]:
     """Execute SRP lint on files or directories."""
-    all_violations = execute_linting_on_paths(orchestrator, path_objs, recursive)
+    all_violations = execute_linting_on_paths(orchestrator, path_objs, recursive, parallel)
     return [v for v in all_violations if "srp" in v.rule_id]
 
 
@@ -234,6 +235,7 @@ def _run_srp_lint(
 @click.option("--max-methods", type=int, help="Override max methods per class (default: 7)")
 @click.option("--max-loc", type=int, help="Override max lines of code per class (default: 200)")
 @click.option("--recursive/--no-recursive", default=True, help="Scan directories recursively")
+@parallel_option
 @click.pass_context
 def srp(  # pylint: disable=too-many-arguments,too-many-positional-arguments
     ctx: click.Context,
@@ -243,6 +245,7 @@ def srp(  # pylint: disable=too-many-arguments,too-many-positional-arguments
     max_methods: int | None,
     max_loc: int | None,
     recursive: bool,
+    parallel: bool,
 ) -> None:
     """Check for Single Responsibility Principle violations.
 
@@ -293,6 +296,7 @@ def srp(  # pylint: disable=too-many-arguments,too-many-positional-arguments
             max_methods,
             max_loc,
             recursive,
+            parallel,
             cmd_ctx.verbose,
             cmd_ctx.project_root,
         )
@@ -307,6 +311,7 @@ def _execute_srp_lint(  # pylint: disable=too-many-arguments,too-many-positional
     max_methods: int | None,
     max_loc: int | None,
     recursive: bool,
+    parallel: bool,
     verbose: bool,
     project_root: Path | None = None,
 ) -> NoReturn:
@@ -314,7 +319,7 @@ def _execute_srp_lint(  # pylint: disable=too-many-arguments,too-many-positional
     validate_paths_exist(path_objs)
     orchestrator = _setup_srp_orchestrator(path_objs, config_file, verbose, project_root)
     _apply_srp_config_override(orchestrator, max_methods, max_loc, verbose)
-    srp_violations = _run_srp_lint(orchestrator, path_objs, recursive)
+    srp_violations = _run_srp_lint(orchestrator, path_objs, recursive, parallel)
 
     if verbose:
         logger.info(f"Found {len(srp_violations)} SRP violation(s)")

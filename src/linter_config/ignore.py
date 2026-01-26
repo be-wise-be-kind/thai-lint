@@ -27,6 +27,7 @@ Suppressions:
 
 import logging
 import re
+from contextlib import suppress
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -66,7 +67,7 @@ class IgnoreDirectiveParser:
     def is_ignored(self, file_path: Path) -> bool:
         """Check if file matches repository-level ignore patterns (cached)."""
         path_str = str(file_path)
-        if path_str in self._ignore_cache:
+        with suppress(KeyError):
             return self._ignore_cache[path_str]
         try:
             check_path = str(file_path.relative_to(self.project_root))

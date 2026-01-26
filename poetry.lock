@@ -70,14 +70,14 @@ files = [
 
 [[package]]
 name = "authlib"
-version = "1.6.5"
+version = "1.6.6"
 description = "The ultimate Python library in building OAuth and OpenID Connect servers and clients."
 optional = false
 python-versions = ">=3.9"
 groups = ["dev"]
 files = [
-    {file = "authlib-1.6.5-py2.py3-none-any.whl", hash = "sha256:3e0e0507807f842b02175507bdee8957a1d5707fd4afb17c32fb43fee90b6e3a"},
-    {file = "authlib-1.6.5.tar.gz", hash = "sha256:6aaf9c79b7cc96c900f0b284061691c5d4e61221640a948fe690b556a6d6d10b"},
+    {file = "authlib-1.6.6-py2.py3-none-any.whl", hash = "sha256:7d9e9bc535c13974313a87f53e8430eb6ea3d1cf6ae4f6efcd793f2e949143fd"},
+    {file = "authlib-1.6.6.tar.gz", hash = "sha256:45770e8e056d0f283451d9996fbb59b70d45722b45d854d58f32878d0a40c38e"},
 ]
 
 [package.dependencies]
@@ -658,14 +658,14 @@ testing = ["hatch", "pre-commit", "pytest", "tox"]
 
 [[package]]
 name = "filelock"
-version = "3.20.1"
+version = "3.20.3"
 description = "A platform independent file lock."
 optional = false
 python-versions = ">=3.10"
 groups = ["dev"]
 files = [
-    {file = "filelock-3.20.1-py3-none-any.whl", hash = "sha256:15d9e9a67306188a44baa72f569d2bfd803076269365fdea0934385da4dc361a"},
-    {file = "filelock-3.20.1.tar.gz", hash = "sha256:b8360948b351b80f420878d8516519a2204b07aefcdcfd24912a5d33127f188c"},
+    {file = "filelock-3.20.3-py3-none-any.whl", hash = "sha256:4b0dda527ee31078689fc205ec4f1c1bf7d56cf88b6dc9426c4f230e46c2dce1"},
+    {file = "filelock-3.20.3.tar.gz", hash = "sha256:18c57ee915c7ec61cff0ecf7f0f869936c7c30191bb0cf406f1341778d0834e1"},
 ]
 
 [[package]]
@@ -2448,6 +2448,27 @@ docs = ["sphinx (>=8.1,<9.0)", "sphinx-book-theme"]
 tests = ["tree-sitter-html (>=0.23.2)", "tree-sitter-javascript (>=0.23.1)", "tree-sitter-json (>=0.24.8)", "tree-sitter-python (>=0.23.6)", "tree-sitter-rust (>=0.23.2)"]
 
 [[package]]
+name = "tree-sitter-rust"
+version = "0.23.3"
+description = "Rust grammar for tree-sitter"
+optional = false
+python-versions = ">=3.9"
+groups = ["main"]
+files = [
+    {file = "tree_sitter_rust-0.23.3-cp39-abi3-macosx_10_9_x86_64.whl", hash = "sha256:91828b5eb178f67345d91fb92ec330582777ea5118b200409f0f90218badd3e4"},
+    {file = "tree_sitter_rust-0.23.3-cp39-abi3-macosx_11_0_arm64.whl", hash = "sha256:6628585d1bd4a6040744accae390f708b02f1604b2717a99ba56617faf9b77b3"},
+    {file = "tree_sitter_rust-0.23.3-cp39-abi3-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:56fff13863ce6205aeecc72b5320aea523d183409651c8f4685a73240f190531"},
+    {file = "tree_sitter_rust-0.23.3-cp39-abi3-manylinux_2_5_x86_64.manylinux1_x86_64.manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:84453179a03e5528c72701279c61a86e654de8ab4c332e01a62d03a961e3c7ef"},
+    {file = "tree_sitter_rust-0.23.3-cp39-abi3-musllinux_1_2_x86_64.whl", hash = "sha256:40b44840c0694f07a370b4f01c62e90b4878d609692d2f0ba2bdd83a884e9538"},
+    {file = "tree_sitter_rust-0.23.3-cp39-abi3-win_amd64.whl", hash = "sha256:6e7805b7d71886a3dc60a3e3ca3ac270b839d8ff83046c947f61cd5097517d38"},
+    {file = "tree_sitter_rust-0.23.3-cp39-abi3-win_arm64.whl", hash = "sha256:f4840fc26b9606b1c0b4e7184ef087a6376f3c65c6561e7d10b6093a0f6e370b"},
+    {file = "tree_sitter_rust-0.23.3.tar.gz", hash = "sha256:794d558a4b1068b66bb2ea60c9625a806beb81b643e325dca488b975d3467075"},
+]
+
+[package.extras]
+core = ["tree-sitter (>=0.22,<1.0)"]
+
+[[package]]
 name = "tree-sitter-typescript"
 version = "0.23.2"
 description = "TypeScript and TSX grammars for tree-sitter"
@@ -2527,14 +2548,14 @@ typing-extensions = ">=4.12.0"
 
 [[package]]
 name = "urllib3"
-version = "2.6.0"
+version = "2.6.3"
 description = "HTTP library with thread-safe connection pooling, file post, and more."
 optional = false
 python-versions = ">=3.9"
 groups = ["dev"]
 files = [
-    {file = "urllib3-2.6.0-py3-none-any.whl", hash = "sha256:c90f7a39f716c572c4e3e58509581ebd83f9b59cced005b7db7ad2d22b0db99f"},
-    {file = "urllib3-2.6.0.tar.gz", hash = "sha256:cb9bcef5a4b345d5da5d145dc3e30834f58e8018828cbc724d30b4cb7d4d49f1"},
+    {file = "urllib3-2.6.3-py3-none-any.whl", hash = "sha256:bf272323e553dfb2e87d9bfd225ca7b0f467b919d7bbd355436d3fd37cb0acd4"},
+    {file = "urllib3-2.6.3.tar.gz", hash = "sha256:1b62b6884944a57dbe321509ab94fd4d3b307075e0c2eae991ac71ee15ad38ed"},
 ]
 
 [package.extras]
@@ -2579,4 +2600,4 @@ requests = ">=2.0,<3.0"
 [metadata]
 lock-version = "2.1"
 python-versions = "^3.11"
-content-hash = "50afdc078768596274c36676b70777e9d01248c6b70bc72063913053a85d1fb0"
+content-hash = "899a76b389e6703f26f3e1fb0f7005caf416c14cc2f3d6ef30037563f0bdc8a6"

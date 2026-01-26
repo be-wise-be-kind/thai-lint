@@ -24,8 +24,9 @@ Implementation: Uses Click decorators for option definitions, deferred imports f
 import logging
 import sys
 from collections.abc import Callable
+from contextlib import suppress
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, TypeVar
+from typing import TYPE_CHECKING, Any, TypeVar, cast
 
 import click
 
@@ -188,9 +189,8 @@ def get_project_root_from_context(ctx: click.Context) -> Path | None:
         Path to determined project root, or None for auto-detection from target paths
     """
     # Check if already determined and cached
-    if "project_root" in ctx.obj:
-        cached: Path | None = ctx.obj["project_root"]
-        return cached
+    with suppress(KeyError):
+        return cast(Path | None, ctx.obj["project_root"])
 
     project_root = _determine_project_root_for_context(ctx)
     ctx.obj["project_root"] = project_root

@@ -43,6 +43,7 @@ from src.cli.utils import (
     format_option,
     get_project_root_from_context,
     handle_linting_error,
+    parallel_option,
     setup_base_orchestrator,
     validate_paths_exist,
 )
@@ -81,11 +82,13 @@ def _load_dry_config_file(orchestrator: "Orchestrator", config_file: str, verbos
     with config_path.open("r", encoding="utf-8") as f:
         config: dict[str, Any] = yaml.safe_load(f)
 
-    if "dry" in config:
-        orchestrator.config.update({"dry": config["dry"]})
-
-        if verbose:
-            logger.info(f"Loaded DRY config from {config_file}")
+    try:
+        dry_config = config["dry"]
+    except KeyError:
+        return  # No DRY config in file
+    orchestrator.config.update({"dry": dry_config})
+    if verbose:
+        logger.info(f"Loaded DRY config from {config_file}")
 
 
 def _apply_dry_config_override(
@@ -112,10 +115,10 @@ def _clear_dry_cache(orchestrator: "Orchestrator", verbose: bool) -> None:
 
 
 def _run_dry_lint(
-    orchestrator: "Orchestrator", path_objs: list[Path], recursive: bool
+    orchestrator: "Orchestrator", path_objs: list[Path], recursive: bool, parallel: bool = False
 ) -> list[Violation]:
     """Run DRY linting and return violations."""
-    all_violations = execute_linting_on_paths(orchestrator, path_objs, recursive)
+    all_violations = execute_linting_on_paths(orchestrator, path_objs, recursive, parallel)
     return [v for v in all_violations if v.rule_id.startswith("dry.")]
 
 
@@ -127,6 +130,7 @@ def _run_dry_lint(
 @click.option("--no-cache", is_flag=True, help="Disable SQLite cache (force rehash)")
 @click.option("--clear-cache", is_flag=True, help="Clear cache before running")
 @click.option("--recursive/--no-recursive", default=True, help="Scan directories recursively")
+@parallel_option
 @click.pass_context
 def dry(  # pylint: disable=too-many-arguments,too-many-positional-arguments
     ctx: click.Context,
@@ -137,6 +141,7 @@ def dry(  # pylint: disable=too-many-arguments,too-many-positional-arguments
     no_cache: bool,
     clear_cache: bool,
     recursive: bool,
+    parallel: bool,
 ) -> None:
     # Justification for Pylint disables:
     # - too-many-arguments/positional: CLI requires 1 ctx + 1 arg + 6 options = 8 params
@@ -203,6 +208,7 @@ def dry(  # pylint: disable=too-many-arguments,too-many-positional-arguments
             no_cache,
             clear_cache,
             recursive,
+            parallel,
             verbose,
             project_root,
         )
@@ -218,6 +224,7 @@ def _execute_dry_lint(  # pylint: disable=too-many-arguments,too-many-positional
     no_cache: bool,
     clear_cache: bool,
     recursive: bool,
+    parallel: bool,
     verbose: bool,
     project_root: Path | None = None,
 ) -> NoReturn:
@@ -233,7 +240,7 @@ def _execute_dry_lint(  # pylint: disable=too-many-arguments,too-many-positional
     if clear_cache:
         _clear_dry_cache(orchestrator, verbose)
 
-    dry_violations = _run_dry_lint(orchestrator, path_objs, recursive)
+    dry_violations = _run_dry_lint(orchestrator, path_objs, recursive, parallel)
 
     if verbose:
         logger.info(f"Found {len(dry_violations)} DRY violation(s)")
@@ -255,10 +262,10 @@ def _setup_magic_numbers_orchestrator(
 
 
 def _run_magic_numbers_lint(
-    orchestrator: "Orchestrator", path_objs: list[Path], recursive: bool
+    orchestrator: "Orchestrator", path_objs: list[Path], recursive: bool, parallel: bool = False
 ) -> list[Violation]:
     """Execute magic-numbers lint on files or directories."""
-    all_violations = execute_linting_on_paths(orchestrator, path_objs, recursive)
+    all_violations = execute_linting_on_paths(orchestrator, path_objs, recursive, parallel)
     return [v for v in all_violations if "magic-number" in v.rule_id]
 
 
@@ -269,7 +276,7 @@ def _execute_magic_numbers_lint(params: ExecuteParams) -> NoReturn:
         params.path_objs, params.config_file, params.verbose, params.project_root
     )
     magic_numbers_violations = _run_magic_numbers_lint(
-        orchestrator, params.path_objs, params.recursive
+        orchestrator, params.path_objs, params.recursive, params.parallel
     )
 
     if params.verbose:
@@ -301,10 +308,10 @@ def _setup_stringly_typed_orchestrator(
 
 
 def _run_stringly_typed_lint(
-    orchestrator: "Orchestrator", path_objs: list[Path], recursive: bool
+    orchestrator: "Orchestrator", path_objs: list[Path], recursive: bool, parallel: bool = False
 ) -> list[Violation]:
     """Execute stringly-typed lint on files or directories."""
-    all_violations = execute_linting_on_paths(orchestrator, path_objs, recursive)
+    all_violations = execute_linting_on_paths(orchestrator, path_objs, recursive, parallel)
     return [v for v in all_violations if "stringly-typed" in v.rule_id]
 
 
@@ -314,7 +321,9 @@ def _execute_stringly_typed_lint(params: ExecuteParams) -> NoReturn:
     orchestrator = _setup_stringly_typed_orchestrator(
         params.path_objs, params.config_file, params.verbose, params.project_root
     )
-    stringly_violations = _run_stringly_typed_lint(orchestrator, params.path_objs, params.recursive)
+    stringly_violations = _run_stringly_typed_lint(
+        orchestrator, params.path_objs, params.recursive, params.parallel
+    )
 
     if params.verbose:
         logger.info(f"Found {len(stringly_violations)} stringly-typed violation(s)")

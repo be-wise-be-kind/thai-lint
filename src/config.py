@@ -237,37 +237,47 @@ def _validate_required_keys(config: dict[str, Any], errors: list[str]) -> None:
 def _validate_log_level(config: dict[str, Any], errors: list[str]) -> None:
     """Validate log level is a valid value."""
     valid_log_levels = ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
-    if "log_level" in config:
-        if config["log_level"] not in valid_log_levels:
-            errors.append(
-                f"Invalid log_level: {config['log_level']}. "
-                f"Must be one of: {', '.join(valid_log_levels)}"
-            )
+    try:
+        log_level = config["log_level"]
+    except KeyError:
+        return  # Optional key not present
+    if log_level not in valid_log_levels:
+        errors.append(
+            f"Invalid log_level: {log_level}. Must be one of: {', '.join(valid_log_levels)}"
+        )
 
 
 def _validate_output_format(config: dict[str, Any], errors: list[str]) -> None:
     """Validate output format is a valid value."""
     valid_formats = ["text", "json", "yaml"]
-    if "output_format" in config:
-        if config["output_format"] not in valid_formats:
-            errors.append(
-                f"Invalid output_format: {config['output_format']}. "
-                f"Must be one of: {', '.join(valid_formats)}"
-            )
+    try:
+        output_format = config["output_format"]
+    except KeyError:
+        return  # Optional key not present
+    if output_format not in valid_formats:
+        errors.append(
+            f"Invalid output_format: {output_format}. Must be one of: {', '.join(valid_formats)}"
+        )
 
 
 def _validate_max_retries(config: dict[str, Any], errors: list[str]) -> None:
     """Validate max_retries configuration value."""
-    if "max_retries" in config:
-        if not isinstance(config["max_retries"], int) or config["max_retries"] < 0:
-            errors.append("max_retries must be a non-negative integer")
+    try:
+        max_retries = config["max_retries"]
+    except KeyError:
+        return  # Optional key not present
+    if not isinstance(max_retries, int) or max_retries < 0:
+        errors.append("max_retries must be a non-negative integer")
 
 
 def _validate_timeout(config: dict[str, Any], errors: list[str]) -> None:
     """Validate timeout configuration value."""
-    if "timeout" in config:
-        if not isinstance(config["timeout"], (int, float)) or config["timeout"] <= 0:
-            errors.append("timeout must be a positive number")
+    try:
+        timeout = config["timeout"]
+    except KeyError:
+        return  # Optional key not present
+    if not isinstance(timeout, (int, float)) or timeout <= 0:
+        errors.append("timeout must be a positive number")
 
 
 def _validate_numeric_values(config: dict[str, Any], errors: list[str]) -> None:
@@ -278,9 +288,12 @@ def _validate_numeric_values(config: dict[str, Any], errors: list[str]) -> None:
 
 def _validate_string_values(config: dict[str, Any], errors: list[str]) -> None:
     """Validate string configuration values."""
-    if "app_name" in config:
-        if not isinstance(config["app_name"], str) or not config["app_name"].strip():
-            errors.append("app_name must be a non-empty string")
+    try:
+        app_name = config["app_name"]
+    except KeyError:
+        return  # Optional key not present
+    if not isinstance(app_name, str) or not app_name.strip():
+        errors.append("app_name must be a non-empty string")
 
 
 def validate_config(config: dict[str, Any]) -> tuple[bool, list[str]]:
