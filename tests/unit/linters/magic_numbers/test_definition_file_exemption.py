@@ -199,9 +199,9 @@ def get_timeout():
 
         violations = rule.check(context)
         # 0.9, 1.0 might be allowed, but 3600 should be flagged
-        assert any(
-            "3600" in v.message for v in violations
-        ), "Regular code should be checked for magic numbers"
+        assert any("3600" in v.message for v in violations), (
+            "Regular code should be checked for magic numbers"
+        )
 
     def test_file_with_few_constants_is_checked(self) -> None:
         """Files with only a few constants should still be checked."""
@@ -224,9 +224,9 @@ def process_items(items):
 
         violations = rule.check(context)
         # 999 should be flagged (not a common constant)
-        assert any(
-            "999" in v.message for v in violations
-        ), "Files with few constants should still be checked"
+        assert any("999" in v.message for v in violations), (
+            "Files with few constants should still be checked"
+        )
 
 
 class TestExemptionConfig:

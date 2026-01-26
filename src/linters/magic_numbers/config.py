@@ -19,21 +19,34 @@ Interfaces: MagicNumberConfig(allowed_numbers: set, max_small_integer: int, enab
     from_dict class method for loading configuration from dictionary
 
 Implementation: Dataclass with validation and defaults, matches reference implementation patterns
+
+Suppressions:
+    - magic-numbers: This file defines the default allowed numbers constant, which by nature
+        contains the literal port numbers and common integers that form the allowlist itself.
 """
+# thailint: ignore-file[magic-numbers]
 
 from dataclasses import dataclass, field
 from typing import Any
 
 # Default allowed numbers including common small integers and standard ports
-# thailint: ignore-file[magic-numbers]
 DEFAULT_ALLOWED_NUMBERS: set[int | float] = {
     # Common small integers
-    -1, 0, 1, 2, 3, 4, 5, 10, 100, 1000,
+    -1,
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    10,
+    100,
+    1000,
     # Standard ports
-    21,    # FTP
-    22,    # SSH
-    80,    # HTTP
-    443,   # HTTPS
+    21,  # FTP
+    22,  # SSH
+    80,  # HTTP
+    443,  # HTTPS
     3000,  # Common dev server (Node.js, Rails)
     5000,  # Flask default
     8080,  # Alternate HTTP
@@ -84,9 +97,7 @@ class MagicNumberConfig:
                 "max_small_integer", config.get("max_small_integer", 10)
             )
         else:
-            allowed_numbers = set(
-                config.get("allowed_numbers", DEFAULT_ALLOWED_NUMBERS)
-            )
+            allowed_numbers = set(config.get("allowed_numbers", DEFAULT_ALLOWED_NUMBERS))
             max_small_integer = config.get("max_small_integer", 10)
 
         ignore_patterns = config.get("ignore", [])

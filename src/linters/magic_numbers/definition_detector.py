@@ -187,11 +187,7 @@ def _has_dict_with_int_keys(tree: ast.Module) -> bool:
     Returns:
         True if there's a dict with MIN_DICT_INT_KEYS+ int keys
     """
-    return any(
-        _has_enough_int_keys(node)
-        for node in ast.walk(tree)
-        if isinstance(node, ast.Dict)
-    )
+    return any(_has_enough_int_keys(node) for node in ast.walk(tree) if isinstance(node, ast.Dict))
 
 
 def _has_enough_int_keys(dict_node: ast.Dict) -> bool:
