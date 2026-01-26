@@ -70,6 +70,15 @@ def _is_pattern_allowed(pattern: StoredPattern, config: StringlyTypedConfig) -> 
     return _is_allowed_value_set(set(pattern.string_values), config)
 
 
+def _should_skip_pattern_values(values: set[str], config: StringlyTypedConfig) -> bool:
+    """Check if pattern values should be skipped."""
+    return (
+        _is_allowed_value_set(values, config)
+        or context_filter.are_all_values_excluded(values)
+        or _has_spaces(values)
+    )
+
+
 def _should_skip_patterns(patterns: list[StoredPattern], config: StringlyTypedConfig) -> bool:
     """Check if pattern group should be skipped based on config."""
     if not patterns:
@@ -77,14 +86,7 @@ def _should_skip_patterns(patterns: list[StoredPattern], config: StringlyTypedCo
     first = patterns[0]
     if not _is_enum_candidate(first, config):
         return True
-    if _is_pattern_allowed(first, config):
-        return True
-    # Skip if all values match excluded patterns (numeric strings, etc.)
-    if context_filter.are_all_values_excluded(set(first.string_values)):
-        return True
-    if _has_spaces(set(first.string_values)):
-        return True
-    return False
+    return _should_skip_pattern_values(set(first.string_values), config)
 
 
 def _should_skip_comparison(unique_values: set[str], config: StringlyTypedConfig) -> bool:
@@ -259,6 +261,15 @@ def _process_pattern_group(
 # --- Helper functions for function call processing ---
 
 
+def _is_valid_function(name: str, idx: int, vals: set[str], config: StringlyTypedConfig) -> bool:
+    """Check if a function passes all validity filters."""
+    if _is_allowed_value_set(vals, config):
+        return False
+    if _has_spaces(vals):
+        return False
+    return context_filter.should_include(name, idx, vals)
+
+
 def _get_valid_functions(
     storage: StringlyTypedStorage,
     config: StringlyTypedConfig,
@@ -270,14 +281,7 @@ def _get_valid_functions(
         max_values=config.max_values_for_enum,
         min_files=min_files,
     )
-
-    return [
-        (name, idx, vals)
-        for name, idx, vals in limited_funcs
-        if not _is_allowed_value_set(vals, config)
-        and not _has_spaces(vals)
-        and context_filter.should_include(name, idx, vals)
-    ]
+    return [(n, i, v) for n, i, v in limited_funcs if _is_valid_function(n, i, v, config)]
 
 
 def _build_call_violations(
