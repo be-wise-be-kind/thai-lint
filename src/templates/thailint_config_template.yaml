@@ -299,6 +299,34 @@ lazy-ignores:
   #   - "tests/**"
 
 # ============================================================================
+# LBYL (LOOK BEFORE YOU LEAP) LINTER
+# ============================================================================
+# Detects "Look Before You Leap" anti-patterns where pre-condition checks
+# are used instead of "Easier to Ask Forgiveness than Permission" (EAFP)
+#
+# Example: if key in dict: value = dict[key]  → try: value = dict[key]
+#
+lbyl:
+  enabled: true
+
+  # Pattern-specific toggles (all enabled by default except where noted)
+  detect_dict_key: true           # if key in dict: dict[key]
+  detect_hasattr: true            # if hasattr(obj, 'attr'): obj.attr
+  detect_file_exists: true        # if os.path.exists(f): open(f)
+  detect_len_check: true          # if len(x) > i: x[i]
+  detect_isinstance: false        # if isinstance(x, T): x.method() (disabled - often valid)
+  detect_none_check: false        # if x is not None: x.method() (disabled - often valid)
+  detect_string_validation: true  # if s.isdigit(): int(s)
+  detect_division_check: true     # if x != 0: y / x
+
+  # -------------------------------------------------------------------------
+  # OPTIONAL: File patterns to ignore
+  # -------------------------------------------------------------------------
+  # ignore:
+  #   - "tests/**"
+  #   - "scripts/**"
+
+# ============================================================================
 # PERFORMANCE LINTER
 # ============================================================================
 # Detects performance anti-patterns in loops that cause O(n²) behavior
