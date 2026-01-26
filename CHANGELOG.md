@@ -27,6 +27,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - **Stateless Class Linter** - Detect Python classes without state that should be module-level functions
+
+## [0.15.3] - 2026-01-26
+
+### Fixed
+
+- **DRY Linter**: Ignore directives (`# thailint: ignore-start dry` / `ignore-end`) now work correctly for both duplicate code and duplicate constant detection (#144)
   - AST-based detection of classes without `__init__`/`__new__` constructors
   - Detects classes without instance state (`self.attr` assignments)
   - Excludes ABC, Protocol, and decorated classes (legitimate patterns)
