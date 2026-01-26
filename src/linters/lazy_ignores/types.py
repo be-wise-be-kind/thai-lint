@@ -6,7 +6,7 @@ Scope: Data structures for ignore directives and suppression entries
 Overview: Defines core types for the lazy-ignores linter including IgnoreType enum for
     categorizing different suppression patterns, IgnoreDirective dataclass for representing
     detected ignores in code, and SuppressionEntry dataclass for representing declared
-    suppressions in file headers. Supports Python (noqa, type:ignore, pylint, nosec),
+    suppressions in file headers. Supports Python (noqa, type:ignore, pylint, nosec, pyright),
     TypeScript (@ts-ignore, eslint-disable), thai-lint (thailint:ignore), and test skip
     patterns (pytest.mark.skip, it.skip, describe.skip).
 
@@ -31,6 +31,7 @@ class IgnoreType(Enum):
     TYPE_IGNORE = "type:ignore"
     PYLINT_DISABLE = "pylint:disable"
     NOSEC = "nosec"
+    PYRIGHT_IGNORE = "pyright:ignore"
     TS_IGNORE = "ts-ignore"
     TS_NOCHECK = "ts-nocheck"
     TS_EXPECT_ERROR = "ts-expect-error"

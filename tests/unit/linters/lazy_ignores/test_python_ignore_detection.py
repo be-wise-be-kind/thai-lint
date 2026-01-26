@@ -165,6 +165,46 @@ y = 2  # type: ignore
         assert directives[1].line == 4
 
 
+class TestPyrightIgnoreDetection:
+    """Tests for # pyright: ignore detection."""
+
+    def test_detects_bare_pyright_ignore(self) -> None:
+        """Detects # pyright: ignore."""
+        code = "from module import Item  # pyright: ignore"
+        detector = PythonIgnoreDetector()
+        directives = detector.find_ignores(code)
+        assert len(directives) == 1
+        assert directives[0].ignore_type == IgnoreType.PYRIGHT_IGNORE
+
+    def test_detects_pyright_ignore_with_code(self) -> None:
+        """Detects # pyright: ignore[reportPrivateImportUsage]."""
+        code = (
+            "from langfuse.media import LangfuseMedia  # pyright: ignore[reportPrivateImportUsage]"
+        )
+        detector = PythonIgnoreDetector()
+        directives = detector.find_ignores(code)
+        assert len(directives) == 1
+        assert directives[0].ignore_type == IgnoreType.PYRIGHT_IGNORE
+        assert "reportPrivateImportUsage" in directives[0].rule_ids
+
+    def test_detects_pyright_ignore_multiple_codes(self) -> None:
+        """Detects # pyright: ignore[code1, code2]."""
+        code = "x = foo()  # pyright: ignore[reportGeneralTypeIssues, reportUnknownMemberType]"
+        detector = PythonIgnoreDetector()
+        directives = detector.find_ignores(code)
+        assert len(directives) == 1
+        assert "reportGeneralTypeIssues" in directives[0].rule_ids
+        assert "reportUnknownMemberType" in directives[0].rule_ids
+
+    def test_pyright_ignore_case_insensitive(self) -> None:
+        """Handles # PYRIGHT: ignore."""
+        code = "x = 1  # PYRIGHT: ignore"
+        detector = PythonIgnoreDetector()
+        directives = detector.find_ignores(code)
+        assert len(directives) == 1
+        assert directives[0].ignore_type == IgnoreType.PYRIGHT_IGNORE
+
+
 class TestFalsePositivePrevention:
     """Tests ensuring patterns in docstrings/strings are NOT detected."""
 
