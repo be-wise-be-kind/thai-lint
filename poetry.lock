@@ -2448,6 +2448,27 @@ docs = ["sphinx (>=8.1,<9.0)", "sphinx-book-theme"]
 tests = ["tree-sitter-html (>=0.23.2)", "tree-sitter-javascript (>=0.23.1)", "tree-sitter-json (>=0.24.8)", "tree-sitter-python (>=0.23.6)", "tree-sitter-rust (>=0.23.2)"]
 
 [[package]]
+name = "tree-sitter-rust"
+version = "0.23.3"
+description = "Rust grammar for tree-sitter"
+optional = false
+python-versions = ">=3.9"
+groups = ["main"]
+files = [
+    {file = "tree_sitter_rust-0.23.3-cp39-abi3-macosx_10_9_x86_64.whl", hash = "sha256:91828b5eb178f67345d91fb92ec330582777ea5118b200409f0f90218badd3e4"},
+    {file = "tree_sitter_rust-0.23.3-cp39-abi3-macosx_11_0_arm64.whl", hash = "sha256:6628585d1bd4a6040744accae390f708b02f1604b2717a99ba56617faf9b77b3"},
+    {file = "tree_sitter_rust-0.23.3-cp39-abi3-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:56fff13863ce6205aeecc72b5320aea523d183409651c8f4685a73240f190531"},
+    {file = "tree_sitter_rust-0.23.3-cp39-abi3-manylinux_2_5_x86_64.manylinux1_x86_64.manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:84453179a03e5528c72701279c61a86e654de8ab4c332e01a62d03a961e3c7ef"},
+    {file = "tree_sitter_rust-0.23.3-cp39-abi3-musllinux_1_2_x86_64.whl", hash = "sha256:40b44840c0694f07a370b4f01c62e90b4878d609692d2f0ba2bdd83a884e9538"},
+    {file = "tree_sitter_rust-0.23.3-cp39-abi3-win_amd64.whl", hash = "sha256:6e7805b7d71886a3dc60a3e3ca3ac270b839d8ff83046c947f61cd5097517d38"},
+    {file = "tree_sitter_rust-0.23.3-cp39-abi3-win_arm64.whl", hash = "sha256:f4840fc26b9606b1c0b4e7184ef087a6376f3c65c6561e7d10b6093a0f6e370b"},
+    {file = "tree_sitter_rust-0.23.3.tar.gz", hash = "sha256:794d558a4b1068b66bb2ea60c9625a806beb81b643e325dca488b975d3467075"},
+]
+
+[package.extras]
+core = ["tree-sitter (>=0.22,<1.0)"]
+
+[[package]]
 name = "tree-sitter-typescript"
 version = "0.23.2"
 description = "TypeScript and TSX grammars for tree-sitter"
@@ -2579,4 +2600,4 @@ requests = ">=2.0,<3.0"
 [metadata]
 lock-version = "2.1"
 python-versions = "^3.11"
-content-hash = "50afdc078768596274c36676b70777e9d01248c6b70bc72063913053a85d1fb0"
+content-hash = "899a76b389e6703f26f3e1fb0f7005caf416c14cc2f3d6ef30037563f0bdc8a6"
