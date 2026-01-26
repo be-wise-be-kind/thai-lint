@@ -42,6 +42,10 @@ class LazyIgnoresConfig:  # pylint: disable=too-many-instance-attributes
     # Orphaned detection
     check_orphaned: bool = True  # Header entries without matching ignores
 
+    # Inline justification options
+    allow_inline_justifications: bool = True  # Allow " - reason" syntax
+    min_justification_length: int = 10  # Minimum chars for valid justification
+
     # File patterns to ignore
     ignore_patterns: list[str] = field(
         default_factory=lambda: [
@@ -64,5 +68,7 @@ class LazyIgnoresConfig:  # pylint: disable=too-many-instance-attributes
             check_thailint_ignore=config_dict.get("check_thailint_ignore", True),
             check_test_skips=config_dict.get("check_test_skips", True),
             check_orphaned=config_dict.get("check_orphaned", True),
+            allow_inline_justifications=config_dict.get("allow_inline_justifications", True),
+            min_justification_length=config_dict.get("min_justification_length", 10),
             ignore_patterns=config_dict.get("ignore_patterns", []),
         )

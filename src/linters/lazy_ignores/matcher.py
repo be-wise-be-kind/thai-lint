@@ -32,13 +32,15 @@ from .types import IgnoreDirective, IgnoreType
 class IgnoreSuppressionMatcher:
     """Matches ignore directives with header suppressions."""
 
-    def __init__(self, parser: SuppressionsParser) -> None:
+    def __init__(self, parser: SuppressionsParser, min_justification_length: int = 10) -> None:
         """Initialize the matcher.
 
         Args:
             parser: SuppressionsParser for rule ID normalization.
+            min_justification_length: Minimum length for valid inline justification.
         """
         self._parser = parser
+        self._min_justification_length = min_justification_length
 
     def collect_used_rule_ids(self, ignores: list[IgnoreDirective]) -> set[str]:
         """Collect all normalized rule IDs used in ignore directives.
@@ -72,6 +74,9 @@ class IgnoreSuppressionMatcher:
     ) -> list[str]:
         """Find which rule IDs in an ignore are not justified.
 
+        Checks inline justification first (higher precedence), then falls back
+        to header-based suppressions.
+
         Args:
             ignore: The ignore directive to check.
             suppressions: Dict of normalized rule IDs to justifications.
@@ -79,17 +84,45 @@ class IgnoreSuppressionMatcher:
         Returns:
             List of unjustified rule IDs (original case preserved).
         """
-        if not ignore.rule_ids:
-            type_key = self._normalize(ignore.ignore_type.value)
-            if type_key not in suppressions:
-                return [ignore.ignore_type.value]
+        if self._has_valid_inline_justification(ignore):
             return []
 
-        unjustified: list[str] = []
-        for rule_id in ignore.rule_ids:
-            if not self._is_rule_justified(ignore, rule_id, suppressions):
-                unjustified.append(rule_id)
-        return unjustified
+        if not ignore.rule_ids:
+            return self._check_bare_ignore(ignore, suppressions)
+
+        return self._check_rule_specific_ignore(ignore, suppressions)
+
+    def _check_bare_ignore(
+        self, ignore: IgnoreDirective, suppressions: dict[str, str]
+    ) -> list[str]:
+        """Check if a bare ignore (no specific rules) is justified."""
+        type_key = self._normalize(ignore.ignore_type.value)
+        if type_key in suppressions:
+            return []
+        return [ignore.ignore_type.value]
+
+    def _check_rule_specific_ignore(
+        self, ignore: IgnoreDirective, suppressions: dict[str, str]
+    ) -> list[str]:
+        """Check which specific rule IDs are not justified."""
+        return [
+            rule_id
+            for rule_id in ignore.rule_ids
+            if not self._is_rule_justified(ignore, rule_id, suppressions)
+        ]
+
+    def _has_valid_inline_justification(self, ignore: IgnoreDirective) -> bool:
+        """Check if the ignore has a valid inline justification.
+
+        Args:
+            ignore: The ignore directive to check.
+
+        Returns:
+            True if the ignore has an inline justification meeting minimum length.
+        """
+        if not ignore.inline_justification:
+            return False
+        return len(ignore.inline_justification) >= self._min_justification_length
 
     def _is_rule_justified(
         self, ignore: IgnoreDirective, rule_id: str, suppressions: dict[str, str]

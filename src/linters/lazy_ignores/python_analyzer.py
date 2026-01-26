@@ -205,5 +205,5 @@ class PythonIgnoreDetector:
                 continue
             if _is_pattern_in_string_literal(line, match.start()):
                 continue
-            found.append(create_directive(match, ignore_type, line_num, file_path))
+            found.append(create_directive(match, ignore_type, line_num, file_path, full_line=line))
         return found
