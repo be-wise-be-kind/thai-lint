@@ -28,13 +28,13 @@ This is the **PRIMARY HANDOFF DOCUMENT** for AI agents working on the Rust Linte
 4. **Update this document** after completing each PR
 
 ## Current Status
-**Current PR**: PR1 Complete - Ready for PR2
-**Infrastructure State**: Rust language detection and tree-sitter parsing implemented
+**Current PR**: Not Started - PR1 Infrastructure pending
+**Infrastructure State**: No Rust support exists
 **Feature Target**: Rust language detection, tree-sitter parsing, and 3 novel AI-focused lint rules
 
 ## Required Documents Location
 ```
-.roadmap/in-progress/rust-linter-support/
+.roadmap/planning/rust-linter-support/
 ├── AI_CONTEXT.md          # Overall feature architecture and context
 ├── PR_BREAKDOWN.md        # Detailed instructions for each PR
 └── PROGRESS_TRACKER.md    # THIS FILE - Current progress and handoff notes
@@ -42,28 +42,28 @@ This is the **PRIMARY HANDOFF DOCUMENT** for AI agents working on the Rust Linte
 
 ## Next PR to Implement
 
-### START HERE: PR2 - Unwrap Abuse Detector
+### START HERE: PR1 - Rust Infrastructure & Language Detection
 
 **Quick Summary**:
-Detect `.unwrap()` and `.expect()` calls outside test code. Suggest safer alternatives like `?`, `unwrap_or`, `unwrap_or_default`.
+Add Rust to language detection, create RustBaseAnalyzer (tree-sitter), and add tree-sitter-rust as optional dependency. No lint rules yet - just the foundation.
 
 **Pre-flight Checklist**:
-- [ ] Review RustBaseAnalyzer in `src/analyzers/rust_base.py` for parsing utilities
-- [ ] Review rust_context.py for test detection (`is_inside_test`)
-- [ ] Study existing linter pattern in `src/linters/srp/` for directory structure
+- [ ] Understand existing TypeScriptBaseAnalyzer pattern in `src/analyzers/typescript_base.py`
+- [ ] Review language_detector.py for extension mapping pattern
+- [ ] Check pyproject.toml for how tree-sitter-typescript is declared as optional
 
 **Prerequisites Complete**:
 - [x] Research completed on Rust anti-patterns and existing tooling
 - [x] Scope defined: Novel rules only, no Clippy duplication
-- [x] PR1 implementation complete - Rust infrastructure ready
+- [ ] PR1 implementation pending
 
 ---
 
 ## Overall Progress
-**Total Completion**: 17% (1/6 PRs completed)
+**Total Completion**: 0% (0/6 PRs completed)
 
 ```
-[███░░░░░░░░░░░░░░░░░] 17% Complete
+[░░░░░░░░░░░░░░░░░░░░] 0% Complete
 ```
 
 ---
@@ -72,7 +72,7 @@ Detect `.unwrap()` and `.expect()` calls outside test code. Suggest safer altern
 
 | PR | Title | Status | Completion | Complexity | Priority | Notes |
 |----|-------|--------|------------|------------|----------|-------|
-| PR1 | Rust Infrastructure & Language Detection | 🟢 Complete | 100% | Low | P0 | Foundation complete |
+| PR1 | Rust Infrastructure & Language Detection | 🔴 Not Started | 0% | Low | P0 | Foundation - must be first |
 | PR2 | Unwrap Abuse Detector | 🔴 Not Started | 0% | Medium | P1 | High-value AI code smell |
 | PR3 | Excessive Clone Detector | 🔴 Not Started | 0% | Medium | P1 | High-value AI code smell |
 | PR4 | Blocking-in-Async Detector | 🔴 Not Started | 0% | Medium | P2 | Novel rule, async-specific |
@@ -103,10 +103,10 @@ Detect `.unwrap()` and `.expect()` calls outside test code. Suggest safer altern
 - `tests/unit/analyzers/test_rust_base.py` - New test file
 
 ### Success Criteria
-- [x] `detect_language(Path("foo.rs"))` returns "rust"
-- [x] `RustBaseAnalyzer().parse_rust(code)` returns AST node
-- [x] Tests pass with and without tree-sitter-rust installed
-- [x] `just lint-full` passes
+- [ ] `detect_language(Path("foo.rs"))` returns "rust"
+- [ ] `RustBaseAnalyzer().parse_rust(code)` returns AST node
+- [ ] Tests pass with and without tree-sitter-rust installed
+- [ ] `just lint-full` passes
 
 ---
 
