@@ -30,6 +30,8 @@ class StatelessClassConfig:
     enabled: bool = True
     min_methods: int = 2
     ignore: list[str] = field(default_factory=list)
+    exempt_test_classes: bool = True
+    exempt_mixins: bool = True
 
     @classmethod
     def from_dict(
@@ -55,4 +57,6 @@ class StatelessClassConfig:
             enabled=config.get("enabled", True),
             min_methods=config.get("min_methods", 2),
             ignore=ignore_patterns,
+            exempt_test_classes=config.get("exempt_test_classes", True),
+            exempt_mixins=config.get("exempt_mixins", True),
         )

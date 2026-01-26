@@ -68,16 +68,18 @@ nesting:
 """)
 
         # Create test file with depth 3 (should violate limit 2)
+        # Note: Depth counts control structures only - each if/for/while adds 1
         test_file = tmp_path / "test.py"
         test_file.write_text("""
 def test_func():
     if True:
         if True:
-            print("depth 3")
+            if True:
+                print("depth 3")
 """)
 
         runner = CliRunner()
         result = runner.invoke(cli, ["nesting", "--config", str(config_file), str(test_file)])
 
-        # Should apply custom config and find violation
+        # Should apply custom config and find violation (depth 3 > limit 2)
         assert result.exit_code != 0, "Should find violation with custom limit 2"

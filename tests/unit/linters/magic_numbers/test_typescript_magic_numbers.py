@@ -297,7 +297,7 @@ const timeout = () => 3600;
         """Should detect magic numbers in async functions."""
         code = """
 async function fetchWithTimeout(url: string): Promise<Response> {
-    const timeout = 5000;
+    const timeout = 7500;
     return await fetch(url, { timeout });
 }
 """
@@ -311,7 +311,7 @@ async function fetchWithTimeout(url: string): Promise<Response> {
         context.metadata = {}
 
         violations = rule.check(context)
-        assert len(violations) > 0, "Should detect magic number 5000 in async function"
+        assert len(violations) > 0, "Should detect magic number 7500 in async function"
 
     def test_detects_magic_numbers_in_class_methods(self):
         """Should detect magic numbers in class methods."""
@@ -361,9 +361,9 @@ function getStatus(x: number): string {
         """Should detect magic numbers in object literals."""
         code = """
 const config = {
-    timeout: 5000,
+    timeout: 7500,
     maxRetries: 15,
-    port: 8080
+    port: 9000
 };
 """
         from src.linters.magic_numbers.linter import MagicNumberRule
