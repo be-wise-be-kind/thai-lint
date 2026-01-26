@@ -96,8 +96,14 @@ _get-src-targets +files="src/ tests/":
 _get-placement-target files=".":
     #!/usr/bin/env bash
     if [ "{{files}}" = "changed" ]; then
-        # For changed files, just use current directory
-        echo "."
+        # For pre-commit, only check staged files for proper placement
+        # ACM = Added, Copied, Modified files in staging area
+        CHANGED_FILES=$(git diff --cached --name-only --diff-filter=ACM || echo "")
+        if [ -n "$CHANGED_FILES" ]; then
+            echo "$CHANGED_FILES"
+        else
+            echo ""
+        fi
     else
         # Take the first file/directory only
         echo "{{files}}" | awk '{print $1}'
@@ -283,7 +289,9 @@ lint-placement path=".":
     @echo "{{BLUE}}{{BOLD}}════════════════════════════════════════════════════════════{{NC}}"
     @echo ""
     @PLACEMENT_TARGET=$(just _get-placement-target {{path}}); \
-    if poetry run thai-lint file-placement $PLACEMENT_TARGET --parallel 2>&1; then \
+    if [ -z "$PLACEMENT_TARGET" ]; then \
+        echo "{{YELLOW}}⚠ No files to check for placement{{NC}}"; \
+    elif poetry run thai-lint file-placement $PLACEMENT_TARGET --parallel 2>&1; then \
         echo "{{GREEN}}✓ File placement checks passed{{NC}}"; \
     else \
         echo "{{RED}}✗ File placement checks failed{{NC}}"; \
