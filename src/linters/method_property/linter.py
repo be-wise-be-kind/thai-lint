@@ -69,30 +69,20 @@ class MethodPropertyRule(MultiLanguageLintRule):  # thailint: ignore[srp,dry]
         Returns:
             MethodPropertyConfig instance
         """
-        test_config = self._try_load_test_config(context)
-        if test_config is not None:
-            return test_config
+        # Try test-style config first (context.config with hyphenated key)
+        if hasattr(context, "config") and isinstance(context.config, dict):
+            config_dict = context.config.get("method-property", {})
+            if isinstance(config_dict, dict) and config_dict:
+                return MethodPropertyConfig.from_dict(config_dict)
+
+        # Try production config (context.metadata with underscored key)
+        metadata = getattr(context, "metadata", None)
+        if isinstance(metadata, dict):
+            config_dict = metadata.get("method_property", {})
+            if isinstance(config_dict, dict) and config_dict:
+                return MethodPropertyConfig.from_dict(config_dict)
 
         return MethodPropertyConfig()
-
-    def _try_load_test_config(self, context: BaseLintContext) -> MethodPropertyConfig | None:
-        """Try to load test-style configuration.
-
-        Args:
-            context: Lint context
-
-        Returns:
-            Config if found, None otherwise
-        """
-        if not hasattr(context, "config"):
-            return None
-        config_attr = context.config
-        if config_attr is None or not isinstance(config_attr, dict):
-            return None
-
-        # Check for method-property specific config
-        linter_config = config_attr.get("method-property", config_attr)
-        return MethodPropertyConfig.from_dict(linter_config)
 
     def _is_file_ignored(self, context: BaseLintContext, config: MethodPropertyConfig) -> bool:
         """Check if file matches ignore patterns.
