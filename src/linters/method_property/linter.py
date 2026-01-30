@@ -69,20 +69,32 @@ class MethodPropertyRule(MultiLanguageLintRule):  # thailint: ignore[srp,dry]
         Returns:
             MethodPropertyConfig instance
         """
-        # Try test-style config first (context.config with hyphenated key)
-        if hasattr(context, "config") and isinstance(context.config, dict):
-            config_dict = context.config.get("method-property", {})
-            if isinstance(config_dict, dict) and config_dict:
-                return MethodPropertyConfig.from_dict(config_dict)
+        # Try test-style config (context.config with hyphenated key)
+        config_dict = self._get_test_config(context)
+        if config_dict:
+            return MethodPropertyConfig.from_dict(config_dict)
 
         # Try production config (context.metadata with underscored key)
-        metadata = getattr(context, "metadata", None)
-        if isinstance(metadata, dict):
-            config_dict = metadata.get("method_property", {})
-            if isinstance(config_dict, dict) and config_dict:
-                return MethodPropertyConfig.from_dict(config_dict)
+        config_dict = self._get_metadata_config(context)
+        if config_dict:
+            return MethodPropertyConfig.from_dict(config_dict)
 
         return MethodPropertyConfig()
+
+    def _get_test_config(self, context: BaseLintContext) -> dict | None:
+        """Get config from context.config (test-style)."""
+        if not hasattr(context, "config") or not isinstance(context.config, dict):
+            return None
+        config_dict = context.config.get("method-property", {})
+        return config_dict if isinstance(config_dict, dict) and config_dict else None
+
+    def _get_metadata_config(self, context: BaseLintContext) -> dict | None:
+        """Get config from context.metadata (production-style)."""
+        metadata = getattr(context, "metadata", None)
+        if not isinstance(metadata, dict):
+            return None
+        config_dict = metadata.get("method_property", {})
+        return config_dict if isinstance(config_dict, dict) and config_dict else None
 
     def _is_file_ignored(self, context: BaseLintContext, config: MethodPropertyConfig) -> bool:
         """Check if file matches ignore patterns.
