@@ -329,6 +329,30 @@ performance:
   #   - "scripts/**"
 
 # ============================================================================
+# UNWRAP ABUSE LINTER (Rust)
+# ============================================================================
+# Detects .unwrap() and .expect() calls in Rust code that may panic at runtime
+# Suggests safer alternatives like ?, unwrap_or(), unwrap_or_default()
+#
+unwrap-abuse:
+  enabled: true
+
+  # Allow .unwrap()/.expect() in #[test] functions and #[cfg(test)] modules
+  # Default: true
+  allow_in_tests: true
+
+  # Allow .expect() calls (they provide error context unlike bare .unwrap())
+  # Default: false
+  allow_expect: false
+
+  # -------------------------------------------------------------------------
+  # OPTIONAL: File patterns to ignore
+  # -------------------------------------------------------------------------
+  # ignore:
+  #   - "examples/"
+  #   - "benches/"
+
+# ============================================================================
 # GLOBAL SETTINGS
 # ============================================================================
 #
