@@ -28,8 +28,8 @@ This is the **PRIMARY HANDOFF DOCUMENT** for AI agents working on the Rust Linte
 4. **Update this document** after completing each PR
 
 ## Current Status
-**Current PR**: PR2 Complete - Ready for PR3
-**Infrastructure State**: Rust language detection, tree-sitter parsing, and unwrap abuse detection implemented
+**Current PR**: PR3 Complete - Ready for PR4
+**Infrastructure State**: Rust language detection, tree-sitter parsing, unwrap abuse detection, and clone abuse detection implemented
 **Feature Target**: Rust language detection, tree-sitter parsing, and 3 novel AI-focused lint rules
 
 ## Required Documents Location
@@ -42,29 +42,30 @@ This is the **PRIMARY HANDOFF DOCUMENT** for AI agents working on the Rust Linte
 
 ## Next PR to Implement
 
-### START HERE: PR3 - Excessive Clone Detector
+### START HERE: PR4 - Blocking-in-Async Detector
 
 **Quick Summary**:
-Detect `.clone()` abuse patterns common in AI-generated code. Flag: clone in loops, clone chains, clone where borrow works. Suggest: borrowing, Rc/Arc, Cow patterns.
+Detect blocking operations inside async functions. Flag: std::fs, std::thread::sleep, blocking network calls. Suggest: tokio equivalents, spawn_blocking.
 
 **Pre-flight Checklist**:
 - [ ] Review RustBaseAnalyzer in `src/analyzers/rust_base.py` for parsing utilities
-- [ ] Review unwrap_abuse linter in `src/linters/unwrap_abuse/` for implementation pattern
-- [ ] Review PR_BREAKDOWN.md for PR3 detailed instructions
+- [ ] Review unwrap_abuse or clone_abuse linter for implementation pattern
+- [ ] Review PR_BREAKDOWN.md for PR4 detailed instructions
 
 **Prerequisites Complete**:
 - [x] Research completed on Rust anti-patterns and existing tooling
 - [x] Scope defined: Novel rules only, no Clippy duplication
 - [x] PR1 implementation complete - Rust infrastructure ready
 - [x] PR2 implementation complete - Unwrap abuse detector working
+- [x] PR3 implementation complete - Clone abuse detector working
 
 ---
 
 ## Overall Progress
-**Total Completion**: 33% (2/6 PRs completed)
+**Total Completion**: 50% (3/6 PRs completed)
 
 ```
-[██████░░░░░░░░░░░░░░] 33% Complete
+[██████████░░░░░░░░░░] 50% Complete
 ```
 
 ---
@@ -75,7 +76,7 @@ Detect `.clone()` abuse patterns common in AI-generated code. Flag: clone in loo
 |----|-------|--------|------------|------------|----------|-------|
 | PR1 | Rust Infrastructure & Language Detection | 🟢 Complete | 100% | Low | P0 | Foundation complete |
 | PR2 | Unwrap Abuse Detector | 🟢 Complete | 100% | Medium | P1 | Detects .unwrap()/.expect() in non-test code |
-| PR3 | Excessive Clone Detector | 🔴 Not Started | 0% | Medium | P1 | High-value AI code smell |
+| PR3 | Excessive Clone Detector | 🟢 Complete | 100% | Medium | P1 | Detects clone-in-loop, clone-chain, unnecessary-clone |
 | PR4 | Blocking-in-Async Detector | 🔴 Not Started | 0% | Medium | P2 | Novel rule, async-specific |
 | PR5 | Extend Universal Linters to Rust | 🔴 Not Started | 0% | Medium | P2 | SRP, nesting, magic numbers |
 | PR6 | Validation Trials on Popular Repos | 🔴 Not Started | 0% | Medium | P0 | Must pass before release |
@@ -147,18 +148,24 @@ Detect `.clone()` abuse patterns common in AI-generated code. Flag: clone in loo
 - Suggest: borrowing, Rc/Arc, Cow patterns
 
 ### Key Files
-- `src/linters/rust_clone/` - New linter directory
-- `src/linters/rust_clone/linter.py` - Rule implementation
-- `src/linters/rust_clone/config.py` - Configuration
-- `src/linters/rust_clone/analyzer.py` - Pattern detection
-- `tests/unit/linters/rust_clone/` - Test suite
+- `src/linters/clone_abuse/` - Linter directory
+- `src/linters/clone_abuse/linter.py` - CloneAbuseRule implementation
+- `src/linters/clone_abuse/config.py` - CloneAbuseConfig dataclass
+- `src/linters/clone_abuse/rust_analyzer.py` - RustCloneAnalyzer (tree-sitter detection)
+- `src/linters/clone_abuse/violation_builder.py` - Violation factory functions
+- `src/cli/linters/rust.py` - CLI command registration
+- `tests/unit/linters/clone_abuse/` - Test suite (75 tests)
 
 ### Success Criteria
-- [ ] Detects `.clone()` inside loop bodies
-- [ ] Detects chained clones (`.clone().clone()`)
-- [ ] Detects clone immediately before move (often unnecessary)
-- [ ] Provides suggestions based on context
-- [ ] All output formats work
+- [x] Detects `.clone()` inside loop bodies (for, while, loop)
+- [x] Detects chained clones (`.clone().clone()`)
+- [x] Detects clone immediately before move (unnecessary clone with conservative heuristic)
+- [x] Provides actionable suggestions (borrowing, Rc/Arc, Cow patterns)
+- [x] Test-aware: ignores `#[test]` functions and `#[cfg(test)]` modules by default
+- [x] Configurable: pattern toggles, allow_in_tests, ignore paths
+- [x] CLI command registered (`thailint clone-abuse`)
+- [x] Config template updated
+- [x] All quality gates pass (`just lint-full` exit 0, Xenon A-grade, Pylint 10.00/10)
 
 ---
 

@@ -1,7 +1,8 @@
 """
 Purpose: CLI linters package that registers all linter commands to the main CLI group
 
-Scope: Export and registration of all linter CLI commands (nesting, srp, dry, magic-numbers, unwrap-abuse, etc.)
+Scope: Export and registration of all linter CLI commands (nesting, srp, dry, magic-numbers,
+    unwrap-abuse, clone-abuse, etc.)
 
 Overview: Package initialization that imports all linter command modules to trigger their registration
     with the main CLI group via Click decorators. Each submodule defines commands using @cli.command()
@@ -44,7 +45,7 @@ from src.cli.linters.code_patterns import (
 from src.cli.linters.code_smells import dry, magic_numbers
 from src.cli.linters.documentation import file_header
 from src.cli.linters.performance import perf, regex_in_loop, string_concat_loop
-from src.cli.linters.rust import unwrap_abuse
+from src.cli.linters.rust import clone_abuse, unwrap_abuse
 from src.cli.linters.structure import file_placement, pipeline
 from src.cli.linters.structure_quality import nesting, srp
 
@@ -71,4 +72,5 @@ __all__ = [
     "regex_in_loop",
     # Rust commands
     "unwrap_abuse",
+    "clone_abuse",
 ]

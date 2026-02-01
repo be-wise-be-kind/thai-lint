@@ -1,17 +1,18 @@
 """
-Purpose: CLI commands for Rust-specific linters (unwrap-abuse)
+Purpose: CLI commands for Rust-specific linters (unwrap-abuse, clone-abuse)
 
 Scope: Commands that detect Rust-specific anti-patterns and code smells
 
 Overview: Provides CLI commands for Rust code linting: unwrap-abuse detects .unwrap() and
-    .expect() calls that may panic at runtime and suggests safer alternatives. Each command
-    supports standard options (config, format, recursive) and integrates with the orchestrator
-    for execution. Designed to be extended with additional Rust linter commands (clone-abuse,
-    blocking-async) as they are implemented.
+    .expect() calls that may panic at runtime and suggests safer alternatives; clone-abuse
+    detects .clone() abuse patterns including clone in loops, chained clones, and unnecessary
+    clones. Each command supports standard options (config, format, recursive) and integrates
+    with the orchestrator for execution. Designed to be extended with additional Rust linter
+    commands (blocking-async) as they are implemented.
 
 Dependencies: click for CLI framework, src.cli.main for CLI group, src.cli.utils for shared utilities
 
-Exports: unwrap_abuse command
+Exports: unwrap_abuse command, clone_abuse command
 
 Interfaces: Click CLI commands registered to main CLI group
 
@@ -76,5 +77,53 @@ unwrap_abuse = create_linter_command(
     "Detects .unwrap() and .expect() calls in Rust code that may panic at runtime.\n"
     "    Suggests safer alternatives like the ? operator, unwrap_or(),\n"
     "    unwrap_or_default(), or match/if-let expressions.\n"
+    "    Ignores calls in #[test] functions and #[cfg(test)] modules by default.",
+)
+
+
+# =============================================================================
+# Clone Abuse Command
+# =============================================================================
+
+
+def _setup_clone_abuse_orchestrator(
+    path_objs: list[Path], config_file: str | None, verbose: bool, project_root: Path | None = None
+) -> "Orchestrator":
+    """Set up orchestrator for clone-abuse command."""
+    return setup_base_orchestrator(path_objs, config_file, verbose, project_root)
+
+
+def _run_clone_abuse_lint(
+    orchestrator: "Orchestrator", path_objs: list[Path], recursive: bool, parallel: bool = False
+) -> list[Violation]:
+    """Execute clone-abuse lint on files or directories."""
+    all_violations = execute_linting_on_paths(orchestrator, path_objs, recursive, parallel)
+    return [v for v in all_violations if v.rule_id.startswith("clone-abuse")]
+
+
+def _execute_clone_abuse_lint(params: ExecuteParams) -> NoReturn:
+    """Execute clone-abuse lint."""
+    validate_paths_exist(params.path_objs)
+    orchestrator = _setup_clone_abuse_orchestrator(
+        params.path_objs, params.config_file, params.verbose, params.project_root
+    )
+    clone_abuse_violations = _run_clone_abuse_lint(
+        orchestrator, params.path_objs, params.recursive, params.parallel
+    )
+
+    logger.debug(f"Found {len(clone_abuse_violations)} clone abuse violation(s)")
+
+    format_violations(clone_abuse_violations, params.format)
+    sys.exit(1 if clone_abuse_violations else 0)
+
+
+clone_abuse = create_linter_command(
+    "clone-abuse",
+    _execute_clone_abuse_lint,
+    "Check for .clone() abuse patterns in Rust code.",
+    "Detects .clone() abuse patterns in Rust code: clone in loops,\n"
+    "    chained .clone().clone() calls, and unnecessary clones where\n"
+    "    the original is not used after cloning.\n"
+    "    Suggests borrowing, Rc/Arc, or Cow patterns as alternatives.\n"
     "    Ignores calls in #[test] functions and #[cfg(test)] modules by default.",
 )

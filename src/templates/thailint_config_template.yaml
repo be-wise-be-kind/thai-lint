@@ -353,6 +353,38 @@ unwrap-abuse:
   #   - "benches/"
 
 # ============================================================================
+# CLONE ABUSE LINTER (Rust)
+# ============================================================================
+# Detects .clone() abuse patterns in Rust code: clone in loops, chained clones,
+# and unnecessary clones where the original is not used after cloning
+#
+clone-abuse:
+  enabled: true
+
+  # Allow .clone() in #[test] functions and #[cfg(test)] modules
+  # Default: true
+  allow_in_tests: true
+
+  # Toggle detection of .clone() inside loop bodies (for, while, loop)
+  # Default: true
+  detect_clone_in_loop: true
+
+  # Toggle detection of chained .clone().clone() calls
+  # Default: true
+  detect_clone_chain: true
+
+  # Toggle detection of unnecessary clones (clone before move)
+  # Default: true
+  detect_unnecessary_clone: true
+
+  # -------------------------------------------------------------------------
+  # OPTIONAL: File patterns to ignore
+  # -------------------------------------------------------------------------
+  # ignore:
+  #   - "examples/"
+  #   - "benches/"
+
+# ============================================================================
 # GLOBAL SETTINGS
 # ============================================================================
 #
