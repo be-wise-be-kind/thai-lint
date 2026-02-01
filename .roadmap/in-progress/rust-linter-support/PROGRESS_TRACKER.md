@@ -28,8 +28,8 @@ This is the **PRIMARY HANDOFF DOCUMENT** for AI agents working on the Rust Linte
 4. **Update this document** after completing each PR
 
 ## Current Status
-**Current PR**: PR1 Complete - Ready for PR2
-**Infrastructure State**: Rust language detection and tree-sitter parsing implemented
+**Current PR**: PR2 Complete - Ready for PR3
+**Infrastructure State**: Rust language detection, tree-sitter parsing, and unwrap abuse detection implemented
 **Feature Target**: Rust language detection, tree-sitter parsing, and 3 novel AI-focused lint rules
 
 ## Required Documents Location
@@ -42,28 +42,29 @@ This is the **PRIMARY HANDOFF DOCUMENT** for AI agents working on the Rust Linte
 
 ## Next PR to Implement
 
-### START HERE: PR2 - Unwrap Abuse Detector
+### START HERE: PR3 - Excessive Clone Detector
 
 **Quick Summary**:
-Detect `.unwrap()` and `.expect()` calls outside test code. Suggest safer alternatives like `?`, `unwrap_or`, `unwrap_or_default`.
+Detect `.clone()` abuse patterns common in AI-generated code. Flag: clone in loops, clone chains, clone where borrow works. Suggest: borrowing, Rc/Arc, Cow patterns.
 
 **Pre-flight Checklist**:
 - [ ] Review RustBaseAnalyzer in `src/analyzers/rust_base.py` for parsing utilities
-- [ ] Review rust_context.py for test detection (`is_inside_test`)
-- [ ] Study existing linter pattern in `src/linters/srp/` for directory structure
+- [ ] Review unwrap_abuse linter in `src/linters/unwrap_abuse/` for implementation pattern
+- [ ] Review PR_BREAKDOWN.md for PR3 detailed instructions
 
 **Prerequisites Complete**:
 - [x] Research completed on Rust anti-patterns and existing tooling
 - [x] Scope defined: Novel rules only, no Clippy duplication
 - [x] PR1 implementation complete - Rust infrastructure ready
+- [x] PR2 implementation complete - Unwrap abuse detector working
 
 ---
 
 ## Overall Progress
-**Total Completion**: 17% (1/6 PRs completed)
+**Total Completion**: 33% (2/6 PRs completed)
 
 ```
-[███░░░░░░░░░░░░░░░░░] 17% Complete
+[██████░░░░░░░░░░░░░░] 33% Complete
 ```
 
 ---
@@ -73,7 +74,7 @@ Detect `.unwrap()` and `.expect()` calls outside test code. Suggest safer altern
 | PR | Title | Status | Completion | Complexity | Priority | Notes |
 |----|-------|--------|------------|------------|----------|-------|
 | PR1 | Rust Infrastructure & Language Detection | 🟢 Complete | 100% | Low | P0 | Foundation complete |
-| PR2 | Unwrap Abuse Detector | 🔴 Not Started | 0% | Medium | P1 | High-value AI code smell |
+| PR2 | Unwrap Abuse Detector | 🟢 Complete | 100% | Medium | P1 | Detects .unwrap()/.expect() in non-test code |
 | PR3 | Excessive Clone Detector | 🔴 Not Started | 0% | Medium | P1 | High-value AI code smell |
 | PR4 | Blocking-in-Async Detector | 🔴 Not Started | 0% | Medium | P2 | Novel rule, async-specific |
 | PR5 | Extend Universal Linters to Rust | 🔴 Not Started | 0% | Medium | P2 | SRP, nesting, magic numbers |
@@ -118,18 +119,23 @@ Detect `.unwrap()` and `.expect()` calls outside test code. Suggest safer altern
 - Configurable: allow in tests, examples, main.rs
 
 ### Key Files
-- `src/linters/rust_unwrap/` - New linter directory
-- `src/linters/rust_unwrap/linter.py` - Rule implementation
-- `src/linters/rust_unwrap/config.py` - Configuration dataclass
-- `src/linters/rust_unwrap/analyzer.py` - tree-sitter pattern detection
-- `tests/unit/linters/rust_unwrap/` - Test suite
+- `src/linters/unwrap_abuse/` - Linter directory
+- `src/linters/unwrap_abuse/linter.py` - UnwrapAbuseRule implementation
+- `src/linters/unwrap_abuse/config.py` - UnwrapAbuseConfig dataclass
+- `src/linters/unwrap_abuse/rust_analyzer.py` - RustUnwrapAnalyzer (tree-sitter detection)
+- `src/linters/unwrap_abuse/violation_builder.py` - Violation factory functions
+- `src/cli/linters/rust.py` - CLI command registration
+- `tests/unit/linters/unwrap_abuse/` - Test suite (64 tests)
 
 ### Success Criteria
-- [ ] Detects `.unwrap()` calls in non-test Rust code
-- [ ] Detects `.expect()` calls in non-test Rust code
-- [ ] Ignores calls in `#[test]` functions and test modules
-- [ ] Provides actionable suggestions
-- [ ] All output formats work (text, json, sarif)
+- [x] Detects `.unwrap()` calls in non-test Rust code
+- [x] Detects `.expect()` calls in non-test Rust code
+- [x] Ignores calls in `#[test]` functions and `#[cfg(test)]` modules
+- [x] Provides actionable suggestions (?, unwrap_or, unwrap_or_default, context())
+- [x] Configurable: allow_in_tests, allow_expect, ignore patterns
+- [x] CLI command registered (`thailint unwrap-abuse`)
+- [x] Config template updated
+- [x] All quality gates pass (`just lint-full` exit 0, Xenon A-grade, Pylint 10.00/10)
 
 ---
 
