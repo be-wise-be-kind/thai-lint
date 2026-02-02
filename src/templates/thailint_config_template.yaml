@@ -385,6 +385,38 @@ clone-abuse:
   #   - "benches/"
 
 # ============================================================================
+# BLOCKING ASYNC LINTER (Rust)
+# ============================================================================
+# Detects blocking operations inside async functions in Rust code:
+# std::fs I/O, std::thread::sleep, and blocking std::net calls
+#
+blocking-async:
+  enabled: true
+
+  # Allow blocking calls in #[test] functions and #[cfg(test)] modules
+  # Default: true
+  allow_in_tests: true
+
+  # Toggle detection of std::fs operations in async functions
+  # Default: true
+  detect_fs_in_async: true
+
+  # Toggle detection of std::thread::sleep in async functions
+  # Default: true
+  detect_sleep_in_async: true
+
+  # Toggle detection of std::net blocking calls in async functions
+  # Default: true
+  detect_net_in_async: true
+
+  # -------------------------------------------------------------------------
+  # OPTIONAL: File patterns to ignore
+  # -------------------------------------------------------------------------
+  # ignore:
+  #   - "examples/"
+  #   - "benches/"
+
+# ============================================================================
 # GLOBAL SETTINGS
 # ============================================================================
 #

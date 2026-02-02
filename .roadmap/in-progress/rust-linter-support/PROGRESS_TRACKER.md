@@ -28,8 +28,8 @@ This is the **PRIMARY HANDOFF DOCUMENT** for AI agents working on the Rust Linte
 4. **Update this document** after completing each PR
 
 ## Current Status
-**Current PR**: PR3 Complete - Ready for PR4
-**Infrastructure State**: Rust language detection, tree-sitter parsing, unwrap abuse detection, and clone abuse detection implemented
+**Current PR**: PR4 Complete - Ready for PR5
+**Infrastructure State**: Rust language detection, tree-sitter parsing, unwrap abuse detection, clone abuse detection, and blocking-in-async detection implemented
 **Feature Target**: Rust language detection, tree-sitter parsing, and 3 novel AI-focused lint rules
 
 ## Required Documents Location
@@ -42,15 +42,15 @@ This is the **PRIMARY HANDOFF DOCUMENT** for AI agents working on the Rust Linte
 
 ## Next PR to Implement
 
-### START HERE: PR4 - Blocking-in-Async Detector
+### START HERE: PR5 - Extend Universal Linters to Rust
 
 **Quick Summary**:
-Detect blocking operations inside async functions. Flag: std::fs, std::thread::sleep, blocking network calls. Suggest: tokio equivalents, spawn_blocking.
+Add Rust support to existing multi-language linters. SRP: Analyze structs + impl blocks for method count. Nesting: Calculate nesting depth in Rust functions. Magic Numbers: Detect magic numbers in Rust code.
 
 **Pre-flight Checklist**:
-- [ ] Review RustBaseAnalyzer in `src/analyzers/rust_base.py` for parsing utilities
-- [ ] Review unwrap_abuse or clone_abuse linter for implementation pattern
-- [ ] Review PR_BREAKDOWN.md for PR4 detailed instructions
+- [ ] Review existing SRP, nesting, and magic numbers linters for language dispatch pattern
+- [ ] Review PR_BREAKDOWN.md for PR5 detailed instructions
+- [ ] Identify tree-sitter node types for Rust structs, impl blocks, and numeric literals
 
 **Prerequisites Complete**:
 - [x] Research completed on Rust anti-patterns and existing tooling
@@ -58,14 +58,15 @@ Detect blocking operations inside async functions. Flag: std::fs, std::thread::s
 - [x] PR1 implementation complete - Rust infrastructure ready
 - [x] PR2 implementation complete - Unwrap abuse detector working
 - [x] PR3 implementation complete - Clone abuse detector working
+- [x] PR4 implementation complete - Blocking-in-async detector working
 
 ---
 
 ## Overall Progress
-**Total Completion**: 50% (3/6 PRs completed)
+**Total Completion**: 67% (4/6 PRs completed)
 
 ```
-[██████████░░░░░░░░░░] 50% Complete
+[█████████████░░░░░░░] 67% Complete
 ```
 
 ---
@@ -77,7 +78,7 @@ Detect blocking operations inside async functions. Flag: std::fs, std::thread::s
 | PR1 | Rust Infrastructure & Language Detection | 🟢 Complete | 100% | Low | P0 | Foundation complete |
 | PR2 | Unwrap Abuse Detector | 🟢 Complete | 100% | Medium | P1 | Detects .unwrap()/.expect() in non-test code |
 | PR3 | Excessive Clone Detector | 🟢 Complete | 100% | Medium | P1 | Detects clone-in-loop, clone-chain, unnecessary-clone |
-| PR4 | Blocking-in-Async Detector | 🔴 Not Started | 0% | Medium | P2 | Novel rule, async-specific |
+| PR4 | Blocking-in-Async Detector | 🟢 Complete | 100% | Medium | P2 | Detects std::fs, std::thread::sleep, std::net in async fn |
 | PR5 | Extend Universal Linters to Rust | 🔴 Not Started | 0% | Medium | P2 | SRP, nesting, magic numbers |
 | PR6 | Validation Trials on Popular Repos | 🔴 Not Started | 0% | Medium | P0 | Must pass before release |
 
@@ -177,18 +178,24 @@ Detect blocking operations inside async functions. Flag: std::fs, std::thread::s
 - Suggest: tokio equivalents, spawn_blocking
 
 ### Key Files
-- `src/linters/rust_async/` - New linter directory
-- `src/linters/rust_async/linter.py` - Rule implementation
-- `src/linters/rust_async/config.py` - Configuration
-- `src/linters/rust_async/analyzer.py` - Pattern detection
-- `tests/unit/linters/rust_async/` - Test suite
+- `src/linters/blocking_async/` - Linter directory
+- `src/linters/blocking_async/linter.py` - BlockingAsyncRule implementation
+- `src/linters/blocking_async/config.py` - BlockingAsyncConfig dataclass
+- `src/linters/blocking_async/rust_analyzer.py` - RustBlockingAsyncAnalyzer (tree-sitter detection)
+- `src/linters/blocking_async/violation_builder.py` - Violation factory functions
+- `src/cli/linters/rust.py` - CLI command registration
+- `tests/unit/linters/blocking_async/` - Test suite (87 tests)
 
 ### Success Criteria
-- [ ] Detects `std::fs::*` calls in async fn
-- [ ] Detects `std::thread::sleep` in async fn
-- [ ] Suggests tokio/async-std alternatives
-- [ ] Handles nested async blocks correctly
-- [ ] All output formats work
+- [x] Detects `std::fs::*` calls in async fn (full and short paths)
+- [x] Detects `std::thread::sleep` in async fn (full and short paths)
+- [x] Detects `std::net::TcpStream/TcpListener/UdpSocket` in async fn
+- [x] Suggests tokio equivalents (tokio::fs, tokio::time::sleep, tokio::net)
+- [x] Test-aware: ignores `#[test]` functions and `#[cfg(test)]` modules by default
+- [x] Configurable: pattern toggles, allow_in_tests, ignore paths
+- [x] CLI command registered (`thailint blocking-async`)
+- [x] Config template updated
+- [x] All quality gates pass (`just lint-full` exit 0, Xenon A-grade, Pylint 10.00/10)
 
 ---
 
