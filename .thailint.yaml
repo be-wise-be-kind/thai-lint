@@ -93,6 +93,10 @@ nesting:
   javascript:
     max_nesting_depth: 3
 
+  # Rust-specific thresholds
+  rust:
+    max_nesting_depth: 3
+
   # Default fallback
   max_nesting_depth: 3  # Maximum allowed nesting depth (default: 4)
   # Higher values allow more complex nesting but may reduce readability
@@ -117,6 +121,11 @@ srp:
   javascript:
     max_methods: 10
     max_loc: 225
+
+  # Rust-specific thresholds (struct + impl block analysis)
+  rust:
+    max_methods: 8
+    max_loc: 200
 
   # Default fallback for other languages
   max_methods: 8

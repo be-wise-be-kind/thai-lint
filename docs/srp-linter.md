@@ -5,9 +5,9 @@
 
     **Scope**: Configuration, usage, refactoring patterns, and best practices for SRP analysis
 
-    **Overview**: Comprehensive documentation for the SRP linter that detects classes violating the Single Responsibility Principle in Python and TypeScript code. Covers how the linter works using AST analysis and heuristics, configuration options, CLI and library usage, common refactoring patterns discovered during dogfooding, and integration with CI/CD pipelines. Helps teams maintain modular, maintainable code by enforcing configurable SRP thresholds.
+    **Overview**: Comprehensive documentation for the SRP linter that detects classes violating the Single Responsibility Principle in Python, TypeScript, and Rust code. Covers how the linter works using AST analysis and heuristics, configuration options, CLI and library usage, common refactoring patterns discovered during dogfooding, and integration with CI/CD pipelines. Helps teams maintain modular, maintainable code by enforcing configurable SRP thresholds.
 
-    **Dependencies**: Python ast module (Python parser), tree-sitter-typescript (TypeScript parser)
+    **Dependencies**: Python ast module (Python parser), tree-sitter-typescript (TypeScript parser), tree-sitter-rust (Rust parser, optional)
 
     **Exports**: Usage documentation, configuration examples, refactoring patterns
 
@@ -38,7 +38,7 @@ src/services.py:15 - Class 'UserManager' has too many responsibilities (12 metho
 
 ## Overview
 
-The Single Responsibility Principle (SRP) linter detects classes that have too many responsibilities, making them harder to understand, test, and maintain. It analyzes Python and TypeScript code using Abstract Syntax Tree (AST) parsing to measure class complexity through multiple heuristics.
+The Single Responsibility Principle (SRP) linter detects classes that have too many responsibilities, making them harder to understand, test, and maintain. It analyzes Python, TypeScript, and Rust code using Abstract Syntax Tree (AST) parsing to measure class complexity through multiple heuristics.
 
 ### Why SRP Matters
 
@@ -82,6 +82,7 @@ The linter uses Abstract Syntax Tree (AST) parsing for accurate analysis:
 1. **Parse source code** into AST using language-specific parsers:
    - Python: Built-in `ast` module
    - TypeScript: `tree-sitter-typescript` library
+   - Rust: `tree-sitter-rust` library (optional dependency)
 
 2. **Find all classes** in the file
 
@@ -189,6 +190,11 @@ srp:
     max_methods: 10
     max_loc: 225
 
+  # Rust-specific (struct + impl block analysis)
+  rust:
+    max_methods: 8
+    max_loc: 200
+
   # Default fallback for other languages
   max_methods: 8
   max_loc: 200
@@ -238,6 +244,10 @@ srp:
   javascript:
     max_methods: 10
     max_loc: 225
+
+  rust:
+    max_methods: 8
+    max_loc: 200
 
   # Default for other languages
   max_methods: 8
@@ -941,6 +951,62 @@ Don't let violations accumulate:
 # Weekly SRP audit
 thailint srp src/ --format json > srp-weekly.json
 ```
+
+## Language Support
+
+### Python Support
+
+**Fully Supported** - Analyzes classes using the built-in `ast` module. Counts public methods, lines of code, and checks class names for responsibility keywords.
+
+### TypeScript Support
+
+**Fully Supported** - Analyzes classes using `tree-sitter-typescript`. Counts public methods (excluding `_`-prefixed), lines of code, and checks class names.
+
+### JavaScript Support
+
+**Supported** (via TypeScript parser) - JavaScript files are analyzed using the TypeScript parser, which handles JavaScript syntax.
+
+### Rust Support
+
+**Fully Supported** - Analyzes `struct` definitions and their `impl` blocks using `tree-sitter-rust`.
+
+**How Rust SRP analysis works:**
+
+- A Rust `struct` combined with its `impl` blocks is treated as a "class"
+- Methods are counted across **all** `impl` blocks for the same struct
+- Only public methods (not prefixed with `_`) are counted
+- Lines of code include the struct definition and all associated impl blocks
+
+**Example:**
+```rust
+struct UserService {
+    db: Database,
+    cache: Cache,
+}
+
+impl UserService {
+    pub fn create_user(&self) {}   // Counted
+    pub fn update_user(&self) {}   // Counted
+    pub fn delete_user(&self) {}   // Counted
+    fn _validate(&self) {}         // NOT counted (private)
+}
+
+impl UserService {
+    pub fn send_email(&self) {}    // Counted (separate impl block, same struct)
+    pub fn log_action(&self) {}    // Counted
+}
+// Total: 5 public methods for UserService
+```
+
+**Configuration:**
+```yaml
+srp:
+  rust:
+    max_methods: 8
+    max_loc: 200
+```
+
+**Requires**: `tree-sitter-rust` (optional dependency). Install with `pip install thailint[rust]` or `pip install thailint[all]`.
 
 ## Further Reading
 

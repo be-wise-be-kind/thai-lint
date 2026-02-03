@@ -5,9 +5,9 @@
 
     **Scope**: Configuration, usage, refactoring patterns, and best practices for magic number detection
 
-    **Overview**: Comprehensive documentation for the magic numbers linter that detects unnamed numeric literals (magic numbers) in Python and TypeScript code. Covers how the linter works using AST analysis, configuration options, CLI and library usage, acceptable contexts, common refactoring patterns, and integration with CI/CD pipelines. Helps teams improve code maintainability by encouraging named constants instead of magic numbers.
+    **Overview**: Comprehensive documentation for the magic numbers linter that detects unnamed numeric literals (magic numbers) in Python, TypeScript, and Rust code. Covers how the linter works using AST analysis, configuration options, CLI and library usage, acceptable contexts, common refactoring patterns, and integration with CI/CD pipelines. Helps teams improve code maintainability by encouraging named constants instead of magic numbers.
 
-    **Dependencies**: ast module (Python parser), tree-sitter-typescript (TypeScript parser)
+    **Dependencies**: ast module (Python parser), tree-sitter-typescript (TypeScript parser), tree-sitter-rust (Rust parser, optional)
 
     **Exports**: Usage documentation, configuration examples, refactoring patterns
 
@@ -38,7 +38,7 @@ src/config.py:42 - Magic number 3600 should be a named constant
 
 ## Overview
 
-The magic numbers linter detects unnamed numeric literals (magic numbers) that should be extracted to named constants. It analyzes Python and TypeScript code using Abstract Syntax Tree (AST) parsing to identify numeric literals that lack meaningful context.
+The magic numbers linter detects unnamed numeric literals (magic numbers) that should be extracted to named constants. It analyzes Python, TypeScript, and Rust code using Abstract Syntax Tree (AST) parsing to identify numeric literals that lack meaningful context.
 
 ### What are Magic Numbers?
 
@@ -88,6 +88,7 @@ The linter uses Abstract Syntax Tree (AST) parsing to analyze code structure:
 1. **Parse source code** into AST using language-specific parsers:
    - Python: Built-in `ast` module
    - TypeScript: `tree-sitter-typescript` library
+   - Rust: `tree-sitter-rust` library (optional dependency)
 
 2. **Find numeric literals** in the AST:
    - Integer literals: `42`, `1000`, `-5`
@@ -606,6 +607,41 @@ def check_status(code):
 **Supported** (via TypeScript parser)
 
 JavaScript files are analyzed using the TypeScript parser, which handles JavaScript syntax.
+
+### Rust Support
+
+**Fully Supported** - Analyzes Rust code using `tree-sitter-rust`.
+
+**Numeric literals detected:**
+
+- Integer literals: `42`, `1000`, `-5`, `0xFF`
+- Float literals: `3.14`, `2.5`, `1.414`
+- Type-suffixed literals: `100_i32`, `3.14_f64`, `1024_usize`
+
+**Acceptable contexts:**
+
+- Constant definitions: `const MAX_SIZE: usize = 100`
+- Static items: `static TIMEOUT: u64 = 3600`
+- Test functions: `#[test]` functions and `#[cfg(test)]` modules
+- Allowed numbers: `-1, 0, 1, 2, 3, 4, 5, 10, 100, 1000` (default)
+
+**Example:**
+```rust
+// Flagged - magic number
+fn validate_port(port: u16) -> bool {
+    port >= 1024 && port <= 65535  // ← Both flagged
+}
+
+// OK - named constants
+const MIN_USER_PORT: u16 = 1024;
+const MAX_PORT: u16 = 65535;
+
+fn validate_port(port: u16) -> bool {
+    port >= MIN_USER_PORT && port <= MAX_PORT
+}
+```
+
+**Requires**: `tree-sitter-rust` (optional dependency). Install with `pip install thailint[rust]` or `pip install thailint[all]`.
 
 ## CI/CD Integration
 
