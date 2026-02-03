@@ -2,7 +2,7 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
-[![PyPI](https://img.shields.io/badge/pypi-v0.17.2-orange)](https://pypi.org/project/thailint/)
+[![PyPI](https://img.shields.io/badge/pypi-v0.17.3-orange)](https://pypi.org/project/thailint/)
 [![Tests](https://img.shields.io/badge/tests-2113%2F2113%20passing-brightgreen.svg)](https://github.com/be-wise-be-kind/thai-lint/actions)
 [![Coverage](https://img.shields.io/badge/coverage-91%25-brightgreen.svg)](https://github.com/be-wise-be-kind/thai-lint)
 [![Documentation](https://readthedocs.org/projects/thai-lint/badge/?version=latest)](https://thai-lint.readthedocs.io/)
