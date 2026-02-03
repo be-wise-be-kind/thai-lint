@@ -17,7 +17,7 @@ Common issues and solutions for thailint.
 
 ### pip install fails with "package not found"
 
-**Problem:** `pip install thai-lint` fails with "could not find a version that satisfies the requirement"
+**Problem:** `pip install thailint` fails with "could not find a version that satisfies the requirement"
 
 **Solutions:**
 
@@ -912,7 +912,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install thai-lint  # Or install from source
+          pip install thailint  # Or install from source
 
       - name: Verify installation
         run: |

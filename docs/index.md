@@ -66,7 +66,7 @@ thai-lint complements your existing linting stack by catching the patterns AI to
 ### From PyPI
 
 ```bash
-pip install thai-lint
+pip install thailint
 ```
 
 ### From Source

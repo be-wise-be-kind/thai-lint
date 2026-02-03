@@ -10,7 +10,7 @@ Get up and running with thailint in 5 minutes.
 ## Installation
 
 ```bash
-pip install thai-lint
+pip install thailint
 ```
 
 Or with Docker:
@@ -95,7 +95,7 @@ See **[How to Ignore Violations](how-to-ignore-violations.md)** for the complete
 # GitHub Actions
 - name: Run thailint
   run: |
-    pip install thai-lint
+    pip install thailint
     thailint dry src/
     thailint nesting src/
 ```

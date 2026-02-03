@@ -120,7 +120,7 @@ See [How to Ignore Violations](https://thai-lint.readthedocs.io/en/latest/how-to
 # GitHub Actions
 - name: Run thailint
   run: |
-    pip install thai-lint
+    pip install thailint
     thailint --parallel dry src/
     thailint --parallel nesting src/
 ```

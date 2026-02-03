@@ -22,7 +22,7 @@
 ## Try It Now
 
 ```bash
-pip install thai-lint
+pip install thailint
 thailint lbyl src/
 ```
 
@@ -549,7 +549,7 @@ jobs:
       - uses: actions/checkout@v3
 
       - name: Install thailint
-        run: pip install thai-lint
+        run: pip install thailint
 
       - name: Check for LBYL patterns
         run: thailint lbyl src/

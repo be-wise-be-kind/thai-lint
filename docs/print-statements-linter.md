@@ -31,7 +31,7 @@
 ## Try It Now
 
 ```bash
-pip install thai-lint
+pip install thailint
 thailint print-statements src/
 ```
 

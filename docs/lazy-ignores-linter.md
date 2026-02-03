@@ -36,7 +36,7 @@
 ## Try It Now
 
 ```bash
-pip install thai-lint
+pip install thailint
 thailint lazy-ignores src/
 ```
 
@@ -563,7 +563,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Install thailint
-        run: pip install thai-lint
+        run: pip install thailint
 
       - name: Check for unjustified suppressions
         run: thailint lazy-ignores src/
@@ -590,7 +590,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Install thailint
-        run: pip install thai-lint
+        run: pip install thailint
 
       - name: Run lazy-ignores check
         run: thailint lazy-ignores --format sarif src/ > lazy-ignores.sarif
