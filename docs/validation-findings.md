@@ -19,6 +19,26 @@ excellent projects, and every codebase accumulates complexity over time.
 All examples shown are true positives: patterns that authoritative sources identify as
 harmful to readability, maintainability, or performance.
 
+## Findings Summary
+
+| # | Language | Rule | Finding | Key Metric | Primary Source |
+|---|----------|------|---------|------------|----------------|
+| 1 | Python | SRP | God class in terminal library | 45 methods, 1,752 lines | Martin, *Clean Code* — SRP |
+| 2 | Python | SRP | God class in validation library | 1,717 lines | Brown et al., *AntiPatterns* — God Object |
+| 3 | Python | Nesting | ANSI parser nested 13 levels deep | Depth 13 | Linux Kernel Coding Style |
+| 4 | Python | LBYL | hasattr chain with false confidence | 3 hasattr checks | Python Glossary — EAFP |
+| 5 | Python | Stringly-Typed | Same 4 strings validated in 4 files | 4 files, 4 raw strings | Martin, *Clean Code* — G25 |
+| 6 | Python | Collection Pipeline | Loop with 3 continue-based filters | 3 filter conditions | Fowler, *Refactoring* |
+| 7 | Python | DRY | Identical TypeVar block in 2 modules | 11 duplicate lines | Hunt & Thomas, *Pragmatic Programmer* |
+| 8 | Python | LBYL | Dict key check before access | Redundant lookup | Python Glossary — EAFP |
+| 9 | Rust | Unwrap Abuse | Unwrap on user-derived URI host | Panic on malformed input | Rust Book, Ch. 9.3 |
+| 10 | Rust | Unwrap Abuse | Unwrap in error return path | Panic in sync primitive | Rust Book, Ch. 9.2 |
+| 11 | Rust | Clone Abuse | self.clone() inside proxy loop | Full struct clone per iteration | Rust Performance Book |
+| 12 | Rust | Clone Abuse | Double clone (key + value) in loop | 2 clones per iteration | Rust API Guidelines — C-CALLER-CONTROL |
+| 13 | Rust | Magic Numbers | Unexplained buffer size `58` | Undocumented derivation | Martin, *Clean Code* — G25 |
+| 14 | Rust | SRP | 35 methods on a 2-field struct | 35 methods (5x threshold) | Rust API Guidelines — C-NEWTYPE |
+| 15 | Rust | Nesting | Async state machine nested 7 deep | Depth 7 | Campbell, *Cognitive Complexity* |
+
 ---
 
 ## Python Findings
