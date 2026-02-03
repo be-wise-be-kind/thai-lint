@@ -21,6 +21,7 @@ Implementation: Composition pattern with helper classes, AST-based analysis with
 
 from typing import Any
 
+from src.analyzers.rust_base import TREE_SITTER_RUST_AVAILABLE
 from src.core.base import BaseLintContext, MultiLanguageLintRule
 from src.core.linter_utils import load_linter_config, with_parsed_python
 from src.core.types import Violation
@@ -28,6 +29,7 @@ from src.linter_config.ignore import get_ignore_parser
 
 from .config import NestingConfig
 from .python_analyzer import PythonNestingAnalyzer
+from .rust_analyzer import RustNestingAnalyzer
 from .typescript_analyzer import TypeScriptNestingAnalyzer
 from .violation_builder import NestingViolationBuilder
 
@@ -42,6 +44,7 @@ class NestingDepthRule(MultiLanguageLintRule):
         # Singleton analyzers for performance (avoid recreating per-file)
         self._python_analyzer = PythonNestingAnalyzer()
         self._typescript_analyzer = TypeScriptNestingAnalyzer()
+        self._rust_analyzer = RustNestingAnalyzer()
 
     @property
     def rule_id(self) -> str:
@@ -164,6 +167,53 @@ class NestingDepthRule(MultiLanguageLintRule):
         return self._process_typescript_functions(
             functions, self._typescript_analyzer, config, context
         )
+
+    def _check_rust(self, context: BaseLintContext, config: NestingConfig) -> list[Violation]:
+        """Check Rust code for nesting violations.
+
+        Args:
+            context: Lint context with Rust file information
+            config: Nesting configuration
+
+        Returns:
+            List of violations found in Rust code
+        """
+        if not TREE_SITTER_RUST_AVAILABLE:
+            return []
+
+        root_node = self._rust_analyzer.parse_rust(context.file_content or "")
+        if root_node is None:
+            return []
+
+        functions = self._rust_analyzer.find_all_functions(root_node)
+        return self._process_rust_functions(functions, config, context)
+
+    def _process_rust_functions(
+        self, functions: list, config: NestingConfig, context: BaseLintContext
+    ) -> list[Violation]:
+        """Process Rust functions and collect violations.
+
+        Args:
+            functions: List of (function_node, function_name) tuples
+            config: Nesting configuration
+            context: Lint context
+
+        Returns:
+            List of violations
+        """
+        violations = []
+        for func_node, func_name in functions:
+            max_depth, _line = self._rust_analyzer.calculate_max_depth(func_node)
+            if max_depth <= config.max_nesting_depth:
+                continue
+
+            violation = self._violation_builder.create_rust_nesting_violation(
+                (func_node, func_name), max_depth, config, context
+            )
+            # dry: ignore-block - Standard linter pattern (check-ignore-append)
+            if not self._should_ignore(violation, context):
+                violations.append(violation)
+        return violations
 
     def _should_ignore(self, violation: Violation, context: BaseLintContext) -> bool:
         """Check if violation should be ignored based on inline directives.

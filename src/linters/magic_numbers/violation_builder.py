@@ -68,6 +68,37 @@ class ViolationBuilder:
             suggestion=suggestion,
         )
 
+    def create_rust_violation(
+        self,
+        value: int | float,
+        line: int,
+        file_path: Path | None,
+    ) -> Violation:
+        """Create a violation for a Rust magic number.
+
+        Args:
+            value: The numeric value
+            line: Line number where the violation occurs
+            file_path: Path to the file
+
+        Returns:
+            Violation object with details about the magic number
+        """
+        message = f"Magic number {value} should be a named constant"
+
+        suggestion = (
+            f"Extract {value} to a named constant (e.g., const CONSTANT_NAME: i32 = {value})"
+        )
+
+        return Violation(
+            rule_id=self.rule_id,
+            file_path=str(file_path) if file_path else "",
+            line=line,
+            column=0,
+            message=message,
+            suggestion=suggestion,
+        )
+
     def create_typescript_violation(
         self,
         value: int | float,

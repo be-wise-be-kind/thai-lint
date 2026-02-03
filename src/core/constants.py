@@ -28,6 +28,7 @@ class Language(str, Enum):
     TYPESCRIPT = "typescript"
     JAVASCRIPT = "javascript"
     MARKDOWN = "markdown"
+    RUST = "rust"
 
 
 class StorageMode(str, Enum):

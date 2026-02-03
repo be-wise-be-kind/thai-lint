@@ -25,6 +25,7 @@ from src.core.types import Severity, Violation
 
 from .config import SRPConfig
 from .python_analyzer import PythonSRPAnalyzer
+from .rust_analyzer import RustSRPAnalyzer
 from .typescript_analyzer import TypeScriptSRPAnalyzer
 
 
@@ -36,6 +37,7 @@ class ClassAnalyzer:
         # Singleton analyzers for performance (avoid recreating per-file)
         self._python_analyzer = PythonSRPAnalyzer()
         self._typescript_analyzer = TypeScriptSRPAnalyzer()
+        self._rust_analyzer = RustSRPAnalyzer()
 
     def analyze_python(
         self, context: BaseLintContext, config: SRPConfig
@@ -80,6 +82,53 @@ class ClassAnalyzer:
             self._typescript_analyzer.analyze_class(class_node, context.file_content or "", config)
             for class_node in classes
         ]
+
+    def analyze_rust(self, context: BaseLintContext, config: SRPConfig) -> list[dict[str, Any]]:
+        """Analyze Rust structs and return metrics.
+
+        Finds all struct declarations and impl blocks, matches impl blocks to
+        their target structs, and returns metrics for each struct.
+
+        Args:
+            context: Lint context with file information
+            config: SRP configuration
+
+        Returns:
+            List of struct metrics dicts
+        """
+        root_node = self._rust_analyzer.parse_rust(context.file_content or "")
+        if not root_node:
+            return []
+
+        structs = self._rust_analyzer.find_all_structs(root_node)
+        impl_blocks = self._rust_analyzer.find_all_impl_blocks(root_node)
+        impl_map = self._build_impl_map(impl_blocks)
+
+        return [
+            self._rust_analyzer.analyze_struct(
+                struct_node,
+                impl_map.get(self._rust_analyzer.get_impl_target_name(struct_node), []),
+                context.file_content or "",
+                config,
+            )
+            for struct_node in structs
+        ]
+
+    def _build_impl_map(self, impl_blocks: list) -> dict[str, list]:
+        """Build mapping from struct name to its impl blocks.
+
+        Args:
+            impl_blocks: List of impl_item nodes
+
+        Returns:
+            Dictionary mapping struct names to lists of impl blocks
+        """
+        impl_map: dict[str, list] = {}
+        for impl_node in impl_blocks:
+            target_name = self._rust_analyzer.get_impl_target_name(impl_node)
+            if target_name:
+                impl_map.setdefault(target_name, []).append(impl_node)
+        return impl_map
 
     def _parse_python_safely(self, context: BaseLintContext) -> ast.AST | list[Violation]:
         """Parse Python code and return AST or syntax error violations.
