@@ -890,7 +890,7 @@ bump-version version="":
 update-version-badges:
     @echo "Updating version badges in README.md..."
     @VERSION=$(grep '^version = ' pyproject.toml | cut -d'"' -f2); \
-    sed -i "s|!\[Version\](https://img.shields.io/badge/version-.*-blue)|![Version](https://img.shields.io/badge/version-$VERSION-blue)|g" README.md || true
+    sed -i "s|!\[PyPI\](https://img.shields.io/badge/pypi-v.*-orange)|![PyPI](https://img.shields.io/badge/pypi-v$VERSION-orange)|g" README.md || true
     @echo "✓ Version badges updated"
 
 # Update test and coverage badges in README.md
@@ -942,8 +942,8 @@ publish-pypi version="":
     just format
     @echo "✓ Code formatted"
     @echo ""
-    @echo "Step 2: Running tests..."
-    just test
+    @echo "Step 2: Running tests with coverage..."
+    just test-coverage
     @echo "✓ Tests passed"
     @echo ""
     @echo "Step 3: Running full linting..."
@@ -962,8 +962,9 @@ _publish-pypi-only:
     echo "Publishing to PyPI"
     echo "=========================================="
     echo ""
-    echo "Step 1: Updating version badges..."
+    echo "Step 1: Updating badges..."
     just update-version-badges
+    just update-test-badges
     echo ""
     echo "Step 2: Updating lock file..."
     poetry lock
@@ -1027,8 +1028,8 @@ publish-docker:
     just format
     @echo "✓ Code formatted"
     @echo ""
-    @echo "Step 2: Running tests..."
-    just test
+    @echo "Step 2: Running tests with coverage..."
+    just test-coverage
     @echo "✓ Tests passed"
     @echo ""
     @echo "Step 3: Running full linting..."
@@ -1047,8 +1048,9 @@ _publish-docker-only:
     echo "Publishing to Docker Hub"
     echo "=========================================="
     echo ""
-    echo "Step 1: Updating version badges..."
+    echo "Step 1: Updating badges..."
     just update-version-badges
+    just update-test-badges
     echo ""
     echo "Step 2: Updating lock file..."
     poetry lock
