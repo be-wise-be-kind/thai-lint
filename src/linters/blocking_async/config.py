@@ -41,7 +41,7 @@ class BlockingAsyncConfig:
     detect_net_in_async: bool = True
 
     # File path patterns to ignore (e.g., examples/, benches/)
-    ignore: list[str] = field(default_factory=lambda: ["examples/", "benches/"])
+    ignore: list[str] = field(default_factory=lambda: ["examples/", "benches/", "tests/"])
 
     @classmethod
     def from_dict(
@@ -63,5 +63,5 @@ class BlockingAsyncConfig:
             detect_fs_in_async=config.get("detect_fs_in_async", True),
             detect_sleep_in_async=config.get("detect_sleep_in_async", True),
             detect_net_in_async=config.get("detect_net_in_async", True),
-            ignore=config.get("ignore", ["examples/", "benches/"]),
+            ignore=config.get("ignore", ["examples/", "benches/", "tests/"]),
         )
