@@ -22,7 +22,7 @@
 ## Try It Now
 
 ```bash
-pip install thai-lint
+pip install thailint
 thailint perf src/
 ```
 
@@ -447,7 +447,7 @@ jobs:
       - uses: actions/checkout@v3
 
       - name: Install thai-lint
-        run: pip install thai-lint
+        run: pip install thailint
 
       - name: Check performance patterns
         run: thailint perf src/
