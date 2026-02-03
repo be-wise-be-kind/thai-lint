@@ -22,6 +22,7 @@ Implementation: Recursive AST traversal with field_expression pattern matching f
 from dataclasses import dataclass
 
 from src.analyzers.rust_base import TREE_SITTER_RUST_AVAILABLE, RustBaseAnalyzer
+from src.core.linter_utils import get_line_context
 
 if TREE_SITTER_RUST_AVAILABLE:
     from tree_sitter import Node
@@ -78,7 +79,7 @@ class RustUnwrapAnalyzer(RustBaseAnalyzer):
                         column=node.start_point[1],
                         method=method_name,
                         is_in_test=self.is_inside_test(node),
-                        context=_get_line_context(code, node.start_point[0]),
+                        context=get_line_context(code, node.start_point[0]),
                     )
                 )
 
@@ -115,19 +116,3 @@ class RustUnwrapAnalyzer(RustBaseAnalyzer):
             if subchild.type == "field_identifier":
                 return self.extract_node_text(subchild)
         return ""
-
-
-def _get_line_context(code: str, line_index: int) -> str:
-    """Get the code line at the given index for context.
-
-    Args:
-        code: Full source code
-        line_index: Zero-indexed line number
-
-    Returns:
-        Stripped line content, or empty string if index out of range
-    """
-    lines = code.split("\n")
-    if 0 <= line_index < len(lines):
-        return lines[line_index].strip()
-    return ""

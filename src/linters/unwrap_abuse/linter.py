@@ -20,7 +20,12 @@ Implementation: Single-file analysis with config-driven filtering and tree-sitte
 """
 
 from src.core.base import BaseLintContext, BaseLintRule
-from src.core.linter_utils import has_file_content, load_linter_config
+from src.core.linter_utils import (
+    has_file_content,
+    is_ignored_path,
+    load_linter_config,
+    resolve_file_path,
+)
 from src.core.types import Violation
 
 from .config import UnwrapAbuseConfig
@@ -72,7 +77,7 @@ class UnwrapAbuseRule(BaseLintRule):
         if not self._should_analyze(context, config):
             return []
 
-        file_path = _resolve_file_path(context)
+        file_path = resolve_file_path(context)
         calls = self._analyzer.find_unwrap_calls(context.file_content or "")
         return self._build_violations(calls, config, file_path)
 
@@ -92,7 +97,7 @@ class UnwrapAbuseRule(BaseLintRule):
             return False
         if not config.enabled:
             return False
-        return not _is_ignored_path(_resolve_file_path(context), config)
+        return not is_ignored_path(resolve_file_path(context), config.ignore)
 
     def _get_config(self, context: BaseLintContext) -> UnwrapAbuseConfig:
         """Get configuration, using override if provided.
@@ -144,31 +149,6 @@ class UnwrapAbuseRule(BaseLintRule):
         if call.method == "expect" and config.allow_expect:
             return True
         return False
-
-
-def _resolve_file_path(context: BaseLintContext) -> str:
-    """Extract file path string from context.
-
-    Args:
-        context: Lint context containing file information
-
-    Returns:
-        File path as string, or "unknown" if not available
-    """
-    return str(context.file_path) if context.file_path else "unknown"
-
-
-def _is_ignored_path(file_path: str, config: UnwrapAbuseConfig) -> bool:
-    """Check if file path matches any ignored patterns.
-
-    Args:
-        file_path: File path to check
-        config: Configuration with ignore patterns
-
-    Returns:
-        True if the path should be ignored
-    """
-    return any(ignored in file_path for ignored in config.ignore)
 
 
 def _build_violation_for_call(call: UnwrapCall, file_path: str) -> Violation:

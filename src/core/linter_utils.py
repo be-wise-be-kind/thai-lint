@@ -13,7 +13,7 @@ Overview: Provides reusable helper functions to eliminate duplication across lin
 Dependencies: BaseLintContext from src.core.base, ast for Python parsing
 
 Exports: get_metadata, get_metadata_value, load_linter_config, has_file_content, parse_python_ast,
-    with_parsed_python
+    with_parsed_python, resolve_file_path, is_ignored_path, get_line_context
 
 Interfaces: All functions take BaseLintContext and return typed values (dict, str, bool, Any)
 
@@ -255,3 +255,44 @@ def with_parsed_python(
     # tree is guaranteed non-None when errors is empty (parse_python_ast contract)
     assert tree is not None  # nosec B101
     return on_success(tree)
+
+
+def resolve_file_path(context: BaseLintContext) -> str:
+    """Resolve file path from context.
+
+    Args:
+        context: Lint context
+
+    Returns:
+        File path string, or "unknown" if not available
+    """
+    return str(context.file_path) if context.file_path else "unknown"
+
+
+def is_ignored_path(file_path: str, ignore_patterns: list[str]) -> bool:
+    """Check if file path matches any ignore pattern.
+
+    Args:
+        file_path: Path to check
+        ignore_patterns: List of patterns to match against
+
+    Returns:
+        True if the path should be ignored
+    """
+    return any(ignored in file_path for ignored in ignore_patterns)
+
+
+def get_line_context(code: str, line_index: int) -> str:
+    """Get the code line at the given index for context.
+
+    Args:
+        code: Full source code
+        line_index: Zero-indexed line number
+
+    Returns:
+        Stripped line content, or empty string if index out of range
+    """
+    lines = code.split("\n")
+    if 0 <= line_index < len(lines):
+        return lines[line_index].strip()
+    return ""

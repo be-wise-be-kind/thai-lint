@@ -183,6 +183,16 @@ dry:
     - "collection_pipeline/config.py"
     - "collection_pipeline/any_all_analyzer.py"
     - "collection_pipeline/filter_map_analyzer.py"
+    # Rust linter implementations share common BaseLintRule patterns (framework duplication)
+    - "unwrap_abuse/linter.py"
+    - "unwrap_abuse/config.py"
+    - "unwrap_abuse/rust_analyzer.py"
+    - "clone_abuse/linter.py"
+    - "clone_abuse/config.py"
+    - "clone_abuse/rust_analyzer.py"
+    - "blocking_async/linter.py"
+    - "blocking_async/config.py"
+    - "blocking_async/rust_analyzer.py"
     # Violation builders share common builder pattern (intentional similar structure)
     - "violation_builder.py"
 
