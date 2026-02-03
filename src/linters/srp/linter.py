@@ -21,6 +21,7 @@ Suppressions:
     - type:ignore[return-value]: Generic TypeScript analyzer return type variance
 """
 
+from src.analyzers.rust_base import TREE_SITTER_RUST_AVAILABLE
 from src.core.base import BaseLintContext, MultiLanguageLintRule
 from src.core.constants import Language
 from src.core.linter_utils import load_linter_config
@@ -109,6 +110,9 @@ class SRPRule(MultiLanguageLintRule):
 
         if context.language in (Language.TYPESCRIPT, Language.JAVASCRIPT):
             return self._check_typescript(context, config)
+
+        if context.language == Language.RUST:
+            return self._check_rust(context, config)
 
         return []
 
@@ -203,6 +207,24 @@ class SRPRule(MultiLanguageLintRule):
             return None
 
         return violation
+
+    def _check_rust(self, context: BaseLintContext, config: SRPConfig) -> list[Violation]:
+        """Check Rust code for SRP violations.
+
+        Analyzes struct declarations and their impl blocks to detect structs
+        with too many methods, excessive lines of code, or generic naming.
+
+        Args:
+            context: Lint context with file information
+            config: SRP configuration
+
+        Returns:
+            List of violations found
+        """
+        if not TREE_SITTER_RUST_AVAILABLE:
+            return []
+        metrics_list = self._class_analyzer.analyze_rust(context, config)
+        return self._build_violations_from_metrics(metrics_list, config, context)
 
     def _check_typescript(self, context: BaseLintContext, config: SRPConfig) -> list[Violation]:
         """Check TypeScript code for SRP violations.

@@ -123,6 +123,38 @@ class NestingViolationBuilder(BaseViolationBuilder):
             suggestion=self._generate_suggestion(max_depth, config.max_nesting_depth),
         )
 
+    def create_rust_nesting_violation(
+        self,
+        func_info: tuple[Any, str],
+        max_depth: int,
+        config: NestingConfig,
+        context: BaseLintContext,
+    ) -> Violation:
+        """Create violation for excessive nesting in Rust function.
+
+        Args:
+            func_info: Tuple of (func_node, func_name)
+            max_depth: Actual max nesting depth found
+            config: Nesting configuration
+            context: Lint context
+
+        Returns:
+            Nesting depth violation
+        """
+        func_node, func_name = func_info
+        line = func_node.start_point[0] + 1  # Convert to 1-indexed
+        column = func_node.start_point[1]
+
+        return self.build_from_params(
+            rule_id=self.rule_id,
+            file_path=str(context.file_path or ""),
+            line=line,
+            column=column,
+            message=f"Function '{func_name}' has excessive nesting depth ({max_depth})",
+            severity=Severity.ERROR,
+            suggestion=self._generate_suggestion(max_depth, config.max_nesting_depth),
+        )
+
     def _generate_suggestion(self, actual_depth: int, max_depth: int) -> str:
         """Generate refactoring suggestion based on depth.
 

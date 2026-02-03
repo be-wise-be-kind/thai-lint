@@ -177,11 +177,26 @@ class MultiLanguageLintRule(BaseLintRule):
         if not config.enabled:
             return []
 
+        return self._dispatch_by_language(context, config)
+
+    def _dispatch_by_language(self, context: BaseLintContext, config: Any) -> list[Violation]:
+        """Dispatch to language-specific check method.
+
+        Args:
+            context: Lint context with language information
+            config: Loaded configuration
+
+        Returns:
+            List of violations from language-specific checker
+        """
         if context.language == Language.PYTHON:
             return self._check_python(context, config)
 
         if context.language in (Language.TYPESCRIPT, Language.JAVASCRIPT):
             return self._check_typescript(context, config)
+
+        if context.language == Language.RUST:
+            return self._check_rust(context, config)
 
         return []
 
@@ -222,3 +237,18 @@ class MultiLanguageLintRule(BaseLintRule):
             List of violations found in TypeScript/JavaScript code
         """
         raise NotImplementedError("Subclasses must implement _check_typescript")
+
+    def _check_rust(self, context: BaseLintContext, config: Any) -> list[Violation]:
+        """Check Rust code for violations.
+
+        Override in subclasses to add Rust language support.
+        Returns empty list by default for linters that do not support Rust.
+
+        Args:
+            context: Lint context with Rust file information
+            config: Loaded configuration
+
+        Returns:
+            List of violations found in Rust code
+        """
+        return []

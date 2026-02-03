@@ -32,6 +32,7 @@ import ast
 from pathlib import Path
 from typing import Any
 
+from src.analyzers.rust_base import TREE_SITTER_RUST_AVAILABLE
 from src.core.base import BaseLintContext, MultiLanguageLintRule
 from src.core.linter_utils import load_linter_config
 from src.core.types import Violation
@@ -42,6 +43,7 @@ from .config import MagicNumberConfig
 from .context_analyzer import is_acceptable_context
 from .definition_detector import is_definition_file
 from .python_analyzer import PythonMagicNumberAnalyzer
+from .rust_analyzer import RustMagicNumberAnalyzer
 from .typescript_analyzer import TypeScriptMagicNumberAnalyzer
 from .typescript_ignore_checker import TypeScriptIgnoreChecker
 from .violation_builder import ViolationBuilder
@@ -455,6 +457,96 @@ class MagicNumberRule(MultiLanguageLintRule):  # thailint: ignore[srp]
             pattern in path_str
             for pattern in [".test.", ".spec.", "test_", "_test.", "/tests/", "/test/"]
         )
+
+    def _check_rust(self, context: BaseLintContext, config: MagicNumberConfig) -> list[Violation]:
+        """Check Rust code for magic number violations.
+
+        Args:
+            context: Lint context with Rust file information
+            config: Magic numbers configuration
+
+        Returns:
+            List of violations found in Rust code
+        """
+        if not TREE_SITTER_RUST_AVAILABLE:
+            return []
+
+        if self._is_file_ignored(context, config):
+            return []
+
+        analyzer = RustMagicNumberAnalyzer()
+        root_node = analyzer.parse_rust(context.file_content or "")
+        if root_node is None:
+            return []
+
+        numeric_literals = analyzer.find_numeric_literals(root_node)
+        return self._collect_rust_violations(numeric_literals, context, config, analyzer)
+
+    def _collect_rust_violations(
+        self,
+        numeric_literals: list,
+        context: BaseLintContext,
+        config: MagicNumberConfig,
+        analyzer: RustMagicNumberAnalyzer,
+    ) -> list[Violation]:
+        """Collect violations from Rust numeric literals.
+
+        Args:
+            numeric_literals: List of (node, value, line_number) tuples
+            context: Lint context
+            config: Configuration
+            analyzer: Rust analyzer instance
+
+        Returns:
+            List of violations
+        """
+        violations = []
+        for node, value, line_number in numeric_literals:
+            violation = self._try_create_rust_violation(
+                node, value, line_number, context, config, analyzer
+            )
+            if violation is not None:
+                violations.append(violation)
+        return violations
+
+    def _try_create_rust_violation(  # pylint: disable=too-many-arguments,too-many-positional-arguments
+        self,
+        node: object,
+        value: float | int,
+        line_number: int,
+        context: BaseLintContext,
+        config: MagicNumberConfig,
+        analyzer: RustMagicNumberAnalyzer,
+    ) -> Violation | None:
+        """Try to create a violation for a Rust numeric literal.
+
+        Args:
+            node: Tree-sitter node
+            value: Numeric value
+            line_number: Line number of literal
+            context: Lint context
+            config: Configuration
+            analyzer: Rust analyzer
+
+        Returns:
+            Violation or None if should not flag
+        """
+        if value in config.allowed_numbers:
+            return None
+
+        if analyzer.is_constant_definition(node):
+            return None
+
+        if analyzer.is_test_context(node):
+            return None
+
+        violation = self._violation_builder.create_rust_violation(
+            value, line_number, context.file_path
+        )
+        if self._should_ignore(violation, context):
+            return None
+
+        return violation
 
     def _should_ignore_typescript(self, violation: Violation, context: BaseLintContext) -> bool:
         """Check if TypeScript violation should be ignored.
