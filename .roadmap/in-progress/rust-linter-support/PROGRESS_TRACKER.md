@@ -64,10 +64,10 @@ Run all Rust linters against popular, well-maintained Rust repositories. Verify 
 ---
 
 ## Overall Progress
-**Total Completion**: 83% (5/6 PRs completed)
+**Total Completion**: 71% (5/7 PRs completed)
 
 ```
-[████████████████░░░░] 83% Complete
+[██████████████░░░░░░] 71% Complete
 ```
 
 ---
@@ -82,6 +82,7 @@ Run all Rust linters against popular, well-maintained Rust repositories. Verify 
 | PR4 | Blocking-in-Async Detector | 🟢 Complete | 100% | Medium | P2 | Detects std::fs, std::thread::sleep, std::net in async fn |
 | PR5 | Extend Universal Linters to Rust | 🟢 Complete | 100% | Medium | P2 | SRP, nesting, magic numbers |
 | PR6 | Validation Trials on Popular Repos | 🔴 Not Started | 0% | Medium | P0 | Must pass before release |
+| PR7 | Document Rust Linters for Production | 🔴 Not Started | 0% | Low | P1 | Docs for PyPI, ReadTheDocs, DockerHub |
 
 ### Status Legend
 - 🔴 Not Started
@@ -278,6 +279,61 @@ Clone and test against these popular Rust projects:
 
 ---
 
+## PR7: Document Rust Linters for Production Release
+
+### Scope
+- Create 3 full documentation pages for Rust-specific linters (unwrap-abuse, clone-abuse, blocking-async)
+- Update 3 universal linter docs (SRP, nesting, magic-numbers) with Rust language support sections
+- Update mkdocs.yml navigation to include all Rust linters
+- Add Rust-specific thresholds to .thailint.yaml config template
+- Verify publishing readiness for PyPI, ReadTheDocs, and DockerHub
+
+### Key Files
+- `docs/unwrap-abuse-linter.md` - NEW: Full doc page (~850 lines, 13-section pattern from magic-numbers-linter.md)
+- `docs/clone-abuse-linter.md` - NEW: Full doc page
+- `docs/blocking-async-linter.md` - NEW: Full doc page
+- `mkdocs.yml` - Add 3 nav entries under Linters section (alphabetical order)
+- `docs/srp-linter.md` - Add Rust language support section
+- `docs/nesting-linter.md` - Add Rust language support section
+- `docs/magic-numbers-linter.md` - Add Rust language support section
+- `.thailint.yaml` - Add `rust:` thresholds under nesting and srp sections
+
+### Source Reference Files (for accuracy)
+- `src/linters/unwrap_abuse/config.py` - Config fields, defaults
+- `src/linters/clone_abuse/config.py` - Config fields, defaults
+- `src/linters/blocking_async/config.py` - Config fields, defaults
+- `src/linters/*/linter.py` - Rule IDs, names, descriptions
+- `src/linters/*/violation_builder.py` - Violation messages, suggestions
+- `src/cli/linters/rust.py` - CLI commands and options
+
+### Doc Template (13 sections, from magic-numbers-linter.md)
+1. Collapsible AI Agent Context
+2. Try It Now (quick start)
+3. Overview (what + why)
+4. How It Works (tree-sitter AST detection, sub-rules)
+5. Configuration (all options with YAML examples)
+6. Usage (CLI, Library API, Docker)
+7. Violation Examples (before/after Rust code)
+8. Refactoring Patterns (5+ patterns with code)
+9. Language Support
+10. CI/CD Integration (GitHub Actions, pre-commit, Makefile)
+11. Performance
+12. Troubleshooting
+13. Best Practices
+
+### Success Criteria
+- [ ] 3 new doc pages created following 13-section template
+- [ ] Universal linter docs updated with Rust support sections
+- [ ] mkdocs.yml nav includes all 3 Rust linters (alphabetical)
+- [ ] `.thailint.yaml` has Rust thresholds for nesting and SRP
+- [ ] `mkdocs build --strict` passes
+- [ ] `just lint-full` passes
+- [ ] ReadTheDocs deployment verified
+- [ ] Docker image includes tree-sitter-rust (already does)
+- [ ] PyPI package metadata mentions Rust (already does)
+
+---
+
 ## Implementation Strategy
 
 ### Phase 1: Foundation (PR1)
@@ -298,6 +354,13 @@ Run extensive trials against popular Rust repositories to ensure:
 - Rules provide real value (find actual issues)
 - Tune thresholds based on real-world data
 
+### Phase 5: Documentation (PR7) - FINAL BEFORE PUBLISHING
+Document all Rust linters for production use:
+- Create full doc pages for 3 Rust-specific linters (unwrap-abuse, clone-abuse, blocking-async)
+- Update universal linter docs (SRP, nesting, magic-numbers) with Rust support sections
+- Update mkdocs.yml navigation and .thailint.yaml config template
+- Verify publishing readiness for PyPI, ReadTheDocs, and DockerHub
+
 ## Success Metrics
 
 ### Technical Metrics
@@ -311,6 +374,11 @@ Run extensive trials against popular Rust repositories to ensure:
 - [ ] Zero false positives on idiomatic Rust code
 - [ ] Provides actionable suggestions for each violation
 - [ ] Works with or without tree-sitter-rust installed (graceful degradation)
+
+### Documentation Metrics
+- [ ] All Rust linters documented on ReadTheDocs
+- [ ] Documentation follows 13-section template consistently
+- [ ] Config options match source code exactly
 
 ## Update Protocol
 
@@ -344,12 +412,13 @@ After completing each PR:
 ## Definition of Done
 
 The feature is considered complete when:
-- [ ] All 6 PRs merged
+- [ ] All 7 PRs merged
 - [ ] Rust files detected and parsed correctly
 - [ ] 3 novel AI-focused lint rules working
 - [ ] Universal linters extended to Rust
 - [ ] All tests passing
-- [ ] Documentation updated
+- [ ] Full documentation on ReadTheDocs for all Rust linters
 - [ ] CLI help shows Rust support
 - [ ] **Validation trials pass** - < 5% false positive rate on popular repos
 - [ ] Trial results documented and committed
+- [ ] Published to PyPI, ReadTheDocs, and DockerHub

@@ -4,11 +4,11 @@
 
 **Scope**: Complete feature implementation from infrastructure through novel AI-focused lint rules
 
-**Overview**: Comprehensive breakdown of the Rust Linter Support feature into 6 manageable, atomic
+**Overview**: Comprehensive breakdown of the Rust Linter Support feature into 7 manageable, atomic
     pull requests. Each PR is designed to be self-contained, testable, and maintains application functionality
     while incrementally building toward complete Rust support. Includes detailed implementation steps, file
     structures, testing requirements, and success criteria for each PR. Includes validation trials against
-    popular Rust repositories to ensure zero false positives before release.
+    popular Rust repositories and production documentation for PyPI, ReadTheDocs, and DockerHub publishing.
 
 **Dependencies**: tree-sitter, tree-sitter-rust (optional)
 
@@ -913,6 +913,149 @@ docs/
 
 ---
 
+## PR7: Document Rust Linters for Production Release
+
+### Objective
+Create comprehensive documentation for all Rust linters and verify publishing readiness for PyPI, ReadTheDocs, and DockerHub.
+
+### Files to Create
+
+#### 1. Create: `docs/unwrap-abuse-linter.md` (~850 lines)
+
+Follow the 13-section pattern from `docs/magic-numbers-linter.md`:
+
+1. **Collapsible AI Agent Context** (`??? info "AI Agent Context"`)
+2. **Try It Now** - `pip install thai-lint && thailint unwrap-abuse src/`
+3. **Overview** - What is unwrap abuse, why it matters, AI-generated code focus
+4. **How It Works** - Tree-sitter detection of `.unwrap()` and `.expect()` calls, test-awareness
+5. **Configuration** - All options from `src/linters/unwrap_abuse/config.py`:
+   - `enabled` (bool, default: true)
+   - `allow_in_tests` (bool, default: true)
+   - `allow_expect` (bool, default: false)
+   - `ignore` (array, default: ["examples/", "benches/"])
+6. **Usage** - CLI (`thailint unwrap-abuse`), Library API, Docker
+7. **Violation Examples** - `.unwrap()` in production code, `.expect()` calls, acceptable test contexts
+8. **Refactoring Patterns** - `?` operator, `unwrap_or()`, `unwrap_or_default()`, `match`/`if let`, `.context()` (anyhow)
+9. **Language Support** - Rust only
+10. **CI/CD Integration** - GitHub Actions, pre-commit, Makefile
+11. **Performance**
+12. **Troubleshooting** - Test violations, expect config, tree-sitter-rust not installed
+13. **Best Practices**
+
+**Source reference files for accuracy:**
+- `src/linters/unwrap_abuse/config.py` - UnwrapAbuseConfig fields and defaults
+- `src/linters/unwrap_abuse/linter.py` - Rule IDs: `unwrap-abuse.unwrap-call`, `unwrap-abuse.expect-call`
+- `src/linters/unwrap_abuse/violation_builder.py` - Violation messages and suggestions
+- `src/linters/unwrap_abuse/rust_analyzer.py` - Detection logic details
+- `src/cli/linters/rust.py` - CLI command definition and options
+
+#### 2. Create: `docs/clone-abuse-linter.md` (~850 lines)
+
+Same 13-section pattern. Key differences:
+
+**Configuration** from `src/linters/clone_abuse/config.py`:
+- `enabled` (bool, default: true)
+- `allow_in_tests` (bool, default: true)
+- `detect_clone_in_loop` (bool, default: true)
+- `detect_clone_chain` (bool, default: true)
+- `detect_unnecessary_clone` (bool, default: true)
+- `ignore` (array, default: ["examples/", "benches/"])
+
+**Rule IDs**: `clone-abuse.clone-in-loop`, `clone-abuse.clone-chain`, `clone-abuse.unnecessary-clone`
+
+**Refactoring patterns**: Borrowing, Rc/Arc, Cow, pass ownership, use references
+
+#### 3. Create: `docs/blocking-async-linter.md` (~850 lines)
+
+Same 13-section pattern. Key differences:
+
+**Configuration** from `src/linters/blocking_async/config.py`:
+- `enabled` (bool, default: true)
+- `allow_in_tests` (bool, default: true)
+- `detect_fs_in_async` (bool, default: true)
+- `detect_sleep_in_async` (bool, default: true)
+- `detect_net_in_async` (bool, default: true)
+- `ignore` (array, default: ["examples/", "benches/"])
+
+**Rule IDs**: `blocking-async.fs-in-async`, `blocking-async.sleep-in-async`, `blocking-async.net-in-async`
+
+**Blocking APIs** (from `src/linters/blocking_async/rust_analyzer.py`):
+- std::fs: read_to_string, read, write, create_dir, create_dir_all, remove_file, remove_dir, remove_dir_all, rename, copy, metadata, read_dir, canonicalize, read_link
+- std::thread: sleep
+- std::net: TcpStream, TcpListener, UdpSocket
+
+**Refactoring patterns**: tokio::fs, tokio::time::sleep, tokio::net, spawn_blocking, async channels
+
+### Files to Modify
+
+#### 4. Modify: `mkdocs.yml`
+
+Insert 3 entries alphabetically into the Linters nav section (lines 64-79):
+
+```yaml
+  - Linters:
+      - Blocking in Async (Rust): blocking-async-linter.md   # NEW
+      - Clone Abuse (Rust): clone-abuse-linter.md             # NEW
+      - Collection Pipeline: collection-pipeline-linter.md
+      - DRY (Duplicate Code): dry-linter.md
+      # ... existing entries unchanged ...
+      - Stringly Typed: stringly-typed-linter.md
+      - Unwrap Abuse (Rust): unwrap-abuse-linter.md           # NEW
+```
+
+#### 5. Modify: `docs/srp-linter.md`
+
+Add Rust subsection to Language Support section:
+- Struct + impl block analysis (struct = class, impl methods = methods)
+- Public method counting across all impl blocks
+- LOC across struct definition and impl blocks
+
+#### 6. Modify: `docs/nesting-linter.md`
+
+Add Rust subsection to Language Support section:
+- Nesting constructs: if, match, loop, while, for, closure expressions
+- Function types: fn, impl methods, async fn
+
+#### 7. Modify: `docs/magic-numbers-linter.md`
+
+Add Rust subsection to Language Support section:
+- integer_literal and float_literal detection
+- const/static item exemptions
+- Type suffix handling (i32, u64, f64, usize, etc.)
+
+#### 8. Modify: `.thailint.yaml`
+
+Add Rust-specific thresholds:
+
+```yaml
+# Under nesting: (after javascript block, ~line 89)
+  rust:
+    max_nesting_depth: 3
+
+# Under srp: (after javascript block, ~line 114)
+  rust:
+    max_methods: 8
+    max_loc: 200
+```
+
+### Publishing Verification
+
+1. **PyPI** - `pyproject.toml` already has `tree-sitter-rust` as dependency and `"rust"` in keywords. No changes needed.
+2. **ReadTheDocs** - Verify `mkdocs build --strict` passes after adding new doc pages.
+3. **DockerHub** - Dockerfile installs via `poetry install --only main` which includes tree-sitter-rust. No changes needed.
+
+### Success Criteria
+- [ ] 3 new doc pages created following 13-section template
+- [ ] All config options, rule IDs, and suggestions match source code exactly
+- [ ] Universal linter docs updated with Rust support sections
+- [ ] mkdocs.yml nav includes all 3 Rust linters (alphabetical)
+- [ ] `.thailint.yaml` has Rust thresholds for nesting and SRP
+- [ ] `mkdocs build --strict` passes
+- [ ] `just lint-full` passes
+- [ ] Documentation uses atemporal language (no "was added" or "currently")
+
+---
+
 ## Implementation Guidelines
 
 ### Code Standards
@@ -961,10 +1104,16 @@ docs/
 - Document findings and tune rules as needed
 - Commit trial report to repository
 
+### Phase 5: Documentation (PR7) - FINAL BEFORE PUBLISHING
+- Create full documentation for all 3 Rust-specific linters
+- Update universal linter docs with Rust support sections
+- Verify ReadTheDocs, PyPI, and DockerHub readiness
+- Publish to PyPI, ReadTheDocs, and DockerHub
+
 ## Success Metrics
 
 ### Launch Metrics
-- [ ] All 6 PRs merged and tested
+- [ ] All 7 PRs merged and tested
 - [ ] CI pipeline green for Rust support
 - [ ] Zero regressions in existing Python/TypeScript linters
 - [ ] **Validation trials pass** (< 5% FP rate)
