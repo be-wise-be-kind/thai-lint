@@ -123,9 +123,13 @@ PR1 (Infrastructure)
   ├─→ PR3 (Clone Detector)
   ├─→ PR4 (Async Detector)
   └─→ PR5 (Universal Linters)
+        ↓
+      PR6 (Validation Trials)
+        ↓
+      PR7 (Documentation for Production Release)
 ```
 
-All PRs after PR1 can be developed in parallel.
+PRs 2-5 can be developed in parallel after PR1. PR6 and PR7 are sequential.
 
 ### User Journey
 
@@ -388,6 +392,15 @@ def is_async_function(self, node: Node) -> bool:
 - Follow existing patterns exactly
 - Comprehensive test coverage
 - Clear documentation
+
+### Risk: Missing Documentation at Release
+
+**Mitigation**:
+- **PR7 Documentation**: Full doc pages for all 3 Rust-specific linters before publishing
+- Follow 13-section template from `docs/magic-numbers-linter.md` for consistency
+- Update universal linter docs (SRP, nesting, magic-numbers) with Rust support sections
+- Verify `mkdocs build --strict` before merge
+- Targets: PyPI, ReadTheDocs, DockerHub
 
 ## Future Enhancements
 
