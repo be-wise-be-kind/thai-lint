@@ -19,7 +19,38 @@ excellent projects, and every codebase accumulates complexity over time.
 All examples shown are true positives: patterns that authoritative sources identify as
 harmful to readability, maintainability, or performance.
 
-## Findings Summary
+## Aggregate Results
+
+### Python — 10 Repositories, 11 Rules
+
+| Rule | Total Violations | Repos Affected |
+|------|-----------------|----------------|
+| Magic Numbers | 25,135 | 10/10 |
+| DRY (Duplicate Code) | 12,249 | 10/10 |
+| Lazy Ignores | 2,760 | 10/10 |
+| Nesting | 2,116 | 10/10 |
+| Print Statements | 1,801 | 9/10 |
+| Stringly-Typed | 1,776 | 9/10 |
+| SRP | 1,108 | 10/10 |
+| Stateless Class | 1,045 | 10/10 |
+| LBYL | 910 | 10/10 |
+| Method Property | 420 | 10/10 |
+| Collection Pipeline | 365 | 10/10 |
+
+### Rust — 6 Repositories, 6 Rules
+
+| Rule | Total Violations | Repos Affected |
+|------|-----------------|----------------|
+| Magic Numbers | 1,151 | 6/6 |
+| Unwrap Abuse | 479 | 6/6 |
+| Nesting | 248 | 6/6 |
+| SRP | 194 | 6/6 |
+| Clone Abuse | 159 | 6/6 |
+| Blocking-in-Async | 1 | 1/6 |
+
+---
+
+## Selected Findings
 
 | # | Language | Rule | Finding | Key Metric | Primary Source |
 |---|----------|------|---------|------------|----------------|
