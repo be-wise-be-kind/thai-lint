@@ -41,7 +41,7 @@ class CloneAbuseConfig:
     detect_unnecessary_clone: bool = True
 
     # File path patterns to ignore (e.g., examples/, benches/)
-    ignore: list[str] = field(default_factory=lambda: ["examples/", "benches/"])
+    ignore: list[str] = field(default_factory=lambda: ["examples/", "benches/", "tests/"])
 
     @classmethod
     def from_dict(cls, config: dict[str, Any], language: str | None = None) -> "CloneAbuseConfig":
@@ -61,5 +61,5 @@ class CloneAbuseConfig:
             detect_clone_in_loop=config.get("detect_clone_in_loop", True),
             detect_clone_chain=config.get("detect_clone_chain", True),
             detect_unnecessary_clone=config.get("detect_unnecessary_clone", True),
-            ignore=config.get("ignore", ["examples/", "benches/"]),
+            ignore=config.get("ignore", ["examples/", "benches/", "tests/"]),
         )

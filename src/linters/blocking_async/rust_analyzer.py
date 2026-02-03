@@ -8,10 +8,12 @@ Overview: Provides RustBlockingAsyncAnalyzer that extends RustBaseAnalyzer to de
     (std::fs::read_to_string, std::fs::write, etc.), thread sleep (std::thread::sleep), and
     blocking network calls (std::net::TcpStream::connect, etc.). Supports both fully-qualified
     paths (std::fs::read_to_string) and short paths (fs::read_to_string after use std::fs).
-    Uses tree-sitter AST to find function_item nodes, filter to async functions, walk bodies
-    for call_expression nodes with scoped_identifier paths, and match against known blocking
-    API patterns. Returns structured BlockingCall dataclass instances with location, pattern
-    type, test context, and surrounding code for violation reporting.
+    Excludes blocking calls wrapped in async-safe wrappers (asyncify, spawn_blocking,
+    block_in_place) which correctly offload work to a thread pool. Uses tree-sitter AST to
+    find function_item nodes, filter to async functions, walk bodies for call_expression nodes
+    with scoped_identifier paths, and match against known blocking API patterns. Returns
+    structured BlockingCall dataclass instances with location, pattern type, test context, and
+    surrounding code for violation reporting.
 
 Dependencies: src.analyzers.rust_base for tree-sitter parsing and traversal
 
@@ -141,7 +143,8 @@ class RustBlockingAsyncAnalyzer(RustBaseAnalyzer):
         """Check if a call expression is a blocking API call.
 
         Extracts the call path from the scoped_identifier child and matches
-        it against known blocking API patterns.
+        it against known blocking API patterns. Skips calls wrapped in
+        spawn_blocking/asyncify which are correctly offloaded to a thread pool.
 
         Args:
             call_node: A call_expression node
@@ -156,6 +159,9 @@ class RustBlockingAsyncAnalyzer(RustBaseAnalyzer):
 
         pattern = _classify_blocking_pattern(path)
         if pattern is None:
+            return None
+
+        if _is_inside_blocking_wrapper(call_node):
             return None
 
         return BlockingCall(
@@ -335,3 +341,79 @@ def _matches_short_net_pattern(parts: list[str]) -> bool:
     if len(parts) >= 2 and parts[0] == "net" and parts[1] in _BLOCKING_NET_TYPES:
         return True
     return False
+
+
+# Function names that safely wrap blocking operations for async execution
+_ASYNC_WRAPPER_FUNCTIONS = frozenset(
+    {
+        "asyncify",
+        "spawn_blocking",
+        "block_in_place",
+    }
+)
+
+
+def _is_inside_blocking_wrapper(node: Node) -> bool:
+    """Check if a blocking call is wrapped in an async-safe wrapper function.
+
+    Detects patterns like asyncify(move || std::fs::read(...)) or
+    spawn_blocking(move || { std::fs::write(...) }) where blocking calls
+    are correctly offloaded to a thread pool.
+
+    Args:
+        node: The blocking call_expression node
+
+    Returns:
+        True if the call is inside a known async wrapper function
+    """
+    current: Node | None = node.parent
+    while current is not None:
+        if _is_wrapper_call(current):
+            return True
+        current = current.parent
+    return False
+
+
+def _is_wrapper_call(node: Node) -> bool:
+    """Check if a node is a call to a known async wrapper function.
+
+    Args:
+        node: Node to check
+
+    Returns:
+        True if node is a call_expression to asyncify/spawn_blocking/block_in_place
+    """
+    if node.type != "call_expression":
+        return False
+    return any(_child_is_wrapper_name(child) for child in node.children)
+
+
+def _child_is_wrapper_name(child: Node) -> bool:
+    """Check if a child node is a wrapper function name.
+
+    Args:
+        child: Child node of a call_expression
+
+    Returns:
+        True if the child is an identifier or scoped_identifier matching a wrapper name
+    """
+    if child.type == "identifier":
+        return _node_text_matches_wrapper(child)
+    if child.type == "scoped_identifier":
+        return _scoped_name_matches_wrapper(child)
+    return False
+
+
+def _node_text_matches_wrapper(node: Node) -> bool:
+    """Check if a node's text matches a wrapper function name."""
+    text = node.text
+    return text is not None and text.decode() in _ASYNC_WRAPPER_FUNCTIONS
+
+
+def _scoped_name_matches_wrapper(node: Node) -> bool:
+    """Check if a scoped identifier's final segment matches a wrapper function name."""
+    text = node.text
+    if text is None:
+        return False
+    func_name = text.decode().split("::")[-1]
+    return func_name in _ASYNC_WRAPPER_FUNCTIONS

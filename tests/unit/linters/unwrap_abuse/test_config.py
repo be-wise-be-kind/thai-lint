@@ -32,10 +32,10 @@ class TestUnwrapAbuseConfigDefaults:
         config = UnwrapAbuseConfig()
         assert config.allow_in_tests is True
 
-    def test_allow_expect_false_by_default(self) -> None:
-        """Should flag expect calls by default."""
+    def test_allow_expect_true_by_default(self) -> None:
+        """Should allow expect calls by default (they provide error context)."""
         config = UnwrapAbuseConfig()
-        assert config.allow_expect is False
+        assert config.allow_expect is True
 
     def test_default_ignore_patterns(self) -> None:
         """Should have examples/ and benches/ in ignore by default."""
@@ -52,7 +52,7 @@ class TestUnwrapAbuseConfigFromDict:
         config = UnwrapAbuseConfig.from_dict({})
         assert config.enabled is True
         assert config.allow_in_tests is True
-        assert config.allow_expect is False
+        assert config.allow_expect is True
 
     def test_from_dict_disabled(self) -> None:
         """Should respect enabled=false."""

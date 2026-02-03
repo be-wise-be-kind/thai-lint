@@ -31,11 +31,13 @@ class UnwrapAbuseConfig:
     # Allow .unwrap()/.expect() in test functions and #[cfg(test)] modules
     allow_in_tests: bool = True
 
-    # Allow .expect() calls (they provide error context unlike bare .unwrap())
-    allow_expect: bool = False
+    # Allow .expect() calls (they provide error context unlike bare .unwrap()).
+    # Defaults to True because .expect("reason") is the Rust community recommended
+    # alternative to bare .unwrap(), providing panic context.
+    allow_expect: bool = True
 
     # File path patterns to ignore (e.g., examples/, benches/)
-    ignore: list[str] = field(default_factory=lambda: ["examples/", "benches/"])
+    ignore: list[str] = field(default_factory=lambda: ["examples/", "benches/", "tests/"])
 
     @classmethod
     def from_dict(cls, config: dict[str, Any], language: str | None = None) -> "UnwrapAbuseConfig":
@@ -52,6 +54,6 @@ class UnwrapAbuseConfig:
         return cls(
             enabled=config.get("enabled", True),
             allow_in_tests=config.get("allow_in_tests", True),
-            allow_expect=config.get("allow_expect", False),
-            ignore=config.get("ignore", ["examples/", "benches/"]),
+            allow_expect=config.get("allow_expect", True),
+            ignore=config.get("ignore", ["examples/", "benches/", "tests/"]),
         )

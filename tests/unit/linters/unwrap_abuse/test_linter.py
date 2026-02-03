@@ -67,8 +67,8 @@ fn main() {
         assert len(violations) == 1
         assert violations[0].rule_id == "unwrap-abuse.unwrap-call"
 
-    def test_detects_expect_in_non_test_code(self) -> None:
-        """Should detect .expect() in non-test Rust code."""
+    def test_allows_expect_by_default(self) -> None:
+        """Should allow .expect() by default since it provides error context."""
         code = """
 fn main() {
     let x = foo().expect("should work");
@@ -78,11 +78,25 @@ fn main() {
         rule = UnwrapAbuseRule()
         violations = rule.check(context)
 
+        assert len(violations) == 0
+
+    def test_detects_expect_when_configured(self) -> None:
+        """Should detect .expect() when allow_expect=False."""
+        code = """
+fn main() {
+    let x = foo().expect("should work");
+}
+"""
+        context = create_mock_context(code)
+        config = UnwrapAbuseConfig(allow_expect=False)
+        rule = UnwrapAbuseRule(config=config)
+        violations = rule.check(context)
+
         assert len(violations) == 1
         assert violations[0].rule_id == "unwrap-abuse.expect-call"
 
-    def test_detects_multiple_violations(self) -> None:
-        """Should detect multiple unwrap/expect calls."""
+    def test_detects_multiple_unwrap_violations(self) -> None:
+        """Should detect multiple .unwrap() calls (expect allowed by default)."""
         code = """
 fn process() {
     let x = foo().unwrap();
@@ -94,7 +108,8 @@ fn process() {
         rule = UnwrapAbuseRule()
         violations = rule.check(context)
 
-        assert len(violations) == 3
+        assert len(violations) == 2
+        assert all(v.rule_id == "unwrap-abuse.unwrap-call" for v in violations)
 
     def test_no_violations_for_clean_code(self) -> None:
         """Should not flag code with proper error handling."""

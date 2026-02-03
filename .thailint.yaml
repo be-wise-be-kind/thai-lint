@@ -55,6 +55,11 @@ file-placement:
         - 'conftest\.py$'
         - '__init__\.py$'
 
+    # Rust validation trial scripts (standalone CLI tools, not pytest tests)
+    tests/integration/rust_trials:
+      allow:
+        - '.*\.py$'
+
     # Documentation directory
     docs:
       allow:
