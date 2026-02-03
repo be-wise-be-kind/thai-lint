@@ -9,13 +9,14 @@
     to identifying common mistakes made by AI agents when generating code. Essential for understanding the
     project's mission, technical approach, and development standards.
 
-**Dependencies**: Click (CLI framework), Python 3.11+, Ruff (linting), pytest (testing), Poetry (dependency management)
+**Dependencies**: Click (CLI framework), Python 3.11+, tree-sitter (multi-language AST parsing), Ruff (linting),
+    pytest (testing), Poetry (dependency management)
 
-**Exports**: Project context, architectural patterns, development guidelines, success criteria
+**Exports**: Project context, architectural patterns, development guidelines
 
-**Related**: AGENTS.md for quick reference, `.ai/index.yaml` for navigation, `.roadmap/python-cli-install/AI_CONTEXT.md` for installation context
+**Related**: AGENTS.md for quick reference, `.ai/index.yaml` for navigation, `.ai/ai-context.md` for concise overview
 
-**Implementation**: Python CLI application with extensible linter architecture for multiple programming languages
+**Implementation**: Python CLI application with extensible plugin-based linter architecture for multiple programming languages
 
 ---
 
@@ -36,132 +37,212 @@ Provide governance and quality control for AI-generated code across multiple pro
 
 ### Core Capabilities
 
-1. **Multi-Language Support** - Lint Python, JavaScript/TypeScript, and additional languages (extensible architecture)
-2. **AI-Specific Rules** - Detect patterns specific to AI-generated code (hardcoded paths, missing error handling, etc.)
-3. **Configurable Severity** - Warning vs. error levels, customizable rule sets
-4. **Auto-Fix Support** - Suggest and apply fixes for detected issues
+1. **Multi-Language Support** - Lint Python, TypeScript/JavaScript, and Rust (extensible architecture)
+2. **AI-Specific Rules** - Detect patterns specific to AI-generated code (duplicate code, deep nesting, magic numbers, SRP violations, etc.)
+3. **Configurable Severity** - Warning vs. error levels, customizable rule sets via `.thailint.yaml`
+4. **Multiple Output Formats** - Text (human-readable), JSON (machine-readable), SARIF v2.1.0 (CI/CD integration)
 5. **CLI Interface** - Professional command-line tool with subcommands, options, and configuration management
+6. **Library API** - Programmatic access via `src.api.Linter` class for embedding in editors, CI/CD, and automation
+7. **Parallel Linting** - Orchestrator supports parallel file processing via `--parallel` flag
+8. **Docker Support** - Containerized distribution via Docker and docker-compose
 
 ---
 
-## AI-Specific Linting Rules
+## Linters
 
-Traditional linters catch syntax errors and style violations. thai-lint catches **AI-specific anti-patterns**:
+thai-lint includes 18 specialized linters organized by category:
 
-### Common AI Mistakes
+### Structure Quality
+| Linter | Rule Class | Languages | Description |
+|--------|-----------|-----------|-------------|
+| `nesting` | `NestingDepthRule` | Python, TypeScript, JS, Rust | Excessive control flow nesting depth |
+| `srp` | `SRPRule` | Python, TypeScript, JS | Single Responsibility Principle violations |
 
-1. **Hardcoded File Paths**
-   - AI often generates absolute paths instead of relative
-   - Example: `/home/user/project/file.txt` instead of `./file.txt`
-   - Rule: Detect absolute paths in source code
+### Code Smells
+| Linter | Rule Class | Languages | Description |
+|--------|-----------|-----------|-------------|
+| `dry` | `DRYRule` | Python, TypeScript, JS | Duplicate code detection via token hashing |
+| `magic-numbers` | `MagicNumberRule` | Python, TypeScript, JS | Unexplained numeric literals |
 
-2. **Missing Error Handling**
-   - AI tends to generate "happy path" code without error cases
-   - Example: File I/O without try/catch, API calls without timeout/retry
-   - Rule: Detect unhandled exceptions, missing validation
+### Code Patterns
+| Linter | Rule Class | Languages | Description |
+|--------|-----------|-----------|-------------|
+| `improper-logging` | `PrintStatementRule` | Python, TypeScript, JS | Print statements and conditional verbose guards |
+| `method-property` | `MethodPropertyRule` | Python, TypeScript, JS | Methods that should be properties |
+| `stateless-class` | `StatelessClassRule` | Python | Classes with no instance state |
+| `lazy-ignores` | `LazyIgnoresRule` | Python | Unjustified linter suppression comments |
+| `lbyl` | `LBYLRule` | Python | Look Before You Leap vs EAFP patterns |
+| `stringly-typed` | `StringlyTypedRule` | Python, TypeScript, JS | String enums instead of proper types |
+| `cqs` | `CQSRule` | Python, TypeScript, JS | Command-Query Separation violations |
 
-3. **Over-Generic Variable Names**
-   - AI sometimes uses `data`, `result`, `value` excessively
-   - Example: Multiple `data` variables in same scope
-   - Rule: Detect vague naming patterns
+### Structure
+| Linter | Rule Class | Languages | Description |
+|--------|-----------|-----------|-------------|
+| `file-placement` | `FilePlacementRule` | Any | Files in wrong directories per project conventions |
+| `pipeline` | `CollectionPipelineRule` | Python, TypeScript, JS | Imperative loops instead of collection pipelines |
 
-4. **Missing Type Hints** (Python-specific)
-   - AI may omit type annotations for function parameters/returns
-   - Example: `def process(data):` instead of `def process(data: dict[str, Any]) -> Result:`
-   - Rule: Require type hints for public functions
+### Documentation
+| Linter | Rule Class | Languages | Description |
+|--------|-----------|-----------|-------------|
+| `file-header` | `FileHeaderRule` | Python | Missing or incomplete file headers |
 
-5. **Incomplete Test Coverage**
-   - AI generates tests for success cases, often skips edge cases
-   - Example: Testing valid input but not invalid/boundary cases
-   - Rule: Analyze test files for coverage patterns
+### Performance
+| Linter | Rule Class | Languages | Description |
+|--------|-----------|-----------|-------------|
+| `perf` | (aggregated) | Python, TypeScript | Performance anti-patterns (aggregates sub-rules) |
+| `string-concat-loop` | `StringConcatLoopRule` | Python, TypeScript | O(n²) string concatenation in loops |
+| `regex-in-loop` | (via perf) | Python | Uncompiled regex in loops |
 
-6. **Security Vulnerabilities**
-   - AI may introduce SQL injection, hardcoded secrets, weak crypto
-   - Example: String concatenation for SQL queries, API keys in code
-   - Rule: Detect security anti-patterns
-
-7. **Inconsistent Code Style**
-   - AI may mix formatting styles from different examples
-   - Example: Mixing spaces and tabs, inconsistent naming conventions
-   - Rule: Enforce consistent style per language
+### Rust
+| Linter | Rule Class | Languages | Description |
+|--------|-----------|-----------|-------------|
+| `unwrap-abuse` | `UnwrapAbuseRule` | Rust | Excessive `.unwrap()` instead of proper error handling |
+| `clone-abuse` | `CloneAbuseRule` | Rust | Unnecessary `.clone()` calls |
+| `blocking-async` | `BlockingAsyncRule` | Rust | Blocking operations in async functions |
 
 ---
 
 ## Architecture Overview
 
-### CLI Application Structure
+### Source Code Structure
 
 ```
 src/
-├── cli.py           # Main CLI entrypoint with Click commands
-├── config.py        # YAML/JSON configuration file management
-├── commands/        # Individual command implementations
-│   ├── lint.py      # Linting command
-│   ├── check.py     # Check command (alias for lint)
-│   └── fix.py       # Auto-fix command
-├── linters/         # Language-specific linters
-│   ├── base.py      # Base linter interface
-│   ├── python.py    # Python linter (AST-based)
-│   ├── javascript.py # JavaScript/TypeScript linter
-│   └── ...          # Additional languages
-├── rules/           # Linting rules
-│   ├── base.py      # Base rule interface
-│   ├── hardcoded_paths.py
-│   ├── missing_error_handling.py
-│   └── ...          # Additional rules
-└── utils/           # Shared utilities
-    ├── logger.py    # Structured logging
-    └── errors.py    # Custom exceptions
-
-tests/
-├── test_cli.py      # CLI invocation tests
-├── test_config.py   # Configuration tests
-├── test_linters/    # Linter-specific tests
-└── test_rules/      # Rule-specific tests
+├── cli_main.py          # CLI entrypoint, imports and registers all commands
+├── api.py               # Library API (Linter class for programmatic usage)
+├── __init__.py           # Package init, exports Linter
+├── cli/                  # CLI package
+│   ├── main.py           # Click CLI group definition
+│   ├── __main__.py       # python -m src.cli entrypoint
+│   ├── config.py         # Config commands (show, get, set, reset, init-config)
+│   ├── config_merge.py   # Config merge utilities
+│   ├── utils.py          # Shared CLI utilities
+│   └── linters/          # Linter command registrations
+│       ├── __init__.py   # Imports all linter modules to register commands
+│       ├── structure_quality.py  # nesting, srp commands
+│       ├── code_smells.py        # dry, magic-numbers commands
+│       ├── code_patterns.py      # improper-logging, method-property, stateless-class, etc.
+│       ├── structure.py          # file-placement, pipeline commands
+│       ├── documentation.py      # file-header command
+│       ├── performance.py        # perf, string-concat-loop, regex-in-loop commands
+│       ├── rust.py               # unwrap-abuse, clone-abuse, blocking-async commands
+│       └── shared.py             # Shared command utilities
+├── core/                 # Core framework
+│   ├── base.py           # BaseLintRule, BaseLintContext, MultiLanguageLintRule
+│   ├── types.py          # Violation, Severity, and other data types
+│   ├── constants.py      # Language enum and other constants
+│   ├── registry.py       # Rule discovery and registration
+│   ├── rule_discovery.py # Dynamic rule loading
+│   ├── rule_aliases.py   # Backward-compatible rule ID aliases
+│   ├── config_parser.py  # Configuration parsing
+│   ├── cli_utils.py      # CLI utility functions
+│   ├── linter_utils.py   # Linter helper functions
+│   ├── python_lint_rule.py # PythonOnlyLintRule base class
+│   ├── violation_builder.py # Builder pattern for violations
+│   └── violation_utils.py   # Violation processing utilities
+├── linters/              # Linter implementations (one directory per linter)
+│   ├── blocking_async/   # Rust blocking-in-async detection
+│   ├── clone_abuse/      # Rust clone abuse detection
+│   ├── collection_pipeline/ # Collection pipeline patterns
+│   ├── cqs/              # Command-Query Separation
+│   ├── dry/              # Don't Repeat Yourself
+│   ├── file_header/      # File header validation
+│   ├── file_placement/   # File placement rules
+│   ├── lazy_ignores/     # Unjustified suppression comments
+│   ├── lbyl/             # Look Before You Leap
+│   ├── magic_numbers/    # Magic number detection
+│   ├── method_property/  # Method-to-property suggestions
+│   ├── nesting/          # Nesting depth analysis
+│   ├── performance/      # Performance anti-patterns
+│   ├── print_statements/ # Improper logging (print/console detection)
+│   ├── srp/              # Single Responsibility Principle
+│   ├── stateless_class/  # Stateless class detection
+│   ├── stringly_typed/   # Stringly-typed code detection
+│   └── unwrap_abuse/     # Rust unwrap abuse detection
+├── orchestrator/         # Linting orchestration engine
+│   ├── core.py           # Orchestrator class (file collection, rule execution, output)
+│   └── language_detector.py # File language detection
+├── formatters/           # Output format implementations
+│   └── sarif.py          # SARIF v2.1.0 formatter
+├── analyzers/            # Language-specific AST analysis utilities
+│   ├── typescript_base.py # TypeScript/JS tree-sitter base analyzer
+│   ├── rust_base.py      # Rust tree-sitter base analyzer
+│   ├── rust_context.py   # Rust lint context
+│   └── ast_utils.py      # AST utility functions (parent map building)
+├── linter_config/        # Configuration loading and management
+│   └── loader.py         # LinterConfigLoader
+├── templates/            # init-config template files
+└── utils/                # Shared utilities
+    └── project_root.py   # Project root detection
 ```
 
-### Extensible Linter Architecture
+### Plugin Architecture
 
-**Base Linter Interface** (`src/linters/base.py`):
+**Base Rule Interface** (`src/core/base.py`):
+
 ```python
-class BaseLinter(ABC):
-    @abstractmethod
-    def lint_file(self, file_path: Path) -> list[LintViolation]:
-        """Lint a single file and return violations."""
-        pass
+class BaseLintContext(ABC):
+    """Provides file information to rules during analysis."""
+    file_path: Path | None      # Path to file being analyzed
+    file_content: str | None    # File content as string
+    language: str               # Language identifier
 
-    @abstractmethod
-    def get_supported_extensions(self) -> list[str]:
-        """Return list of file extensions this linter handles."""
-        pass
+class BaseLintRule(ABC):
+    """Base class for all linting rules."""
+    rule_id: str        # Unique ID (e.g., 'nesting.depth')
+    rule_name: str      # Human-readable name
+    description: str    # Rule description
+
+    def check(self, context: BaseLintContext) -> list[Violation]:
+        """Check for violations in the given context."""
+
+    def finalize(self) -> list[Violation]:
+        """Optional: cross-file analysis after all files processed."""
 ```
 
-**Language-Specific Linters** implement the interface:
-- **PythonLinter**: Uses AST (Abstract Syntax Tree) analysis
-- **JavaScriptLinter**: Uses ESLint plugin architecture
-- Additional linters added as needed
+**Multi-Language Support** (`src/core/base.py`):
 
-### Rule Engine
-
-**Base Rule Interface** (`src/rules/base.py`):
 ```python
-class BaseRule(ABC):
-    severity: Severity  # WARNING or ERROR
-    rule_id: str
-    message: str
+class MultiLanguageLintRule(BaseLintRule):
+    """Template method pattern for language dispatch."""
 
-    @abstractmethod
-    def check(self, node: ASTNode) -> bool:
-        """Check if this node violates the rule."""
-        pass
+    def check(self, context: BaseLintContext) -> list[Violation]:
+        """Dispatches to _check_python(), _check_typescript(), or _check_rust()."""
 
-    @abstractmethod
-    def suggest_fix(self, node: ASTNode) -> Optional[str]:
-        """Suggest a fix for this violation."""
-        pass
+    def _load_config(self, context: BaseLintContext) -> Any: ...
+    def _check_python(self, context, config) -> list[Violation]: ...
+    def _check_typescript(self, context, config) -> list[Violation]: ...
+    def _check_rust(self, context, config) -> list[Violation]: ...
 ```
 
-Rules are modular and can be enabled/disabled via configuration.
+**Python-Only Rules** (`src/core/python_lint_rule.py`):
+
+```python
+class PythonOnlyLintRule(BaseLintRule, Generic[T]):
+    """Base for rules that only apply to Python files."""
+```
+
+### Orchestrator
+
+The `Orchestrator` class (`src/orchestrator/core.py`) coordinates the linting pipeline:
+
+1. Collects files from specified paths
+2. Detects file languages via `LanguageDetector`
+3. Creates `BaseLintContext` instances for each file
+4. Executes applicable rules against each context
+5. Calls `finalize()` on rules that need cross-file analysis (e.g., DRY)
+6. Collects and formats violations for output
+
+### Library API
+
+The `Linter` class (`src/api.py`) provides a clean programmatic interface:
+
+```python
+from src import Linter
+
+linter = Linter(config_file='.thailint.yaml')
+violations = linter.lint('src/', rules=['file-placement'])
+```
 
 ---
 
@@ -173,113 +254,55 @@ Rules are modular and can be enabled/disabled via configuration.
 
 **Impact**: Easier to add subcommands, nested command groups, configuration via decorators
 
-**Example**:
-```python
-@cli.command()
-@click.argument('path')
-@click.option('--language', help='Programming language')
-def lint(path: str, language: Optional[str]):
-    """Lint files in the specified path."""
-    ...
-```
+### Decision 2: Plugin-Based Linter Architecture
 
-### Decision 2: AST-Based Analysis (Python)
+**Why**: Each linter is independent with its own directory, configuration, and tests. Rules are discovered dynamically via the registry system.
 
-**Why**: AST provides accurate code understanding vs. regex-based approaches
+**Impact**: Adding a linter requires only creating the linter module, implementing the `BaseLintRule` interface, and registering a CLI command. No changes to core framework needed.
 
-**Impact**: More reliable detection, fewer false positives, enables complex rules
+### Decision 3: tree-sitter for Multi-Language Parsing
 
-**Example**: Detect hardcoded paths by analyzing AST `Constant` nodes with string values containing `/`
+**Why**: tree-sitter provides fast, incremental, multi-language AST parsing. Supports TypeScript, JavaScript, Rust, and other languages with a consistent API.
 
-### Decision 3: Configurable Rule Engine
+**Impact**: Enables accurate analysis of non-Python languages without language-specific parser dependencies. Used in `src/analyzers/` base classes.
 
-**Why**: Different projects have different needs, allow customization
+### Decision 4: Context-Based Rule Execution
 
-**Impact**: Users can enable/disable rules, set severity levels, configure thresholds
+**Why**: The `BaseLintContext` pattern decouples rules from file I/O. Rules receive parsed context objects rather than raw file paths.
 
-**Configuration** (`~/.config/thai-lint/config.yaml`):
-```yaml
-rules:
-  hardcoded-paths:
-    enabled: true
-    severity: error
-  missing-error-handling:
-    enabled: true
-    severity: warning
-  generic-variable-names:
-    enabled: false
-```
+**Impact**: Rules are testable in isolation, language detection is centralized, and the orchestrator controls the execution pipeline.
 
-### Decision 4: Multi-Language Support via Plugin Architecture
+### Decision 5: SARIF Output for CI/CD
 
-**Why**: Different languages require different analysis approaches
+**Why**: SARIF (Static Analysis Results Interchange Format) is the standard for GitHub Code Scanning and other CI/CD tools.
 
-**Impact**: Each language linter is independent, easy to add new languages
+**Impact**: All linters must support text, JSON, and SARIF output formats. The SARIF formatter in `src/formatters/sarif.py` handles the conversion.
 
-**Benefit**: Users can lint projects with mixed languages (Python + JavaScript)
+### Decision 6: Configuration via `.thailint.yaml`
 
----
+**Why**: Project-level configuration in the project root. Supports YAML and JSON formats.
 
-## Development Phases
-
-### Phase 1: Infrastructure (Current - PR0-PR6)
-- ✅ Create roadmap and planning (PR0)
-- ⏳ Install foundation plugin (PR1 - in progress)
-- ⏳ Install Python plugin (PR2)
-- ⏳ Install Docker + CI/CD (PR3)
-- ⏳ Install security, docs, pre-commit hooks (PR4)
-- ⏳ Copy CLI starter code (PR5)
-- ⏳ Validate setup (PR6)
-
-### Phase 2: Core Linting Engine (Next)
-- Implement AST-based analysis for Python
-- Create base linter and rule interfaces
-- Implement 3-5 core rules (hardcoded paths, missing error handling, etc.)
-- Add CLI command: `thai-lint lint ./src --language python`
-
-### Phase 3: Python-Specific Rules
-- Missing type hints
-- Incomplete test coverage patterns
-- Security vulnerabilities (Bandit integration)
-
-### Phase 4: JavaScript/TypeScript Support
-- ESLint plugin architecture
-- Language-specific AI rules
-- Multi-language project support
-
-### Phase 5: Auto-Fix Capabilities
-- Suggest fixes for violations
-- Apply fixes with `--fix` flag
-- Preview mode before applying
-
-### Phase 6: Integration & Distribution
-- VSCode extension
-- Pre-commit hook integration
-- CI/CD GitHub Action
-- PyPI distribution
-- Docker Hub distribution
+**Impact**: Each linter reads its configuration section from the loaded config. `LinterConfigLoader` handles discovery and parsing.
 
 ---
 
 ## Technology Stack
 
-**Language**: Python 3.11+ (modern async support, better type hints)
-
-**CLI Framework**: Click 8.x (decorator-based, widely adopted)
-
-**Dependency Manager**: Poetry (isolated venvs, lockfiles, prevents system corruption)
-
-**Linting**: Ruff (10-100x faster than traditional tools, handles linting + formatting)
-
-**Type Checking**: MyPy (static type checking with strict mode)
-
-**Testing**: pytest (fixtures, parametrization, async support, coverage)
-
-**Security**: Bandit (code security), Safety (CVE database), Gitleaks (secret scanning)
-
-**Containerization**: Docker + docker-compose (cross-platform distribution)
-
-**CI/CD**: GitHub Actions (matrix testing, automated releases)
+| Component | Technology | Purpose |
+|-----------|------------|---------|
+| Language | Python 3.11+ | Modern type hints, async support |
+| CLI Framework | Click 8.x | Decorator-based CLI |
+| Multi-Language Parsing | tree-sitter | TypeScript, JavaScript, Rust AST analysis |
+| Python Parsing | ast module | Python AST analysis |
+| Dependency Manager | Poetry | Isolated venvs, lockfiles |
+| Linting | Ruff | Fast linting + formatting |
+| Type Checking | MyPy (strict mode) | Static type checking |
+| Testing | pytest | Fixtures, parametrization, coverage |
+| Complexity | Xenon + Radon | Cyclomatic complexity (A-grade required) |
+| Security | Bandit, pip-audit, Gitleaks | Code security, CVE scanning, secret detection |
+| Containerization | Docker + docker-compose | Cross-platform distribution |
+| CI/CD | GitHub Actions | Matrix testing, automated releases |
+| Task Runner | just (justfile) | Build, test, lint, format commands |
 
 ---
 
@@ -288,73 +311,42 @@ rules:
 ### Code Standards
 
 - Follow PEP 8 style guide (enforced by Ruff)
-- Use type hints (checked by MyPy)
-- Maximum cyclomatic complexity: B (enforced by Xenon)
-- Docstrings required for all public functions (enforced by Flake8)
+- Use type hints everywhere (checked by MyPy strict mode)
+- Maximum cyclomatic complexity: **A** (enforced by Xenon with `--max-absolute A`)
+- Docstrings required for all public functions (Google-style)
+- Atemporal language in documentation (no "currently", "now", "new", "old", dates)
+- No print statements (use logging or Click output)
+
+### Quality Gates
+
+All code must pass before commit:
+
+| Tool | Requirement | Command |
+|------|-------------|---------|
+| Ruff | All checks pass | `just lint` |
+| Pylint | Score 10.00/10 | `poetry run pylint src/` |
+| MyPy | Zero errors | `poetry run mypy src/` |
+| Xenon | ALL blocks A-grade | `just lint-complexity` |
+| Bandit | All security checks | `just lint-security` |
+| Tests | All passing | `just test` |
+
+**Run all checks**: `just lint-full`
 
 ### Testing Requirements
 
-- Minimum 80% code coverage
-- All new features require tests
+- All new features require tests in `tests/`
 - Test both success and failure cases
 - Use pytest fixtures for reusable components
+- Linter tests organized in `tests/unit/linters/<linter_name>/`
 
-### Documentation Standards
+### Configuration
 
-- All Python files require docstring headers
-- Use Google-style docstrings
-- Update `.ai/docs/` when making architectural changes
-- Create how-to guides in `.ai/howtos/` for common tasks
+Project configuration lives in `.thailint.yaml` at the project root. Supports:
 
----
-
-## Success Criteria
-
-### MVP Success (Core Engine)
-- [ ] CLI runs and displays help
-- [ ] Can lint Python files with 3-5 core rules
-- [ ] Reports violations with file, line, rule ID
-- [ ] Configurable via YAML config file
-- [ ] Tests pass with >80% coverage
-
-### Production Success
-- [ ] Multi-language support (Python + JavaScript at minimum)
-- [ ] 10+ AI-specific rules implemented
-- [ ] Auto-fix capability for 50%+ of rules
-- [ ] VSCode extension available
-- [ ] Published to PyPI and Docker Hub
-- [ ] Active usage in 5+ projects
-
----
-
-## Future Enhancements
-
-**Post-MVP Development**:
-
-1. **Additional Language Support**:
-   - Go (AST analysis via go/ast package)
-   - Rust (AST analysis via syn crate)
-   - Java (AST analysis via JavaParser)
-
-2. **Advanced Rules**:
-   - Code duplication detection
-   - Performance anti-patterns
-   - Accessibility issues (for web code)
-
-3. **Machine Learning Integration**:
-   - Learn from user fixes
-   - Suggest project-specific rules
-   - Adaptive severity levels
-
-4. **Web Dashboard**:
-   - Visualize violations over time
-   - Track code quality trends
-   - Team metrics and leaderboards
-
-5. **IDE Integrations**:
-   - VSCode extension
-   - IntelliJ/PyCharm plugin
-   - Real-time linting as you type
+- Per-linter enable/disable and thresholds
+- File ignore patterns (glob syntax)
+- Language-specific overrides
+- Presets (strict, standard, lenient) via `init-config`
 
 ---
 
@@ -363,17 +355,24 @@ rules:
 ### Essential Reading
 - **AGENTS.md** - Primary entry point for AI agents
 - **`.ai/index.yaml`** - Repository structure map
-- **`.ai/layout.yaml`** - File placement rules
+- **`.ai/ai-context.md`** - Concise development context
+- **`.ai/ai-rules.md`** - Quality gates and mandatory rules
 
-### Installation Context
-- **`.roadmap/python-cli-install/PROGRESS_TRACKER.md`** - Current installation status
-- **`.roadmap/python-cli-install/PR_BREAKDOWN.md`** - PR implementation details
-- **`.roadmap/python-cli-install/AI_CONTEXT.md`** - Installation context
+### Architecture
+- **`.ai/docs/python-cli-architecture.md`** - CLI architecture patterns
+- **`.ai/docs/SARIF_STANDARDS.md`** - SARIF output format requirements
+- **`.ai/docs/FILE_HEADER_STANDARDS.md`** - File header standards
 
-### How-To Guides (Will be added in PR5)
-- `.ai/howtos/python-cli/how-to-add-cli-command.md`
-- `.ai/howtos/python-cli/how-to-handle-config-files.md`
-- `.ai/howtos/python-cli/how-to-package-cli-tool.md`
+### How-To Guides
+- **`.ai/howtos/how-to-add-linter.md`** - Implementing new linters
+- **`.ai/howtos/how-to-fix-linting-errors.md`** - Fixing quality violations
+- **`.ai/howtos/how-to-refactor-for-quality.md`** - Architectural refactoring
+
+### User-Facing Documentation
+- **`docs/cli-reference.md`** - Complete CLI command reference
+- **`docs/configuration.md`** - Configuration file reference
+- **`docs/api-reference.md`** - Library API documentation
+- **`docs/getting-started.md`** - Installation and quick start
 
 ---
 
