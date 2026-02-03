@@ -62,6 +62,8 @@ nav:
       - Configuration: configuration.md
       - Troubleshooting: troubleshooting.md
   - Linters:
+      - Blocking in Async (Rust): blocking-async-linter.md
+      - Clone Abuse (Rust): clone-abuse-linter.md
       - Collection Pipeline: collection-pipeline-linter.md
       - DRY (Duplicate Code): dry-linter.md
       - File Header: file-header-linter.md
@@ -77,6 +79,7 @@ nav:
       - Single Responsibility (SRP): srp-linter.md
       - Stateless Class: stateless-class-linter.md
       - Stringly Typed: stringly-typed-linter.md
+      - Unwrap Abuse (Rust): unwrap-abuse-linter.md
   - Usage:
       - CLI Reference: cli-reference.md
       - API Reference: api-reference.md

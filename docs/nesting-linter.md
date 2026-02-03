@@ -5,9 +5,9 @@
 
     **Scope**: Configuration, usage, refactoring patterns, and best practices for nesting depth analysis
 
-    **Overview**: Comprehensive documentation for the nesting depth linter that detects excessive nesting in Python and TypeScript code. Covers how the linter works using AST analysis, configuration options, CLI and library usage, common refactoring patterns, and integration with CI/CD pipelines. Helps teams maintain readable, maintainable code by enforcing configurable nesting depth limits.
+    **Overview**: Comprehensive documentation for the nesting depth linter that detects excessive nesting in Python, TypeScript, and Rust code. Covers how the linter works using AST analysis, configuration options, CLI and library usage, common refactoring patterns, and integration with CI/CD pipelines. Helps teams maintain readable, maintainable code by enforcing configurable nesting depth limits.
 
-    **Dependencies**: tree-sitter (Python parser), tree-sitter-typescript (TypeScript parser)
+    **Dependencies**: tree-sitter (Python parser), tree-sitter-typescript (TypeScript parser), tree-sitter-rust (Rust parser, optional)
 
     **Exports**: Usage documentation, configuration examples, refactoring patterns
 
@@ -38,7 +38,7 @@ src/processor.py:42 - Excessive nesting (depth 5, max 4) in function 'process_da
 
 ## Overview
 
-The nesting depth linter detects deeply nested code structures (if/for/while/try statements) that reduce readability and maintainability. It analyzes Python and TypeScript code using Abstract Syntax Tree (AST) parsing to accurately calculate nesting depth within functions.
+The nesting depth linter detects deeply nested code structures (if/for/while/try statements) that reduce readability and maintainability. It analyzes Python, TypeScript, and Rust code using Abstract Syntax Tree (AST) parsing to accurately calculate nesting depth within functions.
 
 ### Why Nesting Depth Matters
 
@@ -65,6 +65,7 @@ The linter uses Abstract Syntax Tree (AST) parsing to analyze code structure:
 1. **Parse source code** into AST using language-specific parsers:
    - Python: Built-in `ast` module
    - TypeScript: `tree-sitter-typescript` library
+   - Rust: `tree-sitter-rust` library (optional dependency)
 
 2. **Find all functions** in the file (functions, methods, lambdas, arrow functions)
 
@@ -103,6 +104,13 @@ def example():           # Depth 0 (function definition)
 - `while` / `do...while`
 - `try` / `catch` / `finally`
 - `switch` / `case`
+
+**Rust:**
+- `if` / `else`
+- `match` arms
+- `for` / `while` / `loop`
+- Closure expressions (`|args| { ... }`)
+- `async` blocks
 
 ## Configuration
 
@@ -599,6 +607,47 @@ lint-all: lint-nesting
 **Supported** (via TypeScript parser)
 
 JavaScript files are analyzed using the TypeScript parser, which handles JavaScript syntax.
+
+### Rust Support
+
+**Fully Supported** - Analyzes Rust functions using `tree-sitter-rust`.
+
+**Nesting constructs detected:**
+
+- `if` / `else` conditionals
+- `match` arms
+- `for` / `while` / `loop` loops
+- Closure expressions (`|args| { ... }`)
+- `async` blocks
+
+**Function types detected:**
+
+- Free functions (`fn`)
+- Methods in `impl` blocks
+- Async functions (`async fn`)
+
+**Example:**
+```rust
+fn process_items(items: &[Item]) {       // Depth 0
+    for item in items {                  // Depth 2
+        if item.is_valid() {             // Depth 3
+            match item.category {        // Depth 4 ← Violation if max=3
+                Category::A => { ... }
+                Category::B => { ... }
+            }
+        }
+    }
+}
+```
+
+**Configuration:**
+```yaml
+nesting:
+  rust:
+    max_nesting_depth: 3
+```
+
+**Requires**: `tree-sitter-rust` (optional dependency). Install with `pip install thailint[rust]` or `pip install thailint[all]`.
 
 ## Performance
 

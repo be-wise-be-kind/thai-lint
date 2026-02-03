@@ -7,7 +7,7 @@
 
 **The AI Linter** - Catch the mistakes AI coding assistants keep making.
 
-thailint detects anti-patterns that AI tools frequently introduce: duplicate code, excessive nesting, magic numbers, SRP violations, and more. It works across Python, TypeScript, and JavaScript with unified rules - filling gaps that existing linters miss.
+thailint detects anti-patterns that AI tools frequently introduce: duplicate code, excessive nesting, magic numbers, SRP violations, and more. It works across Python, TypeScript, JavaScript, and Rust with unified rules - filling gaps that existing linters miss.
 
 ## Installation
 
@@ -50,6 +50,9 @@ That's it. See violations, fix them, ship better code.
 | **Improper Logging** | Print statements and conditional verbose patterns | `thailint improper-logging src/` | [Guide](https://thai-lint.readthedocs.io/en/latest/improper-logging-linter/) |
 | **Stringly Typed** | Strings that should be enums | `thailint stringly-typed src/` | [Guide](https://thai-lint.readthedocs.io/en/latest/stringly-typed-linter/) |
 | **LBYL** | Look Before You Leap anti-patterns | `thailint lbyl src/` | [Guide](https://thai-lint.readthedocs.io/en/latest/lbyl-linter/) |
+| **Unwrap Abuse** | `.unwrap()`/`.expect()` that panic at runtime (Rust) | `thailint unwrap-abuse src/` | [Guide](https://thai-lint.readthedocs.io/en/latest/unwrap-abuse-linter/) |
+| **Clone Abuse** | `.clone()` abuse: loops, chains, unnecessary (Rust) | `thailint clone-abuse src/` | [Guide](https://thai-lint.readthedocs.io/en/latest/clone-abuse-linter/) |
+| **Blocking Async** | Blocking std:: calls in async functions (Rust) | `thailint blocking-async src/` | [Guide](https://thai-lint.readthedocs.io/en/latest/blocking-async-linter/) |
 
 ## Configuration
 
