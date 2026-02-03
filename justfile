@@ -962,9 +962,8 @@ _publish-pypi-only:
     echo "Publishing to PyPI"
     echo "=========================================="
     echo ""
-    echo "Step 1: Updating badges..."
+    echo "Step 1: Updating version badge..."
     just update-version-badges
-    just update-test-badges
     echo ""
     echo "Step 2: Updating lock file..."
     poetry lock
@@ -1048,9 +1047,8 @@ _publish-docker-only:
     echo "Publishing to Docker Hub"
     echo "=========================================="
     echo ""
-    echo "Step 1: Updating badges..."
+    echo "Step 1: Updating version badge..."
     just update-version-badges
-    just update-test-badges
     echo ""
     echo "Step 2: Updating lock file..."
     poetry lock
