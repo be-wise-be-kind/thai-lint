@@ -31,7 +31,7 @@ thailint provides a comprehensive command-line interface built with Click framew
 pip install thailint
 
 # From source
-git clone https://github.com/YOUR_USERNAME/thai-lint.git
+git clone https://github.com/be-wise-be-kind/thai-lint.git
 cd thai-lint
 pip install -e .
 

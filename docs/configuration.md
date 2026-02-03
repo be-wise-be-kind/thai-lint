@@ -7,12 +7,25 @@ Complete reference for configuring thailint linters with presets, ignore pattern
 - [Quick Start with init-config](#quick-start-with-init-config)
 - [Configuration File Basics](#configuration-file-basics)
 - [Ignore Patterns (All Linters)](#ignore-patterns-all-linters)
-- [Magic Numbers Configuration](#magic-numbers-configuration)
-- [Nesting Depth Configuration](#nesting-depth-configuration)
-- [SRP Configuration](#srp-configuration)
-- [DRY Configuration](#dry-configuration)
-- [Collection Pipeline Configuration](#collection-pipeline-configuration)
-- [File Placement Configuration](#file-placement-configuration)
+- [Output Formats](#output-formats)
+- [Configuration Schema](#configuration-schema)
+  - [File Placement](#file-placement-linter-options)
+  - [Nesting Depth](#nesting-depth-linter-options)
+  - [SRP](#single-responsibility-principle-srp-linter-options)
+  - [DRY](#dry-dont-repeat-yourself-linter-options)
+  - [Collection Pipeline](#collection-pipeline-linter-options)
+  - [Magic Numbers](#magic-numbers-linter-options)
+  - [Method Property](#method-property-linter-options)
+  - [Stateless Class](#stateless-class)
+- [Advanced Patterns](#advanced-patterns)
+- [Best Practices](#best-practices)
+- [Troubleshooting](#troubleshooting)
+
+!!! note "Linter-Specific Configuration"
+    Each linter has its own dedicated documentation page with detailed configuration
+    examples. See the individual linter docs for: improper-logging, performance,
+    lazy-ignores, lbyl, stringly-typed, file-header, blocking-async, clone-abuse,
+    unwrap-abuse, and cqs.
 
 ## Quick Start with init-config
 
