@@ -34,9 +34,9 @@ Overview: Comprehensive development context document that provides AI agents wit
 ### What This Repo Does
 
 - Lints AI-generated code for common AI-specific patterns
-- Supports multiple languages: Python, TypeScript, JavaScript
+- Supports multiple languages: **Python, TypeScript, JavaScript, Rust**
 - Outputs in multiple formats: text, JSON, SARIF (for CI/CD)
-- Detects: nesting depth, magic numbers, SRP violations, DRY violations, stringly-typed code
+- Detects: nesting depth, magic numbers, SRP violations, DRY violations, stringly-typed code, improper logging, CQS violations, performance anti-patterns, Rust-specific issues, and more (18 linters total)
 
 ### What This Repo Does NOT Do
 
@@ -57,6 +57,9 @@ Traditional linters catch syntax and style. Thai-lint catches **AI patterns**:
 | SRP Violations | Classes doing too much | 15+ methods per class |
 | DRY Violations | Duplicate code blocks | Same 5+ lines repeated |
 | Stringly-Typed | String enums instead of proper types | `if status == "active":` |
+| Improper Logging | print()/console.log() instead of logging | `print("debug info")` |
+| Blocking Async | Sync calls in async Rust functions | `std::fs::read` in async fn |
+| Unwrap Abuse | Excessive .unwrap() in Rust | `result.unwrap()` everywhere |
 
 ---
 
@@ -65,13 +68,40 @@ Traditional linters catch syntax and style. Thai-lint catches **AI patterns**:
 ```bash
 thailint <command> [options] <paths>
 
-# Commands
-thailint lint <paths>           # Run all linters
-thailint nesting <paths>        # Check nesting depth
-thailint magic-numbers <paths>  # Check for magic numbers
-thailint srp <paths>            # Check single responsibility
-thailint dry <paths>            # Check for duplicate code
-thailint stringly-typed <paths> # Check for string-based typing
+# Linting commands
+thailint nesting <paths>           # Check nesting depth
+thailint magic-numbers <paths>     # Check for magic numbers
+thailint srp <paths>               # Check single responsibility
+thailint dry <paths>               # Check for duplicate code
+thailint stringly-typed <paths>    # Check for string-based typing
+thailint improper-logging <paths>  # Check for print/console statements
+thailint method-property <paths>   # Check methods that should be properties
+thailint stateless-class <paths>   # Check for stateless classes
+thailint file-placement <paths>    # Check file placement conventions
+thailint file-header <paths>       # Check file headers
+thailint pipeline <paths>          # Check for collection pipeline patterns
+thailint lazy-ignores <paths>      # Check for unjustified suppressions
+thailint lbyl <paths>              # Check LBYL vs EAFP patterns
+thailint perf <paths>              # Check performance anti-patterns
+thailint string-concat-loop <paths> # Check string concat in loops
+thailint regex-in-loop <paths>     # Check regex compilation in loops
+thailint unwrap-abuse <paths>      # Check Rust unwrap abuse
+thailint clone-abuse <paths>       # Check Rust clone abuse
+thailint blocking-async <paths>    # Check Rust blocking in async
+
+# Configuration commands
+thailint init-config               # Generate .thailint.yaml
+thailint config show               # Show configuration
+thailint config get <key>          # Get config value
+thailint config set <key> <value>  # Set config value
+thailint config reset              # Reset to defaults
+
+# Global options
+thailint --version                 # Show version
+thailint --verbose                 # Enable verbose output
+thailint --config <path>           # Use specific config file
+thailint --parallel                # Enable parallel linting
+thailint --format [text|json|sarif] # Output format
 ```
 
 ---
@@ -84,7 +114,7 @@ thailint stringly-typed <paths> # Check for string-based typing
 |-----------|------------|
 | Language | Python 3.11+ |
 | CLI Framework | Click |
-| AST Parsing | tree-sitter (multi-language) |
+| AST Parsing | tree-sitter (TypeScript, JS, Rust), ast (Python) |
 | Testing | pytest |
 | Packaging | Poetry |
 
@@ -92,16 +122,21 @@ thailint stringly-typed <paths> # Check for string-based typing
 
 ```
 src/
-├── cli.py              # Main CLI entry point
-├── linters/            # Individual linter implementations
-│   ├── nesting/        # Nesting depth linter
-│   ├── magic_numbers/  # Magic numbers linter
-│   ├── srp/            # Single responsibility linter
-│   ├── dry/            # DRY violations linter
-│   ├── stringly_typed/ # Stringly-typed code linter
-│   └── ...
-├── parsers/            # Language-specific parsers
-└── models/             # Shared data models
+├── cli_main.py         # CLI entrypoint (registers all commands)
+├── api.py              # Library API (Linter class)
+├── cli/                # CLI package
+│   ├── main.py         # Click CLI group definition
+│   ├── config.py       # Configuration commands
+│   └── linters/        # Linter command registrations
+├── core/               # Framework (BaseLintRule, BaseLintContext, types)
+│   ├── base.py         # Abstract base classes
+│   └── types.py        # Violation, Severity types
+├── linters/            # Linter implementations (18 directories)
+├── orchestrator/       # Linting pipeline (file collection, execution)
+├── formatters/         # Output formatters (SARIF)
+├── analyzers/          # Language-specific AST utilities (tree-sitter)
+├── linter_config/      # Configuration loading
+└── utils/              # Shared utilities
 
 tests/
 ├── unit/               # Unit tests
@@ -128,16 +163,27 @@ def my_command(paths: tuple[str, ...], format: str) -> None:
 
 ### Linter Interface
 
-All linters follow a common interface:
+All linters implement `BaseLintRule` from `src/core/base.py`:
 
 ```python
-from src.models import LintResult
+from src.core.base import BaseLintRule, BaseLintContext
+from src.core.types import Violation
 
-class MyLinter:
-    def lint(self, file_path: str, content: str) -> list[LintResult]:
-        """Analyze file and return list of violations."""
+class MyRule(BaseLintRule):
+    @property
+    def rule_id(self) -> str: return "my-rule.check"
+    @property
+    def rule_name(self) -> str: return "My Rule"
+    @property
+    def description(self) -> str: return "Checks for X"
+
+    def check(self, context: BaseLintContext) -> list[Violation]:
+        """Analyze file and return violations."""
         ...
 ```
+
+For multi-language linters, extend `MultiLanguageLintRule` which provides
+language dispatch via `_check_python()`, `_check_typescript()`, `_check_rust()`.
 
 ### Output Formats
 
@@ -152,11 +198,11 @@ All linters **must** support three output formats:
 
 1. Create directory: `src/linters/<linter_name>/`
 2. Add `__init__.py` with public API exports
-3. Implement linter class following common interface
+3. Implement rule class extending `BaseLintRule` or `MultiLanguageLintRule`
 4. Implement all 3 output formats (text, json, sarif)
-5. Register in CLI (`src/cli.py`)
+5. Register CLI command in `src/cli/linters/` (appropriate module)
 6. Add tests in `tests/unit/linters/<linter_name>/`
-7. Update AGENTS.md with new command
+7. Update documentation in `docs/`
 
 **Detailed guide**: `.ai/howtos/how-to-add-linter.md`
 

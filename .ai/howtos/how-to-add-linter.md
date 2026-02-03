@@ -205,7 +205,7 @@ class YourLinter:
 
 ### Step 6: Register with CLI
 
-Add your linter command to `src/cli.py`:
+Add your linter command to the appropriate module in `src/cli/linters/` (e.g., `code_patterns.py`, `structure_quality.py`):
 
 ```python
 @cli.command()
@@ -451,8 +451,9 @@ class MultiLanguageLinter:
 - **SARIF Standards**: `.ai/docs/SARIF_STANDARDS.md`
 - **File Headers**: `.ai/docs/FILE_HEADER_STANDARDS.md`
 - **Existing Linters**: `src/linters/` (reference implementations)
-- **Core Types**: `src/core/violation.py`
-- **CLI Framework**: `src/cli.py`
+- **Core Types**: `src/core/types.py`
+- **Base Classes**: `src/core/base.py` (BaseLintRule, MultiLanguageLintRule)
+- **CLI Framework**: `src/cli/linters/` (command registration modules)
 
 ## Troubleshooting
 

@@ -10,7 +10,7 @@ project:
   type: cli
   purpose: The AI Linter - Lint and governance for AI-generated code across multiple languages
   status: in-development
-  version: "0.1.0"
+  version: "0.17.2"
 
 core_documents:
   - ai-context.md       # Development context and patterns
@@ -44,10 +44,45 @@ documentation:
     - code-scanning.md
     - FILE_HEADER_STANDARDS.md
     - SARIF_STANDARDS.md
+    - python-cli-architecture.md
+    - ROADMAP_WORKFLOW.md
+    - readme-standards.md
+    - api-documentation.md
+    - PRE_COMMIT_STANDARDS.md
   user_facing:
-    - path: ../docs/ai-doc-standard.md
-      description: AI-optimized documentation header standard for LLM-assisted development workflows
-      tags: [documentation, standards, ai, headers, llm]
+    location: docs/
+    files:
+      - path: docs/ai-doc-standard.md
+        description: AI-optimized documentation header standard for LLM-assisted development workflows
+        tags: [documentation, standards, ai, headers, llm]
+      - path: docs/cli-reference.md
+        description: Complete CLI command reference
+      - path: docs/configuration.md
+        description: Configuration file reference
+      - path: docs/api-reference.md
+        description: Library API documentation
+      - path: docs/getting-started.md
+        description: Installation and quick start guide
+      - path: docs/deployment-modes.md
+        description: CLI, library, and Docker deployment modes
+    linter_docs:
+      - docs/blocking-async-linter.md
+      - docs/clone-abuse-linter.md
+      - docs/collection-pipeline-linter.md
+      - docs/dry-linter.md
+      - docs/file-header-linter.md
+      - docs/file-placement-linter.md
+      - docs/improper-logging-linter.md
+      - docs/lazy-ignores-linter.md
+      - docs/lbyl-linter.md
+      - docs/magic-numbers-linter.md
+      - docs/method-property-linter.md
+      - docs/nesting-linter.md
+      - docs/performance-linter.md
+      - docs/srp-linter.md
+      - docs/stateless-class-linter.md
+      - docs/stringly-typed-linter.md
+      - docs/unwrap-abuse-linter.md
 
 howto:
   location: .ai/howtos/
@@ -60,6 +95,7 @@ howto:
     - how-to-create-readme.md
     - how-to-debug-failing-hooks.md
     - how-to-document-api.md
+    - how-to-fix-lazy-ignores.md
     - how-to-fix-linting-errors.md
     - how-to-install-pre-commit.md
     - how-to-prevent-secrets-in-git.md
@@ -68,6 +104,19 @@ howto:
     - how-to-setup-dependency-scanning.md
     - how-to-write-file-headers.md
     - how-to-write-tests.md
+  python_cli:
+    location: .ai/howtos/python-cli/
+    files:
+      - how-to-add-cli-command.md
+      - how-to-create-github-release.md
+      - how-to-handle-config-files.md
+      - how-to-package-cli-tool.md
+      - how-to-publish-to-pypi.md
+      - README.md
+  repository:
+    location: .ai/howtos/repository/
+    files:
+      - environment-setup-readme.md
 
 standards:
   security:
@@ -157,16 +206,24 @@ roadmaps:
     - AI_CONTEXT.md (optional - architecture)
 
 commands:
-  # Will be added as tooling is installed
-  # test: just test
-  # lint: just lint
-  # format: just format
-  # cli: python -m src.cli
+  test: just test
+  test_coverage: just test-coverage
+  lint: just lint
+  lint_all: just lint-all
+  lint_full: just lint-full
+  lint_security: just lint-security
+  lint_complexity: just lint-complexity
+  lint_lazy_ignores: just lint-lazy-ignores
+  format: just format
+  install: just install
+  cli_help: python -m src.cli --help
 
 key_files:
   readme: README.md
   gitignore: .gitignore
   agents: AGENTS.md
+  config: .thailint.yaml
+  justfile: justfile
 
 repository:
   environment-setup:
@@ -188,18 +245,20 @@ repository:
 architecture:
   pattern: cli-application
   # Python CLI tool with Click framework
-  # Multi-language linter support (extensible architecture)
+  # Multi-language linter support (Python, TypeScript, JavaScript, Rust)
+  # Plugin-based linter architecture with BaseLintRule/BaseLintContext
 
 application:
   type: cli
-  stack: [python, click, docker]
+  stack: [python, click, tree-sitter, docker]
   howtos: .ai/howtos/python-cli/
   templates: .ai/templates/python-cli/
   primary_language: python
-  frameworks: [click, pytest]
+  frameworks: [click, pytest, tree-sitter]
 
 notes_for_agents:
   - This is a CLI application for linting AI-generated code
-  - Designed to work across multiple programming languages
-  - Focus on catching common AI mistakes and anti-patterns
-  - Update this file as the project structure evolves
+  - Supports Python, TypeScript, JavaScript, and Rust
+  - 18 specialized linters detecting AI-specific anti-patterns
+  - All linters must support text, JSON, and SARIF output formats
+  - Update this file when adding files to .ai/ or docs/

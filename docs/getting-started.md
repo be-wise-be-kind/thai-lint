@@ -23,7 +23,7 @@
 
 ## Overview
 
-thailint is an enterprise-ready multi-language linter designed for AI-generated code. It helps enforce project structure, file placement rules, and coding standards across Python, TypeScript, and other languages.
+thailint is an enterprise-ready multi-language linter designed for AI-generated code. It helps enforce project structure, file placement rules, and coding standards across Python, TypeScript, JavaScript, and Rust.
 
 ## Prerequisites
 
