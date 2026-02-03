@@ -90,9 +90,11 @@ The Python CLI application architecture provides a production-ready foundation f
 
 ## Core Components
 
-### 1. CLI Entrypoint (src/cli.py)
+### 1. CLI Entrypoint (src/cli_main.py + src/cli/main.py)
 
-The main CLI interface using Click framework.
+The main CLI interface using Click framework. In thai-lint, `src/cli_main.py` serves as the
+entrypoint that imports and registers all commands, while `src/cli/main.py` defines the Click
+CLI group. Linter commands are registered via `src/cli/linters/` submodules.
 
 **Responsibilities**:
 - Define CLI commands and subcommands
