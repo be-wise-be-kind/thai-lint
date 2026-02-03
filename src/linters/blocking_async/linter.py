@@ -20,7 +20,12 @@ Implementation: Single-file analysis with config-driven filtering and tree-sitte
 """
 
 from src.core.base import BaseLintContext, BaseLintRule
-from src.core.linter_utils import has_file_content, load_linter_config
+from src.core.linter_utils import (
+    has_file_content,
+    is_ignored_path,
+    load_linter_config,
+    resolve_file_path,
+)
 from src.core.types import Violation
 
 from .config import BlockingAsyncConfig
@@ -88,7 +93,7 @@ class BlockingAsyncRule(BaseLintRule):
         if not self._should_analyze(context, config):
             return []
 
-        file_path = _resolve_file_path(context)
+        file_path = resolve_file_path(context)
         calls = self._analyzer.find_blocking_calls(context.file_content or "")
         return self._build_violations(calls, config, file_path)
 
@@ -108,7 +113,7 @@ class BlockingAsyncRule(BaseLintRule):
             return False
         if not config.enabled:
             return False
-        return not _is_ignored_path(_resolve_file_path(context), config)
+        return not is_ignored_path(resolve_file_path(context), config.ignore)
 
     def _get_config(self, context: BaseLintContext) -> BlockingAsyncConfig:
         """Load configuration from override or context metadata.
@@ -144,31 +149,6 @@ class BlockingAsyncRule(BaseLintRule):
             for call in calls
             if not _should_skip_call(call, config)
         ]
-
-
-def _resolve_file_path(context: BaseLintContext) -> str:
-    """Resolve file path from context.
-
-    Args:
-        context: Lint context
-
-    Returns:
-        File path string, or "unknown" if not available
-    """
-    return str(context.file_path) if context.file_path else "unknown"
-
-
-def _is_ignored_path(file_path: str, config: BlockingAsyncConfig) -> bool:
-    """Check if file path matches any ignore pattern.
-
-    Args:
-        file_path: Path to check
-        config: Configuration with ignore patterns
-
-    Returns:
-        True if the path should be ignored
-    """
-    return any(ignored in file_path for ignored in config.ignore)
 
 
 def _should_skip_call(call: BlockingCall, config: BlockingAsyncConfig) -> bool:

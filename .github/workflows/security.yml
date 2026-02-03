@@ -38,6 +38,9 @@ jobs:
       - name: Install dependencies
         run: poetry install --no-interaction
 
+      - name: Upgrade pip in virtualenv
+        run: poetry run pip install --upgrade pip
+
       - name: Run Bandit (SAST security scanner)
         run: poetry run bandit -r src/ -c pyproject.toml -q
 

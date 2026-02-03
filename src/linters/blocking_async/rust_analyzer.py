@@ -29,6 +29,7 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 from src.analyzers.rust_base import RustBaseAnalyzer
+from src.core.linter_utils import get_line_context
 
 if TYPE_CHECKING:
     from tree_sitter import Node
@@ -162,7 +163,7 @@ class RustBlockingAsyncAnalyzer(RustBaseAnalyzer):
             column=call_node.start_point[1],
             pattern=pattern,
             is_in_test=self.is_inside_test(call_node),
-            context=_get_line_context(code, call_node.start_point[0]),
+            context=get_line_context(code, call_node.start_point[0]),
             blocking_api=path,
         )
 
@@ -334,19 +335,3 @@ def _matches_short_net_pattern(parts: list[str]) -> bool:
     if len(parts) >= 2 and parts[0] == "net" and parts[1] in _BLOCKING_NET_TYPES:
         return True
     return False
-
-
-def _get_line_context(code: str, line_index: int) -> str:
-    """Get the code line at the given index for context.
-
-    Args:
-        code: Full source code
-        line_index: Zero-indexed line number
-
-    Returns:
-        Stripped line content, or empty string if index out of range
-    """
-    lines = code.split("\n")
-    if 0 <= line_index < len(lines):
-        return lines[line_index].strip()
-    return ""

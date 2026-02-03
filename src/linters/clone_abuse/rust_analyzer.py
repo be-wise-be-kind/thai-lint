@@ -26,6 +26,7 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 from src.analyzers.rust_base import RustBaseAnalyzer
+from src.core.linter_utils import get_line_context
 
 if TYPE_CHECKING:
     from tree_sitter import Node
@@ -86,7 +87,7 @@ class RustCloneAnalyzer(RustBaseAnalyzer):
                             column=node.start_point[1],
                             pattern=pattern,
                             is_in_test=self.is_inside_test(node),
-                            context=_get_line_context(code, node.start_point[0]),
+                            context=get_line_context(code, node.start_point[0]),
                         )
                     )
 
@@ -353,19 +354,3 @@ def _is_matching_identifier(node: Node, identifier: str) -> bool:
         return False
     text = node.text
     return text is not None and text.decode() == identifier
-
-
-def _get_line_context(code: str, line_index: int) -> str:
-    """Get the code line at the given index for context.
-
-    Args:
-        code: Full source code
-        line_index: Zero-indexed line number
-
-    Returns:
-        Stripped line content, or empty string if index out of range
-    """
-    lines = code.split("\n")
-    if 0 <= line_index < len(lines):
-        return lines[line_index].strip()
-    return ""
