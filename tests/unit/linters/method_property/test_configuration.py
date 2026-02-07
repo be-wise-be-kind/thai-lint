@@ -9,12 +9,12 @@ Overview: Comprehensive test suite for method-should-be-property configuration c
     for max body statements, ignore patterns, and enabled/disabled states. Ensures configuration
     is properly merged and applied during linting operations.
 
-Dependencies: pytest, pathlib.Path, unittest.mock.Mock,
+Dependencies: pytest (including parametrize), pathlib.Path, unittest.mock.Mock,
     src.linters.method_property.linter.MethodPropertyRule,
     src.linters.method_property.config.MethodPropertyConfig
 
-Exports: TestConfigurationDefaults, TestConfigurationLoading, TestConfigurationOverrides
-    test classes
+Exports: TestConfigurationDefaults, TestConfigurationLoading, TestConfigurationOverrides,
+    TestProductionConfigLoading test classes
 
 Interfaces: test methods validating configuration behavior and defaults
 
@@ -24,6 +24,8 @@ Implementation: Uses Mock objects for context creation, tests configuration data
 
 from pathlib import Path
 from unittest.mock import Mock
+
+import pytest
 
 
 class TestConfigurationDefaults:
@@ -220,3 +222,106 @@ class TestConfigurationMerging:
         assert "tests/*" in config.ignore
         assert "**/test_*.py" in config.ignore
         assert "fixtures/*" in config.ignore
+
+
+class TestProductionConfigLoading:
+    """Test configuration loading from context.metadata (production path)."""
+
+    SIMPLE_CODE = """
+class User:
+    def __init__(self, name):
+        self._name = name
+
+    def get_name(self):
+        return self._name
+"""
+
+    def _make_context(self, code: str, metadata: dict | None = None) -> Mock:
+        """Create a mock context with metadata and no test config."""
+        context = Mock()
+        context.file_path = Path("user.py")
+        context.file_content = code
+        context.language = "python"
+        context.config = None
+        context.metadata = metadata if metadata is not None else {}
+        return context
+
+    @pytest.mark.parametrize("config_key", ["method_property", "method-property"])
+    def test_loads_config_from_metadata(self, config_key: str):
+        """Should load config from metadata using either key format."""
+        from src.linters.method_property.linter import MethodPropertyRule
+
+        rule = MethodPropertyRule()
+        context = self._make_context(
+            self.SIMPLE_CODE,
+            metadata={config_key: {"max_body_statements": 5}},
+        )
+
+        violations = rule.check(context)
+        assert len(violations) == 1  # get_name still flagged with permissive threshold
+
+    @pytest.mark.parametrize("config_key", ["method_property", "method-property"])
+    def test_metadata_max_body_statements(self, config_key: str):
+        """Custom max_body_statements from metadata affects detection."""
+        code = """
+class Processor:
+    def __init__(self):
+        self._value = "test"
+
+    def processed(self):
+        v = self._value
+        v = v.strip()
+        return v
+"""
+        from src.linters.method_property.linter import MethodPropertyRule
+
+        rule = MethodPropertyRule()
+
+        # With max=2, the 3-statement method should NOT be flagged
+        context = self._make_context(
+            code,
+            metadata={config_key: {"max_body_statements": 2}},
+        )
+        violations = rule.check(context)
+        assert len(violations) == 0
+
+    @pytest.mark.parametrize("config_key", ["method_property", "method-property"])
+    def test_metadata_ignore_patterns(self, config_key: str):
+        """Ignore patterns from metadata work correctly."""
+        from src.linters.method_property.linter import MethodPropertyRule
+
+        rule = MethodPropertyRule()
+        context = self._make_context(
+            self.SIMPLE_CODE,
+            metadata={config_key: {"ignore": ["user.py"]}},
+        )
+
+        violations = rule.check(context)
+        assert len(violations) == 0
+
+    @pytest.mark.parametrize("config_key", ["method_property", "method-property"])
+    def test_metadata_disabled_linter(self, config_key: str):
+        """enabled: false from metadata disables linter."""
+        from src.linters.method_property.linter import MethodPropertyRule
+
+        rule = MethodPropertyRule()
+        context = self._make_context(
+            self.SIMPLE_CODE,
+            metadata={config_key: {"enabled": False}},
+        )
+
+        violations = rule.check(context)
+        assert len(violations) == 0
+
+    def test_defaults_when_no_metadata(self):
+        """Falls back to defaults when metadata has no relevant key."""
+        from src.linters.method_property.linter import MethodPropertyRule
+
+        rule = MethodPropertyRule()
+        context = self._make_context(
+            self.SIMPLE_CODE,
+            metadata={"some_other_linter": {"enabled": False}},
+        )
+
+        violations = rule.check(context)
+        assert len(violations) == 1  # get_name flagged with default config
