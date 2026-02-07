@@ -31,6 +31,7 @@ import ast
 from pathlib import Path
 
 from src.core.base import BaseLintContext, MultiLanguageLintRule
+from src.core.linter_utils import load_linter_config
 from src.core.types import Violation
 
 from .config import MethodPropertyConfig
@@ -69,10 +70,17 @@ class MethodPropertyRule(MultiLanguageLintRule):  # thailint: ignore[srp,dry]
         Returns:
             MethodPropertyConfig instance
         """
+        # Try test-style config first
         test_config = self._try_load_test_config(context)
         if test_config is not None:
             return test_config
 
+        # Try production config
+        prod_config = self._try_load_production_config(context)
+        if prod_config is not None:
+            return prod_config
+
+        # Use defaults
         return MethodPropertyConfig()
 
     def _try_load_test_config(self, context: BaseLintContext) -> MethodPropertyConfig | None:
@@ -93,6 +101,30 @@ class MethodPropertyRule(MultiLanguageLintRule):  # thailint: ignore[srp,dry]
         # Check for method-property specific config
         linter_config = config_attr.get("method-property", config_attr)
         return MethodPropertyConfig.from_dict(linter_config)
+
+    def _try_load_production_config(self, context: BaseLintContext) -> MethodPropertyConfig | None:
+        """Try to load production configuration from context metadata.
+
+        Args:
+            context: Lint context
+
+        Returns:
+            Config if found in metadata, None otherwise
+        """
+        if not hasattr(context, "metadata") or not isinstance(context.metadata, dict):
+            return None
+
+        metadata = context.metadata
+
+        # Try underscore version first (normalized format from YAML parser)
+        if "method_property" in metadata:
+            return load_linter_config(context, "method_property", MethodPropertyConfig)
+
+        # Fallback to hyphenated version (for direct test injection)
+        if "method-property" in metadata:
+            return load_linter_config(context, "method-property", MethodPropertyConfig)
+
+        return None
 
     def _is_file_ignored(self, context: BaseLintContext, config: MethodPropertyConfig) -> bool:
         """Check if file matches ignore patterns.
