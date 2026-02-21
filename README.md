@@ -17,6 +17,11 @@ thailint detects anti-patterns that AI tools frequently introduce: duplicate cod
 pip install thailint
 ```
 
+Or run instantly with [`uvx`](https://docs.astral.sh/uv/concepts/tools/) (no install required):
+```bash
+uvx thailint dry src/
+```
+
 Or with Docker:
 ```bash
 docker run --rm -v $(pwd):/data washad/thailint:latest --help
@@ -73,6 +78,17 @@ magic-numbers:
   enabled: true
   allowed_numbers: [-1, 0, 1, 2, 10, 100]
 ```
+
+Or add a `[tool.thailint]` section to your `pyproject.toml`:
+
+```toml
+[tool.thailint]
+dry = {enabled = true, min_duplicate_lines = 4}
+nesting = {enabled = true, max_nesting_depth = 3}
+magic-numbers = {enabled = true, allowed_numbers = [-1, 0, 1, 2, 10, 100]}
+```
+
+Config precedence: `.thailint.yaml` > `.thailint.json` > `pyproject.toml`.
 
 Or generate one automatically:
 ```bash

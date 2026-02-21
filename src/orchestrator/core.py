@@ -265,11 +265,12 @@ class Orchestrator:  # thailint: ignore[srp]
         if config is not None:
             self.config = config
         else:
-            # Load configuration from project root
+            # Load configuration: .thailint.yaml → .thailint.json → pyproject.toml
             config_path = self.project_root / ".thailint.yaml"
             if not config_path.exists():
                 config_path = self.project_root / ".thailint.json"
 
+            # load_config handles pyproject.toml fallback internally
             self.config = self.config_loader.load(config_path)
 
     def lint_file(self, file_path: Path) -> list[Violation]:
