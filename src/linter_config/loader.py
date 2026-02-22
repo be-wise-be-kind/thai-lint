@@ -30,7 +30,7 @@ Implementation: Extension-based format detection (.yaml/.yml vs .json), yaml.saf
 from pathlib import Path
 from typing import Any
 
-from src.core.config_parser import parse_config_file, parse_pyproject_toml
+from src.core.config_parser import ConfigParseError, parse_config_file, parse_pyproject_toml
 
 
 def get_defaults() -> dict[str, Any]:
@@ -62,9 +62,11 @@ def load_config(config_path: Path) -> dict[str, Any]:
     """
     if not config_path.exists():
         pyproject_path = config_path.parent / "pyproject.toml"
-        if pyproject_path.exists():
-            return parse_pyproject_toml(pyproject_path) or get_defaults()
-        return get_defaults()
+        try:
+            config = parse_pyproject_toml(pyproject_path)
+        except ConfigParseError:
+            return get_defaults()
+        return config if config else get_defaults()
 
     return parse_config_file(config_path)
 

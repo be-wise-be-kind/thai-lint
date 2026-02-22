@@ -118,6 +118,8 @@ def parse_pyproject_toml(path: Path) -> dict[str, Any]:
             data = tomllib.load(f)
     except tomllib.TOMLDecodeError as e:
         raise ConfigParseError(f"Invalid TOML in {path}: {e}") from e
+    except OSError as e:
+        raise ConfigParseError(f"Cannot read {path}: {e}") from e
 
     thailint_config = data.get("tool", {}).get("thailint", {})
     return _normalize_config_keys(thailint_config)

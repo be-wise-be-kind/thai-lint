@@ -33,9 +33,9 @@ class TestPyprojectTomlParsing:
         """Valid [tool.thailint] section is parsed correctly."""
         pyproject = tmp_path / "pyproject.toml"
         pyproject.write_text(
-            '[tool.thailint]\n'
-            'dry = {enabled = true, min_duplicate_lines = 4}\n'
-            'nesting = {enabled = true, max_nesting_depth = 3}\n'
+            "[tool.thailint]\n"
+            "dry = {enabled = true, min_duplicate_lines = 4}\n"
+            "nesting = {enabled = true, max_nesting_depth = 3}\n"
         )
 
         result = parse_pyproject_toml(pyproject)
@@ -46,9 +46,7 @@ class TestPyprojectTomlParsing:
     def test_missing_thailint_section_returns_empty(self, tmp_path):
         """pyproject.toml without [tool.thailint] returns empty dict."""
         pyproject = tmp_path / "pyproject.toml"
-        pyproject.write_text(
-            '[project]\nname = "myproject"\nversion = "1.0.0"\n'
-        )
+        pyproject.write_text('[project]\nname = "myproject"\nversion = "1.0.0"\n')
 
         result = parse_pyproject_toml(pyproject)
 
@@ -57,26 +55,29 @@ class TestPyprojectTomlParsing:
     def test_missing_tool_section_returns_empty(self, tmp_path):
         """pyproject.toml without [tool] section returns empty dict."""
         pyproject = tmp_path / "pyproject.toml"
-        pyproject.write_text(
-            '[project]\nname = "myproject"\n'
-        )
+        pyproject.write_text('[project]\nname = "myproject"\n')
 
         result = parse_pyproject_toml(pyproject)
 
         assert result == {}
 
     def test_normalizes_hyphenated_keys(self, tmp_path):
-        """Hyphenated keys are normalized to underscores."""
+        """Hyphenated top-level keys are normalized to underscores.
+
+        Note: Only top-level keys are normalized (consistent with YAML/JSON).
+        Nested keys like allowed-numbers remain unchanged.
+        """
         pyproject = tmp_path / "pyproject.toml"
         pyproject.write_text(
-            '[tool.thailint]\n'
-            'magic-numbers = {enabled = true, allowed-numbers = [-1, 0, 1]}\n'
+            "[tool.thailint]\nmagic-numbers = {enabled = true, allowed-numbers = [-1, 0, 1]}\n"
         )
 
         result = parse_pyproject_toml(pyproject)
 
         assert "magic_numbers" in result
         assert "magic-numbers" not in result
+        # Nested keys are NOT normalized (consistent with YAML/JSON behavior)
+        assert "allowed-numbers" in result["magic_numbers"]
 
     def test_malformed_toml_raises_error(self, tmp_path):
         """Malformed TOML raises ConfigParseError."""
@@ -86,6 +87,18 @@ class TestPyprojectTomlParsing:
         with pytest.raises(ConfigParseError, match="Invalid TOML"):
             parse_pyproject_toml(pyproject)
 
+    def test_unreadable_file_raises_error(self, tmp_path):
+        """Unreadable pyproject.toml raises ConfigParseError."""
+        pyproject = tmp_path / "pyproject.toml"
+        pyproject.write_text("[tool.thailint]\n")
+        pyproject.chmod(0o000)
+
+        try:
+            with pytest.raises(ConfigParseError, match="Cannot read"):
+                parse_pyproject_toml(pyproject)
+        finally:
+            pyproject.chmod(0o644)
+
 
 class TestPyprojectTomlFallback:
     """Test pyproject.toml fallback behavior in load_config."""
@@ -93,10 +106,7 @@ class TestPyprojectTomlFallback:
     def test_falls_back_to_pyproject_toml(self, tmp_path):
         """load_config falls back to pyproject.toml when yaml doesn't exist."""
         pyproject = tmp_path / "pyproject.toml"
-        pyproject.write_text(
-            '[tool.thailint]\n'
-            'dry = {enabled = true}\n'
-        )
+        pyproject.write_text("[tool.thailint]\ndry = {enabled = true}\n")
 
         # Point at a non-existent .thailint.yaml in the same directory
         config_path = tmp_path / ".thailint.yaml"
@@ -110,9 +120,7 @@ class TestPyprojectTomlFallback:
         yaml_config.write_text("dry:\n  enabled: false\n")
 
         pyproject = tmp_path / "pyproject.toml"
-        pyproject.write_text(
-            '[tool.thailint]\ndry = {enabled = true}\n'
-        )
+        pyproject.write_text("[tool.thailint]\ndry = {enabled = true}\n")
 
         result = load_config(yaml_config)
 

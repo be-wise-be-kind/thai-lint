@@ -13,6 +13,11 @@ Get up and running with thailint in 5 minutes.
 pip install thailint
 ```
 
+Or run instantly with [`uvx`](https://docs.astral.sh/uv/concepts/tools/) (no install required):
+```bash
+uvx thailint dry src/
+```
+
 Or with Docker:
 ```bash
 docker pull washad/thailint:latest
