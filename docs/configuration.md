@@ -113,8 +113,9 @@ thailint searches for configuration in this order:
 
 1. **Command-line flag**: `thailint --config custom.yaml magic-numbers src/`
 2. **Current directory**: `.thailint.yaml` or `.thailint.json`
-3. **Project root**: Searches up directory tree
-4. **Default config**: Built-in defaults if no file found
+3. **pyproject.toml**: `[tool.thailint]` section in `pyproject.toml`
+4. **Project root**: Searches up directory tree
+5. **Default config**: Built-in defaults if no file found
 
 ## Ignore Patterns (All Linters)
 
@@ -386,6 +387,36 @@ file-placement:
     ]
   }
 }
+```
+
+### TOML Format (pyproject.toml)
+
+Add a `[tool.thailint]` section to your existing `pyproject.toml`:
+
+```toml
+[tool.thailint]
+
+[tool.thailint.file-placement]
+ignore = ["__pycache__/", "*.pyc", ".venv/", ".git/", "node_modules/"]
+
+[tool.thailint.file-placement.global_patterns]
+# Configure via nested TOML tables
+
+[tool.thailint.file-placement.directories.src]
+allow = ['.*\.py$']
+deny = ['test_.*\.py$']
+
+[tool.thailint.file-placement.directories.tests]
+allow = ['test_.*\.py$', 'conftest\.py$', '__init__\.py$']
+```
+
+Or using inline tables for simpler configs:
+
+```toml
+[tool.thailint]
+dry = {enabled = true, min_duplicate_lines = 4}
+nesting = {enabled = true, max_nesting_depth = 3}
+magic-numbers = {enabled = true, allowed_numbers = [-1, 0, 1, 2, 10, 100]}
 ```
 
 ## Output Formats
@@ -1447,7 +1478,7 @@ directories:
 **Problem**: "Config file not found" error
 
 **Solutions**:
-1. Ensure file is named `.thailint.yaml` or `.thailint.json`
+1. Ensure file is named `.thailint.yaml`, `.thailint.json`, or config is in `pyproject.toml` under `[tool.thailint]`
 2. Check file is in current directory or project root
 3. Use `--config` to specify explicitly:
    ```bash

@@ -1,27 +1,32 @@
 """
-Purpose: Shared YAML/JSON configuration file parsing utilities
+Purpose: Shared YAML/JSON/TOML configuration file parsing utilities
 
 Scope: Common parsing logic for configuration files across the project
 
-Overview: Provides reusable utilities for parsing YAML and JSON configuration files with
+Overview: Provides reusable utilities for parsing YAML, JSON, and TOML configuration files with
     consistent error handling and format detection. Eliminates duplication between src/config.py
     and src/linter_config/loader.py by centralizing the parsing logic in one place. Supports
     extension-based format detection (.yaml, .yml, .json), safe YAML loading with yaml.safe_load(),
-    and proper null handling. Returns empty dictionaries for null YAML content to ensure consistent
-    behavior across all config loaders.
+    proper null handling, and pyproject.toml parsing via the [tool.thailint] section using tomllib
+    (stdlib in Python 3.11+). Returns empty dictionaries for null YAML content or missing TOML
+    sections to ensure consistent behavior across all config loaders.
 
-Dependencies: PyYAML for YAML parsing, json (stdlib) for JSON parsing, pathlib for file operations
+Dependencies: PyYAML for YAML parsing, json (stdlib) for JSON parsing, tomllib (stdlib) for TOML
+    parsing, pathlib for file operations
 
-Exports: parse_config_file(), parse_yaml(), parse_json()
+Exports: parse_config_file(), parse_yaml(), parse_json(), parse_pyproject_toml()
 
 Interfaces: parse_config_file(path: Path) -> dict[str, Any] for extension-based parsing,
     parse_yaml(file_obj, path: Path) -> dict[str, Any] for YAML parsing,
-    parse_json(file_obj, path: Path) -> dict[str, Any] for JSON parsing
+    parse_json(file_obj, path: Path) -> dict[str, Any] for JSON parsing,
+    parse_pyproject_toml(path: Path) -> dict[str, Any] for pyproject.toml [tool.thailint] parsing
 
-Implementation: yaml.safe_load() for security, json.load() for JSON, ConfigParseError for errors
+Implementation: yaml.safe_load() for security, json.load() for JSON, tomllib.load() for TOML,
+    ConfigParseError for errors
 """
 
 import json
+import tomllib
 from pathlib import Path
 from typing import Any, TextIO
 
@@ -93,6 +98,31 @@ def _normalize_config_keys(config: dict[str, Any]) -> dict[str, Any]:
         normalized_key = key.replace("-", "_")
         normalized[normalized_key] = value
     return normalized
+
+
+def parse_pyproject_toml(path: Path) -> dict[str, Any]:
+    """Parse [tool.thailint] section from a pyproject.toml file.
+
+    Args:
+        path: Path to pyproject.toml file.
+
+    Returns:
+        Configuration dictionary with normalized keys, or empty dict if
+        the [tool.thailint] section does not exist.
+
+    Raises:
+        ConfigParseError: If the TOML file is malformed.
+    """
+    try:
+        with path.open("rb") as f:
+            data = tomllib.load(f)
+    except tomllib.TOMLDecodeError as e:
+        raise ConfigParseError(f"Invalid TOML in {path}: {e}") from e
+    except OSError as e:
+        raise ConfigParseError(f"Cannot read {path}: {e}") from e
+
+    thailint_config = data.get("tool", {}).get("thailint", {})
+    return _normalize_config_keys(thailint_config)
 
 
 def parse_config_file(path: Path, encoding: str = "utf-8") -> dict[str, Any]:

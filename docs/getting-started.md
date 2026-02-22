@@ -39,6 +39,12 @@ thailint is an enterprise-ready multi-language linter designed for AI-generated 
 pip install thailint
 ```
 
+Or run instantly with [`uvx`](https://docs.astral.sh/uv/concepts/tools/) (no install required):
+
+```bash
+uvx thailint dry src/
+```
+
 Verify installation:
 
 ```bash
@@ -325,7 +331,8 @@ thailint looks for config files in this order:
 1. File specified with `--config` flag
 2. `.thailint.yaml` in current directory
 3. `.thailint.json` in current directory
-4. `.thailint.yaml` in project root
+4. `pyproject.toml` `[tool.thailint]` section in current directory
+5. `.thailint.yaml` in project root
 
 ### Simple Configuration Example
 
@@ -495,7 +502,7 @@ PYTHONPATH=/path/to/thai-lint python examples/basic_usage.py
 
 **Issue: "Config file not found"**
 
-Ensure `.thailint.yaml` or `.thailint.json` exists in:
+Ensure `.thailint.yaml`, `.thailint.json`, or `pyproject.toml` (with `[tool.thailint]`) exists in:
 - Current directory, or
 - Project root, or
 - Specify explicitly with `--config`

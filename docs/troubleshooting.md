@@ -81,7 +81,7 @@ sudo apt install build-essential
 
 **Solutions:**
 
-1. **Check filename** - Must be exactly `.thailint.yaml` or `.thailint.json`:
+1. **Check filename** - Must be exactly `.thailint.yaml`, `.thailint.json`, or `pyproject.toml` with `[tool.thailint]`:
    ```bash
    # Wrong
    thailint.yaml
@@ -90,6 +90,7 @@ sudo apt install build-essential
    # Correct
    .thailint.yaml
    .thailint.json
+   pyproject.toml  # with [tool.thailint] section
    ```
 
 2. **Check file location** - Must be in current directory or parent:
@@ -106,15 +107,18 @@ sudo apt install build-essential
    chmod 644 .thailint.yaml
    ```
 
-### Invalid YAML syntax
+### Invalid YAML/TOML syntax
 
-**Problem:** "YAML parse error" when loading config
+**Problem:** "YAML parse error" or "Invalid TOML" when loading config
 
-**Solution:** Validate YAML syntax:
+**Solution:** Validate syntax:
 
 ```bash
-# Validate with Python
+# Validate YAML
 python -c "import yaml; yaml.safe_load(open('.thailint.yaml'))"
+
+# Validate TOML (Python 3.11+)
+python -c "import tomllib; tomllib.load(open('pyproject.toml', 'rb'))"
 
 # Common issues:
 # - Inconsistent indentation (use 2 spaces, not tabs)
