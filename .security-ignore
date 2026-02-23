@@ -29,3 +29,8 @@ GHSA-gm62-xv2j-4w53
 # Risk: Dev environment only, testing HTTP calls
 # Mitigation: Upgrade when fix propagates to dependencies
 GHSA-2xpw-w6gg-jr37
+
+# nltk: Zip extraction path traversal RCE (CVE-2025-14009)
+# Risk: Unused transitive dev dependency (pulled in by safety)
+# Mitigation: nltk is never imported or called; no fix version available yet
+GHSA-7p94-766c-hgjp
