@@ -51,8 +51,8 @@ class TestClassifyChainOrchestration:
         from src.linters.law_of_demeter.chain_classifier import classify_chain
 
         imports = FileImports()
-        imports.module_names.add("os")
-        parts = ["os", "path", "join()", "strip()"]
+        imports.module_names.add("httpx")
+        parts = ["httpx", "Client()", "get()", "json()"]
         result = classify_chain(parts, imports, "app.py")
         assert result.startswith("module-access")
 

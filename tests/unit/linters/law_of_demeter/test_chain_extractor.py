@@ -133,12 +133,12 @@ class TestChainHelpers:
         """Should strip [...] from chain parts."""
         from src.linters.law_of_demeter.chain_extractor import clean_part
 
-        result = clean_part("[\\u2026]")
+        result = clean_part("[\u2026]")
         assert "[" not in result
 
     def test_is_subscript_detects_subscript(self) -> None:
         """Should detect subscript parts."""
         from src.linters.law_of_demeter.chain_extractor import is_subscript_part
 
-        assert is_subscript_part("[\\u2026]") is True
+        assert is_subscript_part("[\u2026]") is True
         assert is_subscript_part("method()") is False

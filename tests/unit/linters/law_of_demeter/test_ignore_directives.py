@@ -37,12 +37,12 @@ class TestIgnoreDirectives:
     """Test inline ignore directives for LoD linter."""
 
     def test_ignore_all_suppresses(self) -> None:
-        """# thailint: ignore-all should suppress LoD violations."""
+        """# thailint: ignore-all should suppress LoD violations on same line."""
         from src.linters.law_of_demeter.linter import LawOfDemeterRule
 
         code = """
-def f():  # thailint: ignore-all
-    x = a.b.c.d
+def f():
+    x = a.b.c.d  # thailint: ignore-all
 """
         rule = LawOfDemeterRule()
         violations = rule.check(_create_python_context(code))
