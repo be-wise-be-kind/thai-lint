@@ -83,6 +83,7 @@ documentation:
       - docs/stateless-class-linter.md
       - docs/stringly-typed-linter.md
       - docs/unwrap-abuse-linter.md
+      - docs/version-freshness-linter.md
 
 howto:
   location: .ai/howtos/

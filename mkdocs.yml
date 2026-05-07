@@ -80,6 +80,7 @@ nav:
       - Stateless Class: stateless-class-linter.md
       - Stringly Typed: stringly-typed-linter.md
       - Unwrap Abuse (Rust): unwrap-abuse-linter.md
+      - Version Freshness: version-freshness-linter.md
   - Usage:
       - CLI Reference: cli-reference.md
       - API Reference: api-reference.md

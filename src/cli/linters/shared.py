@@ -15,7 +15,7 @@ Dependencies: logging for debug output, pathlib for Path type hints, click for C
 Exports: ensure_config_section, set_config_value, filter_violations_by_prefix, CommandContext,
     extract_command_context, make_linter_help, ExecuteParams, prepare_standard_command,
     run_linter_command, standard_linter_options, filter_violations_by_startswith,
-    create_linter_command
+    create_linter_command, load_linter_config_section
 
 Interfaces: Orchestrator config dict manipulation, violation list filtering, CLI context extraction,
     help text generation
@@ -280,6 +280,74 @@ def create_linter_command(
         run_linter_command(execute_fn, params)
 
     return command
+
+
+def load_linter_config_section(
+    section: str,
+    config_file: str | None,
+    project_root: Path | None,
+) -> dict[str, Any]:
+    """Load a specific linter section from the thailint config file.
+
+    Discovers the config file (explicit path or default .thailint.yaml/.yml),
+    parses it, and returns the requested section as a dict.
+
+    Args:
+        section: Config section name (e.g., "version-freshness", "dry")
+        config_file: Optional explicit config file path
+        project_root: Optional project root for default config discovery
+
+    Returns:
+        Config dict for the requested section, or empty dict if not found
+    """
+    import yaml
+
+    config_path = _find_config_path(config_file, project_root)
+    if config_path is None:
+        return {}
+
+    try:
+        data = yaml.safe_load(config_path.read_text(encoding="utf-8"))
+        if isinstance(data, dict):
+            value = data.get(section, {})
+            return dict(value) if isinstance(value, dict) else {}
+    except (yaml.YAMLError, OSError) as exc:
+        logger.debug("Failed to load config: %s", exc)
+
+    return {}
+
+
+def _find_config_path(config_file: str | None, project_root: Path | None) -> Path | None:
+    """Find the config file path from explicit path or default discovery.
+
+    Args:
+        config_file: Explicit config file path
+        project_root: Project root for default discovery
+
+    Returns:
+        Path to config file, or None
+    """
+    if config_file:
+        path = Path(config_file)
+        return path if path.exists() else None
+    return _discover_default_config(project_root)
+
+
+def _discover_default_config(project_root: Path | None) -> Path | None:
+    """Discover default .thailint config file in project root.
+
+    Args:
+        project_root: Project root directory, or None for cwd
+
+    Returns:
+        Path to first found config file, or None
+    """
+    root = project_root if project_root is not None else Path.cwd()
+    for name in (".thailint.yaml", ".thailint.yml"):
+        candidate = root / name
+        if candidate.exists():
+            return candidate
+    return None
 
 
 def make_linter_help(command: str, brief: str, description: str) -> str:
