@@ -417,6 +417,36 @@ blocking-async:
   #   - "benches/"
 
 # ============================================================================
+# VERSION FRESHNESS LINTER
+# ============================================================================
+# Checks runtime/infrastructure versions against endoflife.date lifecycle data
+# Detects end-of-life (EOL) and optionally outdated versions in Dockerfiles,
+# GitHub Actions workflows, version-pinning files, and Terraform configs
+#
+version-freshness:
+  enabled: true
+
+  # Flag end-of-life versions (past EOL date or eol=true)
+  # Default: true
+  check_eol: true
+
+  # Flag versions that are supported but not the latest cycle (stricter, opt-in)
+  # Default: false
+  check_outdated: false
+
+  # Hours before refreshing endoflife.date cache
+  # Default: 24
+  cache_ttl_hours: 24
+
+  # -------------------------------------------------------------------------
+  # OPTIONAL: File patterns to ignore
+  # -------------------------------------------------------------------------
+  # ignore:
+  #   - "Dockerfile.legacy"
+  #   - "tests/**"
+  #   - ".github/workflows/compat-test.yml"
+
+# ============================================================================
 # GLOBAL SETTINGS
 # ============================================================================
 #

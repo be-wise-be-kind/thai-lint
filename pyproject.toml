@@ -17,7 +17,7 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry]
 name = "thailint"
-version = "0.17.5"
+version = "0.18.2"
 description = "The AI Linter - Enterprise-grade linting and governance for AI-generated code across multiple languages"
 authors = ["Steve Jackson"]
 license = "MIT"
@@ -79,6 +79,8 @@ tree-sitter-typescript = "^0.23.2"
 tree-sitter-rust = "^0.23.2"
 pyprojroot = "^0.3.0"
 loguru = "^0.7.3"
+requests = "^2.31.0"
+packaging = "^24.0"
 
 [tool.poetry.group.dev.dependencies]
 # Core testing and linting
@@ -88,6 +90,7 @@ pytest-cov = "^4.1.0"
 ruff = "^0.13.0"
 mypy = "^1.18.1"
 types-pyyaml = "^6.0.0"
+types-requests = "^2.31.0"
 bandit = "^1.7.5"
 
 # Comprehensive linters

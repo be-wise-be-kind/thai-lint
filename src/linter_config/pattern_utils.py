@@ -49,7 +49,7 @@ def _matches_directory_pattern(path: str, pattern: str) -> bool:
     path_parts = Path(path).parts
     if dir_pattern in path_parts:
         return True
-    return fnmatch.fnmatch(path, dir_pattern + "*")
+    return fnmatch.fnmatch(path, dir_pattern + "/*")
 
 
 def extract_patterns_from_content(content: str) -> list[str]:

@@ -2,7 +2,7 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
-[![PyPI](https://img.shields.io/badge/pypi-v0.17.5-orange)](https://pypi.org/project/thailint/)
+[![PyPI](https://img.shields.io/badge/pypi-v0.18.2-orange)](https://pypi.org/project/thailint/)
 [![Tests](https://img.shields.io/badge/tests-2122%2F2122%20passing-brightgreen.svg)](https://github.com/be-wise-be-kind/thai-lint/actions)
 [![Coverage](https://img.shields.io/badge/coverage-91%25-brightgreen.svg)](https://github.com/be-wise-be-kind/thai-lint)
 [![Documentation](https://readthedocs.org/projects/thai-lint/badge/?version=latest)](https://thai-lint.readthedocs.io/)
@@ -57,6 +57,7 @@ That's it. See violations, fix them, ship better code.
 | **Improper Logging** | Print statements and conditional verbose patterns | `thailint improper-logging src/` | [Guide](https://thai-lint.readthedocs.io/en/latest/improper-logging-linter/) |
 | **Stringly Typed** | Strings that should be enums | `thailint stringly-typed src/` | [Guide](https://thai-lint.readthedocs.io/en/latest/stringly-typed-linter/) |
 | **LBYL** | Look Before You Leap anti-patterns | `thailint lbyl src/` | [Guide](https://thai-lint.readthedocs.io/en/latest/lbyl-linter/) |
+| **Version Freshness** | EOL/outdated runtime versions in infra files | `thailint version-freshness .` | [Guide](https://thai-lint.readthedocs.io/en/latest/version-freshness-linter/) |
 | **Unwrap Abuse** | `.unwrap()`/`.expect()` that panic at runtime (Rust) | `thailint unwrap-abuse src/` | [Guide](https://thai-lint.readthedocs.io/en/latest/unwrap-abuse-linter/) |
 | **Clone Abuse** | `.clone()` abuse: loops, chains, unnecessary (Rust) | `thailint clone-abuse src/` | [Guide](https://thai-lint.readthedocs.io/en/latest/clone-abuse-linter/) |
 | **Blocking Async** | Blocking std:: calls in async functions (Rust) | `thailint blocking-async src/` | [Guide](https://thai-lint.readthedocs.io/en/latest/blocking-async-linter/) |

@@ -257,6 +257,13 @@ stringly-typed:
     - "**/pattern_detectors/**"
     - "**/print_statements/**"
 
+# Version Freshness linter configuration
+version-freshness:
+  enabled: true
+  check_eol: true
+  check_outdated: false
+  cache_ttl_hours: 24
+
 # LBYL (Look Before You Leap) linter configuration
 lbyl:
   enabled: true  # Enable LBYL pattern detection

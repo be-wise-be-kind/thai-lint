@@ -26,6 +26,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Version Freshness Linter** - Check infrastructure/runtime versions against endoflife.date lifecycle data
+  - Detects end-of-life (EOL) versions in Dockerfiles, GitHub Actions, version-pinning files, and Terraform
+  - Optionally flags outdated (non-latest) supported versions
+  - Local caching with configurable TTL, offline fallback
+  - Supports all 5 levels of ignore directives
+  - Full text, JSON, and SARIF output format support
 - **Stateless Class Linter** - Detect Python classes without state that should be module-level functions
 
 ### Documentation
