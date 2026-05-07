@@ -17,7 +17,8 @@ Exports: version_freshness command
 
 Interfaces: Click CLI command registered to main CLI group
 
-Implementation: Manual Click command with custom options for check_eol and check_outdated flags
+Implementation: Manual Click command with custom options for check_eol and check_outdated flags.
+    Config loading delegates to shared load_linter_config_section utility
 
 Suppressions:
     - too-many-arguments,too-many-positional-arguments: Click commands require many parameters
@@ -26,87 +27,14 @@ Suppressions:
 """
 
 import sys
-from pathlib import Path
 
 import click
 from loguru import logger
 
-from src.cli.linters.shared import extract_command_context
+from src.cli.linters.shared import extract_command_context, load_linter_config_section
 from src.cli.main import cli
 from src.cli.utils import format_option, parallel_option, validate_paths_exist
 from src.core.cli_utils import format_violations
-
-
-def _load_version_freshness_config(config_file: str | None, project_root: Path | None) -> dict:
-    """Load version-freshness config from file.
-
-    Args:
-        config_file: Optional explicit config file path
-        project_root: Optional project root for default config discovery
-
-    Returns:
-        Config dict for version-freshness section
-    """
-    import yaml
-
-    config_path = _find_config_path(config_file, project_root)
-    if config_path is None:
-        return {}
-
-    try:
-        data = yaml.safe_load(config_path.read_text(encoding="utf-8"))
-        if isinstance(data, dict):
-            section = data.get("version-freshness", {})
-            return dict(section) if isinstance(section, dict) else {}
-    except (yaml.YAMLError, OSError) as exc:
-        logger.debug("Failed to load config: %s", exc)
-
-    return {}
-
-
-def _find_config_path(config_file: str | None, project_root: Path | None) -> Path | None:
-    """Find the config file path.
-
-    Args:
-        config_file: Explicit config file path
-        project_root: Project root for default discovery
-
-    Returns:
-        Path to config file, or None
-    """
-    if config_file:
-        return _resolve_explicit_config(config_file)
-    return _discover_default_config(project_root)
-
-
-def _resolve_explicit_config(config_file: str) -> Path | None:
-    """Resolve an explicit config file path.
-
-    Args:
-        config_file: Config file path string
-
-    Returns:
-        Path if it exists, None otherwise
-    """
-    path = Path(config_file)
-    return path if path.exists() else None
-
-
-def _discover_default_config(project_root: Path | None) -> Path | None:
-    """Discover default config file in project root.
-
-    Args:
-        project_root: Project root directory, or None for cwd
-
-    Returns:
-        Path to first found config file, or None
-    """
-    root = project_root if project_root is not None else Path.cwd()
-    for name in (".thailint.yaml", ".thailint.yml"):
-        candidate = root / name
-        if candidate.exists():
-            return candidate
-    return None
 
 
 @cli.command("version-freshness")
@@ -176,7 +104,7 @@ def version_freshness(  # pylint: disable=too-many-arguments,too-many-positional
     cmd_ctx = extract_command_context(ctx, paths)
     validate_paths_exist(cmd_ctx.path_objs)
 
-    config_dict = _load_version_freshness_config(config_file, cmd_ctx.project_root)
+    config_dict = load_linter_config_section("version-freshness", config_file, cmd_ctx.project_root)
     config = (
         VersionFreshnessConfig.from_dict(config_dict) if config_dict else VersionFreshnessConfig()
     )
