@@ -417,6 +417,41 @@ blocking-async:
   #   - "benches/"
 
 # ============================================================================
+# LAW OF DEMETER LINTER
+# ============================================================================
+# Detects excessive attribute/method chaining that violates the
+# Law of Demeter ("only talk to your immediate friends")
+#
+law-of-demeter:
+  enabled: true
+
+  # Minimum chain depth (number of dots) to flag
+  # Default: 3
+  min_chain_depth: 3
+
+  # Whether to check test files (test files are skipped by default)
+  # Default: false
+  check_test_files: false
+
+  # -------------------------------------------------------------------------
+  # OPTIONAL: Additional safe prefixes (merged with defaults like self., cls.)
+  # -------------------------------------------------------------------------
+  # safe_prefixes:
+  #   - "app.config."
+
+  # -------------------------------------------------------------------------
+  # OPTIONAL: Additional fluent method names (merged with defaults)
+  # -------------------------------------------------------------------------
+  # fluent_methods:
+  #   - "custom_chain_method"
+
+  # -------------------------------------------------------------------------
+  # OPTIONAL: Module names exempt from violation checks
+  # -------------------------------------------------------------------------
+  # exempt_modules:
+  #   - "my_internal_module"
+
+# ============================================================================
 # VERSION FRESHNESS LINTER
 # ============================================================================
 # Checks runtime/infrastructure versions against endoflife.date lifecycle data

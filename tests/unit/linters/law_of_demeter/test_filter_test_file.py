@@ -40,7 +40,7 @@ class TestTestFileFilter:
         """Chains in tests/ directory should be filtered."""
         from src.linters.law_of_demeter.chain_classifier import classify_chain
 
-        parts = ["mocker", "patch()", "return_value", "method"]
+        parts = ["order", "customer", "address", "city"]
         result = classify_chain(parts, self._empty_imports(), "tests/test_service.py")
         assert result == "test-file"
 

@@ -26,12 +26,12 @@ class TestModuleAccessFilter:
     """Test module-access filter identifies module-qualified chains."""
 
     def test_stdlib_module_allowed(self) -> None:
-        """os.path.expanduser().strip() should be module-access."""
+        """json.loads().get().upper() should be module-access."""
         from src.linters.law_of_demeter.chain_classifier import classify_chain
 
         imports = FileImports()
-        imports.module_names.add("os")
-        parts = ["os", "path", "expanduser()", "strip()"]
+        imports.module_names.add("json")
+        parts = ["json", "loads()", "get()", "upper()"]
         result = classify_chain(parts, imports, "app.py")
         assert result.startswith("module-access")
 

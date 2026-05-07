@@ -38,10 +38,10 @@ class TestSubscriptFilter:
         assert result == "subscript-access"
 
     def test_list_then_attr(self) -> None:
-        """lines[0].split()[0] should be subscript-access."""
+        """data[0].field[1] should be subscript-access."""
         from src.linters.law_of_demeter.chain_classifier import classify_chain
 
-        parts = ["lines", "[\u2026]", "split()", "[\u2026]"]
+        parts = ["data", "[\u2026]", "field", "[\u2026]"]
         result = classify_chain(parts, self._empty_imports(), "parser.py")
         assert result == "subscript-access"
 
