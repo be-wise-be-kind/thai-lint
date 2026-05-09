@@ -3,11 +3,12 @@ Purpose: Chain classification pipeline for Law of Demeter analysis
 
 Scope: 9-filter pipeline to distinguish genuine LoD violations from legitimate patterns
 
-Overview: Provides classify_chain() that runs a chain through a 9-filter pipeline. Each filter
+Overview: Provides classify_chain() that runs a chain through an 8-filter pipeline. Each filter
     checks for a specific legitimate chaining pattern (safe prefix, module access, string
-    methods, fluent APIs, AST traversal, dunder access, subscript navigation, safe terminals,
-    test files). Returns a reason string if the chain is allowed, or empty string if it is a
-    genuine violation. Filter order matters: earlier filters take precedence.
+    methods, fluent APIs, AST traversal, dunder access, subscript navigation, safe terminals).
+    Returns a reason string if the chain is allowed, or empty string if it is a genuine
+    violation. Filter order matters: earlier filters take precedence. Test file exclusion is
+    handled at the linter level (LawOfDemeterRule) to respect check_test_files config.
 
 Dependencies: chain_extractor, filter_constants, python_analyzer
 
@@ -29,7 +30,6 @@ from .filter_constants import (
     SAFE_CHAIN_PREFIXES,
     SAFE_TERMINAL_METHODS,
     STR_METHODS,
-    TEST_FILE_PATTERNS,
 )
 from .python_analyzer import FileImports
 
@@ -148,13 +148,6 @@ def _check_safe_terminal(parts: list[str], _imports: FileImports, _filepath: str
     return ""
 
 
-def _check_test_file(_parts: list[str], _imports: FileImports, filepath: str) -> str:
-    """Filter 9: Check if file is a test file (lenient by default)."""
-    if any(pat in filepath for pat in TEST_FILE_PATTERNS):
-        return "test-file"
-    return ""
-
-
 _FILTERS = [
     _check_safe_prefix,
     _check_module_access,
@@ -164,5 +157,4 @@ _FILTERS = [
     _check_dunder_access,
     _check_subscript_access,
     _check_safe_terminal,
-    _check_test_file,
 ]

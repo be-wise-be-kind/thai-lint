@@ -1,61 +1,71 @@
 """
-Purpose: Test test-file filter for Law of Demeter classifier
+Purpose: Test test-file detection for Law of Demeter linter
 
-Scope: Filtering chains in test files (check_test_files=false by default)
+Scope: Filtering chains in test files via linter-level _is_test_filepath
 
-Overview: Validates the test-file filter that allows chains in test files when
+Overview: Validates the test file detection that skips test files when
     check_test_files is false (default). Test code commonly has deep assertion
     chains and mock setup chains that aren't actionable LoD violations.
+    Test file detection is handled at the linter level (not the classifier)
+    to respect the check_test_files configuration option.
 
-Dependencies: pytest, src.linters.law_of_demeter.chain_classifier,
-    src.linters.law_of_demeter.python_analyzer
+Dependencies: pytest, src.linters.law_of_demeter.linter
 
-Exports: TestTestFileFilter (4 tests)
+Exports: TestTestFileFilter (5 tests)
 
-Interfaces: Tests classify_chain() returning "test-file" for chains in test files
+Interfaces: Tests _is_test_filepath() for file path patterns
 
-Implementation: Calls classify_chain() with test file paths,
-    verifies test-file filter fires based on file path patterns
+Implementation: Calls _is_test_filepath() with various paths,
+    verifies correct detection of test files by filename and directory
 """
 
-from src.linters.law_of_demeter.python_analyzer import FileImports
+from src.linters.law_of_demeter.linter import _is_test_filepath
 
 
 class TestTestFileFilter:
-    """Test test-file leniency filter."""
-
-    def _empty_imports(self) -> FileImports:
-        """Create empty imports for testing."""
-        return FileImports()
+    """Test test-file detection at linter level."""
 
     def test_test_prefix_file(self) -> None:
-        """Chains in test_*.py files should be filtered."""
-        from src.linters.law_of_demeter.chain_classifier import classify_chain
-
-        parts = ["client", "get()", "json()", "data"]
-        result = classify_chain(parts, self._empty_imports(), "test_api.py")
-        assert result == "test-file"
+        """Files named test_*.py should be detected as test files."""
+        assert _is_test_filepath("test_api.py") is True
 
     def test_tests_directory(self) -> None:
-        """Chains in tests/ directory should be filtered."""
-        from src.linters.law_of_demeter.chain_classifier import classify_chain
-
-        parts = ["order", "customer", "address", "city"]
-        result = classify_chain(parts, self._empty_imports(), "tests/test_service.py")
-        assert result == "test-file"
+        """Files in tests/ directory should be detected as test files."""
+        assert _is_test_filepath("tests/test_service.py") is True
 
     def test_conftest_file(self) -> None:
-        """Chains in conftest.py should be filtered."""
-        from src.linters.law_of_demeter.chain_classifier import classify_chain
+        """conftest.py should be detected as a test file."""
+        assert _is_test_filepath("conftest.py") is True
 
-        parts = ["fixture", "setup", "mock", "value"]
-        result = classify_chain(parts, self._empty_imports(), "conftest.py")
-        assert result == "test-file"
+    def test_test_suffix_file(self) -> None:
+        """Files named *_test.py should be detected as test files."""
+        assert _is_test_filepath("api_test.py") is True
 
     def test_non_test_file_not_filtered(self) -> None:
-        """Chains in regular files should not be caught by test filter."""
-        from src.linters.law_of_demeter.chain_classifier import classify_chain
+        """Regular files should not be detected as test files."""
+        assert _is_test_filepath("app.py") is False
 
-        parts = ["order", "customer", "address", "city"]
-        result = classify_chain(parts, self._empty_imports(), "app.py")
-        assert result != "test-file"
+    def test_singular_test_directory(self) -> None:
+        """Files in test/ (singular) directory should be detected."""
+        assert _is_test_filepath("test/service.py") is True
+
+    def test_nested_singular_test_directory(self) -> None:
+        """Files deep in a test/ directory should be detected."""
+        assert _is_test_filepath("src/project/test/utils/helper.py") is True
+
+    def test_fixtures_directory(self) -> None:
+        """Files in fixtures/ directory should be detected."""
+        assert _is_test_filepath("tests/fixtures/broken_syntax.py") is True
+
+    def test_test_data_directory(self) -> None:
+        """Files in test_data/ directory should be detected."""
+        assert _is_test_filepath("test_data/sample.py") is True
+
+    def test_testdata_directory(self) -> None:
+        """Files in testdata/ directory should be detected."""
+        assert _is_test_filepath("testdata/sample.py") is True
+
+    def test_pytest_tmp_path_not_detected(self) -> None:
+        """Files in pytest tmp directories should not be false-positived."""
+        # pytest creates dirs like /tmp/pytest-of-user/pytest-NN/test_name0/
+        assert _is_test_filepath("/tmp/pytest-of-user/pytest-1/test_foo0/bad.py") is False

@@ -49,12 +49,13 @@ from src.cli.linters.infrastructure import version_freshness
 from src.cli.linters.performance import perf, regex_in_loop, string_concat_loop
 from src.cli.linters.rust import blocking_async, clone_abuse, unwrap_abuse
 from src.cli.linters.structure import file_placement, pipeline
-from src.cli.linters.structure_quality import nesting, srp
+from src.cli.linters.structure_quality import law_of_demeter, nesting, srp
 
 __all__ = [
     # Structure quality commands
     "nesting",
     "srp",
+    "law_of_demeter",
     # Code smell commands
     "dry",
     "magic_numbers",
