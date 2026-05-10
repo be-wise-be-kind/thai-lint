@@ -1,17 +1,18 @@
 """
-Purpose: CLI commands for structure quality linters (nesting, srp)
+Purpose: CLI commands for structure quality linters (nesting, srp, law-of-demeter)
 
 Scope: Commands that analyze code structure for quality issues
 
 Overview: Provides CLI commands for structure quality linting: nesting checks for excessive nesting
-    depth in control flow statements, and srp detects Single Responsibility Principle violations in
-    classes. Each command supports standard options (config, format, recursive) plus linter-specific
-    options (max-depth, max-methods, max-loc) and integrates with the orchestrator for execution.
+    depth in control flow statements, srp detects Single Responsibility Principle violations in
+    classes, and law-of-demeter detects excessive attribute/method chaining. Each command supports
+    standard options (config, format, recursive) plus linter-specific options and integrates with
+    the orchestrator for execution.
 
 Dependencies: click for CLI framework, src.cli.main for CLI group, src.cli.utils for shared utilities,
     src.cli.linters.shared for linter-specific helpers
 
-Exports: nesting command, srp command
+Exports: nesting command, srp command, law_of_demeter command
 
 Interfaces: Click CLI commands registered to main CLI group
 
@@ -319,3 +320,139 @@ def _execute_srp_lint(  # pylint: disable=too-many-arguments,too-many-positional
 
     format_violations(srp_violations, format)
     sys.exit(1 if srp_violations else 0)
+
+
+# =============================================================================
+# Law of Demeter Command
+# =============================================================================
+
+
+def _setup_lod_orchestrator(
+    path_objs: list[Path], config_file: str | None, verbose: bool, project_root: Path | None = None
+) -> "Orchestrator":
+    """Set up orchestrator for law-of-demeter command."""
+    return setup_base_orchestrator(path_objs, config_file, verbose, project_root)
+
+
+def _apply_lod_config_override(
+    orchestrator: "Orchestrator",
+    min_depth: int | None,
+    check_test_files: bool | None,
+    verbose: bool,
+) -> None:
+    """Apply min_depth and check_test_files overrides to orchestrator config."""
+    if min_depth is None and check_test_files is None:
+        return
+
+    lod_config = ensure_config_section(orchestrator, "law_of_demeter")
+    set_config_value(lod_config, "min_chain_depth", min_depth, verbose)
+    set_config_value(lod_config, "check_test_files", check_test_files, verbose)
+
+
+def _run_lod_lint(
+    orchestrator: "Orchestrator", path_objs: list[Path], recursive: bool, parallel: bool = False
+) -> list[Violation]:
+    """Execute law-of-demeter lint on files or directories."""
+    all_violations = execute_linting_on_paths(orchestrator, path_objs, recursive, parallel)
+    return [v for v in all_violations if "law-of-demeter" in v.rule_id]
+
+
+@cli.command("law-of-demeter")
+@click.argument("paths", nargs=-1, type=click.Path())
+@click.option("--config", "-c", "config_file", type=click.Path(), help="Path to config file")
+@format_option
+@click.option("--min-depth", type=int, help="Override minimum chain depth (default: 3)")
+@click.option(
+    "--check-test-files/--no-check-test-files",
+    default=None,
+    help="Check test files for violations",
+)
+@click.option("--recursive/--no-recursive", default=True, help="Scan directories recursively")
+@parallel_option
+@click.pass_context
+def law_of_demeter(  # pylint: disable=too-many-arguments,too-many-positional-arguments
+    ctx: click.Context,
+    paths: tuple[str, ...],
+    config_file: str | None,
+    format: str,
+    min_depth: int | None,
+    check_test_files: bool | None,
+    recursive: bool,
+    parallel: bool,
+) -> None:
+    """Check for Law of Demeter violations in attribute/method chains.
+
+    Analyzes Python and TypeScript files for excessive chaining that violates
+    the Law of Demeter principle ("only talk to your immediate friends").
+
+    PATHS: Files or directories to lint (defaults to current directory if none provided)
+
+    Examples:
+
+        \\b
+        # Check current directory (all files recursively)
+        thai-lint law-of-demeter
+
+        \\b
+        # Check specific directory
+        thai-lint law-of-demeter src/
+
+        \\b
+        # Check single file
+        thai-lint law-of-demeter src/app.py
+
+        \\b
+        # Use custom min depth
+        thai-lint law-of-demeter --min-depth 4 src/
+
+        \\b
+        # Also check test files
+        thai-lint law-of-demeter --check-test-files src/
+
+        \\b
+        # Get JSON output
+        thai-lint law-of-demeter --format json .
+
+        \\b
+        # Use custom config file
+        thai-lint law-of-demeter --config .thailint.yaml src/
+    """
+    cmd_ctx = extract_command_context(ctx, paths)
+
+    try:
+        _execute_lod_lint(
+            cmd_ctx.path_objs,
+            config_file,
+            format,
+            min_depth,
+            check_test_files,
+            recursive,
+            parallel,
+            cmd_ctx.verbose,
+            cmd_ctx.project_root,
+        )
+    except Exception as e:
+        handle_linting_error(e, cmd_ctx.verbose)
+
+
+def _execute_lod_lint(  # pylint: disable=too-many-arguments,too-many-positional-arguments
+    path_objs: list[Path],
+    config_file: str | None,
+    format: str,
+    min_depth: int | None,
+    check_test_files: bool | None,
+    recursive: bool,
+    parallel: bool,
+    verbose: bool,
+    project_root: Path | None = None,
+) -> NoReturn:
+    """Execute law-of-demeter lint."""
+    validate_paths_exist(path_objs)
+    orchestrator = _setup_lod_orchestrator(path_objs, config_file, verbose, project_root)
+    _apply_lod_config_override(orchestrator, min_depth, check_test_files, verbose)
+    lod_violations = _run_lod_lint(orchestrator, path_objs, recursive, parallel)
+
+    logger.debug(f"Found {len(lod_violations)} Law of Demeter violation(s)")
+
+    format_violations(lod_violations, format)
+    sys.exit(1 if lod_violations else 0)

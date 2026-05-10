@@ -222,14 +222,13 @@ class TestIntegrationEdgeCases:
         assert violations == []
 
     def test_syntax_error_handled(self) -> None:
-        """Should handle syntax errors gracefully."""
+        """Should skip files with syntax errors (no false violations)."""
         from src.linters.law_of_demeter.linter import LawOfDemeterRule
 
         code = "def f(:\n    pass"
         rule = LawOfDemeterRule()
         violations = rule.check(_create_python_context(code))
-        # Should return syntax error violation or empty, not crash
-        assert isinstance(violations, list)
+        assert violations == []
 
     def test_disabled_returns_empty(self) -> None:
         """Should return empty when disabled."""

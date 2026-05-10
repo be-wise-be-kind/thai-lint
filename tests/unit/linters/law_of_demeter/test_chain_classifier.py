@@ -80,14 +80,22 @@ class TestClassifyChainOrchestration:
         result = classify_chain(parts, self._empty_imports(), "utils.py")
         assert result == "dunder-access"
 
-    def test_test_file_last_resort(self) -> None:
-        """Test file filter fires as last resort for non-safe chains."""
+    def test_genuine_violation_not_classified(self) -> None:
+        """Genuine violation chain is not classified as legitimate."""
         from src.linters.law_of_demeter.chain_classifier import classify_chain
 
-        # A chain that doesn't match any other filter
+        # A chain that doesn't match any filter - genuine LoD violation
         parts = ["order", "customer", "address", "city"]
         result = classify_chain(parts, self._empty_imports(), "test_orders.py")
-        assert result == "test-file"
+        assert result == ""
+
+    def test_frame_introspection_recognized(self) -> None:
+        """Frame/code object introspection chain should be identified."""
+        from src.linters.law_of_demeter.chain_classifier import classify_chain
+
+        parts = ["frame", "f_back", "f_code", "co_filename"]
+        result = classify_chain(parts, self._empty_imports(), "debugger.py")
+        assert result == "ast-traversal"
 
     def test_multiple_filters_first_wins(self) -> None:
         """When multiple filters could match, first in pipeline wins."""

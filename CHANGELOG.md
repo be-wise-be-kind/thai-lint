@@ -24,8 +24,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.19.0] - 2026-05-10
+
 ### Added
 
+- **Law of Demeter: TypeScript/JavaScript Support** - AST analysis via tree-sitter for TS/JS files
+  - Chain depth analysis for TypeScript and JavaScript source files
+  - Reuses the same 9-filter classification pipeline as Python analysis
+  - Supports `--check-test-files` flag to optionally include test files
+- **Law of Demeter: CLI Integration** - `thailint law-of-demeter` command
+  - `--format` (text/json/sarif), `--parallel`, `--min-depth`, `--check-test-files` options
+  - Full text, JSON, and SARIF output format support
 - **Version Freshness Linter** - Check infrastructure/runtime versions against endoflife.date lifecycle data
   - Detects end-of-life (EOL) versions in Dockerfiles, GitHub Actions, version-pinning files, and Terraform
   - Optionally flags outdated (non-latest) supported versions
@@ -33,6 +42,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Supports all 5 levels of ignore directives
   - Full text, JSON, and SARIF output format support
 - **Stateless Class Linter** - Detect Python classes without state that should be module-level functions
+
+### Fixed
+
+- **Law of Demeter: False Positive Reduction** - 49.6% reduction (2,058 to 1,038) validated across 20 real-world Python repos
+  - Syntax errors no longer reported as LoD violations (eliminates ~450 false positives from test fixture files)
+  - Expanded test directory detection (`test/`, `fixtures/`, `test_data/`, `testdata/`) using path-component matching
+  - Frame introspection (`f_back`, `f_code`, `co_filename`), CST, and DOM navigation added to AST traversal filter
+  - SQLAlchemy/ORM fluent methods (`filter_by`, `scalars`, `one`, `one_or_none`) and set operations added to collection pipeline filter
+  - SQL terminal methods (`desc`, `asc`, `label`, `is_`, `in_`, `ilike`) added to safe terminal filter
 
 ### Documentation
 

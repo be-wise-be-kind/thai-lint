@@ -59,6 +59,30 @@ STR_METHODS = frozenset(
         "groupdict",
         # join operates on str
         "join",
+        # TypeScript/JavaScript string methods (camelCase equivalents)
+        "trim",
+        "trimStart",
+        "trimEnd",
+        "toLowerCase",
+        "toUpperCase",
+        "charAt",
+        "charCodeAt",
+        "substring",
+        "slice",
+        "indexOf",
+        "lastIndexOf",
+        "includes",
+        "startsWith",
+        "endsWith",
+        "repeat",
+        "padStart",
+        "padEnd",
+        "match",
+        "search",
+        "replaceAll",
+        "normalize",
+        "concat",
+        "toString",
     }
 )
 
@@ -101,6 +125,47 @@ COLLECTION_PIPELINE_METHODS = frozenset(
         "min",
         "max",
         "aggregate",
+        # TypeScript/JavaScript array methods
+        "forEach",
+        "find",
+        "findIndex",
+        "some",
+        "every",
+        "flat",
+        "flatMap",
+        "sort",
+        "fill",
+        "entries",
+        "from",
+        "of",
+        "reduceRight",
+        # camelCase variants for TypeScript/JavaScript ORMs
+        "orderBy",
+        "groupBy",
+        "innerJoin",
+        "leftJoin",
+        "rightJoin",
+        "selectAll",
+        "findOne",
+        "findMany",
+        "deleteMany",
+        "updateMany",
+        "createMany",
+        # Additional ORM / query pipeline methods
+        "filter_by",
+        "unique",
+        "scalars",
+        "scalar",
+        "execute",
+        "subquery",
+        "outerjoin",
+        "one",
+        "one_or_none",
+        # Set operations (same-type chaining)
+        "union",
+        "intersection",
+        "difference",
+        "symmetric_difference",
     }
 )
 
@@ -115,6 +180,7 @@ BUILDER_METHODS = frozenset(
         "then",
         "catch",
         "finally_",
+        "finally",
         "chain",
         "pipe",
         "compose",
@@ -123,6 +189,8 @@ BUILDER_METHODS = frozenset(
         "route",
         "use",
         "middleware",
+        "subscribe",
+        "on",
     }
 )
 
@@ -229,6 +297,21 @@ KNOWN_MODULE_ROOTS = frozenset(
         "docker",
         "kubernetes",
         "terraform",
+        # Database system catalogs
+        "pg_catalog",
+        # Packaging / build tools
+        "packaging",
+        # TypeScript / JavaScript ecosystem
+        "react",
+        "next",
+        "express",
+        "lodash",
+        "rxjs",
+        "axios",
+        "zod",
+        "prisma",
+        "vue",
+        "angular",
     }
 )
 
@@ -286,6 +369,34 @@ AST_NODE_ATTRS = frozenset(
         "rvalue",
         "declared_metaclass",
         "names",
+        # CST (concrete syntax tree) navigation
+        "children",
+        "leaves",
+        "parent",
+        "next_sibling",
+        "prev_sibling",
+        "prefix",
+        # DOM tree navigation
+        "parentElement",
+        "parentNode",
+        "nextElementSibling",
+        "previousElementSibling",
+        "childNodes",
+        "firstChild",
+        "lastChild",
+        # Frame / code object / traceback introspection
+        "f_back",
+        "f_code",
+        "f_locals",
+        "f_globals",
+        "f_lineno",
+        "co_filename",
+        "co_name",
+        "co_qualname",
+        "co_firstlineno",
+        "tb_frame",
+        "tb_lineno",
+        "tb_next",
     }
 )
 
@@ -300,9 +411,10 @@ AST_TRAVERSAL_THRESHOLD = 0.6
 # ---------------------------------------------------------------------------
 
 SAFE_CHAIN_PREFIXES = (
-    # self/cls access - own state is fine
+    # self/cls/this access - own state is fine
     "self.",
     "cls.",
+    "this.",
     # Module-level stdlib
     "os.path.",
     "os.environ.",
@@ -392,6 +504,20 @@ SAFE_TERMINAL_METHODS = frozenset(
         "clear",
         "send",
         "throw",
+        # SQL column / expression terminals
+        "desc",
+        "asc",
+        "label",
+        "is_",
+        "isnot",
+        "is_not",
+        "in_",
+        "not_in",
+        "ilike",
+        "nullsfirst",
+        "nullslast",
+        "contains_column",
+        "corresponding_column",
         # Conversion terminals
         "as_dict",
         "to_dict",
@@ -407,4 +533,14 @@ SAFE_TERMINAL_METHODS = frozenset(
 # Filter 9: Test file patterns
 # ---------------------------------------------------------------------------
 
-TEST_FILE_PATTERNS = ("test_", "tests/", "testing/", "conftest", "_test.py")
+TEST_FILE_PATTERNS = (
+    "test_",
+    "tests/",
+    "testing/",
+    "test/",
+    "fixtures/",
+    "test_data/",
+    "testdata/",
+    "conftest",
+    "_test.py",
+)
