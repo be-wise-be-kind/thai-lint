@@ -69,6 +69,7 @@ nav:
       - File Header: file-header-linter.md
       - File Placement: file-placement-linter.md
       - Improper Logging: improper-logging-linter.md
+      - Law of Demeter: law-of-demeter-linter.md
       - Lazy Ignores: lazy-ignores-linter.md
       - LBYL (Look Before You Leap): lbyl-linter.md
       - Magic Numbers: magic-numbers-linter.md
