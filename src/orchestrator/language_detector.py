@@ -6,18 +6,19 @@ Scope: Language identification for routing files to appropriate analyzers and ru
 Overview: Detects programming language from files using multiple strategies including file
     extension mapping, shebang line parsing for scripts, and content analysis. Provides simple
     extension-to-language mapping for common file types (.py -> python, .js -> javascript,
-    .ts -> typescript, .java -> java, .go -> go). Falls back to shebang parsing for extensionless
-    scripts by reading first line and checking for language indicators. Returns 'unknown' for
-    unrecognized files, allowing the orchestrator to skip or apply language-agnostic rules.
-    Enables the multi-language architecture by accurately identifying file types for proper
-    rule routing and analyzer selection.
+    .ts -> typescript, .java -> java, .go -> go, .rs -> rust, .md -> markdown, .sh/.bash -> bash,
+    .css/.scss -> css). Falls back to shebang parsing for extensionless scripts by reading first
+    line and checking for language indicators. Returns 'unknown' for unrecognized files, allowing
+    the orchestrator to skip or apply language-agnostic rules. Enables the multi-language
+    architecture by accurately identifying file types for proper rule routing and analyzer
+    selection.
 
 Dependencies: pathlib for file path handling and content reading
 
 Exports: detect_language(file_path: Path) -> str function, EXTENSION_MAP constant
 
 Interfaces: detect_language(file_path: Path) -> str returns language identifier string
-    (python, javascript, typescript, java, go, rust, unknown)
+    (python, javascript, typescript, java, go, rust, markdown, bash, css, unknown)
 
 Implementation: Dictionary-based extension lookup for O(1) detection, first-line shebang
     parsing with substring matching, lazy file reading only when extension unknown
@@ -36,6 +37,11 @@ EXTENSION_MAP = {
     ".java": "java",
     ".go": "go",
     ".rs": "rust",
+    ".md": "markdown",
+    ".sh": "bash",
+    ".bash": "bash",
+    ".css": "css",
+    ".scss": "css",
 }
 
 
