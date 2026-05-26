@@ -212,16 +212,15 @@ Add to `.thailint.yaml`:
 file-header:
   enabled: true
 
-  # Mandatory fields (must have non-empty values)
-  mandatory_fields:
+  # Required fields (must have non-empty values).
+  # A list applies the same fields to every language.
+  required_fields:
     - Purpose
     - Scope
     - Overview
 
-  # Recommended fields (warned if missing)
-  recommended_fields:
-    - Dependencies
-    - Exports
+  # Enable atemporal language detection (dates, "currently", "now", etc.)
+  enforce_atemporal: true
 
   # Files to ignore
   ignore:
@@ -236,10 +235,9 @@ file-header:
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
 | `enabled` | boolean | `true` | Enable/disable file header linter |
-| `mandatory_fields` | array | `[Purpose, Scope, Overview]` | Fields that must be present |
-| `recommended_fields` | array | `[Dependencies, Exports]` | Fields that generate warnings if missing |
-| `check_atemporal` | boolean | `true` | Enable atemporal language detection |
-| `ignore` | array | `[]` | Glob patterns for files to skip |
+| `required_fields` | array or map | language-specific defaults | Fields that must be present. A list applies to all languages; a map keyed by language (`python`, `typescript`, `bash`, `markdown`, `css`) sets fields per language |
+| `enforce_atemporal` | boolean | `true` | Enable atemporal language detection |
+| `ignore` | array | `["test/**", "**/migrations/**", "**/__init__.py"]` | Glob patterns for files to skip |
 
 ### Language-Specific Configuration
 
@@ -247,29 +245,26 @@ file-header:
 file-header:
   enabled: true
 
-  # Language-specific mandatory fields
-  languages:
+  # Language-specific required fields: a map keyed by language, each value a list of fields
+  required_fields:
     python:
-      mandatory_fields:
-        - Purpose
-        - Scope
-        - Overview
-        - Dependencies
-        - Exports
+      - Purpose
+      - Scope
+      - Overview
+      - Dependencies
+      - Exports
 
     typescript:
-      mandatory_fields:
-        - Purpose
-        - Scope
-        - Overview
-        - Dependencies
-        - Exports
+      - Purpose
+      - Scope
+      - Overview
+      - Dependencies
+      - Exports
 
     markdown:
-      mandatory_fields:
-        - purpose      # YAML frontmatter uses lowercase
-        - scope
-        - overview
+      - purpose      # YAML frontmatter uses lowercase
+      - scope
+      - overview
 ```
 
 ### JSON Configuration
@@ -278,9 +273,8 @@ file-header:
 {
   "file-header": {
     "enabled": true,
-    "mandatory_fields": ["Purpose", "Scope", "Overview"],
-    "recommended_fields": ["Dependencies", "Exports"],
-    "check_atemporal": true,
+    "required_fields": ["Purpose", "Scope", "Overview"],
+    "enforce_atemporal": true,
     "ignore": [
       "**/__init__.py",
       "**/migrations/**"
