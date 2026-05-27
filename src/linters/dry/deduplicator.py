@@ -64,26 +64,19 @@ class ViolationDeduplicator:
         Returns:
             Non-overlapping blocks
         """
+        # Sweep-line: blocks are sorted by start line and kept blocks are non-overlapping, so
+        # their end lines strictly ascend and the most recently kept block has the largest end.
+        # A block therefore overlaps some kept block iff it overlaps the last kept one, so a
+        # single comparison against kept_blocks[-1] replaces the O(v^2) scan over all kept
+        # blocks with an O(v) sweep (issue #213).
         sorted_blocks = sorted(file_blocks, key=lambda b: b.start_line)
         kept_blocks: list[CodeBlock] = []
 
         for block in sorted_blocks:
-            if not self._overlaps_any_kept(block, kept_blocks):
+            if not kept_blocks or not self._blocks_overlap(block, kept_blocks[-1]):
                 kept_blocks.append(block)
 
         return kept_blocks
-
-    def _overlaps_any_kept(self, block: CodeBlock, kept_blocks: list[CodeBlock]) -> bool:
-        """Check if block overlaps with any kept blocks.
-
-        Args:
-            block: Block to check
-            kept_blocks: Previously kept blocks
-
-        Returns:
-            True if block overlaps with any kept block
-        """
-        return any(self._blocks_overlap(block, kept) for kept in kept_blocks)
 
     def _blocks_overlap(self, block1: CodeBlock, block2: CodeBlock) -> bool:
         """Check if two blocks overlap (share any lines).
