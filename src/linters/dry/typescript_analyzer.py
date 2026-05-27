@@ -45,7 +45,12 @@ from .base_token_analyzer import BaseTokenAnalyzer
 from .block_filter import BlockFilterRegistry, create_default_registry
 from .cache import CodeBlock
 from .config import DRYConfig
-from .typescript_statement_detector import is_single_statement, should_include_block
+from .typescript_statement_detector import (
+    block_overlaps_interface,
+    find_interface_ranges,
+    is_single_statement_for_root,
+    parse_root,
+)
 
 if TREE_SITTER_AVAILABLE:
     from tree_sitter import Node
@@ -82,8 +87,13 @@ class TypeScriptDuplicateAnalyzer(BaseTokenAnalyzer):  # thailint: ignore[srp.vi
         Returns:
             List of CodeBlock instances with hash values
         """
-        # Get JSDoc comment line ranges
-        jsdoc_ranges = self._get_jsdoc_ranges_from_content(content)
+        # Parse the file's AST once and reuse it for every window (issue #222): the previous
+        # implementation re-parsed the whole file and re-scanned interface ranges per window,
+        # making analysis O(windows x filesize) and pegging a core on large/minified bundles.
+        root = parse_root(content)
+
+        # Get JSDoc comment line ranges from the shared AST
+        jsdoc_ranges = self._get_jsdoc_ranges_from_root(root)
 
         # Tokenize with line number tracking, skipping JSDoc lines
         lines_with_numbers = self._tokenize_with_line_numbers(content, jsdoc_ranges)
@@ -91,12 +101,15 @@ class TypeScriptDuplicateAnalyzer(BaseTokenAnalyzer):  # thailint: ignore[srp.vi
         # Generate rolling hash windows
         windows = self._rolling_hash_with_tracking(lines_with_numbers, config.min_duplicate_lines)
 
+        # Compute interface/type definition ranges once, then reuse across all windows
+        interface_ranges = find_interface_ranges(content)
+
         # Filter out interface/type definitions and single statement patterns
         valid_windows = (
             (hash_val, start_line, end_line, snippet)
             for hash_val, start_line, end_line, snippet in windows
-            if should_include_block(content, start_line, end_line)
-            and not is_single_statement(content, start_line, end_line)
+            if not block_overlaps_interface(start_line, end_line, interface_ranges)
+            and not is_single_statement_for_root(root, start_line, end_line)
         )
         return self._build_blocks(valid_windows, file_path, content)
 
@@ -129,23 +142,16 @@ class TypeScriptDuplicateAnalyzer(BaseTokenAnalyzer):  # thailint: ignore[srp.vi
                 blocks.append(block)
         return blocks
 
-    def _get_jsdoc_ranges_from_content(self, content: str) -> set[int]:
-        """Extract line numbers that are part of JSDoc comments.
+    def _get_jsdoc_ranges_from_root(self, root: Node | None) -> set[int]:
+        """Extract line numbers that are part of JSDoc comments from a parsed AST.
 
         Args:
-            content: TypeScript/JavaScript source code
+            root: Tree-sitter root node from parse_root(), or None
 
         Returns:
             Set of line numbers (1-indexed) that are part of JSDoc comments
         """
-        if not TREE_SITTER_AVAILABLE:
-            return set()
-
-        from src.analyzers.typescript_base import TypeScriptBaseAnalyzer
-
-        analyzer = TypeScriptBaseAnalyzer()
-        root = analyzer.parse_typescript(content)
-        if not root:
+        if root is None:
             return set()
 
         jsdoc_lines: set[int] = set()

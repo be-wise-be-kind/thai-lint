@@ -10,10 +10,14 @@ Overview: Provides sophisticated single-statement pattern detection to filter fa
 
 Dependencies: tree-sitter for TypeScript AST parsing
 
-Exports: is_single_statement, should_include_block functions
+Exports: parse_root, is_single_statement, is_single_statement_for_root, should_include_block,
+    find_interface_ranges, block_overlaps_interface functions
 
-Interfaces: is_single_statement(content, start_line, end_line) -> bool,
-    should_include_block(content, start_line, end_line) -> bool
+Interfaces: parse_root(content) -> Node | None, is_single_statement(content, start, end) -> bool,
+    is_single_statement_for_root(root, start, end) -> bool,
+    should_include_block(content, start, end) -> bool,
+    find_interface_ranges(content) -> list[tuple[int, int]],
+    block_overlaps_interface(start, end, interface_ranges) -> bool
 
 Implementation: Tree-sitter AST walking with pattern matching for TypeScript constructs
 
@@ -32,6 +36,27 @@ else:
     Node = Any  # type: ignore[assignment,misc]
 
 
+def parse_root(content: str) -> Node | None:
+    """Parse TypeScript/JavaScript content into a tree-sitter root node.
+
+    Intended to be called once per file so the resulting AST can be reused across
+    every rolling-hash window instead of re-parsing the file each time.
+
+    Args:
+        content: TypeScript source code
+
+    Returns:
+        Tree-sitter root node, or None if tree-sitter is unavailable or parsing fails
+    """
+    if not TREE_SITTER_AVAILABLE:
+        return None
+
+    from src.analyzers.typescript_base import TypeScriptBaseAnalyzer
+
+    analyzer = TypeScriptBaseAnalyzer()
+    return analyzer.parse_typescript(content)
+
+
 def is_single_statement(content: str, start_line: int, end_line: int) -> bool:
     """Check if a line range is a single logical statement.
 
@@ -43,14 +68,21 @@ def is_single_statement(content: str, start_line: int, end_line: int) -> bool:
     Returns:
         True if this range represents a single logical statement/expression
     """
-    if not TREE_SITTER_AVAILABLE:
-        return False
+    return is_single_statement_for_root(parse_root(content), start_line, end_line)
 
-    from src.analyzers.typescript_base import TypeScriptBaseAnalyzer
 
-    analyzer = TypeScriptBaseAnalyzer()
-    root = analyzer.parse_typescript(content)
-    if not root:
+def is_single_statement_for_root(root: Node | None, start_line: int, end_line: int) -> bool:
+    """Check a line range against an already-parsed AST root.
+
+    Args:
+        root: Tree-sitter root node from parse_root(), or None
+        start_line: Starting line number (1-indexed)
+        end_line: Ending line number (1-indexed)
+
+    Returns:
+        True if this range represents a single logical statement/expression
+    """
+    if root is None:
         return False
 
     return _check_overlapping_nodes(root, start_line, end_line)
@@ -67,8 +99,7 @@ def should_include_block(content: str, start_line: int, end_line: int) -> bool:
     Returns:
         False if block overlaps interface definition, True otherwise
     """
-    interface_ranges = _find_interface_ranges(content)
-    return not _overlaps_interface(start_line, end_line, interface_ranges)
+    return not block_overlaps_interface(start_line, end_line, find_interface_ranges(content))
 
 
 def _check_overlapping_nodes(root: Node, start_line: int, end_line: int) -> bool:
@@ -197,8 +228,11 @@ def _is_in_class_field_area(class_body: Node, ts_start: int, ts_end: int) -> boo
     return class_start <= ts_start and ts_end < first_method_line
 
 
-def _find_interface_ranges(content: str) -> list[tuple[int, int]]:
-    """Find line ranges of interface/type definitions."""
+def find_interface_ranges(content: str) -> list[tuple[int, int]]:
+    """Find line ranges of interface/type definitions.
+
+    Intended to be called once per file so the ranges can be reused across windows.
+    """
     ranges: list[tuple[int, int]] = []
     lines = content.split("\n")
     state = {"in_interface": False, "start_line": 0, "brace_count": 0}
@@ -250,6 +284,6 @@ def _handle_interface_continuation(
         state["in_interface"] = False
 
 
-def _overlaps_interface(start: int, end: int, interface_ranges: list[tuple[int, int]]) -> bool:
+def block_overlaps_interface(start: int, end: int, interface_ranges: list[tuple[int, int]]) -> bool:
     """Check if block overlaps with any interface range."""
     return any(start <= if_end and end >= if_start for if_start, if_end in interface_ranges)
