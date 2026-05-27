@@ -38,23 +38,16 @@ class ViolationFilter:
         Returns:
             Filtered list with overlaps removed
         """
+        # Sweep-line: with ascending line order, kept violations also ascend, so the most
+        # recently kept one has the largest line. The overlap test depends only on the current
+        # violation's line count, so a violation overlaps some kept violation iff it overlaps
+        # the last kept one. Comparing against only kept[-1] is equivalent to scanning all kept
+        # and turns this from O(v^2) into O(v) (issue #213).
         kept: list[Violation] = []
         for violation in sorted_violations:
-            if not self._overlaps_any(violation, kept):
+            if not kept or not self._overlaps(violation, kept[-1]):
                 kept.append(violation)
         return kept
-
-    def _overlaps_any(self, violation: Violation, kept_violations: list[Violation]) -> bool:
-        """Check if violation overlaps with any kept violations.
-
-        Args:
-            violation: Violation to check
-            kept_violations: Previously kept violations
-
-        Returns:
-            True if violation overlaps with any kept violation
-        """
-        return any(self._overlaps(violation, kept) for kept in kept_violations)
 
     def _overlaps(self, v1: Violation, v2: Violation) -> bool:
         """Check if two violations overlap.
