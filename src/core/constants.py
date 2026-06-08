@@ -29,6 +29,7 @@ class Language(str, Enum):
     JAVASCRIPT = "javascript"
     MARKDOWN = "markdown"
     RUST = "rust"
+    HTML = "html"
 
 
 class StorageMode(str, Enum):

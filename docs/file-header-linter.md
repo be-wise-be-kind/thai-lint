@@ -5,9 +5,9 @@
 
     **Scope**: Configuration, usage, mandatory fields, atemporal language detection, and best practices for file header validation
 
-    **Overview**: Comprehensive documentation for the file header linter that validates documentation headers in source files. Covers how the linter works using language-specific parsers, mandatory field requirements, atemporal language detection, configuration options, CLI and library usage, supported file types (Python, TypeScript, JavaScript, Bash, Markdown, CSS), and integration with CI/CD pipelines. Helps teams maintain consistent, AI-optimized documentation across entire codebases.
+    **Overview**: Comprehensive documentation for the file header linter that validates documentation headers in source files. Covers how the linter works using language-specific parsers, mandatory field requirements, atemporal language detection, configuration options, CLI and library usage, supported file types (Python, TypeScript, JavaScript, Bash, Markdown, CSS, Jinja/HTML), the optional Tags field with controlled-vocabulary validation, and integration with CI/CD pipelines. Helps teams maintain consistent, AI-optimized documentation across entire codebases.
 
-    **Dependencies**: Python AST (Python), regex-based parsers (TypeScript, Bash, CSS), PyYAML (Markdown frontmatter)
+    **Dependencies**: Python AST (Python), regex-based parsers (TypeScript, Bash, CSS, Jinja/HTML), PyYAML (Markdown frontmatter)
 
     **Exports**: Usage documentation, configuration examples, mandatory field specifications, atemporal language patterns
 
@@ -132,6 +132,7 @@ The linter uses specialized parsers for each supported file type:
 3. **Bash (.sh, .bash)**: Extracts `# comment` blocks after shebang
 4. **Markdown (.md)**: Parses YAML frontmatter between `---` markers
 5. **CSS (.css, .scss)**: Extracts `/* ... */` block comments
+6. **Jinja/HTML (.html, .htm, .jinja, .j2)**: Extracts the leading `{# ... #}` Jinja comment block or `<!-- ... -->` HTML comment block
 
 ### Validation Process
 
@@ -166,6 +167,11 @@ All files must have these fields by default:
 | **Exports** | Main classes, functions, or constants provided | Recommended |
 | **Interfaces** | Key APIs or methods exposed | Optional |
 | **Implementation** | Notable patterns or architectural decisions | Optional |
+| **Tags** | Comma-separated feature tags for grep-ability | Optional |
+
+The **Tags** field is recognized as a first-class optional field. It is never required by
+default, but when present its comma-separated values can be validated against a controlled
+vocabulary via the `allowed_tags` configuration option (see [Configuration Options](#configuration-options)).
 
 ### Atemporal Language Patterns
 
@@ -235,9 +241,23 @@ file-header:
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
 | `enabled` | boolean | `true` | Enable/disable file header linter |
-| `required_fields` | array or map | language-specific defaults | Fields that must be present. A list applies to all languages; a map keyed by language (`python`, `typescript`, `bash`, `markdown`, `css`) sets fields per language |
+| `required_fields` | array or map | language-specific defaults | Fields that must be present. A list applies to all languages; a map keyed by language (`python`, `typescript`, `bash`, `markdown`, `css`, `html`) sets fields per language |
+| `allowed_tags` | array | `[]` | Controlled vocabulary for the optional `Tags` field. When non-empty, any tag outside the list is a violation; when empty, any tag value is accepted |
 | `enforce_atemporal` | boolean | `true` | Enable atemporal language detection |
 | `ignore` | array | `["test/**", "**/migrations/**", "**/__init__.py"]` | Glob patterns for files to skip |
+
+**Controlled-vocabulary tags example:**
+
+```yaml
+file-header:
+  allowed_tags:
+    - customer-portal
+    - orders
+    - billing
+```
+
+With the above, a header containing `Tags: customer-portal, orders` lints clean, while
+`Tags: customer-portal, unknown-feature` reports `unknown-feature` as a violation.
 
 ### Language-Specific Configuration
 
@@ -545,6 +565,36 @@ Implementation: Fluid typography using clamp(), modular scale ratio 1.25
   --font-family-sans: 'Inter', system-ui, sans-serif;
   --font-size-base: clamp(1rem, 2vw, 1.125rem);
 }
+```
+
+### Jinja/HTML Templates (.html, .htm, .jinja, .j2)
+
+**Format:** A leading `{# ... #}` Jinja comment block (or `<!-- ... -->` HTML comment block)
+at the top of the template, before `{% extends ... %}` or markup. Default required fields are
+`Purpose`, `Scope`, and `Overview`.
+
+```html
+{#
+Purpose: Customer-portal page listing a customer's submitted orders.
+Scope: Customer Portal, order-history view.
+Tags: customer-portal, orders
+Overview: Renders the order-history table, extending the portal base layout.
+    Paginates server-side and links each row to the order-detail page.
+#}
+{% extends "newmain.html" %}
+
+<table class="orders"></table>
+```
+
+The equivalent using an HTML comment block is also accepted:
+
+```html
+<!--
+Purpose: Marketing landing page hero section.
+Scope: Public site, landing page.
+Overview: Renders the hero banner with call-to-action buttons.
+-->
+<section class="hero"></section>
 ```
 
 ## Violation Examples

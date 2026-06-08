@@ -1,7 +1,8 @@
 """
 Purpose: Main file header linter rule implementation
 
-Scope: File header validation for Python, TypeScript, JavaScript, Bash, Markdown, and CSS files
+Scope: File header validation for Python, TypeScript, JavaScript, Bash, Markdown, CSS, and
+    Jinja/HTML template files
 
 Overview: Orchestrates file header validation for multiple languages using focused helper classes.
     Coordinates header extraction, field validation, atemporal language detection, and
@@ -43,6 +44,7 @@ from .bash_parser import BashHeaderParser
 from .config import FileHeaderConfig
 from .css_parser import CssHeaderParser
 from .field_validator import FieldValidator
+from .html_parser import HtmlHeaderParser
 from .markdown_parser import MarkdownHeaderParser
 from .python_parser import PythonHeaderParser
 from .typescript_parser import TypeScriptHeaderParser
@@ -76,6 +78,7 @@ class FileHeaderRule(BaseLintRule):  # thailint: ignore[srp]
         "bash": BashHeaderParser(),
         "markdown": MarkdownHeaderParser(),
         "css": CssHeaderParser(),
+        "html": HtmlHeaderParser(),
     }
 
     def __init__(self) -> None:
@@ -252,6 +255,11 @@ class FileHeaderRule(BaseLintRule):  # thailint: ignore[srp]
                 self._violation_builder.build_missing_field(
                     field_name, str(context.file_path or ""), 1
                 )
+            )
+
+        for tag in field_validator.validate_tags(fields):
+            violations.append(
+                self._violation_builder.build_invalid_tag(tag, str(context.file_path or ""), 1)
             )
         return violations
 

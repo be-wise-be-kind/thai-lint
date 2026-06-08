@@ -6,9 +6,10 @@ Scope: File header linter configuration for all supported languages
 Overview: Defines configuration structure for file header linter including required fields
     per language, ignore patterns, and validation options. Provides defaults matching
     FILE_HEADER_STANDARDS.md requirements and supports loading from .thailint.yaml configuration.
-    Supports Python, TypeScript/JavaScript, Bash, Markdown, and CSS file types with
-    language-specific required field sets. Includes atemporal language enforcement
-    configuration and file ignore patterns.
+    Supports Python, TypeScript/JavaScript, Bash, Markdown, CSS, and Jinja/HTML template file
+    types with language-specific required field sets. Includes the optional Tags field with an
+    allowed_tags controlled vocabulary, atemporal language enforcement configuration, and file
+    ignore patterns.
 
 Dependencies: dataclasses module for configuration structure
 
@@ -21,73 +22,47 @@ Implementation: Dataclass with language-specific field lists and factory method 
 
 from dataclasses import dataclass, field
 
+# Default required fields per language. CSS-style names use Title Case; Markdown frontmatter
+# uses lowercase keys. Jinja/HTML templates require only the prose fields.
+DEFAULT_REQUIRED_FIELDS: dict[str, list[str]] = {
+    "python": [
+        "Purpose",
+        "Scope",
+        "Overview",
+        "Dependencies",
+        "Exports",
+        "Interfaces",
+        "Implementation",
+    ],
+    "typescript": [
+        "Purpose",
+        "Scope",
+        "Overview",
+        "Dependencies",
+        "Exports",
+        "Props/Interfaces",
+        "State/Behavior",
+    ],
+    "bash": ["Purpose", "Scope", "Overview", "Dependencies", "Exports", "Usage", "Environment"],
+    "markdown": ["purpose", "scope", "overview", "audience", "status"],
+    "css": ["Purpose", "Scope", "Overview", "Dependencies", "Exports", "Interfaces", "Environment"],
+    "html": ["Purpose", "Scope", "Overview"],
+}
+
 
 @dataclass
 class FileHeaderConfig:
     """Configuration for file header linting."""
 
-    # Required fields by language - Python
-    required_fields_python: list[str] = field(
-        default_factory=lambda: [
-            "Purpose",
-            "Scope",
-            "Overview",
-            "Dependencies",
-            "Exports",
-            "Interfaces",
-            "Implementation",
-        ]
+    # Required header fields keyed by language (javascript reuses the typescript set at lookup)
+    required_fields_by_language: dict[str, list[str]] = field(
+        default_factory=lambda: {
+            lang: list(fields) for lang, fields in DEFAULT_REQUIRED_FIELDS.items()
+        }
     )
 
-    # Required fields by language - TypeScript/JavaScript
-    required_fields_typescript: list[str] = field(
-        default_factory=lambda: [
-            "Purpose",
-            "Scope",
-            "Overview",
-            "Dependencies",
-            "Exports",
-            "Props/Interfaces",
-            "State/Behavior",
-        ]
-    )
-
-    # Required fields by language - Bash
-    required_fields_bash: list[str] = field(
-        default_factory=lambda: [
-            "Purpose",
-            "Scope",
-            "Overview",
-            "Dependencies",
-            "Exports",
-            "Usage",
-            "Environment",
-        ]
-    )
-
-    # Required fields by language - Markdown (lowercase for YAML frontmatter)
-    required_fields_markdown: list[str] = field(
-        default_factory=lambda: [
-            "purpose",
-            "scope",
-            "overview",
-            "audience",
-            "status",
-        ]
-    )
-
-    # Required fields by language - CSS
-    required_fields_css: list[str] = field(
-        default_factory=lambda: [
-            "Purpose",
-            "Scope",
-            "Overview",
-            "Dependencies",
-            "Exports",
-            "Interfaces",
-            "Environment",
-        ]
-    )
+    # Allowed tag vocabulary for the optional Tags field (empty = any tag accepted)
+    allowed_tags: list[str] = field(default_factory=list)
 
     # Enforce atemporal language checking
     enforce_atemporal: bool = True
@@ -96,6 +71,10 @@ class FileHeaderConfig:
     ignore: list[str] = field(
         default_factory=lambda: ["test/**", "**/migrations/**", "**/__init__.py"]
     )
+
+    def required_fields_for(self, language: str) -> list[str]:
+        """Return the required fields configured for a language ([] if none)."""
+        return self.required_fields_by_language.get(language, [])
 
     @classmethod
     def from_dict(cls, config_dict: dict, language: str) -> "FileHeaderConfig":
@@ -111,30 +90,25 @@ class FileHeaderConfig:
         defaults = cls()
         required_fields = config_dict.get("required_fields", {})
 
-        # Handle both list format (applies to all languages) and dict format (language-specific)
-        if isinstance(required_fields, list):
-            # Simple list format: apply same fields to all languages
-            return cls(
-                required_fields_python=required_fields,
-                required_fields_typescript=required_fields,
-                required_fields_bash=required_fields,
-                required_fields_markdown=required_fields,
-                required_fields_css=required_fields,
-                enforce_atemporal=config_dict.get("enforce_atemporal", True),
-                ignore=config_dict.get("ignore", defaults.ignore),
-            )
-
-        # Dict format: language-specific fields
         return cls(
-            required_fields_python=required_fields.get("python", defaults.required_fields_python),
-            required_fields_typescript=required_fields.get(
-                "typescript", defaults.required_fields_typescript
+            required_fields_by_language=cls._resolve_required_fields(
+                required_fields, defaults.required_fields_by_language
             ),
-            required_fields_bash=required_fields.get("bash", defaults.required_fields_bash),
-            required_fields_markdown=required_fields.get(
-                "markdown", defaults.required_fields_markdown
-            ),
-            required_fields_css=required_fields.get("css", defaults.required_fields_css),
+            allowed_tags=config_dict.get("allowed_tags", defaults.allowed_tags),
             enforce_atemporal=config_dict.get("enforce_atemporal", True),
             ignore=config_dict.get("ignore", defaults.ignore),
         )
+
+    @staticmethod
+    def _resolve_required_fields(
+        required_fields: list | dict, defaults: dict[str, list[str]]
+    ) -> dict[str, list[str]]:
+        """Resolve the required-fields config into a per-language map.
+
+        A list applies the same fields to every language; a dict overrides per language
+        while falling back to defaults for languages not specified.
+        """
+        if isinstance(required_fields, list):
+            return dict.fromkeys(defaults, required_fields)
+
+        return {lang: required_fields.get(lang, fields) for lang, fields in defaults.items()}

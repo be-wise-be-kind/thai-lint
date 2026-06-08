@@ -49,6 +49,26 @@ class FieldValidator:
             if (error := self._check_field(fields, field_name))
         ]
 
+    def validate_tags(self, fields: dict[str, str]) -> list[str]:
+        """Validate the optional Tags field against the allowed vocabulary.
+
+        Args:
+            fields: Dictionary of parsed header fields
+
+        Returns:
+            List of tag values that are not in the configured allowed_tags vocabulary.
+            Empty when no Tags field is present or no vocabulary is configured.
+        """
+        if not self.config.allowed_tags:
+            return []
+
+        tags = self._parse_tag_list(fields.get("Tags", ""))
+        return [tag for tag in tags if tag not in self.config.allowed_tags]
+
+    def _parse_tag_list(self, raw_value: str) -> list[str]:
+        """Split a comma-separated Tags value into stripped, non-empty tags."""
+        return [tag.strip() for tag in raw_value.split(",") if tag.strip()]
+
     def _check_field(self, fields: dict[str, str], field_name: str) -> tuple[str, str] | None:
         """Check a single field for presence and content."""
         if field_name not in fields:
@@ -60,13 +80,6 @@ class FieldValidator:
         return None
 
     def _get_required_fields(self, language: str) -> list[str]:
-        """Get required fields for language using dictionary lookup."""
-        language_fields = {
-            "python": self.config.required_fields_python,
-            "typescript": self.config.required_fields_typescript,
-            "javascript": self.config.required_fields_typescript,
-            "bash": self.config.required_fields_bash,
-            "markdown": self.config.required_fields_markdown,
-            "css": self.config.required_fields_css,
-        }
-        return language_fields.get(language, [])
+        """Get required fields for language (javascript reuses the typescript set)."""
+        normalized = "typescript" if language == "javascript" else language
+        return self.config.required_fields_for(normalized)
