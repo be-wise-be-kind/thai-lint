@@ -7,7 +7,8 @@ Overview: Detects programming language from files using multiple strategies incl
     extension mapping, shebang line parsing for scripts, and content analysis. Provides simple
     extension-to-language mapping for common file types (.py -> python, .js -> javascript,
     .ts -> typescript, .java -> java, .go -> go, .rs -> rust, .md -> markdown, .sh/.bash -> bash,
-    .css/.scss -> css). Falls back to shebang parsing for extensionless scripts by reading first
+    .css/.scss -> css, .html/.htm/.jinja/.j2 -> html). Falls back to shebang parsing for
+    extensionless scripts by reading first
     line and checking for language indicators. Returns 'unknown' for unrecognized files, allowing
     the orchestrator to skip or apply language-agnostic rules. Enables the multi-language
     architecture by accurately identifying file types for proper rule routing and analyzer
@@ -42,6 +43,10 @@ EXTENSION_MAP = {
     ".bash": "bash",
     ".css": "css",
     ".scss": "css",
+    ".html": "html",
+    ".htm": "html",
+    ".jinja": "html",
+    ".j2": "html",
 }
 
 

@@ -54,6 +54,27 @@ class ViolationBuilder:
             suggestion=f"Add '{field_name}:' field to file header",
         )
 
+    def build_invalid_tag(self, tag: str, file_path: str, line: int = 1) -> Violation:
+        """Build violation for a tag outside the allowed vocabulary.
+
+        Args:
+            tag: The tag value not present in the allowed vocabulary
+            file_path: Path to file
+            line: Line number (default 1 for header)
+
+        Returns:
+            Violation object describing the disallowed tag
+        """
+        return Violation(
+            rule_id=self.rule_id,
+            message=f"Tag not in allowed vocabulary: {tag}",
+            file_path=file_path,
+            line=line,
+            column=1,
+            severity=Severity.ERROR,
+            suggestion="Use a tag from the configured allowed_tags vocabulary",
+        )
+
     def build_atemporal_violation(
         self, pattern: str, description: str, file_path: str, line: int
     ) -> Violation:

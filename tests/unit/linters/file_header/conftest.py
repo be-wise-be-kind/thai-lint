@@ -125,6 +125,26 @@ VALID_CSS_HEADER = """/**
 }
 """
 
+VALID_HTML_HEADER = """{#
+Purpose: Customer-portal page listing a customer's submitted orders.
+Scope: Customer Portal, order-history view.
+Overview: Renders the order-history table, extending the portal base layout.
+    Paginates server-side and links each row to the order-detail page.
+#}
+{% extends "newmain.html" %}
+
+<table class="orders"></table>
+"""
+
+VALID_HTML_COMMENT_HEADER = """<!--
+Purpose: Marketing landing page hero section.
+Scope: Public site, landing page.
+Overview: Renders the hero banner with call-to-action buttons and a
+    responsive background image.
+-->
+<section class="hero"></section>
+"""
+
 # =============================================================================
 # Invalid/Missing Header Examples
 # =============================================================================
@@ -146,6 +166,11 @@ This markdown has no YAML frontmatter.
 CSS_NO_HEADER = """.button {
     color: blue;
 }
+"""
+
+HTML_NO_HEADER = """{% extends "newmain.html" %}
+
+<table class="orders"></table>
 """
 
 # =============================================================================
