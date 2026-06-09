@@ -99,19 +99,27 @@ jobs:
           # Install cyclonedx-bom CLI
           pip install cyclonedx-bom
 
-          # Generate SBOM from Poetry environment
+          # Generate SBOM from Poetry environment (outside dist/ to avoid PyPI upload errors)
+          mkdir -p sbom
           cyclonedx-py environment \
             --output-format json \
-            --output-file dist/thailint-sbom.cdx.json
+            --output-file sbom/thailint-sbom.cdx.json
 
           echo "SBOM generated successfully"
-          ls -la dist/
+          ls -la dist/ sbom/
 
-      - name: Upload build artifacts
+      - name: Upload package artifacts
         uses: actions/upload-artifact@v4
         with:
           name: dist
           path: dist/
+          retention-days: 7
+
+      - name: Upload SBOM artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: sbom
+          path: sbom/
           retention-days: 7
 
   publish-pypi:
@@ -174,11 +182,17 @@ jobs:
           # Save to file for multiline support
           echo "$CHANGELOG" > /tmp/changelog.txt
 
-      - name: Download build artifacts
+      - name: Download package artifacts
         uses: actions/download-artifact@v4
         with:
           name: dist
           path: dist/
+
+      - name: Download SBOM artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: sbom
+          path: sbom/
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v1
@@ -188,7 +202,7 @@ jobs:
           files: |
             dist/*.tar.gz
             dist/*.whl
-            dist/*.cdx.json
+            sbom/*.cdx.json
           draft: false
           prerelease: false
         env:
