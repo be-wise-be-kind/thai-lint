@@ -1,8 +1,8 @@
 # Purpose: Manual publish workflow triggered from GitHub UI
-# Scope: Full publish workflow including tests, publish, and PR creation
+# Scope: Full publish workflow including tests, publish, and direct commit to main
 # Overview: Provides a manual trigger for publishing thai-lint to PyPI and Docker Hub.
 #     Runs the publish script which handles version bumping, testing, linting, publishing,
-#     and creating a PR for the changes.
+#     and committing version changes directly to main.
 
 name: Publish
 
@@ -20,8 +20,7 @@ on:
         default: patch
 
 permissions:
-  contents: write   # For pushing branch
-  pull-requests: write  # For creating PR
+  contents: write   # For pushing to main
 
 jobs:
   publish:

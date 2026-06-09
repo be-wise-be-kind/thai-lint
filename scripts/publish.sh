@@ -120,15 +120,12 @@ echo ""
 just _publish-docker-only
 echo ""
 
-# --- Step 8: Create branch and PR for publish changes ---
+# --- Step 8: Commit publish changes directly to main ---
 echo ""
-echo "Step 8: Creating branch and PR for publish changes..."
+echo "Step 8: Committing publish changes to main..."
 
 VERSION=$(grep '^version = ' pyproject.toml | cut -d'"' -f2)
 DOCKERHUB_USERNAME=$(grep DOCKERHUB_USERNAME .env | cut -d'=' -f2)
-BRANCH_NAME="publish/v$VERSION"
-
-git checkout -b "$BRANCH_NAME"
 
 git add pyproject.toml poetry.lock README.md
 
@@ -140,31 +137,13 @@ Updates from publish workflow:
 - Updated poetry.lock
 - Updated README badges (version, tests, coverage)
 
-🤖 Generated with [Claude Code](https://claude.com/claude-code)
-
 Co-Authored-By: Claude <noreply@anthropic.com>
 EOF
 )"
 
-git push -u origin "$BRANCH_NAME"
+git push origin main
 
-gh pr create --title "chore: Publish v$VERSION" --body "$(cat <<EOF
-## Summary
-- Version bump to $VERSION
-- Updated poetry.lock
-- Updated README badges (version, tests, coverage)
-
-## Published to
-- PyPI: https://pypi.org/project/thailint/$VERSION/
-- Docker Hub: https://hub.docker.com/r/$DOCKERHUB_USERNAME/thailint
-
-🤖 Generated with [Claude Code](https://claude.com/claude-code)
-EOF
-)"
-
-git checkout main
-
-echo -e "${GREEN}✓ Created PR for publish changes${NC}"
+echo -e "${GREEN}✓ Committed publish changes to main${NC}"
 
 # --- Final summary ---
 echo ""
