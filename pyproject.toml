@@ -17,13 +17,10 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry]
 name = "thailint"
-version = "0.20.1"
+version = "0.20.2"
 description = "The AI Linter - Enterprise-grade linting and governance for AI-generated code across multiple languages"
 authors = ["Steve Jackson"]
-maintainers = [
-    "Melvin Caraang",
-    "Gabriel Acosta",
-]
+maintainers = ["Melvin Caraang, Gabriel Acosta"]
 license = "MIT"
 readme = "README.md"
 homepage = "https://github.com/be-wise-be-kind/thai-lint"
