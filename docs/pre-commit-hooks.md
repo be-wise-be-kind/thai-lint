@@ -312,6 +312,39 @@ pre-commit run --files src/cli.py
 
 ## Using thai-lint in Pre-commit Hooks
 
+### Recommended: Consume via `repo:` (pinned, self-installing)
+
+thai-lint ships a `.pre-commit-hooks.yaml` manifest at its repository root, so you can consume its linters directly from the repository. The hook framework creates an isolated environment, installs thai-lint from the revision you pin, and runs the `thailint` console script. This requires no pre-installed CLI and no particular runner (poetry/uv/pipx), and it pins the version so every contributor and CI run uses the same thai-lint.
+
+```yaml
+repos:
+  - repo: https://github.com/be-wise-be-kind/thai-lint
+    rev: v0.20.2          # pin to a released tag
+    hooks:
+      - id: thailint-file-header
+      - id: thailint-nesting
+        args: [--max-depth, "3"]            # pass linter flags via args
+      - id: thailint-srp
+      - id: thailint-magic-numbers
+        args: [--config, .thailint.yaml]    # point at your config
+```
+
+Each hook passes the staged files to its linter and restricts execution to the file types that linter supports. This format works under both [pre-commit](https://pre-commit.com/) and [prek](https://github.com/j178/prek).
+
+**Available hook ids:**
+
+| Category | Hook ids |
+|----------|----------|
+| Source quality | `thailint-file-placement`, `thailint-file-header`, `thailint-nesting`, `thailint-srp`, `thailint-dry`, `thailint-magic-numbers`, `thailint-method-property`, `thailint-improper-logging`, `thailint-lazy-ignores`, `thailint-lbyl`, `thailint-law-of-demeter`, `thailint-pipeline`, `thailint-stateless-class`, `thailint-stringly-typed`, `thailint-perf` |
+| Infrastructure | `thailint-version-freshness` |
+| Rust | `thailint-blocking-async`, `thailint-clone-abuse`, `thailint-unwrap-abuse` |
+
+Enable only the hook ids you want. Supply linter flags (such as `--config` or `--max-depth`) through each hook's `args` key.
+
+### Alternative: Local hooks against an installed CLI
+
+The `repo: local` patterns below remain valid when you prefer to run an already-installed thai-lint (for example to share one virtualenv with other tooling). These shell out to the CLI via `language: system` and depend on thai-lint being on `PATH`.
+
 ### Basic thai-lint Hook
 
 Add thai-lint to your `.pre-commit-config.yaml`:

@@ -1,0 +1,150 @@
+# Purpose: Pre-commit hook manifest so thai-lint is consumable as a pinned `repo:` hook source
+# Scope: Downstream repositories that wire thai-lint linters into pre-commit or prek workflows
+# Overview: Declares every stable thai-lint linter as a standalone `language: python` hook so
+#     consumers can pin a `rev:` and enable individual checks via
+#     `repo: https://github.com/be-wise-be-kind/thai-lint`. The hook framework creates an
+#     isolated environment, installs thailint from the pinned revision, and runs the `thailint`
+#     console script, removing any dependency on a pre-installed CLI or a particular runner
+#     (poetry/uv/pipx). Each hook passes changed files to its linter and restricts execution to
+#     the file types that linter supports via `types_or`. Consumers supply their own `args`
+#     (for example `--config` or `--max-depth`) when enabling a hook.
+# Dependencies: pre-commit or prek, a Python toolchain capable of building thailint from source
+# Exports: Individual `thailint-*` hook definitions covering source-quality and Rust linters
+# Interfaces: Consumed by pre-commit/prek via the repository `repo:` key; each hook runs
+#     `thailint <command>` against staged files
+# Environment: Any environment where the hook framework can build and install thailint
+# Related: .pre-commit-config.yaml (this repository's own hooks), docs/pre-commit-hooks.md
+# Implementation: One `language: python` hook per CLI linter command, with `types_or` filters
+#     matching each linter's documented language support
+
+- id: thailint-file-placement
+  name: thai-lint file placement
+  description: Lint files for proper file placement
+  entry: thailint file-placement
+  language: python
+
+- id: thailint-file-header
+  name: thai-lint file headers
+  description: Check file headers for mandatory fields and atemporal language
+  entry: thailint file-header
+  language: python
+  types_or: [python, ts, tsx, javascript, jsx]
+
+- id: thailint-nesting
+  name: thai-lint nesting depth
+  description: Check for excessive nesting depth in code
+  entry: thailint nesting
+  language: python
+  types_or: [python, ts, tsx, javascript, jsx, rust]
+
+- id: thailint-srp
+  name: thai-lint SRP
+  description: Check for Single Responsibility Principle violations
+  entry: thailint srp
+  language: python
+  types_or: [python, ts, tsx, javascript, jsx]
+
+- id: thailint-dry
+  name: thai-lint DRY
+  description: Check for duplicate code (DRY principle violations)
+  entry: thailint dry
+  language: python
+  types_or: [python, ts, tsx, javascript, jsx]
+
+- id: thailint-magic-numbers
+  name: thai-lint magic numbers
+  description: Check for magic numbers in code
+  entry: thailint magic-numbers
+  language: python
+  types_or: [python, ts, tsx, javascript, jsx, rust]
+
+- id: thailint-method-property
+  name: thai-lint method property
+  description: Check for methods that should be @property decorators
+  entry: thailint method-property
+  language: python
+  types_or: [python, ts, tsx]
+
+- id: thailint-improper-logging
+  name: thai-lint improper logging
+  description: Check for improper logging patterns in code
+  entry: thailint improper-logging
+  language: python
+  types_or: [python, ts, tsx, javascript, jsx]
+
+- id: thailint-lazy-ignores
+  name: thai-lint lazy ignores
+  description: Check for unjustified linting suppressions
+  entry: thailint lazy-ignores
+  language: python
+  types_or: [python, ts, tsx, javascript, jsx, rust]
+
+- id: thailint-lbyl
+  name: thai-lint LBYL
+  description: Check for Look Before You Leap anti-patterns
+  entry: thailint lbyl
+  language: python
+  types_or: [python]
+
+- id: thailint-law-of-demeter
+  name: thai-lint Law of Demeter
+  description: Check for Law of Demeter violations
+  entry: thailint law-of-demeter
+  language: python
+  types_or: [python, ts, tsx, javascript, jsx]
+
+- id: thailint-pipeline
+  name: thai-lint collection pipeline
+  description: Check for collection pipeline anti-patterns in code
+  entry: thailint pipeline
+  language: python
+  types_or: [python, ts, tsx]
+
+- id: thailint-stateless-class
+  name: thai-lint stateless class
+  description: Check for stateless classes that should be module functions
+  entry: thailint stateless-class
+  language: python
+  types_or: [python, ts, tsx]
+
+- id: thailint-stringly-typed
+  name: thai-lint stringly-typed
+  description: Check for stringly-typed patterns in code
+  entry: thailint stringly-typed
+  language: python
+  types_or: [python, ts, tsx, javascript, jsx]
+
+- id: thailint-perf
+  name: thai-lint performance
+  description: Check for performance anti-patterns in code
+  entry: thailint perf
+  language: python
+  types_or: [python, ts, tsx]
+
+- id: thailint-version-freshness
+  name: thai-lint version freshness
+  description: Check runtime/infrastructure versions for EOL and outdated releases
+  entry: thailint version-freshness
+  language: python
+  types_or: [dockerfile, terraform, yaml, toml]
+
+- id: thailint-blocking-async
+  name: thai-lint blocking async (Rust)
+  description: Check for blocking operations in async Rust functions
+  entry: thailint blocking-async
+  language: python
+  types_or: [rust]
+
+- id: thailint-clone-abuse
+  name: thai-lint clone abuse (Rust)
+  description: Check for .clone() abuse patterns in Rust code
+  entry: thailint clone-abuse
+  language: python
+  types_or: [rust]
+
+- id: thailint-unwrap-abuse
+  name: thai-lint unwrap abuse (Rust)
+  description: Check for .unwrap() and .expect() abuse in Rust code
+  entry: thailint unwrap-abuse
+  language: python
+  types_or: [rust]
