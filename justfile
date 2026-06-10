@@ -727,7 +727,7 @@ dogfood:
     cfg=$(mktemp)
     trap 'rm -f "$cfg"' EXIT
     sed "s/rev: HEAD/rev: $rev/" .pre-commit-config.dogfood.yaml > "$cfg"
-    poetry run pre-commit run --config "$cfg" --all-files
+    pre-commit run --config "$cfg" --all-files
 
 # Run tests (parallel by default for speed, use --serial for reliability)
 test *ARGS="":
