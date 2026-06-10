@@ -1,0 +1,80 @@
+# Purpose: Dogfooding harness that runs thai-lint's own published .pre-commit-hooks.yaml against its source
+# Scope: Local `just dogfood` runs and the dogfood CI workflow, exercising the manifest end to end
+# Overview: Consumes the repo-root .pre-commit-hooks.yaml the same way an external consumer would — through
+#     a remote `repo:` reference — but points at this repository itself (`repo: .`) so the manifest is
+#     validated without requiring a published release tag. The `just dogfood` recipe rewrites the `rev`
+#     to the current commit SHA before running, which pins an immutable reference and avoids pre-commit's
+#     mutable-reference caching. Each hook scans `src/` with the project configuration, mirroring
+#     `just lint-full` so the dogfood results match the canonical quality gate. Cross-file linters
+#     (SRP, stringly-typed, DRY) run with `--parallel` to match that gate.
+# Dependencies: pre-commit, the repo-root .pre-commit-hooks.yaml manifest, .thailint.yaml, the thailint package
+# Exports: Dogfood hook configuration consumed by `just dogfood` and .github/workflows/dogfood.yml
+# Interfaces: Invoked via `just dogfood`; run as a CI gate on pull requests and pushes to main
+# Environment: Development and CI; builds thailint in an isolated pre-commit environment from this repo
+# Related: .pre-commit-hooks.yaml (published manifest), .pre-commit-config.yaml, justfile, docs/pre-commit-hooks.md
+# Implementation: repo: . with a rev rewritten to HEAD's SHA; hooks pinned to src/ scope with .thailint.yaml
+
+repos:
+  - repo: .
+    rev: HEAD # rewritten to the current commit SHA by `just dogfood` (do not run this file directly)
+    hooks:
+      - id: thailint-file-placement
+        args: [src/, --config, .thailint.yaml]
+        pass_filenames: false
+        always_run: true
+      - id: thailint-file-header
+        args: [src/, --config, .thailint.yaml]
+        pass_filenames: false
+        always_run: true
+      - id: thailint-nesting
+        args: [src/, --config, .thailint.yaml]
+        pass_filenames: false
+        always_run: true
+      - id: thailint-srp
+        args: [src/, --config, .thailint.yaml, --parallel]
+        pass_filenames: false
+        always_run: true
+      - id: thailint-magic-numbers
+        args: [src/, --config, .thailint.yaml]
+        pass_filenames: false
+        always_run: true
+      - id: thailint-method-property
+        args: [src/, --config, .thailint.yaml]
+        pass_filenames: false
+        always_run: true
+      - id: thailint-improper-logging
+        args: [src/, --config, .thailint.yaml]
+        pass_filenames: false
+        always_run: true
+      - id: thailint-lazy-ignores
+        args: [src/, --config, .thailint.yaml]
+        pass_filenames: false
+        always_run: true
+      - id: thailint-lbyl
+        args: [src/, --config, .thailint.yaml]
+        pass_filenames: false
+        always_run: true
+      - id: thailint-law-of-demeter
+        args: [src/, --config, .thailint.yaml]
+        pass_filenames: false
+        always_run: true
+      - id: thailint-pipeline
+        args: [src/, --config, .thailint.yaml]
+        pass_filenames: false
+        always_run: true
+      - id: thailint-stateless-class
+        args: [src/, --config, .thailint.yaml]
+        pass_filenames: false
+        always_run: true
+      - id: thailint-stringly-typed
+        args: [src/, --config, .thailint.yaml, --parallel]
+        pass_filenames: false
+        always_run: true
+      - id: thailint-perf
+        args: [src/, --config, .thailint.yaml]
+        pass_filenames: false
+        always_run: true
+      - id: thailint-dry
+        args: [src/, --config, .thailint.yaml, --parallel]
+        pass_filenames: false
+        always_run: true

@@ -718,6 +718,17 @@ format:
     @poetry run ruff format src/ tests/
     @poetry run ruff check --fix src/ tests/
 
+# Dogfood the published .pre-commit-hooks.yaml manifest against src/ (mirrors lint-full via the manifest)
+dogfood:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    echo -e "{{BLUE}}{{BOLD}}🐶 Dogfooding .pre-commit-hooks.yaml manifest against src/...{{NC}}"
+    rev=$(git rev-parse HEAD)
+    cfg=$(mktemp)
+    trap 'rm -f "$cfg"' EXIT
+    sed "s/rev: HEAD/rev: $rev/" .pre-commit-config.dogfood.yaml > "$cfg"
+    poetry run pre-commit run --config "$cfg" --all-files
+
 # Run tests (parallel by default for speed, use --serial for reliability)
 test *ARGS="":
     #!/usr/bin/env bash
