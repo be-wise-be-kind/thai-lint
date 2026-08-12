@@ -63,6 +63,11 @@ class IgnoreDirectiveParser:
         self.project_root = project_root or Path.cwd()
         self.repo_patterns = _load_repo_ignores(self.project_root)
         self._ignore_cache: dict[str, bool] = {}
+        # Keyed by id(file_content): callers (e.g. DRY) pass the same cached
+        # content string for every violation in a file, so identity is a
+        # cheap and correct cache key. See issue [TBD].
+        self._lines_cache: dict[int, list[str]] = {}
+        self._block_index_cache: dict[int, _BlockIndex] = {}
 
     def is_ignored(self, file_path: Path) -> bool:
         """Check if file matches repository-level ignore patterns (cached)."""
@@ -95,15 +100,61 @@ class IgnoreDirectiveParser:
         file_path = Path(violation.file_path)
         if self._is_ignored_at_file_level(file_path, violation.rule_id, file_content):
             return True
-        return _is_ignored_in_content(file_content, violation)
+        lines = self._get_cached_lines(file_content)
+        if self._check_block_ignore(violation, lines):
+            return True
+        if _check_prev_line_ignore(lines, violation):
+            return True
+        return _check_current_line_ignore(lines, violation)
+
+    def _get_cached_lines(self, file_content: str) -> list[str]:
+        """Split file_content into lines once per distinct content, then reuse.
+
+        Cached by content identity so repeated calls for the same file (the
+        common case: many violations against one file) return the same list
+        object, which also keeps the block-index cache keyed off it stable.
+        """
+        key = id(file_content)
+        lines = self._lines_cache.get(key)
+        if lines is None:
+            lines = file_content.splitlines()
+            self._lines_cache[key] = lines
+        return lines
 
     def _is_ignored_at_file_level(self, file_path: Path, rule_id: str, file_content: str) -> bool:
-        """Check repository and file level ignores."""
+        """Check repository and file level ignores.
+
+        When file_content is already available, the disk-read fallback
+        (has_file_ignore) is redundant with the content-based check and is
+        skipped - re-reading the file from disk per violation was a real
+        performance issue on files with many violations. See issue [TBD].
+        """
         if self.is_ignored(file_path):
             return True
-        if _has_file_ignore_in_content(file_content, rule_id):
-            return True
+        if file_content:
+            return _has_file_ignore_in_content(file_content, rule_id)
         return self.has_file_ignore(file_path, rule_id)
+
+    def _check_block_ignore(self, violation: "Violation", lines: list[str]) -> bool:
+        """Check if violation is within an ignore-start/ignore-end block.
+
+        Builds the block index once per distinct file content (cached by
+        content identity) instead of re-scanning every line of the file for
+        every violation. See issue [TBD].
+        """
+        if not _is_valid_line_range(violation.line, len(lines)):
+            return False
+        index = self._get_block_index(lines)
+        return index.is_ignored(violation.line, violation.rule_id)
+
+    def _get_block_index(self, lines: list[str]) -> "_BlockIndex":
+        """Get the cached block index for these lines, building it if needed."""
+        key = id(lines)
+        index = self._block_index_cache.get(key)
+        if index is None:
+            index = _BlockIndex.build(lines)
+            self._block_index_cache[key] = index
+        return index
 
 
 # Module-level helper functions (don't need instance state)
@@ -199,64 +250,89 @@ def _has_file_ignore_in_content(file_content: str, rule_id: str | None) -> bool:
     return any(_check_line_for_ignore(line, rule_id) for line in lines)
 
 
-def _is_ignored_in_content(file_content: str, violation: "Violation") -> bool:
-    """Check content-based ignores (block, line, method level)."""
-    lines = file_content.splitlines()
-    if _check_block_ignore(lines, violation):
-        return True
-    if _check_prev_line_ignore(lines, violation):
-        return True
-    return _check_current_line_ignore(lines, violation)
+def _is_valid_line_range(line: int, max_lines: int) -> bool:
+    """Check if line number is within valid range."""
+    return 0 < line <= max_lines
 
 
-def _check_block_ignore(lines: list[str], violation: "Violation") -> bool:
-    """Check if violation is within an ignore-start/ignore-end block."""
-    if not _is_valid_line_range(violation.line, len(lines)):
-        return False
-    state = _BlockState()
-    for i, line in enumerate(lines, 1):
-        result = _process_block_line(line, i, violation, state)
-        if result is not None:
-            return result
-    return False
+class _BlockIndex:
+    """Precomputed ignore-start/ignore-end block data for O(1)-ish per-violation lookup.
+
+    Built once per file (see IgnoreDirectiveParser._get_block_index) instead of
+    re-scanning every line of the file for every violation. Replays the same
+    line-by-line state machine the original per-violation scan used, but
+    records every outcome instead of stopping at one target line.
+
+    The original scan terminates the instant it reaches the violation's own
+    line while inside an open block (returning whatever that block's rules
+    say, win or lose) - later blocks are never considered for that violation
+    once that happens. Otherwise, it only reconsiders the violation
+    retroactively once a later ignore-end marker is reached. `_open_lines`
+    captures the first case; `_closed_spans` captures the second.
+    """
+
+    def __init__(
+        self, open_lines: dict[int, frozenset[str]], closed_spans: list[tuple[int, frozenset[str]]]
+    ) -> None:
+        self._open_lines = open_lines
+        self._closed_spans = closed_spans
+
+    @classmethod
+    def build(cls, lines: list[str]) -> "_BlockIndex":
+        """Scan lines once, recording every open-line and closed-span outcome."""
+        open_lines: dict[int, frozenset[str]] = {}
+        closed_spans: list[tuple[int, frozenset[str]]] = []
+        state = _BlockScanState()
+        for i, line in enumerate(lines, 1):
+            _scan_line(line, i, state, open_lines, closed_spans)
+        return cls(open_lines, closed_spans)
+
+    def is_ignored(self, violation_line: int, rule_id: str) -> bool:
+        """Check whether a violation at this line/rule is block-ignored."""
+        rules_at_line = self._open_lines.get(violation_line)
+        if rules_at_line is not None:
+            return rules_match_violation(rules_at_line, rule_id)
+        return any(
+            violation_line < end_line and rules_match_violation(rules, rule_id)
+            for end_line, rules in self._closed_spans
+        )
 
 
-class _BlockState:
-    """Mutable state for block ignore scanning."""
+class _BlockScanState:
+    """Mutable state carried across lines while building a _BlockIndex."""
 
     def __init__(self) -> None:
         self.in_block = False
         self.rules: set[str] = set()
 
 
-def _is_valid_line_range(line: int, max_lines: int) -> bool:
-    """Check if line number is within valid range."""
-    return 0 < line <= max_lines
-
-
-def _process_block_line(
-    line: str, line_num: int, violation: "Violation", state: _BlockState
-) -> bool | None:
-    """Process a line for block ignore, returning True/False if decided, None to continue."""
+def _scan_line(
+    line: str,
+    line_num: int,
+    state: _BlockScanState,
+    open_lines: dict[int, frozenset[str]],
+    closed_spans: list[tuple[int, frozenset[str]]],
+) -> None:
+    """Process one line's effect on block-scan state, recording index entries."""
     if has_ignore_start_marker(line):
         state.rules = _parse_ignore_start_rules(line)
         state.in_block = True
-        return None
+        return
     if has_ignore_end_marker(line):
-        return _handle_block_end(line_num, violation, state)
-    if line_num == violation.line and state.in_block:
-        return rules_match_violation(state.rules, violation.rule_id)
-    return None
+        _close_block(line_num, state, closed_spans)
+        return
+    if state.in_block:
+        open_lines[line_num] = frozenset(state.rules)
 
 
-def _handle_block_end(line_num: int, violation: "Violation", state: _BlockState) -> bool | None:
-    """Handle block end marker."""
-    if state.in_block and line_num > violation.line:
-        if rules_match_violation(state.rules, violation.rule_id):
-            return True
+def _close_block(
+    line_num: int, state: _BlockScanState, closed_spans: list[tuple[int, frozenset[str]]]
+) -> None:
+    """Record a closed-span entry (if a block was open) and reset scan state."""
+    if state.in_block:
+        closed_spans.append((line_num, frozenset(state.rules)))
     state.in_block = False
     state.rules = set()
-    return None
 
 
 def _parse_ignore_start_rules(line: str) -> set[str]:

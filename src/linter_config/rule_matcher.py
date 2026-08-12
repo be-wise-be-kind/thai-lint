@@ -18,6 +18,7 @@ Implementation: String-based pattern matching with wildcard, prefix, and alias s
 """
 
 import re
+from collections.abc import Set as AbstractSet
 
 from src.core.rule_aliases import RULE_ID_ALIASES
 
@@ -119,7 +120,7 @@ def check_space_separated_rules(rules_text: str, rule_id: str) -> bool:
     return any(rule_matches(rule_id, r) for r in ignored_rules)
 
 
-def rules_match_violation(ignored_rules: set[str], rule_id: str) -> bool:
+def rules_match_violation(ignored_rules: AbstractSet[str], rule_id: str) -> bool:
     """Check if any of the ignored rules match the violation rule ID.
 
     Args:
