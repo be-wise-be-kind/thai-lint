@@ -22,8 +22,6 @@ Suppressions:
     - arguments-out-of-order: Named arguments used for clarity in ConstantLocation
 """
 
-from collections.abc import Callable
-from itertools import combinations
 from pathlib import Path
 
 from .constant import ConstantGroup, ConstantInfo, ConstantLocation
@@ -103,7 +101,9 @@ def _merge_fuzzy_groups(groups: dict[str, ConstantGroup]) -> list[ConstantGroup]
     """Merge groups that match via fuzzy matching."""
     names = list(groups.keys())
     uf = UnionFind(names)
-    _union_matching_pairs(names, uf, _is_fuzzy_match)
+    eligible = [name for name in names if len(_get_words(name)) >= 2]
+    _union_word_set_matches(eligible, uf)
+    _union_edit_distance_matches(eligible, uf)
     return _build_merged_groups(names, groups, uf)
 
 
@@ -136,13 +136,63 @@ def _group_by_exact_name(locations: list[ConstantLocation]) -> dict[str, Constan
     return groups
 
 
-def _union_matching_pairs(
-    names: list[str], uf: UnionFind, is_match: Callable[[str, str], bool]
+def _union_word_set_matches(names: list[str], uf: UnionFind) -> None:
+    """Union names sharing an identical word-set, in O(N) instead of all-pairs.
+
+    Two names with the exact same set of words can never be an antonym conflict
+    (a set can't both contain and exclude the same word), so no extra check is
+    needed beyond the word-set equality itself.
+    """
+    first_seen_for_key: dict[frozenset[str], str] = {}
+    for name in names:
+        key = frozenset(_get_words(name))
+        first_seen = first_seen_for_key.setdefault(key, name)
+        if first_seen != name:
+            uf.union(name, first_seen)
+
+
+def _union_edit_distance_matches(names: list[str], uf: UnionFind) -> None:
+    """Union names within MAX_EDIT_DISTANCE of each other's length.
+
+    Edit distance can never be smaller than the difference in string length, so
+    comparing length-incompatible names is wasted work - and all-pairs comparison
+    of every distinct constant name becomes catastrophic once a codebase has
+    thousands of them. Bucketing by length turns that into per-bucket comparison
+    only within a small window of compatible lengths.
+    """
+    by_length: dict[int, list[str]] = {}
+    for name in names:
+        by_length.setdefault(len(name), []).append(name)
+
+    lengths = sorted(by_length)
+    for index, length in enumerate(lengths):
+        _union_length_window(by_length, lengths, index, length, uf)
+
+
+def _union_length_window(
+    by_length: dict[int, list[str]],
+    lengths: list[int],
+    index: int,
+    length: int,
+    uf: UnionFind,
 ) -> None:
-    """Union all pairs of names that match."""
-    for name1, name2 in combinations(names, 2):
-        if is_match(name1, name2):
-            uf.union(name1, name2)
+    """Union `length`'s bucket against every bucket within the edit-distance window."""
+    for other_length in lengths[index:]:
+        if other_length - length > MAX_EDIT_DISTANCE:
+            break
+        same_bucket = other_length == length
+        _union_bucket_pair(by_length[length], by_length[other_length], same_bucket, uf)
+
+
+def _union_bucket_pair(
+    names_a: list[str], names_b: list[str], same_bucket: bool, uf: UnionFind
+) -> None:
+    """Union fuzzy-matching pairs between two length buckets (or within one)."""
+    for i, name1 in enumerate(names_a):
+        start = i + 1 if same_bucket else 0
+        for name2 in names_b[start:]:
+            if _is_fuzzy_match(name1, name2):
+                uf.union(name1, name2)
 
 
 def _build_merged_groups(

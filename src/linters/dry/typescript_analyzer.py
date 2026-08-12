@@ -47,6 +47,7 @@ from .cache import CodeBlock
 from .config import DRYConfig
 from .typescript_statement_detector import (
     block_overlaps_interface,
+    build_line_to_node_index,
     find_interface_ranges,
     is_single_statement_for_root,
     parse_root,
@@ -92,6 +93,12 @@ class TypeScriptDuplicateAnalyzer(BaseTokenAnalyzer):  # thailint: ignore[srp.vi
         # making analysis O(windows x filesize) and pegging a core on large/minified bundles.
         root = parse_root(content)
 
+        # Build a line -> node index once and reuse it for every window (issue [TBD]):
+        # is_single_statement_for_root previously walked the whole tree-sitter tree from
+        # scratch per window, making analysis O(windows x nodes) - the TypeScript/JS analog
+        # of issue #233's Python fix.
+        line_to_node_index = build_line_to_node_index(root)
+
         # Get JSDoc comment line ranges from the shared AST
         jsdoc_ranges = self._get_jsdoc_ranges_from_root(root)
 
@@ -109,7 +116,7 @@ class TypeScriptDuplicateAnalyzer(BaseTokenAnalyzer):  # thailint: ignore[srp.vi
             (hash_val, start_line, end_line, snippet)
             for hash_val, start_line, end_line, snippet in windows
             if not block_overlaps_interface(start_line, end_line, interface_ranges)
-            and not is_single_statement_for_root(root, start_line, end_line)
+            and not is_single_statement_for_root(root, start_line, end_line, line_to_node_index)
         )
         return self._build_blocks(valid_windows, file_path, content)
 

@@ -71,13 +71,46 @@ def is_single_statement(content: str, start_line: int, end_line: int) -> bool:
     return is_single_statement_for_root(parse_root(content), start_line, end_line)
 
 
-def is_single_statement_for_root(root: Node | None, start_line: int, end_line: int) -> bool:
+def build_line_to_node_index(root: Node | None) -> dict[int, list[Node]] | None:
+    """Build an index mapping each 0-indexed line to the AST nodes overlapping it.
+
+    Intended to be called once per file so is_single_statement_for_root can look
+    up candidate nodes for a window in O(1) instead of walking the whole
+    tree-sitter tree per window (issue [TBD]: analyze() called
+    is_single_statement_for_root once per rolling-hash window, each re-walking the
+    entire tree from the root - the TypeScript/JS analog of issue #233's Python fix).
+
+    Args:
+        root: Tree-sitter root node from parse_root(), or None
+
+    Returns:
+        Dict mapping each 0-indexed line number to the nodes spanning it, or
+        None if root is None
+    """
+    if root is None:
+        return None
+
+    index: dict[int, list[Node]] = {}
+    for node in _walk_nodes(root):
+        for line in range(node.start_point[0], node.end_point[0] + 1):
+            index.setdefault(line, []).append(node)
+    return index
+
+
+def is_single_statement_for_root(
+    root: Node | None,
+    start_line: int,
+    end_line: int,
+    line_to_node_index: dict[int, list[Node]] | None = None,
+) -> bool:
     """Check a line range against an already-parsed AST root.
 
     Args:
         root: Tree-sitter root node from parse_root(), or None
         start_line: Starting line number (1-indexed)
         end_line: Ending line number (1-indexed)
+        line_to_node_index: Pre-built index from build_line_to_node_index(), if
+            available (avoids re-walking the whole tree per call)
 
     Returns:
         True if this range represents a single logical statement/expression
@@ -85,7 +118,7 @@ def is_single_statement_for_root(root: Node | None, start_line: int, end_line: i
     if root is None:
         return False
 
-    return _check_overlapping_nodes(root, start_line, end_line)
+    return _check_overlapping_nodes(root, start_line, end_line, line_to_node_index)
 
 
 def should_include_block(content: str, start_line: int, end_line: int) -> bool:
@@ -102,12 +135,37 @@ def should_include_block(content: str, start_line: int, end_line: int) -> bool:
     return not block_overlaps_interface(start_line, end_line, find_interface_ranges(content))
 
 
-def _check_overlapping_nodes(root: Node, start_line: int, end_line: int) -> bool:
+def _check_overlapping_nodes(
+    root: Node,
+    start_line: int,
+    end_line: int,
+    line_to_node_index: dict[int, list[Node]] | None = None,
+) -> bool:
     """Check if any AST node overlaps and matches single-statement pattern."""
     ts_start = start_line - 1  # Convert to 0-indexed
     ts_end = end_line - 1
 
-    return any(_node_overlaps_and_matches(node, ts_start, ts_end) for node in _walk_nodes(root))
+    candidates = _candidate_nodes(root, ts_start, ts_end, line_to_node_index)
+    return any(_node_overlaps_and_matches(node, ts_start, ts_end) for node in candidates)
+
+
+def _candidate_nodes(
+    root: Node,
+    ts_start: int,
+    ts_end: int,
+    line_to_node_index: dict[int, list[Node]] | None,
+) -> Generator[Node, None, None]:
+    """Get candidate nodes to check: the indexed nodes for this range, or all nodes."""
+    if line_to_node_index is None:
+        yield from _walk_nodes(root)
+        return
+
+    seen: set[int] = set()
+    for line in range(ts_start, ts_end + 1):
+        for node in line_to_node_index.get(line, []):
+            if id(node) not in seen:
+                seen.add(id(node))
+                yield node
 
 
 def _walk_nodes(node: Node) -> Generator[Node, None, None]:

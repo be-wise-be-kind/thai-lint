@@ -148,9 +148,28 @@ class DRYRule(BaseLintRule):  # pylint: disable=too-many-instance-attributes
 
         self._helpers.inline_ignore.parse_file(file_path, context.file_content)
         self._ensure_storage_initialized(context, config)
-        self._analyze_and_store(context, config)
+        self._analyze_if_not_ignored(context, config, file_path)
         if config.detect_duplicate_constants:
             self._extract_and_store_constants(context)
+
+    def _analyze_if_not_ignored(
+        self, context: BaseLintContext, config: DRYConfig, file_path: Path
+    ) -> None:
+        """Analyze and store blocks, unless the file matches a dry.ignore pattern."""
+        if not self._is_ignored_path(file_path, config.ignore_patterns):
+            self._analyze_and_store(context, config)
+
+    @staticmethod
+    def _is_ignored_path(file_path: Path, ignore_patterns: list[str]) -> bool:
+        """Check whether a file matches a dry.ignore pattern.
+
+        Mirrors ViolationGenerator._is_ignored so a matched file skips analysis
+        entirely instead of paying full analysis cost only to be filtered later.
+        """
+        if not ignore_patterns:
+            return False
+        path_str = str(Path(file_path))
+        return any(pattern in path_str for pattern in ignore_patterns)
 
     def _ensure_storage_initialized(self, context: BaseLintContext, config: DRYConfig) -> None:
         """Initialize storage and file analyzer on first call."""
