@@ -39,7 +39,7 @@ from pathlib import Path
 
 from . import token_hasher
 from .base_token_analyzer import BaseTokenAnalyzer
-from .block_filter import BlockFilterRegistry, create_default_registry
+from .block_filter import BlockFilterRegistry, FilterCache, create_default_registry
 from .cache import CodeBlock
 from .config import DRYConfig
 from .single_statement_detector import SingleStatementDetector
@@ -62,6 +62,9 @@ class PythonDuplicateAnalyzer(BaseTokenAnalyzer):  # thailint: ignore[srp.violat
         self._filter_registry = filter_registry or create_default_registry()
         # Single-statement detector is created per-analysis with cached AST data
         self._statement_detector: SingleStatementDetector | None = None
+        # Reused by block filters (e.g. KeywordArgumentFilter) to avoid re-parsing,
+        # re-walking, and re-splitting the whole file once per candidate block (issue #233)
+        self._filter_cache: FilterCache | None = None
 
     def analyze(  # thailint: ignore[nesting.excessive-depth]
         self, file_path: Path, content: str, config: DRYConfig
@@ -80,6 +83,11 @@ class PythonDuplicateAnalyzer(BaseTokenAnalyzer):  # thailint: ignore[srp.violat
         cached_ast = self._parse_content_safe(content)
         line_to_nodes = SingleStatementDetector.build_line_to_node_index(cached_ast)
         self._statement_detector = SingleStatementDetector(cached_ast, content, line_to_nodes)
+        self._filter_cache = FilterCache(
+            ast_tree=cached_ast,
+            line_to_node_index=line_to_nodes,
+            lines=content.split("\n"),
+        )
 
         try:
             # Get docstring line ranges
@@ -95,8 +103,9 @@ class PythonDuplicateAnalyzer(BaseTokenAnalyzer):  # thailint: ignore[srp.violat
 
             return self._filter_valid_blocks(windows, file_path, content)
         finally:
-            # Clear detector after analysis to avoid memory leaks
+            # Clear detector and cache after analysis to avoid memory leaks
             self._statement_detector = None
+            self._filter_cache = None
 
     def _filter_valid_blocks(
         self,
@@ -138,7 +147,7 @@ class PythonDuplicateAnalyzer(BaseTokenAnalyzer):  # thailint: ignore[srp.violat
             hash_value=hash_val,
         )
 
-        if self._filter_registry.should_filter_block(block, content):
+        if self._filter_registry.should_filter_block(block, content, self._filter_cache):
             return None
 
         return block
