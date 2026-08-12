@@ -290,11 +290,20 @@ class StringlyTypedStorage:  # thailint: ignore[srp]
     that appear across multiple files, enabling cross-file duplicate detection.
     """
 
-    def __init__(self, storage_mode: str = "memory") -> None:
+    # Seconds to wait for a lock before raising "database is locked", when connecting
+    # to a shared on-disk file that multiple --parallel worker processes write to.
+    SHARED_DB_CONNECT_TIMEOUT = 30
+
+    def __init__(self, storage_mode: str = "memory", db_path: Path | None = None) -> None:
         """Initialize storage with SQLite database.
 
         Args:
             storage_mode: Storage mode - "memory" (default) or "tempfile"
+            db_path: Explicit on-disk path to use for "tempfile" mode instead of a
+                random auto-deleting tempfile. Callers pass this to share one database
+                file across multiple processes (e.g. --parallel worker processes plus
+                the main process) for the duration of a single run - the file is not
+                managed/deleted by this class in that case. Ignored for "memory" mode.
         """
         self._storage_mode = storage_mode
         self._tempfile = None
@@ -303,8 +312,18 @@ class StringlyTypedStorage:  # thailint: ignore[srp]
         if storage_mode == StorageMode.MEMORY:
             self._db = sqlite3.connect(":memory:")
         elif storage_mode == StorageMode.TEMPFILE:
-            self._tempfile = tempfile.NamedTemporaryFile(suffix=".db", delete=True)  # pylint: disable=consider-using-with
-            self._db = sqlite3.connect(self._tempfile.name)
+            if db_path is not None:
+                db_path.parent.mkdir(parents=True, exist_ok=True)
+                self._db = sqlite3.connect(str(db_path), timeout=self.SHARED_DB_CONNECT_TIMEOUT)
+                # WAL mode lets multiple processes read/write the same file
+                # concurrently with far less lock-contention than the default
+                # rollback journal - needed now that this file can be shared
+                # across --parallel worker processes.
+                self._db.execute("PRAGMA journal_mode=WAL")
+            else:
+                # pylint: disable=consider-using-with
+                self._tempfile = tempfile.NamedTemporaryFile(suffix=".db", delete=True)
+                self._db = sqlite3.connect(self._tempfile.name)
         else:
             raise ValueError(f"Invalid storage_mode: {storage_mode}")
 

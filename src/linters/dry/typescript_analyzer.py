@@ -280,7 +280,7 @@ class TypeScriptDuplicateAnalyzer(BaseTokenAnalyzer):  # thailint: ignore[srp.vi
             # Extract just the code for hashing
             code_lines = [code for _, code in window]
             snippet = "\n".join(code_lines)
-            hash_val = hash(snippet)
+            hash_val = token_hasher.stable_hash(snippet)
 
             # Get original line numbers
             start_line = window[0][0]

@@ -138,6 +138,44 @@ class BaseLintRule(ABC):
         """
         return []
 
+    def get_parallel_shared_config(self, shared_dir: Path) -> dict[str, Any] | None:
+        """Return a config-section override to share state across --parallel workers.
+
+        Optional hook consulted before dispatching worker processes. A rule whose
+        finalize() needs cross-file state (built up across check() calls) cannot rely on
+        that state existing in the main process under --parallel, since each worker runs
+        check() in an isolated process. Returning a non-None override here merges it into
+        every worker's config (and the main process's), letting the rule redirect its
+        state into something shared - e.g. a real on-disk file instead of an in-memory
+        store. shared_dir is a directory the rule may use for on-disk state needed only
+        for the duration of this one run.
+
+        Args:
+            shared_dir: Directory available for this run's shared on-disk state.
+
+        Returns:
+            Config-section override dict to merge in, or None if no override is needed.
+        """
+        return None
+
+    def finalize_after_parallel(self, raw_config: dict[str, Any]) -> list[Violation]:
+        """Finalize after a --parallel run, for rules that returned a shared config.
+
+        Called instead of finalize() when running under --parallel. Default
+        implementation just calls finalize() unchanged, which is correct for rules that
+        never returned an override from get_parallel_shared_config(). Rules that did
+        return an override should use raw_config here to reconnect to the shared state
+        those workers wrote to before delegating to their normal finalize() logic.
+
+        Args:
+            raw_config: The full raw config dict used for this run, including any
+                override from get_parallel_shared_config().
+
+        Returns:
+            List of violations found during finalization.
+        """
+        return self.finalize()
+
 
 class MultiLanguageLintRule(BaseLintRule):
     """Base class for linting rules that support multiple programming languages.

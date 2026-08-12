@@ -86,6 +86,14 @@ class StringlyTypedConfig:  # pylint: disable=too-many-instance-attributes
     exclude_variables: list[str] = field(default_factory=list)
     """Variable names to exclude from detection."""
 
+    storage_mode: str = "memory"
+    """Storage mode - "memory" (default) or "tempfile"."""
+
+    shared_db_path: str | None = None
+    """Set by the orchestrator (not user-facing) when running under --parallel: an
+    explicit on-disk path every worker process and the main process connect to, since
+    ":memory:" storage is fundamentally per-process and can't be shared."""
+
     def __post_init__(self) -> None:
         """Validate configuration values."""
         if self.min_occurrences < 1:
@@ -143,6 +151,8 @@ class StringlyTypedConfig:  # pylint: disable=too-many-instance-attributes
             ignore=merged_ignore,
             allowed_string_sets=config.get("allowed_string_sets", []),
             exclude_variables=config.get("exclude_variables", []),
+            storage_mode=config.get("storage_mode", "memory"),
+            shared_db_path=config.get("shared_db_path"),
         )
 
     @classmethod
@@ -186,4 +196,6 @@ class StringlyTypedConfig:  # pylint: disable=too-many-instance-attributes
             exclude_variables=lang_config.get(
                 "exclude_variables", base_config.get("exclude_variables", [])
             ),
+            storage_mode=base_config.get("storage_mode", "memory"),
+            shared_db_path=base_config.get("shared_db_path"),
         )

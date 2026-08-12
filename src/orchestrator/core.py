@@ -40,8 +40,11 @@ from __future__ import annotations
 import logging
 import multiprocessing
 import os
+import shutil
+import tempfile
 from concurrent.futures import Future, ProcessPoolExecutor, as_completed
 from pathlib import Path
+from typing import Any
 
 from src.core.base import BaseLintContext, BaseLintRule
 from src.core.registry import RuleRegistry
@@ -148,6 +151,23 @@ def _collect_files_fast(dir_path: Path, recursive: bool = True) -> list[Path]:
         if not recursive:
             break
     return files
+
+
+def _merge_config_override(base: dict[str, Any], override: dict[str, Any]) -> dict[str, Any]:
+    """Shallow-merge a rule's parallel-shared config override into a base config.
+
+    Overrides are keyed by linter section (e.g. {"dry": {...}}); each section is merged
+    on top of the existing section (if any) rather than replacing it wholesale, so an
+    override only needs to specify the keys it cares about.
+    """
+    merged = dict(base)
+    for key, value in override.items():
+        existing = merged.get(key)
+        if isinstance(value, dict) and isinstance(existing, dict):
+            merged[key] = {**existing, **value}
+        else:
+            merged[key] = value
+    return merged
 
 
 def _lint_file_worker(args: tuple[Path, Path, dict]) -> list[dict]:
@@ -394,15 +414,38 @@ class Orchestrator:  # thailint: ignore[srp]
         if len(file_paths) < effective_workers * 2:
             return self.lint_files(file_paths)
 
-        violations = self._execute_parallel_linting(file_paths, effective_workers)
-        violations.extend(self._finalize_rules())
-        return violations
+        shared_dir = Path(tempfile.mkdtemp(prefix="thailint-parallel-"))
+        try:
+            worker_config = self._build_parallel_worker_config(shared_dir)
+            violations = self._execute_parallel_linting(
+                file_paths, effective_workers, worker_config
+            )
+            violations.extend(self._finalize_rules_after_parallel(worker_config))
+            return violations
+        finally:
+            shutil.rmtree(shared_dir, ignore_errors=True)
+
+    def _build_parallel_worker_config(self, shared_dir: Path) -> dict[str, Any]:
+        """Merge each rule's parallel-shared config override into a worker config.
+
+        Rules with cross-file state (finalize()) can't rely on that state existing in
+        the main process under --parallel, since each worker runs check() in an isolated
+        process. get_parallel_shared_config lets such a rule redirect its state into
+        something shared across every worker (and the main process) for this one run.
+        """
+        self._ensure_rules_discovered()
+        worker_config: dict[str, Any] = dict(self.config)
+        for rule in self.registry.list_all():
+            override = rule.get_parallel_shared_config(shared_dir)
+            if override:
+                worker_config = _merge_config_override(worker_config, override)
+        return worker_config
 
     def _execute_parallel_linting(
-        self, file_paths: list[Path], max_workers: int
+        self, file_paths: list[Path], max_workers: int, worker_config: dict[str, Any]
     ) -> list[Violation]:
         """Execute parallel linting using process pool."""
-        work_items = [(fp, self.project_root, self.config) for fp in file_paths]
+        work_items = [(fp, self.project_root, worker_config) for fp in file_paths]
 
         with ProcessPoolExecutor(max_workers=max_workers) as executor:
             futures = [executor.submit(_lint_file_worker, item) for item in work_items]
@@ -423,12 +466,17 @@ class Orchestrator:  # thailint: ignore[srp]
             logger.exception("Error extracting violations from worker future")
             return []
 
-    def _finalize_rules(self) -> list[Violation]:
-        """Call finalize() on all rules for cross-file analysis."""
+    def _finalize_rules_after_parallel(self, worker_config: dict[str, Any]) -> list[Violation]:
+        """Call finalize_after_parallel() on all rules for cross-file analysis.
+
+        Uses finalize_after_parallel rather than finalize directly so rules that
+        redirected their state via get_parallel_shared_config can reconnect to it first
+        (see BaseLintRule.finalize_after_parallel).
+        """
         self._ensure_rules_discovered()
         violations: list[Violation] = []
         for rule in self.registry.list_all():
-            violations.extend(rule.finalize())
+            violations.extend(rule.finalize_after_parallel(worker_config))
         return violations
 
     def lint_directory_parallel(
