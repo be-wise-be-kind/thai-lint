@@ -57,7 +57,13 @@ class FilterCache:
     lines: list[str] | None = None
 
 
-def _block_lines(block: CodeBlock, file_content: str, cache: FilterCache | None) -> list[str]:
+# Alias kept short so should_filter's signature fits on one line across every
+# implementer - the multi-line form repeated identically per subclass was
+# itself flagged as duplicate code.
+Cache = FilterCache | None
+
+
+def _block_lines(block: CodeBlock, file_content: str, cache: Cache) -> list[str]:
     """Get the lines spanned by a block, reusing cached pre-split lines if available."""
     lines = cache.lines if cache is not None else None
     if lines is None:
@@ -69,12 +75,7 @@ class BaseBlockFilter(ABC):
     """Base class for duplicate block filters."""
 
     @abstractmethod
-    def should_filter(
-        self,
-        block: CodeBlock,
-        file_content: str,
-        cache: FilterCache | None = None,
-    ) -> bool:
+    def should_filter(self, block: CodeBlock, file_content: str, cache: Cache = None) -> bool:
         """Determine if a code block should be filtered out.
 
         Args:
@@ -116,12 +117,7 @@ class KeywordArgumentFilter(BaseBlockFilter):
         # Pattern: optional whitespace, identifier, =, value, optional comma
         self._kwarg_pattern = re.compile(r"^\s*\w+\s*=\s*.+,?\s*$")
 
-    def should_filter(
-        self,
-        block: CodeBlock,
-        file_content: str,
-        cache: FilterCache | None = None,
-    ) -> bool:
+    def should_filter(self, block: CodeBlock, file_content: str, cache: Cache = None) -> bool:
         """Check if block is primarily keyword arguments.
 
         Args:
@@ -148,10 +144,7 @@ class KeywordArgumentFilter(BaseBlockFilter):
         return False
 
     def _is_inside_function_call(
-        self,
-        block: CodeBlock,
-        file_content: str,
-        cache: FilterCache | None = None,
+        self, block: CodeBlock, file_content: str, cache: Cache = None
     ) -> bool:
         """Verify the block is inside a function call, not standalone code."""
         if cache is not None and cache.line_to_node_index is not None:
@@ -168,9 +161,7 @@ class KeywordArgumentFilter(BaseBlockFilter):
             for node in candidates
         )
 
-    def _contains_call_via_walk(
-        self, block: CodeBlock, file_content: str, cache: FilterCache | None
-    ) -> bool:
+    def _contains_call_via_walk(self, block: CodeBlock, file_content: str, cache: Cache) -> bool:
         """Check for a containing Call node by parsing/walking the whole tree."""
         tree = self._resolve_tree(file_content, cache)
         if tree is None:
@@ -182,7 +173,7 @@ class KeywordArgumentFilter(BaseBlockFilter):
         )
 
     @staticmethod
-    def _resolve_tree(file_content: str, cache: FilterCache | None) -> ast.Module | None:
+    def _resolve_tree(file_content: str, cache: Cache) -> ast.Module | None:
         """Get the cached AST if available, otherwise parse file_content."""
         if cache is not None and cache.ast_tree is not None:
             return cache.ast_tree
@@ -241,12 +232,7 @@ class ImportGroupFilter(BaseBlockFilter):
         """Initialize the import group filter."""
         pass  # Stateless filter for import blocks
 
-    def should_filter(
-        self,
-        block: CodeBlock,
-        file_content: str,
-        cache: FilterCache | None = None,
-    ) -> bool:
+    def should_filter(self, block: CodeBlock, file_content: str, cache: Cache = None) -> bool:
         """Check if block is only import statements.
 
         Args:
@@ -293,12 +279,7 @@ class LoggerCallFilter(BaseBlockFilter):
             r"(debug|info|warning|error|critical|exception|log)\s*\("
         )
 
-    def should_filter(
-        self,
-        block: CodeBlock,
-        file_content: str,
-        cache: FilterCache | None = None,
-    ) -> bool:
+    def should_filter(self, block: CodeBlock, file_content: str, cache: Cache = None) -> bool:
         """Check if block is primarily single-line logger calls.
 
         Args:
@@ -341,12 +322,7 @@ class ExceptionReraiseFilter(BaseBlockFilter):
         """Initialize the exception reraise filter."""
         pass  # Stateless filter
 
-    def should_filter(
-        self,
-        block: CodeBlock,
-        file_content: str,
-        cache: FilterCache | None = None,
-    ) -> bool:
+    def should_filter(self, block: CodeBlock, file_content: str, cache: Cache = None) -> bool:
         """Check if block is an exception re-raise pattern.
 
         Args:
@@ -412,12 +388,7 @@ class BlockFilterRegistry:
         """
         self._enabled_filters.discard(filter_name)
 
-    def should_filter_block(
-        self,
-        block: CodeBlock,
-        file_content: str,
-        cache: FilterCache | None = None,
-    ) -> bool:
+    def should_filter_block(self, block: CodeBlock, file_content: str, cache: Cache = None) -> bool:
         """Check if any enabled filter wants to filter this block.
 
         Args:
