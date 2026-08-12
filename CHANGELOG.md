@@ -24,6 +24,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Pre-commit hooks manifest** - Ship `.pre-commit-hooks.yaml` so thai-lint is consumable as a pinned `repo:` hook source ([#229](https://github.com/be-wise-be-kind/thai-lint/issues/229))
+  - Declares all 19 stable linters as `language: python` hooks, each scoped to its supported file types via `types_or`
+  - Lets consumers pin a `rev:` and run thai-lint under pre-commit or prek with no pre-installed CLI and no runner assumption
+  - Documents `repo:` consumption alongside the existing local-hook patterns in `docs/pre-commit-hooks.md`
+
 ## [0.19.1] - 2026-05-11
 
 ### Fixed
