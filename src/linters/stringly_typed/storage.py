@@ -320,6 +320,10 @@ class StringlyTypedStorage:  # thailint: ignore[srp]
                 # rollback journal - needed now that this file can be shared
                 # across --parallel worker processes.
                 self._db.execute("PRAGMA journal_mode=WAL")
+                # NORMAL (vs the default FULL) skips fsync on every commit, only
+                # syncing at WAL checkpoints - WAL mode's own crash-recovery
+                # guarantees make this safe, and this file only lives for one run.
+                self._db.execute("PRAGMA synchronous=NORMAL")
             else:
                 # pylint: disable=consider-using-with
                 self._tempfile = tempfile.NamedTemporaryFile(suffix=".db", delete=True)

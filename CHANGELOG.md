@@ -30,6 +30,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Declares all 19 stable linters as `language: python` hooks, each scoped to its supported file types via `types_or`
   - Lets consumers pin a `rev:` and run thai-lint under pre-commit or prek with no pre-installed CLI and no runner assumption
   - Documents `repo:` consumption alongside the existing local-hook patterns in `docs/pre-commit-hooks.md`
+- **DRY persistent cross-run cache** - Opt-in `storage_mode: "persistent"` keeps the duplicate-code index on disk at `.thailint-cache/dry.db` between invocations, so a diff-scoped run (just the changed files) still correctly catches duplicates against the rest of the already-indexed codebase - the missing piece for using `dry` as a blocking pre-commit hook rather than a nightly/CI-only scan
+  - Matched-against files not in the current run's file list are verified fresh (rescanned if their content changed since indexing, purged if deleted) before being trusted
+  - Real `--no-cache` (skip the persistent store for this run) and `--clear-cache` (delete `.thailint-cache/dry.db` before running) CLI flags; both were previously accepted but silently ignored
+  - Batches the duplicate-hash-to-blocks query (previously one query per duplicate hash group) into a single `IN (...)` query
+  - Supersedes the persistent-cache feature shipped in `.roadmap/complete/dry-linter/` (Oct 2025) and removed four months later ([#35](https://github.com/be-wise-be-kind/thai-lint/issues/35)) after its mtime-based freshness check and reliance on an unenforced `ON DELETE CASCADE` let stale duplicate-code violations persist after the underlying duplicate was already fixed - not previously noted in this changelog. The new implementation uses a content-hash freshness check and always deletes a file's old blocks explicitly, with a regression test for the exact "fix then rescan" scenario that broke before
+  - Benchmarked against a real ~2,958-file Python codebase: a cold first-time index build takes 136s (in line with a full ephemeral scan), while a simulated typical commit (50 changed files against the already-built index) takes 5.7s
+
+### Fixed
+
+- **DRY project root resolution** - `DRYRule` looked up `context.metadata["project_root"]` to resolve its project root, but the orchestrator sets `"_project_root"` (with a leading underscore); the lookup always missed and silently fell back to the first scanned file's own parent directory. Invisible under ephemeral storage modes, but broke the persistent cache's on-disk location for any project where the first file isn't in the project root itself - found while benchmarking persistent mode against a real multi-directory codebase
+- **DRY/stringly-typed shared on-disk SQLite commit cost** - Every `upsert_file`/write commit to a shared on-disk store (persistent mode, and the `--parallel` shared file from the fix above) fsynced by default; added `PRAGMA synchronous=NORMAL` (safe under WAL's own crash-recovery guarantees) so a cold full-tree index build doesn't pay one fsync per file
+
+- **DRY/stringly-typed `--parallel` mode** - `--parallel` silently reported zero violations for both `dry` and `stringly-typed`, the only two rules with cross-file `finalize()` state: each worker process ran `check()` on its own throwaway rule instance, so the main process's `finalize()` never saw anything collected. Both rules now redirect their state into a shared on-disk SQLite file for the duration of one `--parallel` run
+- **DRY block hashing across processes** - Duplicate-code block hashes used Python's built-in `hash()`, which is salted with a per-process random seed (`PYTHONHASHSEED`) by default, so the same code block could hash differently across separate process invocations. Replaced with a stable `blake2b`-based hash everywhere blocks are hashed
 
 ## [0.19.1] - 2026-05-11
 

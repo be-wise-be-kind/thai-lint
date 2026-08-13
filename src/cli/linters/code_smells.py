@@ -49,6 +49,7 @@ from src.cli.utils import (
 )
 from src.core.cli_utils import format_violations
 from src.core.types import Violation
+from src.linters.dry.storage_initializer import DEFAULT_CACHE_DIR_NAME, DEFAULT_CACHE_FILE_NAME
 
 if TYPE_CHECKING:
     from src.orchestrator.core import Orchestrator
@@ -93,16 +94,37 @@ def _apply_dry_config_override(
     dry_config = ensure_config_section(orchestrator, "dry")
     set_config_value(dry_config, "min_duplicate_lines", min_lines, verbose)
     if no_cache:
-        set_config_value(dry_config, "cache_enabled", False, verbose)
+        # Force ephemeral in-memory storage for this run, overriding any
+        # storage_mode: persistent set in config - the persistent on-disk index is
+        # skipped entirely rather than just not written back to.
+        set_config_value(dry_config, "storage_mode", "memory", verbose)
+
+
+def _resolve_dry_cache_path(orchestrator: "Orchestrator") -> Path:
+    """Resolve the persistent cache file path for this project, honoring an explicit override."""
+    cache_path_str = orchestrator.config.get("dry", {}).get("shared_db_path")
+    if cache_path_str:
+        return Path(cache_path_str)
+    return orchestrator.project_root / DEFAULT_CACHE_DIR_NAME / DEFAULT_CACHE_FILE_NAME
 
 
 def _clear_dry_cache(orchestrator: "Orchestrator", verbose: bool) -> None:
-    """Clear DRY cache before running."""
-    cache_path_str = orchestrator.config.get("dry", {}).get("cache_path", ".thailint-cache/dry.db")
-    cache_path = orchestrator.project_root / cache_path_str
+    """Clear DRY persistent cache before running, including its WAL/SHM sidecar files."""
+    _ = verbose  # Reserved for future verbose-only messaging, matches sibling helpers
+    cache_path = _resolve_dry_cache_path(orchestrator)
+    sidecars = (
+        cache_path,
+        cache_path.with_name(cache_path.name + "-wal"),
+        cache_path.with_name(cache_path.name + "-shm"),
+    )
 
-    if cache_path.exists():
-        cache_path.unlink()
+    removed_any = False
+    for path in sidecars:
+        if path.exists():
+            path.unlink()
+            removed_any = True
+
+    if removed_any:
         logger.debug(f"Cleared cache: {cache_path}")
     else:
         logger.debug("Cache file does not exist, nothing to clear")

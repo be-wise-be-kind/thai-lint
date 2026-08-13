@@ -373,6 +373,8 @@ Project configuration lives in `.thailint.yaml` at the project root. Supports:
 - **`docs/configuration.md`** - Configuration file reference
 - **`docs/api-reference.md`** - Library API documentation
 - **`docs/getting-started.md`** - Installation and quick start
+- **`docs/dry-persistent-cache.md`** - DRY's on-disk cross-run duplicate index: schema,
+  freshness/reconciliation algorithm, concurrency handling, and the #35 regression it fixes
 
 ---
 

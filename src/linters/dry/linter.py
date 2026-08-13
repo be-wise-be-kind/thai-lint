@@ -4,15 +4,16 @@ Purpose: Main DRY linter rule implementation with stateful caching
 Scope: DRYRule class implementing BaseLintRule interface for duplicate code and constant detection
 
 Overview: Implements DRY linter rule following BaseLintRule interface with stateful caching design.
-    Orchestrates duplicate detection by delegating to specialized classes: ConfigLoader for config,
-    StorageInitializer for storage setup, FileAnalyzer for file analysis, and ViolationGenerator
-    for violation creation. Also supports duplicate constant detection (opt-in) to identify when
-    the same constant is defined in multiple files. Maintains minimal orchestration logic to comply
-    with SRP.
+    Orchestrates duplicate detection by delegating to specialized classes and functions:
+    ConfigLoader for config, initialize_storage() for storage setup, FileAnalyzer for file
+    analysis, ViolationGenerator for violation creation, and reconcile_stale_matches() for
+    persistent-mode freshness verification. Also supports duplicate constant detection (opt-in)
+    to identify when the same constant is defined in multiple files. Maintains minimal
+    orchestration logic to comply with SRP.
 
-Dependencies: BaseLintRule, BaseLintContext, ConfigLoader, StorageInitializer, FileAnalyzer,
-    DuplicateStorage, ViolationGenerator, extract_python_constants, TypeScriptConstantExtractor,
-    find_constant_groups, ConstantViolationBuilder
+Dependencies: BaseLintRule, BaseLintContext, ConfigLoader, initialize_storage, FileAnalyzer,
+    DuplicateStorage, ViolationGenerator, reconcile_stale_matches, extract_python_constants,
+    TypeScriptConstantExtractor, find_constant_groups, ConstantViolationBuilder
 
 Exports: DRYRule class
 
@@ -45,11 +46,13 @@ from .config_loader import ConfigLoader
 from .constant import ConstantInfo
 from .constant_matcher import find_constant_groups
 from .constant_violation_builder import ConstantViolationBuilder
+from .content_hash import compute_content_hash
 from .duplicate_storage import DuplicateStorage
 from .file_analyzer import FileAnalyzer
 from .inline_ignore import InlineIgnoreParser
 from .python_constant_extractor import extract_python_constants
-from .storage_initializer import StorageInitializer
+from .stale_match_reconciler import reconcile_stale_matches
+from .storage_initializer import initialize_storage
 from .typescript_constant_extractor import TypeScriptConstantExtractor
 from .violation_generator import IgnoreContext, ViolationGenerator
 
@@ -59,7 +62,6 @@ class DRYComponents:  # pylint: disable=too-many-instance-attributes
     """Component dependencies for DRY linter."""
 
     config_loader: ConfigLoader
-    storage_initializer: StorageInitializer
     file_analyzer: FileAnalyzer
     violation_generator: ViolationGenerator
     inline_ignore: InlineIgnoreParser
@@ -84,10 +86,14 @@ class DRYRule(BaseLintRule):  # pylint: disable=too-many-instance-attributes
         # Cache file contents for ignore directive checking during finalize
         self._file_contents: dict[str, str] = {}
 
+        # Files actually analyzed and upserted this run (persistent mode only): lets
+        # finalize() tell which matched-against files were freshly scanned versus
+        # indexed by a prior run and needing a freshness check before being trusted.
+        self._processed_files: set[str] = set()
+
         # Helper components grouped to reduce instance attributes
         self._helpers = DRYComponents(
             config_loader=ConfigLoader(),
-            storage_initializer=StorageInitializer(),
             file_analyzer=FileAnalyzer(),  # Placeholder, will be replaced with configured one
             violation_generator=ViolationGenerator(),
             inline_ignore=InlineIgnoreParser(),
@@ -176,7 +182,7 @@ class DRYRule(BaseLintRule):  # pylint: disable=too-many-instance-attributes
     def _ensure_storage_initialized(self, config: DRYConfig) -> None:
         """Initialize storage and file analyzer on first call."""
         if not self._initialized:
-            self._storage = self._helpers.storage_initializer.initialize(config)
+            self._storage = initialize_storage(config, self._project_root)
             # Create file analyzer with config for filter configuration
             self._file_analyzer = FileAnalyzer(config)
             self._initialized = True
@@ -195,8 +201,12 @@ class DRYRule(BaseLintRule):  # pylint: disable=too-many-instance-attributes
             context.language,
             config,
         )
-        if blocks:
-            self._active_storage.add_blocks(context.file_path, blocks)
+        # Always upsert (even with zero blocks) so a file edited to remove its last
+        # duplicated block still has its stale blocks deleted - the #35 regression fix.
+        self._active_storage.upsert_file(
+            context.file_path, compute_content_hash(context.file_content), blocks
+        )
+        self._processed_files.add(str(context.file_path))
 
     def _can_analyze(self, context: BaseLintContext) -> bool:
         """Check if context is ready for analysis."""
@@ -225,9 +235,10 @@ class DRYRule(BaseLintRule):  # pylint: disable=too-many-instance-attributes
         Returns:
             Project root path or None if not available
         """
-        # Try to get from metadata (orchestrator sets this)
+        # Try to get from metadata (orchestrator sets this as "_project_root",
+        # see Orchestrator.lint_file)
         if hasattr(context, "metadata") and isinstance(context.metadata, dict):
-            project_root = context.metadata.get("project_root")
+            project_root = context.metadata.get("_project_root")
             if project_root:
                 return Path(project_root)
 
@@ -241,6 +252,8 @@ class DRYRule(BaseLintRule):  # pylint: disable=too-many-instance-attributes
         """Generate violations after all files processed."""
         if not self._storage or not self._config:
             return []
+
+        self._reconcile_stale_matches_if_persistent()
 
         # Create ignore context for violation filtering
         ignore_parser = IgnoreDirectiveParser(self._project_root)
@@ -266,7 +279,23 @@ class DRYRule(BaseLintRule):  # pylint: disable=too-many-instance-attributes
         self._helpers.inline_ignore.clear()
         self._constants = []
         self._file_contents = {}
+        self._processed_files = set()
         return violations
+
+    def _reconcile_stale_matches_if_persistent(self) -> None:
+        """Verify freshness of files matched against but not scanned this run.
+
+        Only relevant in persistent mode: those files were indexed by a prior
+        invocation and may have changed or been deleted since. Ephemeral modes never
+        need this - every row in their table was written by this same run, so nothing
+        external can be stale.
+        """
+        assert self._config is not None  # nosec B101
+        if self._config.storage_mode != "persistent":
+            return
+        reconcile_stale_matches(
+            self._active_storage, self._active_file_analyzer, self._config, self._processed_files
+        )
 
     def get_parallel_shared_config(self, shared_dir: Path) -> dict[str, Any] | None:
         """Force a shared, on-disk store for the duration of one --parallel run.

@@ -91,34 +91,46 @@ The DRY linter uses token-based hashing (Rabin-Karp algorithm) to identify dupli
 ### SQLite Storage
 
 **Storage Modes**:
-- **In-memory** (default): Fast, RAM-only SQLite database (`:memory:`)
+- **In-memory** (default): Fast, RAM-only SQLite database (`:memory:`), cleared every run
 - **Tempfile**: Disk-backed temporary file for large projects, auto-deleted on completion
+- **Persistent**: Disk-backed file at `.thailint-cache/dry.db` that survives between runs,
+  enabling fast incremental linting of just the files that changed (see
+  [Persistent Cross-Run Cache](#persistent-cross-run-cache) below)
 
 **Performance**:
 - Fast hash indexing: O(log n) lookups via SQLite B-tree indexes
-- Efficient duplicate detection: Single query returns all matching hashes
+- Efficient duplicate detection: Single batched query returns all matching hashes and blocks
 - Scales to large projects: Handles thousands of files efficiently
 
 **Schema**:
 ```sql
 CREATE TABLE files (
     file_path TEXT PRIMARY KEY,
-    mtime REAL NOT NULL,
-    hash_count INTEGER,
-    last_scanned TIMESTAMP
+    content_hash TEXT NOT NULL,
+    last_scanned TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE code_blocks (
-    file_path TEXT,
-    hash_value INTEGER,
-    start_line INTEGER,
-    end_line INTEGER,
-    snippet TEXT,
-    FOREIGN KEY (file_path) REFERENCES files(file_path)
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    file_path TEXT NOT NULL,
+    hash_value INTEGER NOT NULL,
+    start_line INTEGER NOT NULL,
+    end_line INTEGER NOT NULL,
+    snippet TEXT NOT NULL
 );
 
-CREATE INDEX idx_hash ON code_blocks(hash_value);
+CREATE INDEX idx_hash_value ON code_blocks(hash_value);
+CREATE INDEX idx_file_path ON code_blocks(file_path);
+CREATE TABLE schema_meta (version INTEGER NOT NULL);
 ```
+
+Freshness is tracked by a content hash, not file modification time, so the cache is safe to
+restore from CI caching (e.g. `actions/cache`) across a fresh checkout without a stale-mtime
+false-negative. `code_blocks` deliberately has no `FOREIGN KEY ... ON DELETE CASCADE`: every
+write explicitly deletes a file's old blocks before inserting new ones, rather than relying on a
+cascade SQLite only enforces when `PRAGMA foreign_keys=ON` is set (which this codebase never
+does) — the direct fix for a historical bug where stale blocks survived a file being re-indexed
+and caused violations to persist after the underlying duplicate was already fixed.
 
 ## Configuration
 
@@ -142,7 +154,7 @@ dry:
 | `min_duplicate_lines` | integer | `3` | Minimum consecutive lines for duplicate detection |
 | `min_duplicate_tokens` | integer | `30` | Minimum token count for duplicate detection |
 | `min_occurrences` | integer | `2` | Minimum occurrences to report (2 = report pairs) |
-| `storage_mode` | string | `"memory"` | SQLite storage mode: "memory" (fast) or "tempfile" (large projects) |
+| `storage_mode` | string | `"memory"` | SQLite storage mode: "memory" (fast), "tempfile" (large projects), or "persistent" (cross-run cache) |
 | `ignore` | array | `["tests/", "__init__.py"]` | Files/directories to skip |
 | `filters` | object | See below | False positive filters |
 
@@ -172,17 +184,73 @@ dry:
 
 ```yaml
 dry:
-  storage_mode: "memory"  # Options: "memory" (default) or "tempfile"
+  storage_mode: "memory"  # Options: "memory" (default), "tempfile", or "persistent"
 ```
 
 **Storage Modes**:
 - **memory** (default): In-memory SQLite database (`:memory:`), fast, no disk I/O
 - **tempfile**: Temporary file SQLite database, for memory-constrained environments, auto-deleted after run
+- **persistent**: On-disk database at `.thailint-cache/dry.db` that survives between runs
 
 **When to use tempfile**:
 - Large projects (10,000+ files) where memory is constrained
 - Environments with limited RAM
 - Projects with very large files (lots of code blocks to hash)
+
+**When to use persistent**: see [Persistent Cross-Run Cache](#persistent-cross-run-cache) below.
+
+### Persistent Cross-Run Cache
+
+`storage_mode: "persistent"` is what makes DRY viable as a blocking pre-commit hook. Every other
+mode re-derives the whole project's duplicate index from scratch on each invocation; persistent
+mode keeps that index on disk between invocations, so a commit touching 50 files only pays the
+analysis cost of those 50 files — while still correctly catching duplicates against the rest of
+the (unchanged, already-indexed) codebase.
+
+```yaml
+dry:
+  enabled: true
+  storage_mode: "persistent"
+```
+
+**How it works**: pass just the changed files (the same diff-scoped model `nesting`/`srp` already
+use) and DRY will index them into `.thailint-cache/dry.db`, then check for duplicates against
+*everything* in that index — not just the files passed in. A file matched against that wasn't
+part of this invocation is verified fresh before being trusted: if its on-disk content has
+changed since it was last indexed, it's transparently rescanned; if it's been deleted, its stale
+entries are purged. `.thailint-cache/` should be added to `.gitignore` (already the default in
+this repo's own config).
+
+For the schema, the freshness/reconciliation algorithm, the historical bug this design avoids
+repeating, and real-world benchmark numbers, see
+**[DRY Persistent Cache: Implementation Deep Dive](dry-persistent-cache.md)**.
+
+**Pre-commit example**, reusing the changed-file list a hook already computes:
+
+```bash
+CHANGED=$(git diff --cached --name-only --diff-filter=ACM -- '*.py' '*.ts')
+if [ -n "$CHANGED" ]; then
+  thailint dry --config .thailint.yaml $CHANGED
+fi
+```
+
+**Cache control flags**:
+
+```bash
+# Skip the persistent store entirely for this run (falls back to ephemeral in-memory)
+thailint dry --no-cache .
+
+# Delete .thailint-cache/dry.db (and its WAL/SHM files) before running
+thailint dry --clear-cache .
+```
+
+**Rebuilding the index from scratch**: there's no separate "rebuild" command — `--clear-cache`
+deletes the existing file, and `dry`'s path argument defaults to `.` with recursion on, so
+running `--clear-cache` with no path arguments deletes and fully rebuilds the index in one step:
+
+```bash
+thailint dry --clear-cache --config .thailint.yaml .
+```
 
 ### False Positive Filters
 

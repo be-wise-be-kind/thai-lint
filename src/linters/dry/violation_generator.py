@@ -96,8 +96,8 @@ class ViolationGenerator:
             List of raw violations before filtering
         """
         violations = []
-        for hash_value in storage.duplicate_hashes:
-            blocks = storage.get_blocks_for_hash(hash_value)
+        blocks_by_hash = storage.get_blocks_for_hashes(storage.duplicate_hashes)
+        for blocks in blocks_by_hash.values():
             dedup_blocks = self._deduplicator.deduplicate_blocks(blocks)
 
             if not self._meets_min_occurrences(dedup_blocks, config):
