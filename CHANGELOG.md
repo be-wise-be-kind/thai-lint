@@ -22,6 +22,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+
+- **DRY persistent mode report scoping** - A diff-scoped run reported the linter's *entire* persisted violation backlog every time, not just matches touching the current invocation's file list, on any codebase with a substantial pre-existing duplicate-code backlog ([#238](https://github.com/be-wise-be-kind/thai-lint/issues/238)). Duplicate-hash matching still scans the whole persisted index (needed to correctly find a match against an unchanged file), but a duplicate group is now only reported if at least one occurrence is a file this invocation actually processed - a full-tree scan is unaffected since every file is "processed" by construction
+
 ## [0.21.0] - 2026-08-13
 
 ### Added

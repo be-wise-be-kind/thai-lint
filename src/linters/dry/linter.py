@@ -264,7 +264,7 @@ class DRYRule(BaseLintRule):  # pylint: disable=too-many-instance-attributes
         )
 
         violations = self._helpers.violation_generator.generate_violations(
-            self._storage, self.rule_id, self._config, ignore_ctx
+            self._storage, self.rule_id, self._config, ignore_ctx, self._processed_files
         )
         if self._config.detect_duplicate_constants and self._constants:
             constant_violations = _generate_constant_violations(
@@ -323,6 +323,12 @@ class DRYRule(BaseLintRule):  # pylint: disable=too-many-instance-attributes
         dry_config = raw_config.get("dry", {})
         self._config = self._config or DRYConfig.from_dict(dry_config)
         self._ensure_storage_initialized(self._config)
+        # self._processed_files is empty on this instance (check() ran on workers, not
+        # here). The shared store is a fresh, per-run file (see
+        # get_parallel_shared_config), so every file in it belongs to this run - treat
+        # all of it as in scope for report filtering, rather than filtering everything
+        # out.
+        self._processed_files = self._active_storage.all_file_paths
         return self.finalize()
 
 

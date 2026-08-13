@@ -5,16 +5,30 @@ Scope: Generates violations from duplicate hashes
 
 Overview: Handles violation generation for duplicate code blocks. Queries storage for duplicate
     hashes, retrieves blocks for each hash, deduplicates overlapping blocks, builds violations
-    using ViolationBuilder, and filters violations based on ignore patterns. Separates violation
+    using ViolationBuilder, and filters violations based on ignore patterns. A duplicate group is
+    only reported if at least one of its occurrences is a file the current invocation actually
+    processed - the query itself still scans the whole persisted index (needed to find matches
+    against files outside the invocation), but a group where every occurrence is outside the
+    invocation's scope is skipped entirely, so a diff-scoped run's report stays proportional to
+    what was passed in rather than reprinting the whole backlog every time (issue #238). For a
+    full-tree scan, every file is "processed", so this filter is a no-op. Separates violation
     generation logic from main linter rule to maintain SRP compliance.
 
 Dependencies: DuplicateStorage, ViolationDeduplicator, DRYViolationBuilder, Violation, DRYConfig
 
 Exports: ViolationGenerator class, IgnoreContext dataclass
 
-Interfaces: ViolationGenerator.generate_violations(storage, rule_id, config) -> list[Violation]
+Interfaces: ViolationGenerator.generate_violations(storage, rule_id, config, ignore_ctx,
+    processed_files) -> list[Violation]
 
-Implementation: Queries storage, deduplicates blocks, builds violations, filters by ignore patterns
+Implementation: Queries storage, deduplicates blocks, drops groups with no occurrence in
+    processed_files, builds violations, filters by ignore patterns
+
+Suppressions:
+    - too-many-arguments,too-many-positional-arguments: generate_violations takes five
+        independent, equally-necessary inputs (storage, rule_id, config, ignore_ctx,
+        processed_files); bundling them into a params object would add indirection
+        without reducing the actual number of concerns the caller has to supply
 """
 
 from dataclasses import dataclass
@@ -51,12 +65,13 @@ class ViolationGenerator:
         self._deduplicator = ViolationDeduplicator()
         self._violation_builder = DRYViolationBuilder()
 
-    def generate_violations(
+    def generate_violations(  # pylint: disable=too-many-arguments,too-many-positional-arguments
         self,
         storage: DuplicateStorage,
         rule_id: str,
         config: DRYConfig,
         ignore_ctx: IgnoreContext,
+        processed_files: set[str],
     ) -> list[Violation]:
         """Generate violations from storage.
 
@@ -65,11 +80,14 @@ class ViolationGenerator:
             rule_id: Rule identifier for violations
             config: DRY configuration with ignore patterns
             ignore_ctx: Context containing ignore parsers and file contents
+            processed_files: Absolute-path strings of files this invocation processed.
+                A duplicate group with no occurrence in this set is dropped entirely -
+                see module docstring.
 
         Returns:
             List of violations filtered by ignore patterns and inline directives
         """
-        raw_violations = self._collect_violations(storage, rule_id, config)
+        raw_violations = self._collect_violations(storage, rule_id, config, processed_files)
         deduplicated = self._deduplicator.deduplicate_violations(raw_violations)
         pattern_filtered = self._filter_ignored(deduplicated, config.ignore_patterns)
         inline_filtered = self._filter_inline_ignored(pattern_filtered, ignore_ctx.inline_ignore)
@@ -83,7 +101,11 @@ class ViolationGenerator:
         return inline_filtered
 
     def _collect_violations(
-        self, storage: DuplicateStorage, rule_id: str, config: DRYConfig
+        self,
+        storage: DuplicateStorage,
+        rule_id: str,
+        config: DRYConfig,
+        processed_files: set[str],
     ) -> list[Violation]:
         """Collect raw violations from storage duplicate hashes.
 
@@ -91,6 +113,7 @@ class ViolationGenerator:
             storage: Duplicate storage instance
             rule_id: Rule identifier for violations
             config: DRY configuration
+            processed_files: Absolute-path strings of files this invocation processed
 
         Returns:
             List of raw violations before filtering
@@ -103,11 +126,26 @@ class ViolationGenerator:
             if not self._meets_min_occurrences(dedup_blocks, config):
                 continue
 
+            if not self._touches_invocation(dedup_blocks, processed_files):
+                continue
+
             for block in dedup_blocks:
                 violation = self._violation_builder.build_violation(block, dedup_blocks, rule_id)
                 violations.append(violation)
 
         return violations
+
+    def _touches_invocation(self, blocks: list, processed_files: set[str]) -> bool:
+        """Check whether any occurrence in a duplicate group is a file this run processed.
+
+        Args:
+            blocks: Deduplicated occurrences of one duplicate-hash group
+            processed_files: Absolute-path strings of files this invocation processed
+
+        Returns:
+            True if at least one occurrence's file is in processed_files
+        """
+        return any(str(block.file_path) in processed_files for block in blocks)
 
     def _meets_min_occurrences(self, blocks: list, config: DRYConfig) -> bool:
         """Check if blocks meet minimum occurrence threshold for the language.

@@ -151,6 +151,45 @@ class TestStaleMatchedFileIsRescanned:
         )
 
 
+class TestReportScopedToInvocation:
+    """A duplicate group neither side of which is in this run's file list must not be
+    reported - regression test for the issue #238 report: persistent mode's report
+    included the entire indexed violation backlog on every invocation, not just matches
+    touching the current invocation, defeating the point of a diff-scoped run.
+    """
+
+    def test_unrelated_duplicate_group_is_not_reported_for_a_diff_scoped_run(
+        self, tmp_path: Path
+    ) -> None:
+        """A pre-existing duplicate between two files outside this run must be silent."""
+        file_a = tmp_path / "file_a.py"
+        file_b = tmp_path / "file_b.py"
+        content_ab = f"def handler():\n{_DUPLICATE_BODY}\n"
+        file_a.write_text(content_ab)
+        file_b.write_text(content_ab)
+
+        unrelated_body = "\n".join(f"    other_{i} = fetch({i})" for i in range(6))
+        file_c = tmp_path / "file_c.py"
+        file_d = tmp_path / "file_d.py"
+        content_cd = f"def handler():\n{unrelated_body}\n"
+        file_c.write_text(content_cd)
+        file_d.write_text(content_cd)
+
+        first_run = _run(tmp_path, [file_a, file_b, file_c, file_d])
+        assert len(first_run) == 8, "sanity check: first run must index both duplicate groups"
+
+        # Diff-scoped run touches only file_a. The file_a/file_b group must still be
+        # reported (file_a is in scope), but the entirely-untouched file_c/file_d group
+        # must not be - neither side of it was part of this invocation.
+        second_run = _run(tmp_path, [file_a])
+
+        assert all("file_c.py" not in v.message for v in second_run)
+        assert all("file_d.py" not in v.message for v in second_run)
+        assert all(v.file_path not in (str(file_c), str(file_d)) for v in second_run)
+        assert len(second_run) == 4
+        assert all("file_b.py" in v.message or "file_a.py" in v.message for v in second_run)
+
+
 class TestDeletedMatchedFileIsPurged:
     """A matched file deleted from disk since indexing must not produce phantom violations."""
 

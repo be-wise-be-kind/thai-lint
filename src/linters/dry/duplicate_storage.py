@@ -14,7 +14,7 @@ Exports: DuplicateStorage class
 
 Interfaces: DuplicateStorage.upsert_file(file_path, content_hash, blocks), needs_rescan(file_path,
     content_hash), purge_file(file_path), duplicate_hashes property,
-    get_blocks_for_hash(hash_value), get_blocks_for_hashes(hash_values)
+    get_blocks_for_hash(hash_value), get_blocks_for_hashes(hash_values), all_file_paths property
 
 Implementation: Delegates to SQLite cache for all storage operations
 """
@@ -99,3 +99,12 @@ class DuplicateStorage:
             Mapping of hash_value to its list of code blocks
         """
         return self._cache.find_duplicates_by_hashes(hash_values)
+
+    @property
+    def all_file_paths(self) -> set[str]:
+        """Every file path currently indexed.
+
+        Returns:
+            Set of all file_path strings currently in storage
+        """
+        return self._cache.all_file_paths
