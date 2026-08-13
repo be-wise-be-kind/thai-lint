@@ -27,6 +27,10 @@ from src.analyzers.rust_base import RustBaseAnalyzer
 
 from .config import SRPConfig
 
+# Tree-sitter Rust grammar node types this analyzer walks the AST for.
+_NODE_TYPE_STRUCT_ITEM = "struct_item"
+_NODE_TYPE_IMPL_ITEM = "impl_item"
+
 
 class RustSRPAnalyzer(RustBaseAnalyzer):
     """Analyzes Rust structs and impl blocks for SRP violations."""
@@ -40,7 +44,7 @@ class RustSRPAnalyzer(RustBaseAnalyzer):
         Returns:
             List of all struct_item nodes
         """
-        return self.walk_tree(root_node, "struct_item")
+        return self.walk_tree(root_node, _NODE_TYPE_STRUCT_ITEM)
 
     def find_all_impl_blocks(self, root_node: Any) -> list[Any]:
         """Find all impl blocks in Rust AST.
@@ -51,7 +55,7 @@ class RustSRPAnalyzer(RustBaseAnalyzer):
         Returns:
             List of all impl_item nodes
         """
-        return self.walk_tree(root_node, "impl_item")
+        return self.walk_tree(root_node, _NODE_TYPE_IMPL_ITEM)
 
     def get_impl_target_name(self, impl_node: Any) -> str:
         """Extract the type name that an impl block targets.

@@ -27,6 +27,9 @@ from src.analyzers.typescript_base import TREE_SITTER_AVAILABLE, TypeScriptBaseA
 
 from .python_analyzer import FileImports
 
+# Tree-sitter TypeScript grammar node type this analyzer walks the AST for.
+_NODE_TYPE_IMPORT_STATEMENT = "import_statement"
+
 
 @dataclass
 class TSNodeAdapter:
@@ -80,7 +83,7 @@ class TypeScriptDemeterAnalyzer(TypeScriptBaseAnalyzer):
             return FileImports()
 
         imports = FileImports()
-        for node in self.walk_tree(root, "import_statement"):
+        for node in self.walk_tree(root, _NODE_TYPE_IMPORT_STATEMENT):
             _process_import_statement(self, node, imports)
         return imports
 

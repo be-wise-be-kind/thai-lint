@@ -25,7 +25,7 @@ from typing import Any
 from src.core.base import BaseLintContext, MultiLanguageLintRule
 from src.core.linter_utils import load_linter_config, with_parsed_python
 from src.core.types import Violation
-from src.linter_config.ignore import get_ignore_parser
+from src.linter_config.ignore import get_ignore_parser, should_ignore_violation_for_context
 
 from .config import PerformanceConfig
 from .python_analyzer import PythonStringConcatAnalyzer
@@ -132,18 +132,6 @@ class StringConcatLoopRule(MultiLanguageLintRule):
                 loop_type=v.loop_type,
                 context=context,
             )
-            if not self._should_ignore(violation, context):
+            if not should_ignore_violation_for_context(self._ignore_parser, violation, context):
                 violations.append(violation)
         return violations
-
-    def _should_ignore(self, violation: Violation, context: BaseLintContext) -> bool:
-        """Check if violation should be ignored based on inline directives.
-
-        Args:
-            violation: Violation to check
-            context: Lint context with file content
-
-        Returns:
-            True if violation should be ignored
-        """
-        return self._ignore_parser.should_ignore_violation(violation, context.file_content or "")

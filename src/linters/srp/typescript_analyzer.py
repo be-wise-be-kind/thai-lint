@@ -26,6 +26,9 @@ from src.analyzers.typescript_base import TypeScriptBaseAnalyzer
 from .config import SRPConfig
 from .typescript_metrics_calculator import TypeScriptMetricsCalculator
 
+# Tree-sitter TypeScript grammar node type this analyzer walks the AST for.
+_NODE_TYPE_CLASS_DECLARATION = "class_declaration"
+
 
 class TypeScriptSRPAnalyzer(TypeScriptBaseAnalyzer):
     """Analyzes TypeScript classes for SRP violations."""
@@ -44,7 +47,7 @@ class TypeScriptSRPAnalyzer(TypeScriptBaseAnalyzer):
         Returns:
             List of all class declaration nodes
         """
-        return self.walk_tree(root_node, "class_declaration")
+        return self.walk_tree(root_node, _NODE_TYPE_CLASS_DECLARATION)
 
     def analyze_class(self, class_node: Any, source: str, config: SRPConfig) -> dict[str, Any]:
         """Analyze a TypeScript class for SRP metrics.

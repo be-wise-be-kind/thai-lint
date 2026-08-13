@@ -26,7 +26,7 @@ from typing import Any
 import yaml
 
 from src.core.config_parser import ConfigParseError, parse_config_file
-from src.core.constants import CONFIG_EXTENSIONS
+from src.core.constants import CONFIG_EXTENSIONS, JSON_EXTENSION
 
 logger = logging.getLogger(__name__)
 
@@ -173,7 +173,7 @@ def _write_config_file(config: dict[str, Any], path: Path) -> None:
     """Write config to file based on extension."""
     if path.suffix in CONFIG_EXTENSIONS:
         _write_yaml_config(config, path)
-    elif path.suffix == ".json":
+    elif path.suffix == JSON_EXTENSION:
         _write_json_config(config, path)
     else:
         raise ConfigError(f"Unsupported config format: {path.suffix}")

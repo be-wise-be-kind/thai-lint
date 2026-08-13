@@ -37,6 +37,8 @@ logger = logging.getLogger(__name__)
 
 Extractor = Callable[[str, str], list[ExtractedVersion]]
 
+_TERRAFORM_EXTENSION = ".tf"
+
 # Directories to always skip
 _SKIP_DIRS = {
     ".git",
@@ -190,7 +192,7 @@ def _get_extractor(path: Path) -> Extractor | None:
     if extractor:
         return extractor
 
-    if path.suffix == ".tf":
+    if path.suffix == _TERRAFORM_EXTENSION:
         return extract_from_terraform
 
     if _is_github_actions_workflow(path):
