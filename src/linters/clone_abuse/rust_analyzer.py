@@ -32,6 +32,7 @@ if TYPE_CHECKING:
     from tree_sitter import Node
 
 _LOOP_NODE_TYPES = frozenset({"for_expression", "while_expression", "loop_expression"})
+_METHOD_NAME_CLONE = "clone"
 
 
 @dataclass
@@ -78,7 +79,7 @@ class RustCloneAnalyzer(RustBaseAnalyzer):
         """
         if node.type == "call_expression":
             method_name = self._get_method_name(node)
-            if method_name == "clone":
+            if method_name == _METHOD_NAME_CLONE:
                 pattern = self._classify_clone(node, code)
                 if pattern is not None:
                     calls.append(

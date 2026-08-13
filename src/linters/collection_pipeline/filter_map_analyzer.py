@@ -23,6 +23,8 @@ from dataclasses import dataclass
 
 from . import ast_utils
 
+_METHOD_NAME_APPEND = "append"
+
 
 @dataclass
 class FilterMapMatch:
@@ -372,7 +374,7 @@ def _is_append_call(stmt: ast.stmt, result_var: str, appended_var: str) -> bool:
     if info is None:
         return False
     obj_name, method_name, args = info
-    if obj_name != result_var or method_name != "append":
+    if obj_name != result_var or method_name != _METHOD_NAME_APPEND:
         return False
     return _is_single_name_arg(args, appended_var)
 

@@ -20,6 +20,8 @@ Implementation: Tree-sitter node type matching, AST position arithmetic
 
 from typing import Any
 
+_METHOD_NAME_CONSTRUCTOR = "constructor"
+
 
 def count_methods(class_node: Any) -> int:
     """Count number of methods in a TypeScript class.
@@ -89,7 +91,7 @@ def _is_countable_method(node: Any) -> bool:
     method_name = _get_method_name(node)
 
     # Don't count constructors
-    if method_name == "constructor":
+    if method_name == _METHOD_NAME_CONSTRUCTOR:
         return False
 
     # Don't count private methods (underscore prefix convention)

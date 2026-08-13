@@ -25,7 +25,7 @@ from src.analyzers.rust_base import TREE_SITTER_RUST_AVAILABLE
 from src.core.base import BaseLintContext, MultiLanguageLintRule
 from src.core.linter_utils import load_linter_config, with_parsed_python
 from src.core.types import Violation
-from src.linter_config.ignore import get_ignore_parser
+from src.linter_config.ignore import get_ignore_parser, should_ignore_violation_for_context
 
 from .config import NestingConfig
 from .python_analyzer import PythonNestingAnalyzer
@@ -95,7 +95,7 @@ class NestingDepthRule(MultiLanguageLintRule):
             violation = self._violation_builder.create_nesting_violation(
                 func, max_depth, config, context
             )
-            if not self._should_ignore(violation, context):
+            if not should_ignore_violation_for_context(self._ignore_parser, violation, context):
                 violations.append(violation)
         return violations
 
@@ -145,7 +145,7 @@ class NestingDepthRule(MultiLanguageLintRule):
             violation = self._violation_builder.create_typescript_nesting_violation(
                 (func_node, func_name), max_depth, config, context
             )
-            if not self._should_ignore(violation, context):
+            if not should_ignore_violation_for_context(self._ignore_parser, violation, context):
                 violations.append(violation)
         return violations
 
@@ -210,19 +210,6 @@ class NestingDepthRule(MultiLanguageLintRule):
             violation = self._violation_builder.create_rust_nesting_violation(
                 (func_node, func_name), max_depth, config, context
             )
-            # dry: ignore-block - Standard linter pattern (check-ignore-append)
-            if not self._should_ignore(violation, context):
+            if not should_ignore_violation_for_context(self._ignore_parser, violation, context):
                 violations.append(violation)
         return violations
-
-    def _should_ignore(self, violation: Violation, context: BaseLintContext) -> bool:
-        """Check if violation should be ignored based on inline directives.
-
-        Args:
-            violation: Violation to check
-            context: Lint context with file content
-
-        Returns:
-            True if violation should be ignored
-        """
-        return self._ignore_parser.should_ignore_violation(violation, context.file_content or "")
