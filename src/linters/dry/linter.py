@@ -32,12 +32,14 @@ from __future__ import annotations
 from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Any
 
 from src.core.base import BaseLintContext, BaseLintRule
 from src.core.linter_utils import should_process_file
 from src.core.types import Violation
 from src.linter_config.ignore import IgnoreDirectiveParser
 
+from .cache import DRYCache
 from .config import DRYConfig
 from .config_loader import ConfigLoader
 from .constant import ConstantInfo
@@ -147,7 +149,7 @@ class DRYRule(BaseLintRule):  # pylint: disable=too-many-instance-attributes
             self._project_root = self._get_project_root(context)
 
         self._helpers.inline_ignore.parse_file(file_path, context.file_content)
-        self._ensure_storage_initialized(context, config)
+        self._ensure_storage_initialized(config)
         self._analyze_if_not_ignored(context, config, file_path)
         if config.detect_duplicate_constants:
             self._extract_and_store_constants(context)
@@ -171,10 +173,10 @@ class DRYRule(BaseLintRule):  # pylint: disable=too-many-instance-attributes
         path_str = str(Path(file_path))
         return any(pattern in path_str for pattern in ignore_patterns)
 
-    def _ensure_storage_initialized(self, context: BaseLintContext, config: DRYConfig) -> None:
+    def _ensure_storage_initialized(self, config: DRYConfig) -> None:
         """Initialize storage and file analyzer on first call."""
         if not self._initialized:
-            self._storage = self._helpers.storage_initializer.initialize(context, config)
+            self._storage = self._helpers.storage_initializer.initialize(config)
             # Create file analyzer with config for filter configuration
             self._file_analyzer = FileAnalyzer(config)
             self._initialized = True
@@ -265,6 +267,34 @@ class DRYRule(BaseLintRule):  # pylint: disable=too-many-instance-attributes
         self._constants = []
         self._file_contents = {}
         return violations
+
+    def get_parallel_shared_config(self, shared_dir: Path) -> dict[str, Any] | None:
+        """Force a shared, on-disk store for the duration of one --parallel run.
+
+        In-memory SQLite (":memory:") is fundamentally per-process/per-connection and can
+        never be shared across worker processes, so parallel execution must use a real
+        file on disk regardless of the configured storage_mode.
+        """
+        db_path = shared_dir / "dry_parallel.db"
+        # Pre-create the file, schema, and WAL mode here in the main process (a single
+        # connection, no contention) so worker processes never race each other to
+        # initialize the same brand-new on-disk file - concurrent first-connections
+        # attempting CREATE TABLE/PRAGMA journal_mode=WAL on the same not-yet-existing
+        # file can raise "database is locked" even under a busy_timeout.
+        DRYCache(storage_mode="tempfile", db_path=db_path).close()
+        return {"dry": {"storage_mode": "tempfile", "shared_db_path": str(db_path)}}
+
+    def finalize_after_parallel(self, raw_config: dict[str, Any]) -> list[Violation]:
+        """Reconnect to the shared store workers wrote to, then finalize normally.
+
+        check() never ran on this instance under --parallel (every file was processed by
+        an isolated worker process); this points this instance at the same on-disk store
+        those workers wrote to before delegating to the normal finalize() logic.
+        """
+        dry_config = raw_config.get("dry", {})
+        self._config = self._config or DRYConfig.from_dict(dry_config)
+        self._ensure_storage_initialized(self._config)
+        return self.finalize()
 
 
 ConstantExtractorFn = Callable[[str], list[ConstantInfo]]

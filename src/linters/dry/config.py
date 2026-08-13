@@ -54,6 +54,10 @@ class DRYConfig:  # pylint: disable=too-many-instance-attributes
 
     # Storage settings
     storage_mode: str = "memory"  # Options: "memory" (default) or "tempfile"
+    # Set by the orchestrator (not user-facing) when running under --parallel: an
+    # explicit on-disk path every worker process and the main process connect to,
+    # since ":memory:" storage is fundamentally per-process and can't be shared.
+    shared_db_path: str | None = None
 
     # Ignore patterns
     ignore_patterns: list[str] = field(default_factory=lambda: ["tests/", "__init__.py"])
@@ -166,6 +170,7 @@ class DRYConfig:  # pylint: disable=too-many-instance-attributes
             typescript_min_occurrences=typescript_config.get("min_occurrences"),
             javascript_min_occurrences=javascript_config.get("min_occurrences"),
             storage_mode=config.get("storage_mode", "memory"),
+            shared_db_path=config.get("shared_db_path"),
             ignore_patterns=config.get("ignore", []),
             filters=filters,
             detect_duplicate_constants=config.get(

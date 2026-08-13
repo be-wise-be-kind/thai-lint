@@ -6,24 +6,52 @@ Scope: Code normalization, comment stripping, and hash window generation
 Overview: Implements token-based hashing algorithm (Rabin-Karp) for detecting code duplicates.
     Normalizes source code by stripping comments and whitespace, then generates rolling hash
     windows over consecutive lines. Each window represents a potential duplicate code block.
-    Uses Python's built-in hash function for simplicity and performance. Supports both Python
-    and JavaScript/TypeScript comment styles.
+    Uses a stable content hash (blake2b) rather than Python's built-in hash(), whose per-process
+    random seed (PYTHONHASHSEED) would otherwise make the same block hash differently in every
+    new process - fine for a single run, but fatal for any cache read back across process
+    invocations. Supports both Python and JavaScript/TypeScript comment styles.
 
-Dependencies: Python built-in hash function
+Dependencies: hashlib (stdlib)
 
-Exports: tokenize, rolling_hash, normalize_line, should_skip_import_line functions
+Exports: tokenize, rolling_hash, stable_hash, normalize_line, should_skip_import_line functions
 
 Interfaces: tokenize(code: str) -> list[str],
     rolling_hash(lines: list[str], window_size: int) -> list[tuple],
+    stable_hash(snippet: str) -> int,
     normalize_line(line: str) -> str,
     should_skip_import_line(line: str, in_multiline_import: bool) -> tuple
 
 Implementation: Token-based normalization with rolling window algorithm, language-agnostic approach
 """
 
+import hashlib
+
 # Pre-compiled import token set for O(1) membership test
 _IMPORT_TOKENS: frozenset[str] = frozenset(("{", "}", "} from"))
 _IMPORT_PREFIXES: tuple[str, ...] = ("import ", "from ", "export ")
+
+# Digest size for stable_hash: 8 bytes -> fits a signed 64-bit int, matching the range
+# hash() previously produced.
+_STABLE_HASH_DIGEST_SIZE = 8
+
+
+def stable_hash(snippet: str) -> int:
+    """Compute a hash for a code snippet that is stable across process boundaries.
+
+    Python's built-in hash() salts str hashing with a per-process random seed
+    (PYTHONHASHSEED) by default, so the same string gets a different hash in every new
+    process. blake2b has no such salt, so the same snippet always hashes identically
+    regardless of which process, machine, or run computed it - required for any
+    duplicate index that persists across separate CLI invocations.
+
+    Args:
+        snippet: Code snippet to hash
+
+    Returns:
+        Deterministic signed integer hash of the snippet
+    """
+    digest = hashlib.blake2b(snippet.encode("utf-8"), digest_size=_STABLE_HASH_DIGEST_SIZE).digest()
+    return int.from_bytes(digest, byteorder="big", signed=True)
 
 
 def tokenize(code: str) -> list[str]:
@@ -162,7 +190,7 @@ def rolling_hash(lines: list[str], window_size: int) -> list[tuple[int, int, int
     for i in range(len(lines) - window_size + 1):
         window = lines[i : i + window_size]
         snippet = "\n".join(window)
-        hash_val = hash(snippet)
+        hash_val = stable_hash(snippet)
 
         # Line numbers are 1-indexed
         start_line = i + 1

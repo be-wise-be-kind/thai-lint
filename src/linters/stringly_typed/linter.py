@@ -31,6 +31,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Any
 
 from src.core.base import BaseLintContext, MultiLanguageLintRule
 from src.core.linter_utils import load_linter_config
@@ -209,7 +210,7 @@ class StringlyTypedRule(MultiLanguageLintRule):  # thailint: ignore[srp]
         Returns:
             Empty list (violations generated in finalize)
         """
-        self._ensure_storage_initialized(context, config)
+        self._ensure_storage_initialized(config)
         self._analyze_python_file(context, config)
         return []
 
@@ -225,7 +226,7 @@ class StringlyTypedRule(MultiLanguageLintRule):  # thailint: ignore[srp]
         Returns:
             Empty list (violations generated in finalize)
         """
-        self._ensure_storage_initialized(context, config)
+        self._ensure_storage_initialized(config)
         self._analyze_typescript_file(context, config)
         return []
 
@@ -268,17 +269,14 @@ class StringlyTypedRule(MultiLanguageLintRule):  # thailint: ignore[srp]
         stored_comparisons = [_convert_to_stored_comparison(r) for r in comparison_results]
         self._active_storage.add_comparisons(stored_comparisons)
 
-    def _ensure_storage_initialized(
-        self, context: BaseLintContext, config: StringlyTypedConfig
-    ) -> None:
+    def _ensure_storage_initialized(self, config: StringlyTypedConfig) -> None:
         """Initialize storage and analyzers on first call.
 
         Args:
-            context: Lint context
             config: Stringly-typed configuration
         """
         if not self._initialized:
-            self._storage = self._helpers.storage_initializer.initialize(context, config)
+            self._storage = self._helpers.storage_initializer.initialize(config)
             self._config = config
             self._initialized = True
 
@@ -374,3 +372,31 @@ class StringlyTypedRule(MultiLanguageLintRule):  # thailint: ignore[srp]
         self._initialized = False
 
         return violations
+
+    def get_parallel_shared_config(self, shared_dir: Path) -> dict[str, Any] | None:
+        """Force a shared, on-disk store for the duration of one --parallel run.
+
+        In-memory SQLite (":memory:") is fundamentally per-process/per-connection and can
+        never be shared across worker processes, so parallel execution must use a real
+        file on disk regardless of the configured storage_mode.
+        """
+        db_path = shared_dir / "stringly_typed_parallel.db"
+        # Pre-create the file, schema, and WAL mode here in the main process (a single
+        # connection, no contention) so worker processes never race each other to
+        # initialize the same brand-new on-disk file - concurrent first-connections
+        # attempting CREATE TABLE/PRAGMA journal_mode=WAL on the same not-yet-existing
+        # file can raise "database is locked" even under a busy_timeout.
+        StringlyTypedStorage(storage_mode="tempfile", db_path=db_path).close()
+        return {"stringly_typed": {"storage_mode": "tempfile", "shared_db_path": str(db_path)}}
+
+    def finalize_after_parallel(self, raw_config: dict[str, Any]) -> list[Violation]:
+        """Reconnect to the shared store workers wrote to, then finalize normally.
+
+        check() never ran on this instance under --parallel (every file was processed by
+        an isolated worker process); this points this instance at the same on-disk store
+        those workers wrote to before delegating to the normal finalize() logic.
+        """
+        st_config = raw_config.get("stringly_typed", {})
+        self._config = self._config or StringlyTypedConfig.from_dict(st_config)
+        self._ensure_storage_initialized(self._config)
+        return self.finalize()

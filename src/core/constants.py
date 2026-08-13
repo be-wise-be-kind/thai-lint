@@ -10,7 +10,7 @@ Overview: Provides type-safe enums and constants for consistent stringly-typed p
 
 Dependencies: enum module
 
-Exports: Language enum, StorageMode enum, CONFIG_EXTENSIONS, IgnoreDirective enum,
+Exports: Language enum, StorageMode enum, CONFIG_EXTENSIONS, JSON_EXTENSION, IgnoreDirective enum,
     HEADER_SCAN_LINES, MAX_ATTRIBUTE_CHAIN_DEPTH
 
 Interfaces: Use enum values instead of string literals throughout codebase
@@ -48,6 +48,9 @@ class IgnoreDirective(str, Enum):
 
 # Valid config file extensions
 CONFIG_EXTENSIONS: tuple[str, str] = (".yaml", ".yml")
+
+# JSON config file extension (checked alongside CONFIG_EXTENSIONS for YAML)
+JSON_EXTENSION: str = ".json"
 
 # Number of lines to scan at file start for ignore directives and headers
 HEADER_SCAN_LINES: int = 10

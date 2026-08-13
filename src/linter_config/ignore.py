@@ -14,10 +14,12 @@ Overview: Implements a sophisticated ignore directive system that allows develop
 
 Dependencies: pathlib, yaml, rule_matcher module, directive_markers module, pattern_utils module
 
-Exports: IgnoreDirectiveParser class, get_ignore_parser, clear_ignore_parser_cache
+Exports: IgnoreDirectiveParser class, get_ignore_parser, clear_ignore_parser_cache,
+    should_ignore_violation_for_context
 
 Interfaces: is_ignored(file_path) -> bool, has_file_ignore(file_path, rule_id) -> bool,
-    has_line_ignore(code, line_num, rule_id) -> bool, should_ignore_violation(violation, content) -> bool
+    has_line_ignore(code, line_num, rule_id) -> bool, should_ignore_violation(violation, content) -> bool,
+    should_ignore_violation_for_context(ignore_parser, violation, context) -> bool
 
 Implementation: Modular design with extracted pure functions for pattern matching and marker detection
 
@@ -50,6 +52,7 @@ from src.linter_config.rule_matcher import (
 )
 
 if TYPE_CHECKING:
+    from src.core.base import BaseLintContext
     from src.core.types import Violation
 
 logger = logging.getLogger(__name__)
@@ -408,3 +411,23 @@ def clear_ignore_parser_cache() -> None:
     global _CACHED_PARSER, _CACHED_PROJECT_ROOT  # pylint: disable=global-statement
     _CACHED_PARSER = None
     _CACHED_PROJECT_ROOT = None
+
+
+def should_ignore_violation_for_context(
+    ignore_parser: IgnoreDirectiveParser, violation: "Violation", context: "BaseLintContext"
+) -> bool:
+    """Check if a violation should be ignored, using a lint context's file content.
+
+    Shared by the check-ignore-append pattern every architectural linter's rule class
+    follows: analyze, build a violation, check it against ignore directives, append it
+    if not ignored.
+
+    Args:
+        ignore_parser: Parser to check inline/file/directory ignore directives against
+        violation: Violation to check
+        context: Lint context providing file content (falls back to "" if None)
+
+    Returns:
+        True if violation should be ignored
+    """
+    return ignore_parser.should_ignore_violation(violation, context.file_content or "")
