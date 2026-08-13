@@ -94,3 +94,4 @@ nav:
       - Publishing Checklist: publishing-checklist.md
   - Advanced:
       - AI Documentation Standard: ai-doc-standard.md
+      - DRY Persistent Cache Deep Dive: dry-persistent-cache.md

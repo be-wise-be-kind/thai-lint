@@ -55,6 +55,9 @@ documentation:
       - path: docs/ai-doc-standard.md
         description: AI-optimized documentation header standard for LLM-assisted development workflows
         tags: [documentation, standards, ai, headers, llm]
+      - path: docs/dry-persistent-cache.md
+        description: DRY linter's on-disk cross-run duplicate index - schema, freshness/reconciliation algorithm, concurrency (WAL/synchronous), and the #35 regression it fixes
+        tags: [dry, cache, sqlite, architecture, persistence, performance]
       - path: docs/cli-reference.md
         description: Complete CLI command reference
       - path: docs/configuration.md

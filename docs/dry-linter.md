@@ -221,6 +221,10 @@ changed since it was last indexed, it's transparently rescanned; if it's been de
 entries are purged. `.thailint-cache/` should be added to `.gitignore` (already the default in
 this repo's own config).
 
+For the schema, the freshness/reconciliation algorithm, the historical bug this design avoids
+repeating, and real-world benchmark numbers, see
+**[DRY Persistent Cache: Implementation Deep Dive](dry-persistent-cache.md)**.
+
 **Pre-commit example**, reusing the changed-file list a hook already computes:
 
 ```bash
@@ -238,6 +242,14 @@ thailint dry --no-cache .
 
 # Delete .thailint-cache/dry.db (and its WAL/SHM files) before running
 thailint dry --clear-cache .
+```
+
+**Rebuilding the index from scratch**: there's no separate "rebuild" command — `--clear-cache`
+deletes the existing file, and `dry`'s path argument defaults to `.` with recursion on, so
+running `--clear-cache` with no path arguments deletes and fully rebuilds the index in one step:
+
+```bash
+thailint dry --clear-cache --config .thailint.yaml .
 ```
 
 ### False Positive Filters
