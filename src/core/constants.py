@@ -37,6 +37,7 @@ class StorageMode(str, Enum):
 
     MEMORY = "memory"
     TEMPFILE = "tempfile"
+    PERSISTENT = "persistent"
 
 
 class IgnoreDirective(str, Enum):

@@ -53,7 +53,7 @@ class DRYConfig:  # pylint: disable=too-many-instance-attributes
     javascript_min_occurrences: int | None = None
 
     # Storage settings
-    storage_mode: str = "memory"  # Options: "memory" (default) or "tempfile"
+    storage_mode: str = "memory"  # Options: "memory" (default), "tempfile", or "persistent"
     # Set by the orchestrator (not user-facing) when running under --parallel: an
     # explicit on-disk path every worker process and the main process connect to,
     # since ":memory:" storage is fundamentally per-process and can't be shared.
@@ -81,10 +81,11 @@ class DRYConfig:  # pylint: disable=too-many-instance-attributes
     def __post_init__(self) -> None:
         """Validate configuration values."""
         self._validate_positive_fields()
-        valid_modes = (StorageMode.MEMORY, StorageMode.TEMPFILE)
+        valid_modes = (StorageMode.MEMORY, StorageMode.TEMPFILE, StorageMode.PERSISTENT)
         if self.storage_mode not in valid_modes:
             raise ValueError(
-                f"storage_mode must be 'memory' or 'tempfile', got '{self.storage_mode}'"
+                f"storage_mode must be 'memory', 'tempfile', or 'persistent', "
+                f"got '{self.storage_mode}'"
             )
 
     def _validate_positive_fields(self) -> None:

@@ -53,6 +53,9 @@ dmypy.json
 # Linting
 .ruff_cache/
 
+# DRY linter persistent cache (storage_mode: persistent)
+.thailint-cache/
+
 # IDEs
 .vscode/
 .idea/
