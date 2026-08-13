@@ -22,7 +22,7 @@ Exports: CodeBlock dataclass, DRYCache class
 Interfaces: DRYCache.__init__(storage_mode, db_path), upsert_file(file_path, content_hash,
     blocks), needs_rescan(file_path, content_hash), purge_file(file_path),
     find_duplicates_by_hash(hash_value), find_duplicates_by_hashes(hash_values),
-    duplicate_hashes, close()
+    duplicate_hashes, all_file_paths, close()
 
 Implementation: SQLite with three tables (files, code_blocks, schema_meta), indexed for
     performance, storage_mode determines :memory:/tempfile/persistent location, ACID transactions
@@ -284,6 +284,20 @@ class DRYCache:
             List of hash values with 2 or more occurrences
         """
         return self._query_service.get_duplicate_hashes(self.db)
+
+    @property
+    def all_file_paths(self) -> set[str]:
+        """Every file path currently indexed.
+
+        Used by --parallel's finalize_after_parallel to treat the whole shared store as
+        "in scope" for report filtering: that store is a fresh, per-run file (see
+        DRYRule.get_parallel_shared_config), so every row in it belongs to this one run.
+
+        Returns:
+            Set of all file_path strings in the files table
+        """
+        cursor = self.db.execute("SELECT file_path FROM files")
+        return {row[0] for row in cursor.fetchall()}
 
     def close(self) -> None:
         """Close database connection and cleanup tempfile if used."""

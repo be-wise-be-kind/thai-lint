@@ -158,17 +158,17 @@ Two properties matter here:
 that reaches `check()` - which is why `self._processed_files` (a `set[str]` of everything
 upserted this run) exists: it's the input to freshness verification below.
 
-## The Read Path: Cross-Run Matching Is Free
+## The Read Path: Finding Matches vs. Reporting Them
 
-This is the part that requires no special logic at all, which is the point. `finalize()`
-generates violations by querying `duplicate_hashes` (hash values appearing 2+ times across
-*all* rows currently in `code_blocks`) and then `get_blocks_for_hashes()` for the matching
-blocks - both queries scan the whole table, unconditionally. Because persistent mode doesn't
-wipe the table between runs, "the whole table" already includes every file indexed by every
-prior invocation, not just this run's files. A file passed to `check()` and a file sitting
-untouched in the index from three runs ago are indistinguishable to this query - which is
-exactly the property that makes diff-scoped invocation ("just lint the changed files") produce
-a complete answer instead of a partial one.
+Finding a match requires no special logic at all, which is the point. `finalize()` finds
+candidate duplicate groups by querying `duplicate_hashes` (hash values appearing 2+ times
+across *all* rows currently in `code_blocks`) and then `get_blocks_for_hashes()` for the
+matching blocks - both queries scan the whole table, unconditionally. Because persistent mode
+doesn't wipe the table between runs, "the whole table" already includes every file indexed by
+every prior invocation, not just this run's files. A file passed to `check()` and a file
+sitting untouched in the index from three runs ago are indistinguishable to this query - which
+is exactly the property that makes diff-scoped invocation ("just lint the changed files")
+capable of a complete answer instead of a partial one.
 
 ```python
 def find_duplicates_by_hashes(self, hash_values: list[int]) -> dict[int, list[CodeBlock]]:
@@ -181,11 +181,33 @@ hash group in a single round trip, rather than one query per group (`ViolationGe
 previously called `get_blocks_for_hash()` once per entry in `duplicate_hashes`, an N+1 pattern
 that dominated query time on large duplicate sets independent of persistence).
 
-**Consequence worth knowing**: because both sides of a match are always reported, a diff-scoped
-run over 3 changed files can emit violations attributed to files *outside* that list - files
-the persisted index already knew duplicated something in one of the 3. This is intentional and
-matches what a full-tree scan would have reported; it is not a bug if a run's output mentions a
-path you didn't pass in.
+**Reporting is scoped to the invocation; finding is not.** An earlier version of this design
+reported every group found this way unconditionally - correct for "does this changed file
+duplicate anything, anywhere," but on a codebase with a substantial pre-existing backlog
+(exactly the kind of codebase persistence is for), it meant *every* invocation reprinted the
+*entire* backlog regardless of which few files were actually passed in, since the backlog
+already satisfied "found by the whole-table query." That defeated the point of a diff-scoped
+invocation in practice, even though the underlying analysis really was fast
+([issue #238](https://github.com/be-wise-be-kind/thai-lint/issues/238), filed against 0.21.0).
+The fix keeps the whole-table *query* (still needed to find a match against an unchanged file)
+but filters at report time: `ViolationGenerator._touches_invocation()` drops a duplicate group
+entirely unless at least one of its occurrences is a file this invocation actually processed
+(`DRYRule._processed_files`, populated by `check()`).
+
+```python
+def _touches_invocation(self, blocks: list, processed_files: set[str]) -> bool:
+    return any(str(block.file_path) in processed_files for block in blocks)
+```
+
+A group with *any* occurrence in scope is still reported in full - including the side outside
+the invocation's file list, which is the correct, desired "matches an unchanged file" behavior.
+Only a group where *every* occurrence is outside the invocation is dropped. For a full-tree
+scan, every file is "processed," so this filter is a no-op - the behavior change is specific to
+diff-scoped invocations. `--parallel` needs one extra step: the main process's own `DRYRule`
+instance never ran `check()` (workers did), so its `_processed_files` is empty;
+`finalize_after_parallel` populates it from `DuplicateStorage.all_file_paths` instead - safe
+because that shared store is a fresh, per-run file (see [`--parallel` Mode](#-parallel-mode)
+below), so every row in it legitimately belongs to this one invocation.
 
 ## Freshness Verification and Reconciliation
 
@@ -445,6 +467,12 @@ The middle row is a real diff from real commit history, not a constructed fixtur
 was checked by inspecting the actual violation output for matches against files genuinely
 absent from the 13-file list (e.g. a duplicated helper in `service/serv_samples.py` correctly
 reported against `service/serv_accessioning_type.py`, which was nowhere in the invocation).
+
+These numbers predate the report-scoping fix ([issue #238](https://github.com/be-wise-be-kind/thai-lint/issues/238)),
+which only changes *how many* groups get reported, not analysis time - the timings above are
+still representative, but the violation counts a diff-scoped run of this shape would print
+today are lower, filtered to groups touching the 13-file list rather than the whole persisted
+backlog.
 
 The last row is the unambiguous version of that same claim: a unique, synthetic 4-line block was
 written to a new file and indexed as if it already existed at `HEAD`; the identical block was
