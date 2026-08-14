@@ -2,8 +2,8 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
-[![PyPI](https://img.shields.io/badge/pypi-v0.21.1-orange)](https://pypi.org/project/thailint/)
-[![Tests](https://img.shields.io/badge/tests-2508%2F2508%20passing-brightgreen.svg)](https://github.com/be-wise-be-kind/thai-lint/actions)
+[![PyPI](https://img.shields.io/badge/pypi-v0.21.2-orange)](https://pypi.org/project/thailint/)
+[![Tests](https://img.shields.io/badge/tests-2511%2F2511%20passing-brightgreen.svg)](https://github.com/be-wise-be-kind/thai-lint/actions)
 [![Coverage](https://img.shields.io/badge/coverage-92%25-brightgreen.svg)](https://github.com/be-wise-be-kind/thai-lint)
 [![Documentation](https://readthedocs.org/projects/thai-lint/badge/?version=latest)](https://thai-lint.readthedocs.io/)
 
