@@ -166,6 +166,33 @@ class Helper:
         assert len(violations_without) == 1
         assert len(violations_with) == 0
 
+    def test_ignore_pattern_matches_nested_file(self):
+        """Should ignore files nested two+ levels under a "dir/**" pattern.
+
+        Regression test for issue #243: Path.match() on Python < 3.13 treats "**" as a
+        single-segment wildcard (same as "*"), so "helpers/**" only matched files directly
+        inside helpers/ - a file one or more levels deeper was silently NOT ignored.
+        """
+        code = """
+class Helper:
+    def __init__(self):
+        self._value = 42
+
+    def get_value(self):
+        return self._value
+"""
+        from src.linters.method_property.linter import MethodPropertyRule
+
+        rule = MethodPropertyRule()
+        context = Mock()
+        context.file_path = Path("helpers/nested/utils.py")
+        context.file_content = code
+        context.language = "python"
+        context.config = {"method-property": {"ignore": ["helpers/**"]}}
+
+        violations = rule.check(context)
+        assert len(violations) == 0
+
     def test_disabled_linter(self):
         """Should not flag anything when disabled."""
         code = """

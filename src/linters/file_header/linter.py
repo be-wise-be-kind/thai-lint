@@ -38,6 +38,7 @@ from src.core.linter_utils import load_linter_config
 from src.core.types import Violation
 from src.linter_config.directive_markers import check_general_ignore, has_ignore_directive_marker
 from src.linter_config.ignore import _check_specific_rule_ignore, get_ignore_parser
+from src.linter_config.pattern_utils import matches_pattern
 
 from .atemporal_detector import AtemporalDetector
 from .bash_parser import BashHeaderParser
@@ -208,7 +209,7 @@ class FileHeaderRule(BaseLintRule):  # thailint: ignore[srp]
 
     def _matches_ignore_pattern(self, file_path: Path, pattern: str) -> bool:
         """Check if file path matches a single ignore pattern."""
-        if file_path.match(pattern):
+        if matches_pattern(str(file_path), pattern):
             return True
 
         if self._matches_directory_pattern(file_path, pattern):

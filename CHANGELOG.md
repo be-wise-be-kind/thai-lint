@@ -24,6 +24,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **Per-linter `ignore:` blocks silently failed to match nested paths** - `file-header` and 7 other linters (`method-property`, `magic-numbers`, `stateless-class`, `print-statements`, its `conditional-verbose` rule, and `collection-pipeline`) checked their own `ignore:` config against `pathlib.Path.match()`, which on Python < 3.13 treats `**` as a single-segment wildcard (same as `*`) ([#243](https://github.com/be-wise-be-kind/thai-lint/issues/243)). A pattern like `docs/**` only matched files directly inside `docs/` - anything one or more levels deeper was reported as a violation despite matching the configured ignore pattern. This is a distinct bug from #240, which fixed the orchestrator's directory-walk pruning but never touched these linter-specific ignore blocks
+  - Replaced every `Path.match(pattern)` call with the shared, already-correct `pattern_utils.matches_pattern()` used by the orchestrator's ignore parser
+  - `matches_pattern()` itself was rewritten to match path segments component-by-component instead of as one `fnmatch`'d string - the old whole-string approach let a `*` in the pattern's last segment cross directory boundaries, so e.g. `**/test_*.py` could match any `.py` file just because some unrelated ancestor directory happened to contain `test_` in its name
+
 ### Security
 
 - **Resolved 14 Dependabot alerts (11 high, 3 moderate)** across transitive and direct dev dependencies - no production code affected
