@@ -59,6 +59,43 @@ dist/
         # Should not ignore regular Python files
         assert not parser.is_ignored(tmp_path / "src" / "main.py")
 
+    def test_double_star_pattern_matches_at_repo_root(self, tmp_path):
+        """A "**/name/**" pattern must match name/ at the repo root, not just nested.
+
+        Regression test: fnmatch treats "**" like "*", which requires a literal "/"
+        immediately before "name" - a root-level "name/..." path has no such leading
+        "/", so this pattern silently failed to match anything at the root before the
+        fix (see issue #240).
+        """
+        (tmp_path / ".thailintignore").write_text("**/ignored_cache/**\n")
+
+        from src.linter_config.ignore import IgnoreDirectiveParser
+
+        parser = IgnoreDirectiveParser(tmp_path)
+
+        assert parser.is_ignored(tmp_path / "ignored_cache" / "sub" / "file.bin")
+        assert parser.is_ignored(tmp_path / "nested" / "ignored_cache" / "file.bin")
+        assert not parser.is_ignored(tmp_path / "src" / "main.py")
+
+    def test_is_dir_ignored_prunes_directories_matching_ignore_patterns(self, tmp_path):
+        """is_dir_ignored() must recognize a directory whose *contents* are ignored.
+
+        Patterns like "**/name/**" only describe files inside "name/", never "name/"
+        itself - but if everything inside would be ignored anyway, it's safe (and
+        required for issue #240's walk-pruning fix) to treat the directory itself as
+        prunable.
+        """
+        (tmp_path / ".thailintignore").write_text("**/ignored_cache/**\nbuild/\n")
+
+        from src.linter_config.ignore import IgnoreDirectiveParser
+
+        parser = IgnoreDirectiveParser(tmp_path)
+
+        assert parser.is_dir_ignored(tmp_path / "ignored_cache")
+        assert parser.is_dir_ignored(tmp_path / "nested" / "ignored_cache")
+        assert parser.is_dir_ignored(tmp_path / "build")
+        assert not parser.is_dir_ignored(tmp_path / "src")
+
 
 class TestFileLevelIgnore:
     """Test file-level ignores."""

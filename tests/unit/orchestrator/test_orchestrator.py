@@ -65,3 +65,41 @@ class TestOrchestrator:
         # Violations should not reference ignored file
         for v in violations:
             assert "test2.py" not in str(v.file_path)
+
+    def test_collect_files_fast_prunes_configured_ignore_directories(self, tmp_path, monkeypatch):
+        """Directory walk must prune configured ignore: dirs, not just filter them after.
+
+        Regression test for issue #240: previously _collect_files_fast only pruned a
+        hardcoded directory list during os.walk() and relied on a later per-file
+        is_ignored() check to filter out configured ignore: patterns - meaning a large
+        ignored directory was still fully enumerated on every run. This asserts the
+        walk itself never descends into the ignored directory, by counting os.walk()
+        calls against it directly.
+        """
+        (tmp_path / ".thailintignore").write_text("**/ignored_cache/**\n")
+        (tmp_path / "src").mkdir()
+        (tmp_path / "src" / "main.py").write_text("# kept\n")
+        ignored_dir = tmp_path / "ignored_cache" / "sub"
+        ignored_dir.mkdir(parents=True)
+        (ignored_dir / "file.bin").write_text("x")
+
+        import os
+
+        from src.linter_config.ignore import IgnoreDirectiveParser
+        from src.orchestrator.core import _collect_files_fast
+
+        visited_roots = []
+        real_walk = os.walk
+
+        def spying_walk(top, *args, **kwargs):
+            for root, dirs, files in real_walk(top, *args, **kwargs):
+                visited_roots.append(root)
+                yield root, dirs, files
+
+        monkeypatch.setattr(os, "walk", spying_walk)
+
+        ignore_parser = IgnoreDirectiveParser(tmp_path)
+        collected = _collect_files_fast(tmp_path, ignore_parser)
+
+        assert all("ignored_cache" not in str(p) for p in collected)
+        assert not any("ignored_cache" in root for root in visited_roots)

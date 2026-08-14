@@ -49,7 +49,7 @@ from typing import Any
 from src.core.base import BaseLintContext, BaseLintRule
 from src.core.registry import RuleRegistry
 from src.core.types import Violation
-from src.linter_config.ignore import get_ignore_parser
+from src.linter_config.ignore import IgnoreDirectiveParser, get_ignore_parser
 from src.linter_config.loader import LinterConfigLoader
 
 from .language_detector import detect_language
@@ -120,9 +120,11 @@ def _is_hardcoded_excluded(file_path: Path) -> bool:
     return False
 
 
-def _should_include_dir(dirname: str) -> bool:
-    """Check if directory should be traversed (not excluded)."""
-    return dirname not in _HARDCODED_EXCLUDE_DIRS and not dirname.endswith(".egg-info")
+def _should_include_dir(dirname: str, dir_path: Path, ignore_parser: IgnoreDirectiveParser) -> bool:
+    """Check if directory should be traversed (not hardcoded- or config-excluded)."""
+    if dirname in _HARDCODED_EXCLUDE_DIRS or dirname.endswith(".egg-info"):
+        return False
+    return not ignore_parser.is_dir_ignored(dir_path)
 
 
 def _collect_files_from_walk(root: str, filenames: list[str]) -> list[Path]:
@@ -131,22 +133,30 @@ def _collect_files_from_walk(root: str, filenames: list[str]) -> list[Path]:
     return [root_path / f for f in filenames if Path(f).suffix not in _HARDCODED_EXCLUDE_EXTENSIONS]
 
 
-def _collect_files_fast(dir_path: Path, recursive: bool = True) -> list[Path]:
+def _collect_files_fast(
+    dir_path: Path, ignore_parser: IgnoreDirectiveParser, recursive: bool = True
+) -> list[Path]:
     """Collect files, skipping excluded directories entirely.
 
     Uses os.walk() instead of glob to avoid traversing into excluded
-    directories like .venv, node_modules, __pycache__, etc.
+    directories like .venv, node_modules, __pycache__, etc., as well as
+    any directory matched by the project's configured `ignore:` patterns -
+    pruning those during the walk (rather than filtering the resulting file
+    list afterward) avoids paying an enumeration cost proportional to the
+    size of directories the user has already said to ignore.
 
     Args:
         dir_path: Directory to collect files from.
+        ignore_parser: Parser holding the project's configured ignore patterns.
         recursive: Whether to traverse subdirectories.
 
     Returns:
-        List of file paths, excluding hardcoded exclusions.
+        List of file paths, excluding hardcoded and configured exclusions.
     """
     files: list[Path] = []
     for root, dirs, filenames in os.walk(dir_path):
-        dirs[:] = [d for d in dirs if _should_include_dir(d)]
+        root_path = Path(root)
+        dirs[:] = [d for d in dirs if _should_include_dir(d, root_path / d, ignore_parser)]
         files.extend(_collect_files_from_walk(root, filenames))
         if not recursive:
             break
@@ -379,7 +389,7 @@ class Orchestrator:  # thailint: ignore[srp]
         """
         violations = []
         # Use fast file collection that skips excluded directories entirely
-        file_paths = _collect_files_fast(dir_path, recursive)
+        file_paths = _collect_files_fast(dir_path, self.ignore_parser, recursive)
 
         for file_path in file_paths:
             violations.extend(self.lint_file(file_path))
@@ -493,7 +503,7 @@ class Orchestrator:  # thailint: ignore[srp]
             List of all violations found across all files.
         """
         # Use fast file collection that skips excluded directories entirely
-        file_paths = _collect_files_fast(dir_path, recursive)
+        file_paths = _collect_files_fast(dir_path, self.ignore_parser, recursive)
         return self.lint_files_parallel(file_paths, max_workers=max_workers)
 
     def _ensure_rules_discovered(self) -> None:

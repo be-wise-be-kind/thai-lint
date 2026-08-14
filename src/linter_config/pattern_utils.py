@@ -32,7 +32,16 @@ def matches_pattern(path: str, pattern: str) -> bool:
     """
     if pattern.endswith("/"):
         return _matches_directory_pattern(path, pattern)
-    return fnmatch.fnmatch(path, pattern) or fnmatch.fnmatch(str(Path(path)), pattern)
+    if fnmatch.fnmatch(path, pattern) or fnmatch.fnmatch(str(Path(path)), pattern):
+        return True
+    if pattern.startswith("**/"):
+        # fnmatch has no path-boundary awareness, so "**/name/**" only matches
+        # via a literal "/name/" substring - it never matches a root-level
+        # "name/..." (no leading "/"), even though gitignore-style patterns
+        # treat a leading "**/" as "zero or more leading directories".
+        # Prepending "/" to the checked path restores that root-level match.
+        return fnmatch.fnmatch("/" + path, pattern)
+    return False
 
 
 def _matches_directory_pattern(path: str, pattern: str) -> bool:

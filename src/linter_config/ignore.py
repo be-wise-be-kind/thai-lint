@@ -17,7 +17,8 @@ Dependencies: pathlib, yaml, rule_matcher module, directive_markers module, patt
 Exports: IgnoreDirectiveParser class, get_ignore_parser, clear_ignore_parser_cache,
     should_ignore_violation_for_context
 
-Interfaces: is_ignored(file_path) -> bool, has_file_ignore(file_path, rule_id) -> bool,
+Interfaces: is_ignored(file_path) -> bool, is_dir_ignored(dir_path) -> bool,
+    has_file_ignore(file_path, rule_id) -> bool,
     has_line_ignore(code, line_num, rule_id) -> bool, should_ignore_violation(violation, content) -> bool,
     should_ignore_violation_for_context(ignore_parser, violation, context) -> bool
 
@@ -66,6 +67,7 @@ class IgnoreDirectiveParser:
         self.project_root = project_root or Path.cwd()
         self.repo_patterns = _load_repo_ignores(self.project_root)
         self._ignore_cache: dict[str, bool] = {}
+        self._dir_ignore_cache: dict[str, bool] = {}
         # Keyed by id(file_content): callers (e.g. DRY) pass the same cached
         # content string for every violation in a file, so identity is a
         # cheap and correct cache key. See issue [TBD].
@@ -83,6 +85,28 @@ class IgnoreDirectiveParser:
             check_path = path_str
         result = any(matches_pattern(check_path, p) for p in self.repo_patterns)
         self._ignore_cache[path_str] = result
+        return result
+
+    def is_dir_ignored(self, dir_path: Path) -> bool:
+        """Check if a directory is fully covered by repo-level ignore patterns (cached).
+
+        Used to prune directory traversal before it happens (see
+        Orchestrator._collect_files_fast), not just to filter already-collected files.
+        Tests the directory as a path prefix (trailing "/") rather than as a bare name,
+        so patterns that only describe a directory's *contents* (e.g. "**/name/**")
+        still match here - anything under the directory would be ignored anyway, so
+        it's safe (and much faster) to skip descending into it at all.
+        """
+        path_str = str(dir_path)
+        with suppress(KeyError):
+            return self._dir_ignore_cache[path_str]
+        try:
+            check_path = str(dir_path.relative_to(self.project_root))
+        except ValueError:
+            check_path = path_str
+        probe = check_path.rstrip("/") + "/"
+        result = any(matches_pattern(probe, p) for p in self.repo_patterns)
+        self._dir_ignore_cache[path_str] = result
         return result
 
     def has_file_ignore(self, file_path: Path, rule_id: str | None = None) -> bool:
