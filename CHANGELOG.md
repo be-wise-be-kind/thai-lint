@@ -24,8 +24,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.21.2] - 2026-08-14
+
 ### Fixed
 
+- **Orchestrator directory walk doesn't prune configured ignore: directories** - `Orchestrator._collect_files_fast()` only pruned a hardcoded directory list during its `os.walk()`, so a directory listed under `.thailint.yaml`'s `ignore:` key was still fully enumerated on every run - its contents were filtered out later, per file, but the walk itself still paid the full cost, scaling with however many files lived under it ([#240](https://github.com/be-wise-be-kind/thai-lint/issues/240)). Configured ignore patterns are now consulted during the walk itself, so a matched directory is never descended into
+  - Also fixes `matches_pattern()` never matching a root-level `name/...` path against a `**/name/**` pattern - a common gitignore-style pattern that previously only matched when the ignored directory was nested below the repo root
 - **DRY persistent mode report scoping** - A diff-scoped run reported the linter's *entire* persisted violation backlog every time, not just matches touching the current invocation's file list, on any codebase with a substantial pre-existing duplicate-code backlog ([#238](https://github.com/be-wise-be-kind/thai-lint/issues/238)). Duplicate-hash matching still scans the whole persisted index (needed to correctly find a match against an unchanged file), but a duplicate group is now only reported if at least one occurrence is a file this invocation actually processed - a full-tree scan is unaffected since every file is "processed" by construction
 
 ## [0.21.0] - 2026-08-13
