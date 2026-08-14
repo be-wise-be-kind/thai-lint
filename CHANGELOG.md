@@ -24,6 +24,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Security
+
+- **Resolved 14 Dependabot alerts (11 high, 3 moderate)** across transitive and direct dev dependencies - no production code affected
+  - `cryptography` 48.0.0 → 50.0.0 (OpenSSL CVE, Bleichenbacher oracle in PKCS#7 decryption, wildcard DNS name / path-building issues in certificate verification) - pulled in transitively via `safety` → `authlib`/`joserfc`
+  - `nltk` 3.9.4 → 3.10.3 (path traversal and SSRF-filter-bypass issues in `nltk.data.load()`/corpus readers, ReDoS in a corpus reader regex) - pulled in transitively via `safety`
+  - `joserfc` 1.6.7 → 1.7.4 (HS256/384/512 verification accepted an empty/nil HMAC key) - pulled in transitively via `safety` → `authlib`
+  - `msgpack` 1.1.2 → 1.2.1 (out-of-bounds read on `Unpacker` reuse after a caught error) - pulled in transitively via `safety` → `cachecontrol`
+  - `pip` 26.1.1 → 26.2.1 (path traversal via console/GUI script entry point names) - pulled in transitively via `safety` → `pip-api`
+  - `pytest` 8.4.2 → 9.1.1 (vulnerable `tmpdir` handling) - direct dev dependency; `pytest-asyncio` bumped 0.23.8 → 1.4.0 alongside it, since the older plugin release is incompatible with pytest 9's collection hooks
+
 ## [0.21.2] - 2026-08-14
 
 ### Fixed

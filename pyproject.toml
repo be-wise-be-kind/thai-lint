@@ -85,8 +85,8 @@ packaging = "^24.0"
 
 [tool.poetry.group.dev.dependencies]
 # Core testing and linting
-pytest = "^8.4.2"
-pytest-asyncio = "^0.23.0"
+pytest = "^9.0.3"
+pytest-asyncio = "^1.0.0"
 pytest-cov = "^4.1.0"
 ruff = "^0.13.0"
 mypy = "^1.18.1"
