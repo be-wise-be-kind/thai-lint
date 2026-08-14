@@ -35,6 +35,7 @@ from src.core.base import BaseLintContext, BaseLintRule
 from src.core.constants import HEADER_SCAN_LINES, IgnoreDirective, Language
 from src.core.types import Severity, Violation
 from src.linter_config.ignore import get_ignore_parser
+from src.linter_config.pattern_utils import matches_pattern
 from src.linter_config.rule_matcher import rule_matches
 
 from .config import StatelessClassConfig
@@ -190,7 +191,7 @@ class StatelessClassRule(BaseLintRule):  # thailint: ignore[srp,dry]
         Returns:
             True if path matches pattern
         """
-        if file_path.match(pattern):
+        if matches_pattern(str(file_path), pattern):
             return True
         if pattern in str(file_path):
             return True

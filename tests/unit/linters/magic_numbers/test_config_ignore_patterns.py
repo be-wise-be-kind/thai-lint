@@ -141,6 +141,41 @@ def generate_track():
         )
 
     @pytest.mark.parametrize("config_key", ["magic_numbers", "magic-numbers"])
+    def test_ignores_nested_file_under_directory_glob_pattern(self, config_key):
+        """Should ignore files nested two+ levels under a "dir/**" pattern.
+
+        Regression test for issue #243: Path.match() on Python < 3.13 treats "**" as a
+        single-segment wildcard (same as "*"), so a "dir/**" pattern only matched files
+        directly inside dir/ - a file one or more levels deeper was silently NOT ignored.
+        """
+        code = """
+def generate_track():
+    coordinates = [(100, 200), (300, 400), (500, 600)]
+    return coordinates
+"""
+        rule = MagicNumberRule()
+        context = Mock()
+        context.file_path = Path("backend/app/racing/algorithms/nested/generator.py")
+        context.file_content = code
+        context.language = "python"
+        context.metadata = {
+            config_key: {
+                "enabled": True,
+                "allowed_numbers": [-1, 0, 1, 2],
+                "ignore": [
+                    "backend/app/racing/algorithms/**",
+                ],
+            }
+        }
+
+        violations = rule.check(context)
+
+        assert len(violations) == 0, (
+            f"Should ignore nested file under 'backend/app/racing/algorithms/**' "
+            f"(key={config_key}), but got {len(violations)} violations"
+        )
+
+    @pytest.mark.parametrize("config_key", ["magic_numbers", "magic-numbers"])
     def test_processes_file_not_in_ignore_list(self, config_key):
         """Should process files that don't match any ignore patterns.
 

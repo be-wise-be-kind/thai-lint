@@ -29,6 +29,7 @@ from src.core.linter_utils import has_file_content, load_linter_config
 from src.core.types import Violation
 from src.core.violation_utils import get_violation_line, has_python_noqa
 from src.linter_config.ignore import get_ignore_parser
+from src.linter_config.pattern_utils import matches_pattern
 
 from .conditional_verbose_analyzer import ConditionalVerboseAnalyzer
 from .config import PrintStatementConfig
@@ -146,7 +147,7 @@ class ConditionalVerboseRule(BaseLintRule):
 
     def _matches_pattern(self, file_path: Path, pattern: str) -> bool:
         """Check if file path matches a glob pattern."""
-        if file_path.match(pattern):
+        if matches_pattern(str(file_path), pattern):
             return True
         if pattern in str(file_path):
             return True

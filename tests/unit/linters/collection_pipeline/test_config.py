@@ -137,6 +137,32 @@ for item in items:
         violations = rule.check(context)
         assert len(violations) == 0, "Should ignore files matching glob pattern"
 
+    def test_ignores_nested_file_under_directory_glob_pattern(self) -> None:
+        """Should ignore files nested two+ levels under a "dir/**" pattern.
+
+        Regression test for issue #243: Path.match() on Python < 3.13 treats "**" as a
+        single-segment wildcard (same as "*"), so a "dir/**" pattern only matched files
+        directly inside dir/ - a file one or more levels deeper was silently NOT ignored.
+        """
+        code = """
+for item in items:
+    if not item.is_valid():
+        continue
+    process(item)
+"""
+        from src.linters.collection_pipeline.linter import CollectionPipelineRule
+
+        rule = CollectionPipelineRule()
+        context = Mock()
+        context.file_path = Path("tests/nested/deep/test_helpers.py")
+        context.file_content = code
+        context.language = "python"
+        context.metadata = {}
+        context.config = {"collection_pipeline": {"ignore": ["tests/**"]}}
+
+        violations = rule.check(context)
+        assert len(violations) == 0, "Should ignore nested files under tests/** pattern"
+
     def test_does_not_ignore_non_matching_file(self) -> None:
         """Should not ignore files that don't match any pattern."""
         code = """

@@ -36,6 +36,7 @@ from src.core.linter_utils import load_linter_config
 from src.core.types import Violation
 from src.core.violation_utils import get_violation_line, has_python_noqa, has_typescript_noqa
 from src.linter_config.ignore import get_ignore_parser
+from src.linter_config.pattern_utils import matches_pattern
 
 from .config import PrintStatementConfig
 from .python_analyzer import PythonPrintStatementAnalyzer
@@ -138,7 +139,7 @@ class PrintStatementRule(MultiLanguageLintRule):  # thailint: ignore[srp]
         Returns:
             True if path matches pattern
         """
-        if file_path.match(pattern):
+        if matches_pattern(str(file_path), pattern):
             return True
         if pattern in str(file_path):
             return True

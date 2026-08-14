@@ -210,6 +210,32 @@ print("ignored")  # thailint: ignore[print-statements]
         assert len(violations) == 1
 
 
+class TestConfigIgnorePatterns:
+    """Test config-based ignore glob patterns."""
+
+    def test_ignores_nested_file_under_directory_glob_pattern(self):
+        """Should ignore files nested two+ levels under a "dir/**" pattern.
+
+        Regression test for issue #243: Path.match() on Python < 3.13 treats "**" as a
+        single-segment wildcard (same as "*"), so a "dir/**" pattern only matched files
+        directly inside dir/ - a file one or more levels deeper was silently NOT ignored.
+        """
+        code = """
+print("should be ignored")
+"""
+        from src.linters.print_statements.linter import PrintStatementRule
+
+        rule = PrintStatementRule()
+        context = Mock()
+        context.file_path = Path("scripts/nested/deep/tool.py")
+        context.file_content = code
+        context.language = "python"
+        context.config = {"ignore": ["scripts/**"]}
+
+        violations = rule.check(context)
+        assert len(violations) == 0, "Should ignore nested files under scripts/** pattern"
+
+
 class TestViolationDetails:
     """Test that violations contain appropriate details."""
 

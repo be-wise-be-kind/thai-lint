@@ -141,6 +141,26 @@ Purpose: Test purpose only
         # Should ignore migration files
         assert len(violations) == 0
 
+    def test_respects_nested_file_under_directory_glob_pattern(self):
+        """Should ignore files nested two+ levels under a "dir/**" pattern.
+
+        Regression test for issue #243: Path.match() on Python < 3.13 treats "**" as a
+        single-segment wildcard (same as "*"), so "docs/**" only matched files directly
+        inside docs/ - a file one or more levels deeper was silently NOT ignored.
+        """
+        code = '"""Purpose: Nested doc file"""'
+        from src.linters.file_header.linter import FileHeaderRule
+
+        rule = FileHeaderRule()
+        context = create_mock_context(
+            code,
+            "docs/nested/deeper.md",
+            metadata={"file_header": {"ignore": ["docs/**"]}},
+        )
+        violations = rule.check(context)
+
+        assert len(violations) == 0
+
     def test_generic_ignore_directive(self):
         """Should support generic ignore directive without specific rule."""
         code = '''"""
