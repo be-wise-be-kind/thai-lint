@@ -191,3 +191,71 @@ class TestBlockIgnoreEquivalence:
                     f"trial {trial}: block-ignore mismatch at line {violation_line} "
                     f"rule={rule_id}: reference={expected} actual={actual}"
                 )
+
+
+class TestCacheIdentityCollisionSafety:
+    """A bare id() cache key must never serve another object's cached data.
+
+    CPython's own id() contract states that "two objects with non-overlapping lifetimes
+    may have the same id() value." Under --parallel, one long-lived worker process handles
+    many files in sequence: each file's content string is created, used briefly, and then
+    freed once that file's task returns - exactly the short-lived-object pattern where an
+    address gets recycled for a later, unrelated file's content. _lines_cache and
+    _block_index_cache are keyed by id() alone with no stored reference to verify the key
+    still refers to the same object, so a collision silently serves a previous file's
+    cached lines/block-index for the new file's violation checks. These tests force the
+    exact collision an id()-reuse race would produce (by writing directly into the cache
+    dict rather than relying on GC/allocator timing, which would make the test itself
+    flaky) and assert the parser recomputes instead of trusting the stale entry.
+    """
+
+    def test_get_cached_lines_recomputes_on_id_collision(self) -> None:
+        """A stale entry at a colliding id() must not be returned for different content."""
+        parser = IgnoreDirectiveParser(project_root=Path("/tmp"))
+        content_a = "line1\nline2 from file A\nline3\n"
+        lines_a = parser._get_cached_lines(content_a)  # noqa: SLF001
+
+        content_b = "totally different content from file B\n"
+        # Simulate content_a's address having been recycled for content_b: the stale
+        # entry is the real (content_a, lines_a) tuple the cache would still hold, now
+        # sitting at the id content_b happens to occupy.
+        parser._lines_cache[id(content_b)] = (content_a, lines_a)  # noqa: SLF001
+
+        result = parser._get_cached_lines(content_b)  # noqa: SLF001
+
+        assert result == content_b.splitlines(), "cache served file A's stale lines for file B"
+
+    def test_get_block_index_recomputes_on_id_collision(self) -> None:
+        """A stale block index at a colliding id(lines) must not be returned for other lines."""
+        parser = IgnoreDirectiveParser(project_root=Path("/tmp"))
+        lines_a = ["# thailint: ignore-start foo", "violate()", "# thailint: ignore-end"]
+        index_a = parser._get_block_index(lines_a)  # noqa: SLF001
+
+        lines_b = ["no", "ignore", "directives", "here"]
+        # Simulate lines_a's address having been recycled for lines_b: the stale cache
+        # entry is the real (lines_a, index_a) tuple the cache would still hold, now
+        # sitting at the id lines_b happens to occupy.
+        parser._block_index_cache[id(lines_b)] = (lines_a, index_a)  # noqa: SLF001
+
+        index_b = parser._get_block_index(lines_b)  # noqa: SLF001
+
+        assert not index_b.is_ignored(2, "foo"), "cache served file A's stale block index"
+
+    def test_should_ignore_violation_unaffected_by_colliding_cache_entry(self) -> None:
+        """End-to-end: a colliding stale entry must not suppress an unrelated violation."""
+        parser = IgnoreDirectiveParser(project_root=Path("/tmp"))
+
+        content_a = "x = 1  # thailint: ignore[foo]\n"
+        v_a = _make_violation("/tmp/a.py", 1, "foo")
+        assert parser.should_ignore_violation(v_a, content_a) is True
+
+        stale_lines = parser._get_cached_lines(content_a)  # noqa: SLF001
+        content_b = "y = 2  # no ignore directive here\n"
+        # Simulate content_a's address having been recycled for content_b: the stale
+        # entry is the real (content_a, stale_lines) tuple the cache would still hold.
+        parser._lines_cache[id(content_b)] = (content_a, stale_lines)  # noqa: SLF001
+
+        v_b = _make_violation("/tmp/b.py", 1, "foo")
+        assert parser.should_ignore_violation(v_b, content_b) is False, (
+            "file B's violation was incorrectly suppressed via a stale cache collision"
+        )
