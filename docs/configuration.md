@@ -583,6 +583,7 @@ Under the `dry` key:
 | `min_occurrences` | integer | `2` | Report duplicates appearing N+ times |
 | `storage_mode` | string | `"memory"` | SQLite storage mode: `"memory"` (RAM) or `"tempfile"` (disk) |
 | `ignore` | array | `[]` | Files/directories to exclude from DRY analysis |
+| `ignore_constant_patterns` | array | `[]` | Regex patterns; matching constant names are excluded from duplicate-constant detection (e.g. `["^LOG$"]` for a per-file `logging.getLogger(...)` idiom) |
 | `filters` | object | See below | False positive filtering configuration |
 | `python` | object | `{}` | Python-specific threshold overrides |
 | `typescript` | object | `{}` | TypeScript-specific threshold overrides |

@@ -30,6 +30,7 @@ Suppressions:
 
 from __future__ import annotations
 
+import re
 from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
@@ -354,9 +355,25 @@ def _generate_constant_violations(
     rule_id: str,
 ) -> list[Violation]:
     """Generate violations for duplicate constants."""
-    groups = find_constant_groups(constants)
+    eligible = _filter_ignored_constant_names(constants, config.ignore_constant_patterns)
+    groups = find_constant_groups(eligible)
     helpers.constant_violation_builder.min_occurrences = config.min_constant_occurrences
     return helpers.constant_violation_builder.build_violations(groups, rule_id)
+
+
+def _filter_ignored_constant_names(
+    constants: list[tuple[Path, ConstantInfo]], patterns: list[str]
+) -> list[tuple[Path, ConstantInfo]]:
+    """Drop constants whose name matches a configured ignore_constant_patterns regex."""
+    if not patterns:
+        return constants
+    compiled = [re.compile(p) for p in patterns]
+    return [(path, info) for path, info in constants if not _name_matches_any(info.name, compiled)]
+
+
+def _name_matches_any(name: str, compiled: list[re.Pattern[str]]) -> bool:
+    """Check whether a constant name matches any compiled ignore pattern (full match)."""
+    return any(pattern.fullmatch(name) for pattern in compiled)
 
 
 def _filter_ignored_violations(

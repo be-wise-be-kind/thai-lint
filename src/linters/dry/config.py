@@ -74,6 +74,10 @@ class DRYConfig:  # pylint: disable=too-many-instance-attributes
     detect_duplicate_constants: bool = DEFAULT_DETECT_DUPLICATE_CONSTANTS
     min_constant_occurrences: int = 2  # Minimum files with same constant to report
 
+    # Constant names matching any of these regexes are excluded from duplicate-constant
+    # detection (e.g. "^LOG$" for the per-file logging.getLogger(__name__) idiom)
+    ignore_constant_patterns: list[str] = field(default_factory=list)
+
     # Language-specific overrides for constant detection
     python_min_constant_occurrences: int | None = None
     typescript_min_constant_occurrences: int | None = None
@@ -180,4 +184,5 @@ class DRYConfig:  # pylint: disable=too-many-instance-attributes
             min_constant_occurrences=config.get("min_constant_occurrences", 2),
             python_min_constant_occurrences=python_config.get("min_constant_occurrences"),
             typescript_min_constant_occurrences=typescript_config.get("min_constant_occurrences"),
+            ignore_constant_patterns=config.get("ignore_constant_patterns", []),
         )
