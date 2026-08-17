@@ -24,6 +24,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.22.1] - 2026-08-17
+
+### Fixed
+
+- **Per-linter `ignore:` silently didn't work for several linters, despite being documented** - `nesting`, `performance`, and `law_of_demeter` had no `ignore` field on their config dataclass at all, so an `ignore:` block under those sections in `.thailint.yaml` was parsed and discarded. `lbyl` and `lazy_ignores` parsed the field but never consulted it in `check()`; `lazy_ignores` was worse still, never loading its config from context at all, so nothing in a `lazy-ignores:` block reached the rule
+- **Several linters enforced `ignore:` via Python substring containment instead of real glob matching** - `srp`, `dry`, `blocking_async`, `clone_abuse`, `unwrap_abuse`, `stateless_class`, `collection_pipeline`, `print_statements`'s conditional-verbose-logging sub-rule, and `file_header` either used `pattern in file_path` directly or fell back to it after a glob check failed. This both false-positived on unrelated paths sharing a substring (e.g. `ignore: ["vendor/"]` also matching `not_vendor/`) and silently no-oped on any `**` glob pattern, since the literal `**` characters never appear in a real file path
+- **`stringly_typed` could silently drop violations for files its own ignore gate said should be reported** - `generate_violations()` re-applied a second, separate ignore filter (loose `fnmatch`-or-substring) after pattern collection had already been gated correctly at `check()` time. The two used different matching semantics, so a file the new gate correctly did not ignore could still be filtered out at report time by the stale, looser check
+- Centralized the fix in the two shared template-method base classes (`MultiLanguageLintRule.check()`, `PythonOnlyLintRule.check()`) rather than patching each linter, removing ~230 lines of near-identical hand-rolled ignore-matching code that had been copy-pasted across `srp`, `cqs`, `magic_numbers`, `method_property`, `print_statements`, and `stringly_typed`
+
+### Changed
+
+- **`cqs.ignore_patterns` matching semantics** - previously matched with whole-string `fnmatch`, where a plain `*` spans `/` (e.g. `fnmatch.fnmatch("legacy/sub/file.py", "legacy/*.py")` is `True`); now uses the same segment-aware glob matcher as every other linter, where `*` never crosses a `/` boundary. A multi-segment `*` pattern in an existing `cqs.ignore_patterns` config should be updated to use `**` explicitly (e.g. `"legacy/**/*.py"` or `"legacy/**"`)
+
 ## [0.22.0] - 2026-08-17
 
 ### Added
