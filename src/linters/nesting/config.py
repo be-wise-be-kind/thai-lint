@@ -4,10 +4,11 @@ Purpose: Configuration schema for nesting depth linter
 Scope: NestingConfig dataclass with max_nesting_depth setting
 
 Overview: Defines configuration schema for nesting depth linter. Provides NestingConfig dataclass
-    with max_nesting_depth field (default 4), validation logic, and config loading from YAML/JSON.
-    Supports per-file and per-directory config overrides. Validates that max_depth is positive
-    integer. Integrates with the orchestrator's configuration system to allow users to customize
-    nesting depth limits via .thailint.yaml configuration files.
+    with max_nesting_depth field (default 4), an ignore field for glob-based file exclusion,
+    validation logic, and config loading from YAML/JSON. Supports per-file and per-directory
+    config overrides. Validates that max_depth is positive integer. Integrates with the
+    orchestrator's configuration system to allow users to customize nesting depth limits and
+    exclude files via .thailint.yaml configuration files.
 
 Dependencies: dataclasses, typing
 
@@ -18,7 +19,7 @@ Interfaces: NestingConfig(max_nesting_depth: int = 4), from_dict class method fo
 Implementation: Dataclass with validation and defaults, matches reference implementation default
 """
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any
 
 # Default nesting threshold constant
@@ -31,6 +32,7 @@ class NestingConfig:
 
     max_nesting_depth: int = DEFAULT_MAX_NESTING_DEPTH  # Default from reference implementation
     enabled: bool = True
+    ignore: list[str] = field(default_factory=list)  # Path patterns to ignore
 
     def __post_init__(self) -> None:
         """Validate configuration values."""
@@ -60,4 +62,5 @@ class NestingConfig:
         return cls(
             max_nesting_depth=max_nesting_depth,
             enabled=config.get("enabled", True),
+            ignore=config.get("ignore", []),
         )

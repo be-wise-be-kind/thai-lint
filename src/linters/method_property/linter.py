@@ -33,7 +33,6 @@ from pathlib import Path
 from src.core.base import BaseLintContext, MultiLanguageLintRule
 from src.core.linter_utils import load_linter_config
 from src.core.types import Violation
-from src.linter_config.pattern_utils import matches_pattern
 
 from .config import MethodPropertyConfig
 from .python_analyzer import PropertyCandidate, PythonMethodAnalyzer
@@ -127,41 +126,6 @@ class MethodPropertyRule(MultiLanguageLintRule):  # thailint: ignore[srp,dry]
 
         return None
 
-    def _is_file_ignored(self, context: BaseLintContext, config: MethodPropertyConfig) -> bool:
-        """Check if file matches ignore patterns.
-
-        Args:
-            context: Lint context
-            config: Configuration
-
-        Returns:
-            True if file should be ignored
-        """
-        if not config.ignore:
-            return False
-
-        if not context.file_path:
-            return False
-
-        file_path = Path(context.file_path)
-        return any(self._matches_pattern(file_path, pattern) for pattern in config.ignore)
-
-    def _matches_pattern(self, file_path: Path, pattern: str) -> bool:
-        """Check if file path matches a glob pattern.
-
-        Args:
-            file_path: Path to check
-            pattern: Glob pattern
-
-        Returns:
-            True if path matches pattern
-        """
-        if matches_pattern(str(file_path), pattern):
-            return True
-        if pattern in str(file_path):
-            return True
-        return False
-
     def _is_test_file(self, file_path: object) -> bool:
         """Check if file is a test file.
 
@@ -196,9 +160,6 @@ class MethodPropertyRule(MultiLanguageLintRule):  # thailint: ignore[srp,dry]
         Returns:
             List of violations found in Python code
         """
-        if self._is_file_ignored(context, config):
-            return []
-
         if self._is_test_file(context.file_path):
             return []
 

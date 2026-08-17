@@ -4,9 +4,10 @@ Purpose: Configuration schema for Law of Demeter linter
 Scope: LawOfDemeterConfig dataclass with chain depth, test file, and filter settings
 
 Overview: Defines configuration schema for the Law of Demeter linter. Provides LawOfDemeterConfig
-    dataclass with min_chain_depth (default 3), check_test_files toggle, and extensible filter
-    lists (safe_prefixes, fluent_methods, exempt_modules). User-provided lists are merged with
-    defaults so users extend built-in filter coverage.
+    dataclass with min_chain_depth (default 3), check_test_files toggle, an ignore field for
+    glob-based file exclusion, and extensible filter lists (safe_prefixes, fluent_methods,
+    exempt_modules). User-provided filter lists are merged with defaults so users extend
+    built-in filter coverage.
 
 Dependencies: dataclasses, typing, filter_constants
 
@@ -64,6 +65,7 @@ class LawOfDemeterConfig:
     safe_prefixes: list[str] = field(default_factory=_default_safe_prefixes)
     fluent_methods: list[str] = field(default_factory=_default_fluent_methods)
     exempt_modules: list[str] = field(default_factory=list)
+    ignore: list[str] = field(default_factory=list)  # Path patterns to ignore
 
     def __post_init__(self) -> None:
         """Validate configuration values."""
@@ -85,6 +87,7 @@ class LawOfDemeterConfig:
             min_chain_depth=config.get("min_chain_depth", DEFAULT_MIN_CHAIN_DEPTH),
             enabled=config.get("enabled", True),
             check_test_files=config.get("check_test_files", False),
+            ignore=config.get("ignore", []),
         )
         _merge_user_lists(instance, config)
         return instance

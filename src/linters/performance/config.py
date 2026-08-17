@@ -4,9 +4,10 @@ Purpose: Configuration schema for performance linter rules
 Scope: PerformanceConfig dataclass with settings for string-concat-loop and regex-in-loop
 
 Overview: Defines configuration schema for performance linter rules. Provides PerformanceConfig
-    dataclass with enabled flag and optional rule-specific settings. Supports loading from
-    YAML/JSON configuration files. Integrates with the orchestrator's configuration system
-    to allow users to customize performance rule settings via .thailint.yaml files.
+    dataclass with enabled flag, an ignore field for glob-based file exclusion, and optional
+    rule-specific settings. Supports loading from YAML/JSON configuration files. Integrates with
+    the orchestrator's configuration system to allow users to customize performance rule settings
+    and exclude files via .thailint.yaml files.
 
 Dependencies: dataclasses, typing
 
@@ -17,7 +18,7 @@ Interfaces: PerformanceConfig(enabled: bool = True), from_dict class method for 
 Implementation: Dataclass with validation and defaults, simple enabled flag (extensible)
 """
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any
 
 
@@ -26,6 +27,7 @@ class PerformanceConfig:
     """Configuration for performance linter rules."""
 
     enabled: bool = True
+    ignore: list[str] = field(default_factory=list)  # Path patterns to ignore
 
     @classmethod
     def from_dict(cls, config: dict[str, Any], language: str | None = None) -> "PerformanceConfig":
@@ -40,4 +42,5 @@ class PerformanceConfig:
         """
         return cls(
             enabled=config.get("enabled", True),
+            ignore=config.get("ignore", []),
         )

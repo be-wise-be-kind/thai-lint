@@ -273,6 +273,15 @@ class TestUnwrapAbuseRuleIgnoredPaths:
 
         assert len(violations) == 1
 
+    def test_does_not_ignore_similarly_named_directory(self) -> None:
+        """A directory pattern must not match an unrelated directory containing it as a substring."""
+        code = "fn main() { foo().unwrap(); }"
+        context = create_mock_context(code, filename="not_examples/demo.rs")
+        rule = UnwrapAbuseRule()
+        violations = rule.check(context)
+
+        assert len(violations) == 1
+
 
 class TestUnwrapAbuseRuleDisabled:
     """Tests for disabled configuration."""

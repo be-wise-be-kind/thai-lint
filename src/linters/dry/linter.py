@@ -37,7 +37,7 @@ from pathlib import Path
 from typing import Any
 
 from src.core.base import BaseLintContext, BaseLintRule
-from src.core.linter_utils import should_process_file
+from src.core.linter_utils import is_ignored_path, should_process_file
 from src.core.types import Violation
 from src.linter_config.ignore import IgnoreDirectiveParser
 
@@ -165,20 +165,8 @@ class DRYRule(BaseLintRule):  # pylint: disable=too-many-instance-attributes
         self, context: BaseLintContext, config: DRYConfig, file_path: Path
     ) -> None:
         """Analyze and store blocks, unless the file matches a dry.ignore pattern."""
-        if not self._is_ignored_path(file_path, config.ignore_patterns):
+        if not is_ignored_path(str(file_path), config.ignore_patterns):
             self._analyze_and_store(context, config)
-
-    @staticmethod
-    def _is_ignored_path(file_path: Path, ignore_patterns: list[str]) -> bool:
-        """Check whether a file matches a dry.ignore pattern.
-
-        Mirrors ViolationGenerator._is_ignored so a matched file skips analysis
-        entirely instead of paying full analysis cost only to be filtered later.
-        """
-        if not ignore_patterns:
-            return False
-        path_str = str(Path(file_path))
-        return any(pattern in path_str for pattern in ignore_patterns)
 
     def _ensure_storage_initialized(self, config: DRYConfig) -> None:
         """Initialize storage and file analyzer on first call."""

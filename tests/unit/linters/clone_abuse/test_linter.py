@@ -281,6 +281,21 @@ fn process(items: &[String]) {
         violations = rule.check(context)
         assert len(violations) >= 1
 
+    def test_does_not_ignore_similarly_named_directory(self) -> None:
+        """A directory pattern must not match an unrelated directory containing it as a substring."""
+        code = """
+fn process(items: &[String]) {
+    for item in items {
+        let copy = item.clone();
+        do_something(copy);
+    }
+}
+"""
+        context = create_mock_context(code, filename="not_examples/demo.rs")
+        rule = CloneAbuseRule()
+        violations = rule.check(context)
+        assert len(violations) >= 1
+
 
 class TestCloneAbuseRuleDisabled:
     """Tests for disabled rule state."""
