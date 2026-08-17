@@ -35,6 +35,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING
 
+from src.core.linter_utils import is_ignored_path
 from src.core.types import Violation
 from src.orchestrator.language_detector import detect_language
 
@@ -186,22 +187,9 @@ class ViolationGenerator:
 
         filtered = []
         for violation in violations:
-            if not self._is_ignored(violation.file_path, ignore_patterns):
+            if not is_ignored_path(str(Path(violation.file_path)), ignore_patterns):
                 filtered.append(violation)
         return filtered
-
-    def _is_ignored(self, file_path: str, ignore_patterns: list[str]) -> bool:
-        """Check if file path matches any ignore pattern.
-
-        Args:
-            file_path: Path to check
-            ignore_patterns: List of patterns to match against
-
-        Returns:
-            True if file should be ignored
-        """
-        path_str = str(Path(file_path))
-        return any(pattern in path_str for pattern in ignore_patterns)
 
     def _filter_inline_ignored(
         self, violations: list[Violation], inline_ignore: InlineIgnoreParser

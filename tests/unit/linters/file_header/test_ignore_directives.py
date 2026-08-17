@@ -161,6 +161,21 @@ Purpose: Test purpose only
 
         assert len(violations) == 0
 
+    def test_does_not_ignore_similarly_named_directory(self):
+        """A directory pattern must not match an unrelated directory containing it as a substring."""
+        code = '"""Purpose: Missing many fields"""'
+        from src.linters.file_header.linter import FileHeaderRule
+
+        rule = FileHeaderRule()
+        context = create_mock_context(
+            code,
+            "not_vendor/module.py",
+            metadata={"file_header": {"ignore": ["vendor/"]}},
+        )
+        violations = rule.check(context)
+
+        assert len(violations) > 0, "File under not_vendor/ should still be flagged"
+
     def test_generic_ignore_directive(self):
         """Should support generic ignore directive without specific rule."""
         code = '''"""

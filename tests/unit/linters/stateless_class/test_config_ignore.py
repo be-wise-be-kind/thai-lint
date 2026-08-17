@@ -201,6 +201,29 @@ class StatelessHelper:
         violations = rule.check(context)
         assert len(violations) == 1, "Should detect violation in non-ignored file"
 
+    def test_does_not_ignore_similarly_named_directory(self) -> None:
+        """A directory pattern must not match an unrelated directory containing it as a substring."""
+        code = """
+class StatelessHelper:
+    def method1(self, x):
+        return x * 2
+
+    def method2(self, y):
+        return y + 1
+"""
+        from src.linters.stateless_class.linter import StatelessClassRule
+
+        rule = StatelessClassRule()
+        context = Mock()
+        context.file_path = Path("not_vendor/helper.py")
+        context.file_content = code
+        context.language = "python"
+        context.metadata = {}
+        context.config = {"stateless-class": {"ignore": ["vendor/"]}}
+
+        violations = rule.check(context)
+        assert len(violations) == 1, "File under not_vendor/ should still be flagged"
+
 
 class TestFileLevelIgnore:
     """Test file-level ignore directives."""

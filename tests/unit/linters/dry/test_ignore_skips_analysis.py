@@ -9,11 +9,20 @@ Overview: Guards against the bug reported in issue #232, where `dry.ignore` patt
     `ignore_patterns` still paid the full block-extraction and filtering cost of a normal
     scan. Verifies that DRYRule consults `config.ignore_patterns` before calling
     FileAnalyzer.analyze, so an ignored file's content is never passed to analysis, while a
-    non-ignored file in the same run still is.
+    non-ignored file in the same run still is. Also guards against ignore-pattern matching
+    using Python substring containment instead of gitignore-style glob matching, which
+    wrongly ignores a directory whose name merely contains the pattern as a substring
+    (e.g. pattern "vendor/" matching "not_vendor/"). File-pattern tests use a "**/" prefix
+    per docs/configuration.md's documented convention, since a bare filename pattern only
+    matches a single-segment path from the scan root - here that's tmp_path, itself
+    absolute, so the paths this test observes happen to be absolute too, but the same
+    "**/" requirement applies equally to the relative paths a real repo-rooted scan
+    produces.
 
 Dependencies: pytest, unittest.mock, pathlib.Path, src.Linter, src.linters.dry.file_analyzer
 
-Exports: test_ignored_file_is_not_analyzed, test_non_ignored_file_is_still_analyzed
+Exports: test_ignored_file_is_not_analyzed, test_non_ignored_file_is_still_analyzed,
+    test_similarly_named_directory_is_not_incorrectly_ignored
 
 Interfaces: Exercises the public Linter.lint(path, rules) entry point
 
@@ -43,7 +52,7 @@ def test_ignored_file_is_not_analyzed(tmp_path):
         "  min_duplicate_lines: 3\n"
         "  cache_enabled: false\n"
         "  ignore:\n"
-        "    - vendor_ignored.py\n"
+        "    - '**/vendor_ignored.py'\n"
     )
 
     analyzed_paths: list[str] = []
@@ -77,7 +86,7 @@ def test_non_ignored_file_is_still_analyzed(tmp_path):
         "  min_duplicate_lines: 3\n"
         "  cache_enabled: false\n"
         "  ignore:\n"
-        "    - vendor_ignored.py\n"
+        "    - '**/vendor_ignored.py'\n"
     )
 
     analyzed_paths: list[str] = []
@@ -93,4 +102,36 @@ def test_non_ignored_file_is_still_analyzed(tmp_path):
 
     assert any("kept.py" in p for p in analyzed_paths), (
         f"non-ignored file was never analyzed: {analyzed_paths}"
+    )
+
+
+def test_similarly_named_directory_is_not_incorrectly_ignored(tmp_path):
+    """A dir pattern must not match an unrelated dir containing it as a substring."""
+    (tmp_path / "not_vendor").mkdir()
+    similarly_named = tmp_path / "not_vendor" / "mod.py"
+    similarly_named.write_text("x = 1\ny = 2\nz = 3\n" * 5)
+
+    config = tmp_path / ".thailint.yaml"
+    config.write_text(
+        "dry:\n"
+        "  enabled: true\n"
+        "  min_duplicate_lines: 3\n"
+        "  cache_enabled: false\n"
+        "  ignore:\n"
+        "    - vendor/\n"
+    )
+
+    analyzed_paths: list[str] = []
+    original_analyze = FileAnalyzer.analyze
+
+    def recording(self, file_path, content, language, cfg):
+        analyzed_paths.append(str(file_path))
+        return original_analyze(self, file_path, content, language, cfg)
+
+    with patch.object(FileAnalyzer, "analyze", recording):
+        linter = Linter(config_file=config, project_root=tmp_path)
+        linter.lint(tmp_path, rules=["dry.duplicate-code"])
+
+    assert any("not_vendor" in p for p in analyzed_paths), (
+        f"file in a similarly-named directory was wrongly ignored: {analyzed_paths}"
     )

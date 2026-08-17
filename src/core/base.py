@@ -206,13 +206,16 @@ class MultiLanguageLintRule(BaseLintRule):
         Returns:
             List of violations found
         """
-        from .linter_utils import has_file_content
+        from .linter_utils import has_file_content, is_file_ignored_by_config
 
         if not has_file_content(context):
             return []
 
         config = self._load_config(context)
         if not config.enabled:
+            return []
+
+        if is_file_ignored_by_config(context, config):
             return []
 
         return self._dispatch_by_language(context, config)

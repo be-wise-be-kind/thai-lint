@@ -517,6 +517,15 @@ function complexLogic() {
 }
 ```
 
+### Config-Level Ignore
+
+```yaml
+nesting:
+  ignore:
+    - "backend/legacy/**"  # Deep nesting allowed in legacy code
+    - "**/migrations/**"
+```
+
 ## CI/CD Integration
 
 ### GitHub Actions

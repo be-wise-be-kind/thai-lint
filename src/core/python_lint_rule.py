@@ -22,7 +22,12 @@ from typing import Any, Generic
 
 from .base import BaseLintContext, BaseLintRule
 from .constants import Language
-from .linter_utils import ConfigType, has_file_content, load_linter_config
+from .linter_utils import (
+    ConfigType,
+    has_file_content,
+    is_file_ignored_by_config,
+    load_linter_config,
+)
 from .types import Violation
 
 
@@ -83,6 +88,13 @@ class PythonOnlyLintRule(BaseLintRule, Generic[ConfigType]):
         if not self._is_enabled(config):
             return []
 
+        if is_file_ignored_by_config(context, config):
+            return []
+
+        return self._run_analysis(context, config)
+
+    def _run_analysis(self, context: BaseLintContext, config: ConfigType) -> list[Violation]:
+        """Run the linter-specific analysis on already-validated, non-ignored content."""
         file_path = str(context.file_path) if context.file_path else "unknown"
         return self._analyze(context.file_content or "", file_path, config)
 

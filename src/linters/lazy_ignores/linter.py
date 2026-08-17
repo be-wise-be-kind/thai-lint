@@ -9,8 +9,10 @@ Overview: Provides LazyIgnoresRule that cross-references linting ignore directiv
     unjustified ignores/skips (directive without header declaration) and orphaned
     suppressions (header declaration without matching ignore in code). Enforces the
     header-based suppression model requiring human approval for all linting bypasses.
+    Consults LazyIgnoresConfig.ignore_patterns to skip files entirely before analysis.
 
-Dependencies: PythonIgnoreDetector, TestSkipDetector, SuppressionsParser, IgnoreSuppressionMatcher
+Dependencies: PythonIgnoreDetector, TestSkipDetector, SuppressionsParser, IgnoreSuppressionMatcher,
+    LazyIgnoresConfig
 
 Exports: LazyIgnoresRule
 
@@ -23,8 +25,10 @@ from pathlib import Path
 
 from src.core.base import BaseLintContext, BaseLintRule
 from src.core.constants import Language
+from src.core.linter_utils import is_ignored_path, load_linter_config
 from src.core.types import Violation
 
+from .config import LazyIgnoresConfig
 from .header_parser import SuppressionsParser
 from .matcher import IgnoreSuppressionMatcher
 from .python_analyzer import PythonIgnoreDetector
@@ -82,7 +86,11 @@ class LazyIgnoresRule(BaseLintRule):
         if not context.file_content:
             return []
 
+        config = load_linter_config(context, "lazy-ignores", LazyIgnoresConfig)
         file_path = str(context.file_path) if context.file_path else "unknown"
+        if is_ignored_path(file_path, config.ignore_patterns):
+            return []
+
         return self.check_content(context.file_content, file_path)
 
     def check_content(self, code: str, file_path: str) -> list[Violation]:

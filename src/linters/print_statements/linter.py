@@ -29,14 +29,12 @@ Suppressions:
 """
 
 import ast
-from pathlib import Path
 
 from src.core.base import BaseLintContext, MultiLanguageLintRule
 from src.core.linter_utils import load_linter_config
 from src.core.types import Violation
 from src.core.violation_utils import get_violation_line, has_python_noqa, has_typescript_noqa
 from src.linter_config.ignore import get_ignore_parser
-from src.linter_config.pattern_utils import matches_pattern
 
 from .config import PrintStatementConfig
 from .python_analyzer import PythonPrintStatementAnalyzer
@@ -110,41 +108,6 @@ class PrintStatementRule(MultiLanguageLintRule):  # thailint: ignore[srp]
 
         return None
 
-    def _is_file_ignored(self, context: BaseLintContext, config: PrintStatementConfig) -> bool:
-        """Check if file matches ignore patterns.
-
-        Args:
-            context: Lint context
-            config: Print statements configuration
-
-        Returns:
-            True if file should be ignored
-        """
-        if not config.ignore:
-            return False
-
-        if not context.file_path:
-            return False
-
-        file_path = Path(context.file_path)
-        return any(self._matches_pattern(file_path, pattern) for pattern in config.ignore)
-
-    def _matches_pattern(self, file_path: Path, pattern: str) -> bool:
-        """Check if file path matches a glob pattern.
-
-        Args:
-            file_path: Path to check
-            pattern: Glob pattern
-
-        Returns:
-            True if path matches pattern
-        """
-        if matches_pattern(str(file_path), pattern):
-            return True
-        if pattern in str(file_path):
-            return True
-        return False
-
     def _check_python(
         self, context: BaseLintContext, config: PrintStatementConfig
     ) -> list[Violation]:
@@ -157,9 +120,6 @@ class PrintStatementRule(MultiLanguageLintRule):  # thailint: ignore[srp]
         Returns:
             List of violations found in Python code
         """
-        if self._is_file_ignored(context, config):
-            return []
-
         tree = self._parse_python_code(context.file_content)
         if tree is None:
             return []
@@ -289,9 +249,6 @@ class PrintStatementRule(MultiLanguageLintRule):  # thailint: ignore[srp]
         Returns:
             List of violations found in TypeScript/JavaScript code
         """
-        if self._is_file_ignored(context, config):
-            return []
-
         analyzer = TypeScriptPrintStatementAnalyzer()
         root_node = analyzer.parse_typescript(context.file_content or "")
         if root_node is None:

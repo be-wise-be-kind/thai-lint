@@ -38,7 +38,6 @@ from src.core.linter_utils import load_linter_config
 from src.core.types import Violation
 
 from .config import StringlyTypedConfig
-from .ignore_utils import is_ignored
 from .python.analyzer import (
     AnalysisResult,
     ComparisonResult,
@@ -241,7 +240,7 @@ class StringlyTypedRule(MultiLanguageLintRule):  # thailint: ignore[srp]
             context: Lint context with file content
             config: Stringly-typed configuration
         """
-        if not self._should_analyze(context, config):
+        if not self._should_analyze(context):
             return
         # _should_analyze ensures file_path and file_content are set
         assert context.file_path is not None  # nosec B101
@@ -287,7 +286,7 @@ class StringlyTypedRule(MultiLanguageLintRule):  # thailint: ignore[srp]
             context: Lint context with file content
             config: Stringly-typed configuration
         """
-        if not self._should_analyze(context, config):
+        if not self._should_analyze(context):
             return
         # _should_analyze ensures file_path and file_content are set
         assert context.file_path is not None  # nosec B101
@@ -301,21 +300,16 @@ class StringlyTypedRule(MultiLanguageLintRule):  # thailint: ignore[srp]
         self._store_function_calls(file_content, file_path)
         self._store_comparisons(file_content, file_path)
 
-    def _should_analyze(self, context: BaseLintContext, config: StringlyTypedConfig) -> bool:
+    def _should_analyze(self, context: BaseLintContext) -> bool:
         """Check if file should be analyzed.
 
         Args:
             context: Lint context
-            config: Configuration
 
         Returns:
             True if file should be analyzed
         """
-        if not _is_ready_for_analysis(context, self._storage):
-            return False
-        # _is_ready_for_analysis ensures file_path is set
-        assert context.file_path is not None  # nosec B101
-        return not is_ignored(context.file_path, config.ignore)
+        return _is_ready_for_analysis(context, self._storage)
 
     def _store_validation_patterns(self, file_content: str, file_path: Path) -> None:
         """Analyze and store validation patterns.

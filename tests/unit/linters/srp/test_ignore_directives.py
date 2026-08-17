@@ -9,12 +9,17 @@ Overview: Validates ignore directive functionality for SRP linter including Pyth
     specific rule ignoring (srp.too-many-methods vs srp.too-many-lines), ignore
     directive isolation (doesn't affect other violations), file-level ignore support,
     and proper directive parsing. Ensures developers can selectively suppress SRP
-    violations when justified while maintaining detection for other issues.
+    violations when justified while maintaining detection for other issues. Also
+    guards against config.ignore using Python substring containment instead of
+    gitignore-style glob matching, which wrongly ignores a directory whose name
+    merely contains the pattern as a substring (e.g. pattern "vendor/" matching
+    "not_vendor/").
 
 Dependencies: pytest for testing framework, src.linters.srp.linter for SRPRule,
     pathlib for Path handling, unittest.mock for Mock contexts
 
-Exports: TestIgnoreDirectives (10 tests) covering Python/TypeScript ignore syntax
+Exports: TestIgnoreDirectives (10 tests) covering Python/TypeScript ignore syntax,
+    TestConfigIgnoreGlobMatching (2 tests) covering glob-vs-substring correctness
 
 Interfaces: Tests SRPRule.check() behavior with ignore directives in code
 
@@ -170,3 +175,47 @@ class SecondHandler:
 
         violations = rule.check(context)
         assert len(violations) == 0, "File-level ignore should suppress all"
+
+
+class TestConfigIgnoreGlobMatching:
+    """Test config.ignore uses real glob matching, not substring containment."""
+
+    SRP_VIOLATING_CODE = """
+class FirstManager:
+    def m1(self): pass
+    def m2(self): pass
+    def m3(self): pass
+    def m4(self): pass
+    def m5(self): pass
+    def m6(self): pass
+    def m7(self): pass
+    def m8(self): pass
+"""
+
+    def test_ignores_exact_directory(self) -> None:
+        """A directory pattern still matches files under the real directory."""
+        from src.linters.srp.linter import SRPRule
+
+        rule = SRPRule()
+        context = Mock()
+        context.file_path = Path("vendor/models.py")
+        context.file_content = self.SRP_VIOLATING_CODE
+        context.language = "python"
+        context.metadata = {"srp": {"ignore": ["vendor/"]}}
+
+        violations = rule.check(context)
+        assert len(violations) == 0, "File under vendor/ should be ignored"
+
+    def test_does_not_ignore_similarly_named_directory(self) -> None:
+        """A directory pattern must not match an unrelated directory containing it as a substring."""
+        from src.linters.srp.linter import SRPRule
+
+        rule = SRPRule()
+        context = Mock()
+        context.file_path = Path("not_vendor/models.py")
+        context.file_content = self.SRP_VIOLATING_CODE
+        context.language = "python"
+        context.metadata = {"srp": {"ignore": ["vendor/"]}}
+
+        violations = rule.check(context)
+        assert len(violations) > 0, "File under not_vendor/ should still be flagged"

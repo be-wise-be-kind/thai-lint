@@ -272,7 +272,10 @@ If your ignore patterns aren't working:
 
 ### Per-Linter Ignore Patterns
 
-Each linter can have its own ignore list:
+Every linter except `file-placement` (see below) supports its own `ignore:` list,
+matched independently of the top-level, repo-wide `ignore:` list at the start of this
+guide. A file can be excluded from one linter while still being checked by every
+other one:
 
 ```yaml
 magic-numbers:
@@ -294,12 +297,58 @@ srp:
   ignore:
     - "backend/monolith.py"  # Legacy god object
     - "**/admin.py"          # Admin classes often complex
+
+performance:
+  ignore:
+    - "**/generated/**"   # Generated code, not worth optimizing
+
+law-of-demeter:
+  ignore:
+    - "**/legacy/**"
+
+lbyl:
+  ignore:
+    - "**/legacy/**"
 ```
+
+**Exceptions to the `ignore:` convention:**
+
+- **`file-placement`** has no `ignore:` key. It governs where files may live using
+  `allow`/`deny` patterns instead, which is a different model entirely (see
+  [File Placement Linter](file-placement-linter.md)) - this is by design, not a gap.
+- **`lazy-ignores`** uses the key `ignore_patterns:`, not `ignore:`:
+  ```yaml
+  lazy-ignores:
+    ignore_patterns:
+      - "vendor/**"
+  ```
+
+All other linters read the key `ignore:`.
 
 ### Version Notes
 
 - **0.4.1+**: Ignore patterns fully functional for magic-numbers linter
 - **0.4.0**: Ignore patterns not implemented (known bug, fixed in 0.4.1)
+- **Since this fix**: `nesting`, `performance`, and `law-of-demeter` gained working
+  per-linter `ignore:` support (previously silently ignored despite being documented);
+  `lbyl` and `lazy-ignores` had their `ignore`/`ignore_patterns` field parsed but never
+  enforced, now fixed; `srp`, `dry`, `blocking-async`, `clone-abuse`, `unwrap-abuse`,
+  `stateless-class`, `collection-pipeline`, `print-statements` (its
+  conditional-verbose-logging sub-rule), and `file-header` were upgraded from substring
+  matching (or a substring fallback layered on top of glob matching) to real
+  gitignore-style glob matching (a bare pattern like `"vendor/"` no longer wrongly
+  matches an unrelated directory like `"not_vendor/"`, and `**`-glob patterns now
+  actually work instead of being compared as literal text). `stringly-typed` had a
+  second, stale ignore filter at report-generation time (looser than the fixed
+  check-time gate) removed, so a file the fixed gate correctly does not ignore can no
+  longer have its violation silently dropped later in the pipeline.
+- **Behavior change for existing `cqs.ignore_patterns` configs**: `cqs` previously
+  matched `ignore_patterns` with whole-string `fnmatch`, where a plain `*` spans `/`
+  (e.g. `fnmatch.fnmatch("legacy/sub/file.py", "legacy/*.py")` is `True`). It now uses
+  the same segment-aware glob matcher as every other linter, where `*` never crosses a
+  `/` boundary (that same pattern no longer matches - use `"legacy/**/*.py"` or
+  `"legacy/**"` instead). If your `cqs.ignore_patterns` uses a multi-segment `*`
+  pattern, update it to an explicit `**` after upgrading.
 - **Earlier**: Check release notes for ignore support per linter
 
 ## File Formats

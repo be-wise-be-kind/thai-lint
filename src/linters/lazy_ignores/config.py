@@ -55,8 +55,12 @@ class LazyIgnoresConfig:  # pylint: disable=too-many-instance-attributes
     )
 
     @classmethod
-    def from_dict(cls, config_dict: dict[str, Any]) -> "LazyIgnoresConfig":
+    def from_dict(
+        cls, config_dict: dict[str, Any], language: str | None = None
+    ) -> "LazyIgnoresConfig":
         """Create config from dictionary."""
+        # Language parameter reserved for protocol compatibility; lazy-ignores is Python-only
+        _ = language
         return cls(
             check_noqa=config_dict.get("check_noqa", True),
             check_type_ignore=config_dict.get("check_type_ignore", True),

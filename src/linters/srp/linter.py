@@ -58,43 +58,6 @@ class SRPRule(MultiLanguageLintRule):
         """Description of what this rule checks."""
         return "Classes should have a single, well-defined responsibility"
 
-    def check(self, context: BaseLintContext) -> list[Violation]:
-        """Check for SRP violations with custom ignore pattern handling.
-
-        Overrides parent to add file-level ignore pattern checking before dispatch.
-
-        Args:
-            context: Lint context with file information
-
-        Returns:
-            List of violations found
-        """
-        from src.core.linter_utils import has_file_content
-
-        if not has_file_content(context):
-            return []
-
-        config = self._load_config(context)
-        if not self._should_process_file(context, config):
-            return []
-
-        # Standard language dispatch
-        return self._dispatch_by_language(context, config)
-
-    def _should_process_file(self, context: BaseLintContext, config: SRPConfig) -> bool:
-        """Check if file should be processed.
-
-        Args:
-            context: Lint context
-            config: SRP configuration
-
-        Returns:
-            True if file should be processed
-        """
-        if not config.enabled:
-            return False
-        return not self._is_file_ignored(context, config)
-
     def _dispatch_by_language(self, context: BaseLintContext, config: SRPConfig) -> list[Violation]:
         """Dispatch to language-specific checker.
 
@@ -126,22 +89,6 @@ class SRPRule(MultiLanguageLintRule):
             SRPConfig instance
         """
         return load_linter_config(context, "srp", SRPConfig)
-
-    def _is_file_ignored(self, context: BaseLintContext, config: SRPConfig) -> bool:
-        """Check if file matches ignore patterns.
-
-        Args:
-            context: Lint context
-            config: SRP configuration
-
-        Returns:
-            True if file should be ignored
-        """
-        if not config.ignore:
-            return False
-
-        file_path = str(context.file_path)
-        return any(pattern in file_path for pattern in config.ignore)
 
     def _check_python(self, context: BaseLintContext, config: SRPConfig) -> list[Violation]:
         """Check Python code for SRP violations.

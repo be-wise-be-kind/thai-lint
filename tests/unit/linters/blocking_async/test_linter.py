@@ -269,6 +269,18 @@ async fn read_file() {
         violations = rule.check(context)
         assert len(violations) >= 1
 
+    def test_does_not_ignore_similarly_named_directory(self) -> None:
+        """A directory pattern must not match an unrelated directory containing it as a substring."""
+        code = """
+async fn read_file() {
+    let content = std::fs::read_to_string("file.txt").unwrap();
+}
+"""
+        context = create_mock_context(code, filename="not_examples/demo.rs")
+        rule = BlockingAsyncRule()
+        violations = rule.check(context)
+        assert len(violations) >= 1
+
 
 class TestBlockingAsyncRuleDisabled:
     """Tests for disabled rule state."""

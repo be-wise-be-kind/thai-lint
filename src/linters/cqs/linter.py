@@ -19,8 +19,6 @@ Interfaces: check(context: BaseLintContext) -> list[Violation]
 Implementation: Multi-language analysis with config-driven filtering and min_operations threshold
 """
 
-from fnmatch import fnmatch
-
 from src.core.base import BaseLintContext, MultiLanguageLintRule
 from src.core.linter_utils import load_linter_config
 from src.core.types import Violation
@@ -90,10 +88,6 @@ class CQSRule(MultiLanguageLintRule):
             List of violations found in Python code
         """
         file_path = str(context.file_path) if context.file_path else "unknown"
-
-        if self._matches_ignore_pattern(file_path, config):
-            return []
-
         patterns = self._python_analyzer.analyze(context.file_content or "", file_path, config)
         return self._patterns_to_violations(patterns, config)
 
@@ -108,10 +102,6 @@ class CQSRule(MultiLanguageLintRule):
             List of violations found in TypeScript/JavaScript code
         """
         file_path = str(context.file_path) if context.file_path else "unknown"
-
-        if self._matches_ignore_pattern(file_path, config):
-            return []
-
         patterns = self._typescript_analyzer.analyze(context.file_content or "", file_path, config)
         return self._patterns_to_violations(patterns, config)
 
@@ -129,18 +119,6 @@ class CQSRule(MultiLanguageLintRule):
         """
         violating_patterns = [p for p in patterns if self._is_violation(p, config)]
         return [build_cqs_violation(p) for p in violating_patterns]
-
-    def _matches_ignore_pattern(self, file_path: str, config: CQSConfig) -> bool:
-        """Check if file path matches any ignore pattern.
-
-        Args:
-            file_path: Path to check
-            config: CQS configuration
-
-        Returns:
-            True if path matches an ignore pattern
-        """
-        return any(fnmatch(file_path, pattern) for pattern in config.ignore_patterns)
 
     def _is_violation(self, pattern: CQSPattern, config: CQSConfig) -> bool:
         """Check if pattern represents a violation based on config.

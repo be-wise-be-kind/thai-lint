@@ -274,12 +274,32 @@ def is_ignored_path(file_path: str, ignore_patterns: list[str]) -> bool:
 
     Args:
         file_path: Path to check
-        ignore_patterns: List of patterns to match against
+        ignore_patterns: List of gitignore-style glob patterns to match against
 
     Returns:
         True if the path should be ignored
     """
-    return any(ignored in file_path for ignored in ignore_patterns)
+    from src.linter_config.pattern_utils import matches_pattern
+
+    return any(matches_pattern(file_path, pattern) for pattern in ignore_patterns)
+
+
+def is_file_ignored_by_config(context: BaseLintContext, config: Any) -> bool:
+    """Check if a context's file path matches a config's ignore/ignore_patterns list.
+
+    Reads whichever of `ignore` or `ignore_patterns` the config exposes, so callers
+    don't need to know which attribute name a given linter's config uses.
+
+    Args:
+        context: Lint context containing the file path
+        config: Linter configuration instance
+
+    Returns:
+        True if the file should be ignored
+    """
+    file_path = str(context.file_path) if context.file_path else ""
+    patterns = getattr(config, "ignore", None) or getattr(config, "ignore_patterns", None) or []
+    return is_ignored_path(file_path, patterns)
 
 
 def get_line_context(code: str, line_index: int) -> str:

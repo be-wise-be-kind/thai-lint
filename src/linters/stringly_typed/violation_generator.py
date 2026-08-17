@@ -36,17 +36,9 @@ from . import context_filter
 from .config import StringlyTypedConfig
 from .function_call_violation_builder import build_function_call_violations
 from .ignore_checker import IgnoreChecker
-from .ignore_utils import is_ignored
 from .storage import StoredComparison, StoredPattern, StringlyTypedStorage
 
 # --- Pure helper functions for filtering ---
-
-
-def _filter_by_ignore(violations: list[Violation], ignore: list[str]) -> list[Violation]:
-    """Filter violations by ignore patterns."""
-    if not ignore:
-        return violations
-    return [v for v in violations if not is_ignored(v.file_path, ignore)]
 
 
 def _is_allowed_value_set(values: set[str], config: StringlyTypedConfig) -> bool:
@@ -365,9 +357,6 @@ class ViolationGenerator:
         violations.extend(pattern_violations)
         violations.extend(self._generate_function_call_violations(storage, config))
         violations.extend(self._generate_comparison_violations(storage, config, covered_vars))
-
-        # Apply path-based ignore patterns from config
-        violations = _filter_by_ignore(violations, config.ignore)
 
         # Apply inline ignore directives via IgnoreChecker
         violations = self._ignore_checker.filter_violations(violations)

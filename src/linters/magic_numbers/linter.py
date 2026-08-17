@@ -29,7 +29,6 @@ Suppressions:
 """
 
 import ast
-from pathlib import Path
 from typing import Any
 
 from src.analyzers.rust_base import TREE_SITTER_RUST_AVAILABLE
@@ -38,7 +37,6 @@ from src.core.linter_utils import load_linter_config
 from src.core.types import Violation
 from src.core.violation_utils import get_violation_line, has_python_noqa
 from src.linter_config.ignore import get_ignore_parser
-from src.linter_config.pattern_utils import matches_pattern
 
 from .config import MagicNumberConfig
 from .context_analyzer import is_acceptable_context
@@ -126,45 +124,6 @@ class MagicNumberRule(MultiLanguageLintRule):  # thailint: ignore[srp]
         # No config found, return None to use defaults
         return None
 
-    def _is_file_ignored(self, context: BaseLintContext, config: MagicNumberConfig) -> bool:
-        """Check if file matches ignore patterns.
-
-        Args:
-            context: Lint context
-            config: Magic numbers configuration
-
-        Returns:
-            True if file should be ignored
-        """
-        if not config.ignore:
-            return False
-
-        if not context.file_path:
-            return False
-
-        file_path = Path(context.file_path)
-        return any(self._matches_pattern(file_path, pattern) for pattern in config.ignore)
-
-    def _matches_pattern(self, file_path: Path, pattern: str) -> bool:
-        """Check if file path matches a glob pattern.
-
-        Args:
-            file_path: Path to check
-            pattern: Glob pattern (e.g., "test/**", "**/test_*.py", "specific/file.py")
-
-        Returns:
-            True if path matches pattern
-        """
-        # Try glob pattern matching first (handles **, *, etc.)
-        if matches_pattern(str(file_path), pattern):
-            return True
-
-        # Also check if pattern is a substring (for partial path matching)
-        if pattern in str(file_path):
-            return True
-
-        return False
-
     def _check_python(self, context: BaseLintContext, config: MagicNumberConfig) -> list[Violation]:
         """Check Python code for magic number violations.
 
@@ -175,9 +134,6 @@ class MagicNumberRule(MultiLanguageLintRule):  # thailint: ignore[srp]
         Returns:
             List of violations found in Python code
         """
-        if self._is_file_ignored(context, config):
-            return []
-
         # Check if file is a definition file (status_codes.py, constants.py, etc.)
         if config.exempt_definition_files and is_definition_file(
             context.file_path, context.file_content
@@ -326,9 +282,6 @@ class MagicNumberRule(MultiLanguageLintRule):  # thailint: ignore[srp]
         Returns:
             List of violations found in TypeScript/JavaScript code
         """
-        if self._is_file_ignored(context, config):
-            return []
-
         analyzer = TypeScriptMagicNumberAnalyzer()
         root_node = analyzer.parse_typescript(context.file_content or "")
         if root_node is None:
@@ -470,9 +423,6 @@ class MagicNumberRule(MultiLanguageLintRule):  # thailint: ignore[srp]
             List of violations found in Rust code
         """
         if not TREE_SITTER_RUST_AVAILABLE:
-            return []
-
-        if self._is_file_ignored(context, config):
             return []
 
         analyzer = RustMagicNumberAnalyzer()
