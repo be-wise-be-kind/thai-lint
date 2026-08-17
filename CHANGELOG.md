@@ -24,12 +24,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.22.0] - 2026-08-17
+
 ### Added
 
 - **`dry.ignore_constant_patterns` config option** - excludes constant names matching a regex from duplicate-constant detection ([#245](https://github.com/be-wise-be-kind/thai-lint/issues/245)). Fixes false positives on per-file idioms like `LOG = logging.getLogger(...)`, where the same constant name is expected to repeat across every file by convention and there is no shared module to consolidate it into. Scoped to duplicate-constant findings only - duplicate-code-block detection is unaffected
 
 ### Fixed
 
+- **`IgnoreDirectiveParser` per-file caches could serve a different file's stale data under `--parallel`** - `_lines_cache`/`_block_index_cache` were keyed by a bare `id(file_content)`/`id(lines)` with no stored reference to verify the key still referred to the same object. CPython's `id()` is only guaranteed unique among simultaneously live objects; a long-lived `--parallel` worker process handles many files in sequence, and a freed file-content string's address can be recycled for a later, unrelated file's content. When that happened, the cache silently served a previous file's cached lines/block-index, causing a genuine inline ignore directive in the current file to be missed. Surfaced as an intermittent `dogfood` CI failure (an SRP violation reported despite a correct inline ignore comment) that reproduced under CI's constrained environment but not on a larger local machine. Cache entries now store `(original_object, computed_data)` tuples and verify identity (`is`) before trusting a cached entry, falling back to recompute otherwise
 - **Per-linter `ignore:` blocks silently failed to match nested paths** - `file-header` and 7 other linters (`method-property`, `magic-numbers`, `stateless-class`, `print-statements`, its `conditional-verbose` rule, and `collection-pipeline`) checked their own `ignore:` config against `pathlib.Path.match()`, which on Python < 3.13 treats `**` as a single-segment wildcard (same as `*`) ([#243](https://github.com/be-wise-be-kind/thai-lint/issues/243)). A pattern like `docs/**` only matched files directly inside `docs/` - anything one or more levels deeper was reported as a violation despite matching the configured ignore pattern. This is a distinct bug from #240, which fixed the orchestrator's directory-walk pruning but never touched these linter-specific ignore blocks
   - Replaced every `Path.match(pattern)` call with the shared, already-correct `pattern_utils.matches_pattern()` used by the orchestrator's ignore parser
   - `matches_pattern()` itself was rewritten to match path segments component-by-component instead of as one `fnmatch`'d string - the old whole-string approach let a `*` in the pattern's last segment cross directory boundaries, so e.g. `**/test_*.py` could match any `.py` file just because some unrelated ancestor directory happened to contain `test_` in its name
