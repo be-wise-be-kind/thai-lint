@@ -372,8 +372,8 @@ def _filter_ignored_constant_names(
 
 
 def _name_matches_any(name: str, compiled: list[re.Pattern[str]]) -> bool:
-    """Check whether a constant name matches any compiled ignore pattern."""
-    return any(pattern.search(name) for pattern in compiled)
+    """Check whether a constant name matches any compiled ignore pattern (full match)."""
+    return any(pattern.fullmatch(name) for pattern in compiled)
 
 
 def _filter_ignored_violations(
