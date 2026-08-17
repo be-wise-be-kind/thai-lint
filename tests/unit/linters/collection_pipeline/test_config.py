@@ -163,6 +163,27 @@ for item in items:
         violations = rule.check(context)
         assert len(violations) == 0, "Should ignore nested files under tests/** pattern"
 
+    def test_does_not_ignore_similarly_named_directory(self) -> None:
+        """A directory pattern must not match an unrelated directory containing it as a substring."""
+        code = """
+for item in items:
+    if not item.is_valid():
+        continue
+    process(item)
+"""
+        from src.linters.collection_pipeline.linter import CollectionPipelineRule
+
+        rule = CollectionPipelineRule()
+        context = Mock()
+        context.file_path = Path("not_vendor/helper.py")
+        context.file_content = code
+        context.language = "python"
+        context.metadata = {}
+        context.config = {"collection_pipeline": {"ignore": ["vendor/"]}}
+
+        violations = rule.check(context)
+        assert len(violations) > 0, "File under not_vendor/ should still be flagged"
+
     def test_does_not_ignore_non_matching_file(self) -> None:
         """Should not ignore files that don't match any pattern."""
         code = """

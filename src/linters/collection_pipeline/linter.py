@@ -27,13 +27,11 @@ Suppressions:
         Method count exceeds limit due to 5-level ignore pattern support.
 """
 
-from pathlib import Path
-
 from src.core.base import BaseLintContext, BaseLintRule
 from src.core.constants import HEADER_SCAN_LINES, IgnoreDirective, Language
+from src.core.linter_utils import is_ignored_path
 from src.core.types import Severity, Violation
 from src.linter_config.ignore import get_ignore_parser
-from src.linter_config.pattern_utils import matches_pattern
 from src.linter_config.rule_matcher import rule_matches
 
 from .config import CollectionPipelineConfig
@@ -144,30 +142,9 @@ class CollectionPipelineRule(BaseLintRule):  # thailint: ignore[srp,dry]
         Returns:
             True if file should be ignored
         """
-        if not config.ignore:
-            return False
-
         if not context.file_path:
             return False
-
-        file_path = Path(context.file_path)
-        return any(self._matches_pattern(file_path, pattern) for pattern in config.ignore)
-
-    def _matches_pattern(self, file_path: Path, pattern: str) -> bool:
-        """Check if file path matches a glob pattern.
-
-        Args:
-            file_path: Path to check
-            pattern: Glob pattern
-
-        Returns:
-            True if path matches pattern
-        """
-        if matches_pattern(str(file_path), pattern):
-            return True
-        if pattern in str(file_path):
-            return True
-        return False
+        return is_ignored_path(str(context.file_path), config.ignore)
 
     def _has_file_level_ignore(self, context: BaseLintContext) -> bool:
         """Check if file has file-level ignore directive.

@@ -344,6 +344,24 @@ if verbose:
         violations = rule.check(context)
         assert len(violations) == 0, "Should ignore nested files under scripts/** pattern"
 
+    def test_does_not_ignore_similarly_named_directory(self):
+        """A directory pattern must not match an unrelated directory containing it as a substring."""
+        code = """
+if verbose:
+    logger.debug("should still be flagged")
+"""
+        from src.linters.print_statements.conditional_verbose_rule import ConditionalVerboseRule
+
+        rule = ConditionalVerboseRule()
+        context = Mock()
+        context.file_path = Path("not_vendor/tool.py")
+        context.file_content = code
+        context.language = "python"
+        context.config = {"ignore": ["vendor/"]}
+
+        violations = rule.check(context)
+        assert len(violations) == 1, "File under not_vendor/ should still be flagged"
+
 
 class TestEdgeCases:
     """Test edge cases and special scenarios."""

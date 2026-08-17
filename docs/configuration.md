@@ -332,11 +332,23 @@ All other linters read the key `ignore:`.
 - **Since this fix**: `nesting`, `performance`, and `law-of-demeter` gained working
   per-linter `ignore:` support (previously silently ignored despite being documented);
   `lbyl` and `lazy-ignores` had their `ignore`/`ignore_patterns` field parsed but never
-  enforced, now fixed; `srp`, `dry`, `blocking-async`, `clone-abuse`, and `unwrap-abuse`
-  were upgraded from substring matching to real gitignore-style glob matching (a bare
-  pattern like `"vendor/"` no longer wrongly matches an unrelated directory like
-  `"not_vendor/"`, and `**`-glob patterns now actually work instead of being compared
-  as literal text)
+  enforced, now fixed; `srp`, `dry`, `blocking-async`, `clone-abuse`, `unwrap-abuse`,
+  `stateless-class`, `collection-pipeline`, `print-statements` (its
+  conditional-verbose-logging sub-rule), and `file-header` were upgraded from substring
+  matching (or a substring fallback layered on top of glob matching) to real
+  gitignore-style glob matching (a bare pattern like `"vendor/"` no longer wrongly
+  matches an unrelated directory like `"not_vendor/"`, and `**`-glob patterns now
+  actually work instead of being compared as literal text). `stringly-typed` had a
+  second, stale ignore filter at report-generation time (looser than the fixed
+  check-time gate) removed, so a file the fixed gate correctly does not ignore can no
+  longer have its violation silently dropped later in the pipeline.
+- **Behavior change for existing `cqs.ignore_patterns` configs**: `cqs` previously
+  matched `ignore_patterns` with whole-string `fnmatch`, where a plain `*` spans `/`
+  (e.g. `fnmatch.fnmatch("legacy/sub/file.py", "legacy/*.py")` is `True`). It now uses
+  the same segment-aware glob matcher as every other linter, where `*` never crosses a
+  `/` boundary (that same pattern no longer matches - use `"legacy/**/*.py"` or
+  `"legacy/**"` instead). If your `cqs.ignore_patterns` uses a multi-segment `*`
+  pattern, update it to an explicit `**` after upgrading.
 - **Earlier**: Check release notes for ignore support per linter
 
 ## File Formats

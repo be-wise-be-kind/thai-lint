@@ -413,6 +413,37 @@ class TestIgnorePatterns:
         # But since we ignore tests/, there's only 1 file, which means no cross-file match
         assert len(violations) == 0
 
+    def test_similarly_named_directory_is_not_incorrectly_ignored(
+        self, rule: StringlyTypedRule, tmp_path: Path
+    ) -> None:
+        """A directory pattern must not drop violations from an unrelated directory
+        containing it as a substring.
+
+        Regression test: generate_violations() used to apply a second, hand-rolled
+        ignore filter (ignore_utils.is_ignored, fnmatch-or-substring) at finalize()
+        time, after check()-time's is_ignored_path() (real glob) had already decided
+        which files' patterns to store. Because the two used different matching
+        semantics, a file check()-time correctly did NOT ignore could still have its
+        violation silently dropped at finalize() time by the looser leftover filter.
+        """
+        file1 = tmp_path / "not_vendor" / "module1.py"
+        file1.parent.mkdir(parents=True, exist_ok=True)
+        file1.write_text('x = status in ("a", "b")')
+
+        file2 = tmp_path / "not_vendor" / "module2.py"
+        file2.write_text('y = status in ("a", "b")')
+
+        config = {"ignore": ["vendor/"]}
+        ctx1 = create_context(file1, config=config)
+        ctx2 = create_context(file2, config=config)
+
+        rule.check(ctx1)
+        rule.check(ctx2)
+
+        violations = rule.finalize()
+
+        assert len(violations) == 2, "Files under not_vendor/ should still be flagged"
+
 
 class TestRuleReset:
     """Tests for rule state reset between runs."""

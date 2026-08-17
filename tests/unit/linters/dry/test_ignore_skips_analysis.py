@@ -13,8 +13,11 @@ Overview: Guards against the bug reported in issue #232, where `dry.ignore` patt
     using Python substring containment instead of gitignore-style glob matching, which
     wrongly ignores a directory whose name merely contains the pattern as a substring
     (e.g. pattern "vendor/" matching "not_vendor/"). File-pattern tests use a "**/" prefix
-    per docs/configuration.md's documented convention, since file paths reaching the
-    linter are absolute and a bare filename pattern only matches a single-segment path.
+    per docs/configuration.md's documented convention, since a bare filename pattern only
+    matches a single-segment path from the scan root - here that's tmp_path, itself
+    absolute, so the paths this test observes happen to be absolute too, but the same
+    "**/" requirement applies equally to the relative paths a real repo-rooted scan
+    produces.
 
 Dependencies: pytest, unittest.mock, pathlib.Path, src.Linter, src.linters.dry.file_analyzer
 

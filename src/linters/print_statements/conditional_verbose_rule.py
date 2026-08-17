@@ -21,15 +21,13 @@ Implementation: AST-based analysis using ConditionalVerboseAnalyzer for pattern 
 """
 
 import ast
-from pathlib import Path
 
 from src.core.base import BaseLintContext, BaseLintRule
 from src.core.constants import Language
-from src.core.linter_utils import has_file_content, load_linter_config
+from src.core.linter_utils import has_file_content, is_ignored_path, load_linter_config
 from src.core.types import Violation
 from src.core.violation_utils import get_violation_line, has_python_noqa
 from src.linter_config.ignore import get_ignore_parser
-from src.linter_config.pattern_utils import matches_pattern
 
 from .conditional_verbose_analyzer import ConditionalVerboseAnalyzer
 from .config import PrintStatementConfig
@@ -137,21 +135,9 @@ class ConditionalVerboseRule(BaseLintRule):
 
     def _is_file_ignored(self, context: BaseLintContext, config: PrintStatementConfig) -> bool:
         """Check if file matches ignore patterns."""
-        if not config.ignore:
-            return False
         if not context.file_path:
             return False
-
-        file_path = Path(context.file_path)
-        return any(self._matches_pattern(file_path, pattern) for pattern in config.ignore)
-
-    def _matches_pattern(self, file_path: Path, pattern: str) -> bool:
-        """Check if file path matches a glob pattern."""
-        if matches_pattern(str(file_path), pattern):
-            return True
-        if pattern in str(file_path):
-            return True
-        return False
+        return is_ignored_path(str(context.file_path), config.ignore)
 
     def _parse_python_code(self, code: str | None) -> ast.AST | None:
         """Parse Python code into AST."""

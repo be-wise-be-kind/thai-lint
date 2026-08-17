@@ -29,16 +29,14 @@ Suppressions:
 """
 
 from contextlib import suppress
-from pathlib import Path
 from typing import Protocol
 
 from src.core.base import BaseLintContext, BaseLintRule
 from src.core.constants import HEADER_SCAN_LINES, Language
-from src.core.linter_utils import load_linter_config
+from src.core.linter_utils import is_ignored_path, load_linter_config
 from src.core.types import Violation
 from src.linter_config.directive_markers import check_general_ignore, has_ignore_directive_marker
 from src.linter_config.ignore import _check_specific_rule_ignore, get_ignore_parser
-from src.linter_config.pattern_utils import matches_pattern
 
 from .atemporal_detector import AtemporalDetector
 from .bash_parser import BashHeaderParser
@@ -203,37 +201,7 @@ class FileHeaderRule(BaseLintRule):  # thailint: ignore[srp]
         """Check if file matches ignore patterns."""
         if not context.file_path:
             return False
-
-        file_path = Path(context.file_path)
-        return any(self._matches_ignore_pattern(file_path, p) for p in config.ignore)
-
-    def _matches_ignore_pattern(self, file_path: Path, pattern: str) -> bool:
-        """Check if file path matches a single ignore pattern."""
-        if matches_pattern(str(file_path), pattern):
-            return True
-
-        if self._matches_directory_pattern(file_path, pattern):
-            return True
-
-        if self._matches_file_pattern(file_path, pattern):
-            return True
-
-        return pattern in str(file_path)
-
-    def _matches_directory_pattern(self, file_path: Path, pattern: str) -> bool:
-        """Match directory patterns like **/migrations/**."""
-        if pattern.startswith("**/") and pattern.endswith("/**"):
-            dir_name = pattern[3:-3]
-            return dir_name in file_path.parts
-        return False
-
-    def _matches_file_pattern(self, file_path: Path, pattern: str) -> bool:
-        """Match file patterns like **/__init__.py."""
-        if pattern.startswith("**/"):
-            filename_pattern = pattern[3:]
-            path_str = str(file_path)
-            return file_path.name == filename_pattern or path_str.endswith(filename_pattern)
-        return False
+        return is_ignored_path(str(context.file_path), config.ignore)
 
     def _build_missing_header_violations(self, context: BaseLintContext) -> list[Violation]:
         """Build violations for missing header."""
