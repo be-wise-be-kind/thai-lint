@@ -706,6 +706,36 @@ Consider consolidating to a shared constants module.
 | `min_constant_occurrences` | integer | `2` | Minimum files to report (2 = pairs) |
 | `python_min_constant_occurrences` | integer | `null` | Python-specific override |
 | `typescript_min_constant_occurrences` | integer | `null` | TypeScript-specific override |
+| `ignore_constant_patterns` | array | `[]` | Regex patterns; constant names matching any are excluded from duplicate-constant detection |
+
+### Excluding Idiomatic Constants by Name
+
+Some constant names are a per-file idiom by convention rather than genuine duplication - most
+commonly a module logger declaration:
+
+```python
+# a.py
+LOG = logging.getLogger(__name__)
+
+# b.py
+LOG = logging.getLogger(__name__)
+```
+
+Every file is *expected* to repeat this line; there's no shared module to consolidate it into.
+`ignore_constant_patterns` excludes constants by name (regex, matched against the exact constant
+name) before duplicate detection runs, so this idiom never produces a violation:
+
+```yaml
+dry:
+  enabled: true
+  ignore_constant_patterns:
+    - "^LOG$"
+    - "^logger$"
+```
+
+This only affects duplicate-*constant* findings. Duplicate-*code-block* detection (the main DRY
+feature) is unaffected - two files sharing a real duplicated block are still flagged even if one
+of them also happens to declare `LOG`.
 
 ### Refactoring Pattern: Shared Constants Module
 
@@ -1222,6 +1252,7 @@ class DRYConfig:
     min_constant_occurrences: int = 2
     python_min_constant_occurrences: int | None = None
     typescript_min_constant_occurrences: int | None = None
+    ignore_constant_patterns: list[str] = field(default_factory=list)
 
     # Storage settings
     storage_mode: str = "memory"  # Options: "memory" or "tempfile"
