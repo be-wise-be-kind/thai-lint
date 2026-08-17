@@ -68,11 +68,16 @@ class IgnoreDirectiveParser:
         self.repo_patterns = _load_repo_ignores(self.project_root)
         self._ignore_cache: dict[str, bool] = {}
         self._dir_ignore_cache: dict[str, bool] = {}
-        # Keyed by id(file_content): callers (e.g. DRY) pass the same cached
-        # content string for every violation in a file, so identity is a
-        # cheap and correct cache key. See issue [TBD].
-        self._lines_cache: dict[int, list[str]] = {}
-        self._block_index_cache: dict[int, _BlockIndex] = {}
+        # Keyed by id(file_content), but each entry also stores the object the id was
+        # taken from so a lookup can verify (via `is`) it's still the same object before
+        # trusting it. CPython's id() is only unique among *simultaneously live* objects -
+        # "two objects with non-overlapping lifetimes may have the same id() value" - and
+        # a long-lived --parallel worker processes many short-lived per-file content
+        # strings in sequence, exactly the pattern where a freed string's address gets
+        # recycled for a later, unrelated file. Without the stored reference to check
+        # against, a collision would silently serve a previous file's cached lines/index.
+        self._lines_cache: dict[int, tuple[str, list[str]]] = {}
+        self._block_index_cache: dict[int, tuple[list[str], _BlockIndex]] = {}
 
     def is_ignored(self, file_path: Path) -> bool:
         """Check if file matches repository-level ignore patterns (cached)."""
@@ -140,12 +145,16 @@ class IgnoreDirectiveParser:
         Cached by content identity so repeated calls for the same file (the
         common case: many violations against one file) return the same list
         object, which also keeps the block-index cache keyed off it stable.
+        Verifies the cached entry is still `is` the requested object before
+        trusting it, since id() alone can collide across a colliding freed
+        object's recycled address (see __init__ docstring).
         """
         key = id(file_content)
-        lines = self._lines_cache.get(key)
-        if lines is None:
-            lines = file_content.splitlines()
-            self._lines_cache[key] = lines
+        cached = self._lines_cache.get(key)
+        if cached is not None and cached[0] is file_content:
+            return cached[1]
+        lines = file_content.splitlines()
+        self._lines_cache[key] = (file_content, lines)
         return lines
 
     def _is_ignored_at_file_level(self, file_path: Path, rule_id: str, file_content: str) -> bool:
@@ -175,12 +184,17 @@ class IgnoreDirectiveParser:
         return index.is_ignored(violation.line, violation.rule_id)
 
     def _get_block_index(self, lines: list[str]) -> "_BlockIndex":
-        """Get the cached block index for these lines, building it if needed."""
+        """Get the cached block index for these lines, building it if needed.
+
+        Verifies the cached entry is still `is` the requested list before
+        trusting it (see _get_cached_lines and __init__ docstring).
+        """
         key = id(lines)
-        index = self._block_index_cache.get(key)
-        if index is None:
-            index = _BlockIndex.build(lines)
-            self._block_index_cache[key] = index
+        cached = self._block_index_cache.get(key)
+        if cached is not None and cached[0] is lines:
+            return cached[1]
+        index = _BlockIndex.build(lines)
+        self._block_index_cache[key] = (lines, index)
         return index
 
 
