@@ -24,6 +24,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **`dry.ignore_constant_patterns` config option** - excludes constant names matching a regex from duplicate-constant detection ([#245](https://github.com/be-wise-be-kind/thai-lint/issues/245)). Fixes false positives on per-file idioms like `LOG = logging.getLogger(...)`, where the same constant name is expected to repeat across every file by convention and there is no shared module to consolidate it into. Scoped to duplicate-constant findings only - duplicate-code-block detection is unaffected
+
 ### Fixed
 
 - **Per-linter `ignore:` blocks silently failed to match nested paths** - `file-header` and 7 other linters (`method-property`, `magic-numbers`, `stateless-class`, `print-statements`, its `conditional-verbose` rule, and `collection-pipeline`) checked their own `ignore:` config against `pathlib.Path.match()`, which on Python < 3.13 treats `**` as a single-segment wildcard (same as `*`) ([#243](https://github.com/be-wise-be-kind/thai-lint/issues/243)). A pattern like `docs/**` only matched files directly inside `docs/` - anything one or more levels deeper was reported as a violation despite matching the configured ignore pattern. This is a distinct bug from #240, which fixed the orchestrator's directory-walk pruning but never touched these linter-specific ignore blocks

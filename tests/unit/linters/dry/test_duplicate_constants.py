@@ -489,6 +489,71 @@ class TestConfiguration:
         assert len(constant_violations) == 0
 
 
+class TestIgnoreConstantPatterns:
+    """Tests for the dry.ignore_constant_patterns config option."""
+
+    def test_matching_pattern_suppresses_violation(self, tmp_path: Path):
+        """A constant name matching an ignore_constant_patterns regex is not flagged."""
+        file1 = tmp_path / "module1.py"
+        file1.write_text("LOG = logging.getLogger(__name__)\n")
+
+        file2 = tmp_path / "module2.py"
+        file2.write_text("LOG = logging.getLogger(__name__)\n")
+
+        config = tmp_path / ".thailint.yaml"
+        config.write_text(
+            "dry:\n  enabled: true\n  detect_duplicate_constants: true\n"
+            "  cache_enabled: false\n  ignore_constant_patterns:\n    - \"^LOG$\"\n"
+        )
+
+        linter = Linter(config_file=config, project_root=tmp_path)
+        violations = linter.lint(tmp_path, rules=["dry.duplicate-code"])
+
+        constant_violations = [v for v in violations if "constant" in v.message.lower()]
+        assert len(constant_violations) == 0
+
+    def test_non_matching_constant_still_flagged(self, tmp_path: Path):
+        """Constants that don't match any ignore pattern are still flagged."""
+        file1 = tmp_path / "module1.py"
+        file1.write_text("LOG = logging.getLogger(__name__)\nAPI_TIMEOUT = 30\n")
+
+        file2 = tmp_path / "module2.py"
+        file2.write_text("LOG = logging.getLogger(__name__)\nAPI_TIMEOUT = 60\n")
+
+        config = tmp_path / ".thailint.yaml"
+        config.write_text(
+            "dry:\n  enabled: true\n  detect_duplicate_constants: true\n"
+            "  cache_enabled: false\n  ignore_constant_patterns:\n    - \"^LOG$\"\n"
+        )
+
+        linter = Linter(config_file=config, project_root=tmp_path)
+        violations = linter.lint(tmp_path, rules=["dry.duplicate-code"])
+
+        constant_violations = [v for v in violations if "constant" in v.message.lower()]
+        assert len(constant_violations) >= 1
+        assert any("API_TIMEOUT" in v.message for v in constant_violations)
+        assert not any("LOG" in v.message for v in constant_violations if "API_TIMEOUT" not in v.message)
+
+    def test_no_patterns_configured_does_not_filter(self, tmp_path: Path):
+        """With no ignore_constant_patterns configured, behavior is unchanged."""
+        file1 = tmp_path / "module1.py"
+        file1.write_text("LOG = logging.getLogger(__name__)\n")
+
+        file2 = tmp_path / "module2.py"
+        file2.write_text("LOG = logging.getLogger(__name__)\n")
+
+        config = tmp_path / ".thailint.yaml"
+        config.write_text(
+            "dry:\n  enabled: true\n  detect_duplicate_constants: true\n  cache_enabled: false"
+        )
+
+        linter = Linter(config_file=config, project_root=tmp_path)
+        violations = linter.lint(tmp_path, rules=["dry.duplicate-code"])
+
+        constant_violations = [v for v in violations if "constant" in v.message.lower()]
+        assert len(constant_violations) >= 1
+
+
 class TestViolationMessages:
     """Tests for violation message formatting."""
 
