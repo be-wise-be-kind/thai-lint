@@ -24,6 +24,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.22.2] - 2026-08-18
+
+### Fixed
+
+- **A documented suppression was reported unjustified when its header justification did not start with a plain letter** (#249) - the `Suppressions:` entry regex required the justification text to begin with `[A-Za-z_]`, so an entry whose prose opened with a backtick, quote, digit, or parenthesis was dropped before matching ever ran. The suppression then reported as `lazy-ignores.unjustified` despite being genuinely documented. Reworded justifications that happened to start with a letter passed, which made the failure look like it depended on how the prose was phrased
+- **The rule ID was taken from the last colon on the entry line instead of the first** - a justification containing `": "` produced a garbage rule ID (`- S607: note: git is off PATH` keyed on `s607: note`), so the real rule went unmatched and the garbage key reported as an orphaned suppression
+- **Wrapped justification lines were parsed as entries of their own** - a continuation line containing `": "` became a phantom entry, which both truncated the justification it belonged to and reported as orphaned. In a multi-entry section this could shadow a sibling bullet for a different rule code
+
+### Changed
+
+- **Inline justifications accept em dash and en dash separators** - `# noqa: S607 — the argv is literal` now works alongside the existing ASCII `# noqa: S607 - the argv is literal` form
+- **`docs/lazy-ignores-linter.md` documents inline justifications** for the first time, along with the entry format rules: justification text may start with any character, may contain colons, and may wrap onto continuation lines
+
 ## [0.22.1] - 2026-08-17
 
 ### Fixed
