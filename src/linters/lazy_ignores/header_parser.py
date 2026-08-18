@@ -6,20 +6,22 @@ Scope: Python docstrings and TypeScript JSDoc comment header parsing
 Overview: Provides SuppressionsParser class for extracting the Suppressions section from
     file headers. Parses Python triple-quoted docstrings and TypeScript JSDoc comments.
     Extracts rule IDs and justifications, normalizing rule IDs for case-insensitive matching.
-    Returns dictionary mapping normalized rule IDs to their justifications.
+    Delegates entry splitting to the entry parser so wrapped justification prose stays with
+    its entry. Returns dictionary mapping normalized rule IDs to their justifications.
 
-Dependencies: re for pattern matching, Language enum for type safety
+Dependencies: re for pattern matching, Language enum for type safety, entry_parser for entry splitting
 
 Exports: SuppressionsParser
 
 Interfaces: parse(header: str) -> dict[str, str], extract_header(code: str, language: Language)
 
-Implementation: Regex-based section extraction with line-by-line entry parsing
+Implementation: Regex-based section extraction with indentation-aware entry splitting
 """
 
 import re
 
 from src.core.constants import Language
+from src.linters.lazy_ignores.entry_parser import split_entries
 
 
 class SuppressionsParser:
@@ -36,15 +38,6 @@ class SuppressionsParser:
     JSDOC_SUPPRESSIONS_SECTION = re.compile(
         r"Suppressions:\s*\n((?:\s*\*\s+\S.*\n?)+)",
         re.MULTILINE | re.IGNORECASE,
-    )
-
-    # Pattern to parse individual entries (rule_id: justification)
-    # Rule IDs can contain colons (e.g., type:ignore[arg-type])
-    # Handles list prefixes: "- ", "* ", "• " and plain indented entries
-    # Justification must start with word char or underscore to avoid matching continuation lines
-    ENTRY_PATTERN = re.compile(
-        r"^\s*[-*•]?\s*(.+):\s+([A-Za-z_].*)$",
-        re.MULTILINE,
     )
 
     def parse(self, header: str) -> dict[str, str]:
@@ -65,16 +58,10 @@ class SuppressionsParser:
             return {}
 
         entries: dict[str, str] = {}
-        section_content = section_match.group(1)
-
-        for match in self.ENTRY_PATTERN.finditer(section_content):
-            rule_id = match.group(1).strip()
-            justification = match.group(2).strip()
-
+        for rule_id, justification in split_entries(section_match.group(1)):
             # Skip entries with empty justification
             if justification:
-                normalized_id = self.normalize_rule_id(rule_id)
-                entries[normalized_id] = justification
+                entries[self.normalize_rule_id(rule_id)] = justification
 
         return entries
 

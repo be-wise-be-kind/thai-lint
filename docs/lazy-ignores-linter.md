@@ -403,7 +403,7 @@ console.log('API trace:', data);  // eslint-disable-line no-console
 
 ### Format Rules
 
-1. **Each suppression on its own line** with `- rule-id: justification`
+1. **Each suppression starts its own entry** with `- rule-id: justification`
 2. **Rule IDs should match** what appears in the code:
    - Use `PLR0912` not `plr0912` (convention is uppercase)
    - Use `arg-type` not `type:ignore[arg-type]` (just the error code)
@@ -411,6 +411,33 @@ console.log('API trace:', data);  // eslint-disable-line no-console
 3. **Justifications explain WHY**, not WHAT:
    - Good: "State machine implementation requires complex branching"
    - Bad: "Disables too-many-branches check"
+4. **The rule ID ends at the first colon followed by whitespace**, so justification prose may
+   contain colons of its own
+5. **Justification text may start with any character** - backticks, quotes, digits, and
+   parentheses are all fine
+6. **Long justifications may wrap** onto indented continuation lines:
+
+```python
+"""
+Suppressions:
+    - S607: `git` is spelled without an absolute path; the argv is otherwise
+      literal and the call only reads the tracked-file list.
+"""
+```
+
+### Inline Justifications
+
+A suppression may be justified on its own line instead of in the header. Write a spaced dash
+after the directive, then the reason. An ASCII hyphen (`-`), em dash (`—`), and en dash (`–`)
+all work, and the reason must be at least 10 characters:
+
+```python
+subprocess.run(["git", "ls-files"])  # noqa: S607 - `git` is off PATH, argv is literal
+result = api.process(data)  # type: ignore[arg-type] — upstream stubs are wrong
+```
+
+An inline justification takes precedence over the header, so a directive justified this way
+needs no `Suppressions:` entry.
 
 ### Example Justifications
 

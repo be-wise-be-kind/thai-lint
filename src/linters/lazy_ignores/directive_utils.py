@@ -6,7 +6,8 @@ Scope: Common directive creation and path normalization for ignore detectors
 Overview: Provides shared utility functions used across Python, TypeScript, and test skip
     detectors. Centralizes logic for normalizing file paths, extracting rule IDs from
     regex matches, extracting inline justifications, and creating IgnoreDirective objects
-    to avoid code duplication.
+    to avoid code duplication. Inline justifications may be introduced by an ASCII hyphen,
+    an em dash, or an en dash.
 
 Dependencies: re for match handling, pathlib for file paths, types module for dataclasses
 
@@ -27,8 +28,8 @@ from pathlib import Path
 
 from src.linters.lazy_ignores.types import IgnoreDirective, IgnoreType
 
-# Pattern for inline justification: space-dash-space followed by text
-INLINE_JUSTIFICATION_PATTERN = re.compile(r"\s+-\s+(.+)$")
+# Pattern for inline justification: a spaced dash (ASCII, em, or en) followed by text
+INLINE_JUSTIFICATION_PATTERN = re.compile(r"\s+[-—–]\s+(.+)$")
 
 
 def normalize_path(file_path: Path | str | None) -> Path:
@@ -50,10 +51,10 @@ def normalize_path(file_path: Path | str | None) -> Path:
 def extract_inline_justification(raw_text: str) -> str | None:
     """Extract inline justification from raw directive text.
 
-    Looks for the pattern " - " (space-dash-space) followed by justification text.
-    This allows inline justifications like:
+    Looks for a spaced dash - ASCII "-", em dash "—", or en dash "–" - followed by
+    justification text. This allows inline justifications like:
         # noqa: PLR0912 - state machine inherently complex
-        # type: ignore[arg-type] - library has typing bug
+        # type: ignore[arg-type] — library has typing bug
 
     Args:
         raw_text: The raw comment text containing the ignore directive
