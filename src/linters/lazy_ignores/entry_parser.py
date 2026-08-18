@@ -8,8 +8,8 @@ Overview: Provides the line-grouping logic used to turn the raw text of a Suppre
     belongs to, so that a continuation line is never mistaken for a new suppression, and
     splits each entry on the first colon that is followed by whitespace, so that rule IDs
     containing colons stay intact while justification prose may contain colons freely.
-    Recognizes bullet markers and indentation to decide where one entry ends and the next
-    begins, and strips JSDoc comment prefixes when the whole section carries them.
+    Recognizes bullet markers, indentation, and rule ID shape to decide where one entry ends
+    and the next begins, and strips JSDoc comment prefixes when the whole section carries them.
 
 Dependencies: re for pattern matching, dataclasses for the internal entry accumulator
 
@@ -17,8 +17,8 @@ Exports: split_entries
 
 Interfaces: split_entries(section: str) -> list[tuple[str, str]]
 
-Implementation: Single pass over section lines accumulating entries, with bullet and
-    indentation heuristics distinguishing entry starts from wrapped continuation lines
+Implementation: Single pass over section lines accumulating entries, with bullet, indentation,
+    and rule ID shape heuristics distinguishing entry starts from wrapped continuation lines
 """
 
 import re
@@ -101,22 +101,22 @@ def _entry_start_match(line: str, entries: list[_Entry]) -> re.Match[str] | None
 def _starts_new_entry(match: re.Match[str], current: _Entry) -> bool:
     """Decide whether an entry-shaped line starts a new entry or wraps the current one.
 
-    A bullet marker always starts an entry. A line indented no deeper than the current
-    entry starts one too. A deeper line wraps a bulleted entry, and otherwise starts an
-    entry only when its rule ID is a single token, since wrapped prose contains spaces.
+    A bullet marker always starts an entry. A line indented deeper than the current entry
+    wraps it, unless the current entry carries no bullet and the line names a single-token
+    rule ID, which is how an entry nested under a shallower sibling reads. A line at or
+    above the current indentation starts an entry, except under a bulleted entry, where a
+    missing bullet marks wrapped prose unless the line names a single-token rule ID.
     """
     if match.group("bullet"):
         return True
-    if len(match.group("indent")) <= current.indent:
-        return True
-    if current.bulleted:
-        return False
-    return not _contains_whitespace(match.group("rule"))
+    if len(match.group("indent")) > current.indent:
+        return not current.bulleted and _is_single_token(match.group("rule"))
+    return not current.bulleted or _is_single_token(match.group("rule"))
 
 
-def _contains_whitespace(text: str) -> bool:
-    """Check whether text contains any whitespace character."""
-    return any(char.isspace() for char in text)
+def _is_single_token(text: str) -> bool:
+    """Check whether text is a single whitespace-free token, as rule IDs usually are."""
+    return not any(char.isspace() for char in text)
 
 
 def _new_entry(match: re.Match[str]) -> _Entry:

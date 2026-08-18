@@ -411,7 +411,7 @@ console.log('API trace:', data);  // eslint-disable-line no-console
 3. **Justifications explain WHY**, not WHAT:
    - Good: "State machine implementation requires complex branching"
    - Bad: "Disables too-many-branches check"
-4. **The rule ID ends at the first colon followed by a space**, so justification prose may
+4. **The rule ID ends at the first colon followed by whitespace**, so justification prose may
    contain colons of its own
 5. **Justification text may start with any character** - backticks, quotes, digits, and
    parentheses are all fine

@@ -154,6 +154,31 @@ def run():
         violations = LazyIgnoresRule().check_content(code, "test.py")
         assert violations == []
 
+    def test_flush_indent_continuation_stays_with_its_bulleted_entry(self) -> None:
+        """Joins a continuation line indented flush with the bullet it wraps."""
+        header = '''"""
+Purpose: Test file
+
+Suppressions:
+    - S607: git is spelled without an absolute path and the reason
+    continues here: the argv is literal.
+"""'''
+        entries = SuppressionsParser().parse(header)
+        assert list(entries) == ["s607"]
+        assert entries["s607"].endswith("continues here: the argv is literal.")
+
+    def test_unbulleted_entry_after_bulleted_entry_is_its_own_entry(self) -> None:
+        """A rule ID line flush with a bullet still starts its own entry."""
+        header = '''"""
+Purpose: Test file
+
+Suppressions:
+    - S607: git is off PATH and the argv is literal.
+    S603: no shell is used.
+"""'''
+        entries = SuppressionsParser().parse(header)
+        assert sorted(entries) == ["s603", "s607"]
+
     def test_jsdoc_wrapped_justification_stays_with_its_entry(self) -> None:
         """Joins JSDoc continuation lines onto the preceding entry."""
         header = """/**
