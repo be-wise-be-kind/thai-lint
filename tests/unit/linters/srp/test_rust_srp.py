@@ -62,8 +62,8 @@ impl Foo {
         assert len(violations) == 0
 
     def test_struct_with_many_methods_violates(self) -> None:
-        """Struct with 8+ methods should violate (default max is 7)."""
-        methods = "\n    ".join([f"fn method{i}(&self) {{}}" for i in range(8)])
+        """Struct with 10+ methods should violate (default max is 9)."""
+        methods = "\n    ".join([f"fn method{i}(&self) {{}}" for i in range(10)])
         code = f"""
 struct BigStruct {{}}
 
@@ -77,8 +77,8 @@ impl BigStruct {{
         assert "BigStruct" in violations[0].message
 
     def test_struct_at_threshold_passes(self) -> None:
-        """Struct with exactly 7 methods should not violate."""
-        methods = "\n    ".join([f"fn method{i}(&self) {{}}" for i in range(7)])
+        """Struct with exactly 9 methods should not violate."""
+        methods = "\n    ".join([f"fn method{i}(&self) {{}}" for i in range(9)])
         code = f"""
 struct ExactStruct {{}}
 
@@ -111,11 +111,13 @@ impl MultiImpl {
     fn method6(&self) {}
     fn method7(&self) {}
     fn method8(&self) {}
+    fn method9(&self) {}
+    fn method10(&self) {}
 }
 """
         rule = SRPRule()
         violations = rule.check(_create_context(code))
-        assert len(violations) > 0, "8 methods across 2 impl blocks should violate"
+        assert len(violations) > 0, "10 methods across 2 impl blocks should violate"
 
     def test_different_structs_analyzed_independently(self) -> None:
         """Multiple structs should be analyzed independently."""
@@ -135,6 +137,8 @@ impl BigManager {
     fn method6(&self) {}
     fn method7(&self) {}
     fn method8(&self) {}
+    fn method9(&self) {}
+    fn method10(&self) {}
 }
 """
         rule = SRPRule()
@@ -191,7 +195,7 @@ class TestRustLanguageFiltering:
 
     def test_processes_rust_files(self) -> None:
         """Should process .rs files."""
-        methods = "\n    ".join([f"fn method{i}(&self) {{}}" for i in range(8)])
+        methods = "\n    ".join([f"fn method{i}(&self) {{}}" for i in range(10)])
         code = f"""
 struct Violator {{}}
 impl Violator {{
