@@ -4,7 +4,7 @@ Purpose: Configuration schema for Single Responsibility Principle linter
 Scope: SRPConfig dataclass with max_methods, max_loc, and keyword settings
 
 Overview: Defines configuration schema for SRP linter. Provides SRPConfig dataclass with
-    max_methods field (default 7), max_loc field (default 200), and check_keywords flag
+    max_methods field (default 9), max_loc field (default 200), and check_keywords flag
     (default True) with configurable responsibility keywords. Supports per-file and
     per-directory config overrides. Validates that thresholds are positive integers.
     Integrates with the orchestrator's configuration system to allow users to customize
@@ -24,7 +24,7 @@ from dataclasses import dataclass, field
 from typing import Any
 
 # Default SRP threshold constants
-DEFAULT_MAX_METHODS_PER_CLASS = 7
+DEFAULT_MAX_METHODS_PER_CLASS = 9
 DEFAULT_MAX_LOC_PER_CLASS = 200
 
 

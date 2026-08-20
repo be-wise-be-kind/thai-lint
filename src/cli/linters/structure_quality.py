@@ -227,7 +227,7 @@ def _run_srp_lint(
 @click.argument("paths", nargs=-1, type=click.Path())
 @click.option("--config", "-c", "config_file", type=click.Path(), help="Path to config file")
 @format_option
-@click.option("--max-methods", type=int, help="Override max methods per class (default: 7)")
+@click.option("--max-methods", type=int, help="Override max methods per class (default: 9)")
 @click.option("--max-loc", type=int, help="Override max lines of code per class (default: 200)")
 @click.option("--recursive/--no-recursive", default=True, help="Scan directories recursively")
 @parallel_option
@@ -245,7 +245,7 @@ def srp(  # pylint: disable=too-many-arguments,too-many-positional-arguments
     """Check for Single Responsibility Principle violations.
 
     Analyzes Python and TypeScript classes for SRP violations using heuristics:
-    - Method count exceeding threshold (default: 7)
+    - Method count exceeding threshold (default: 9)
     - Lines of code exceeding threshold (default: 200)
     - Responsibility keywords in class names (Manager, Handler, Processor, etc.)
 

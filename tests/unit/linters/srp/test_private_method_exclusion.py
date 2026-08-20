@@ -114,7 +114,7 @@ class ComplexButCleanClass:
         context.metadata = {}
 
         violations = rule.check(context)
-        # 2 public methods is under default threshold of 7
+        # 2 public methods is under default threshold of 9
         method_violations = [v for v in violations if "methods" in str(v.message)]
         assert len(method_violations) == 0, "Class with 2 public methods should not violate"
 
@@ -130,6 +130,8 @@ class OverloadedPublicInterface:
     def method6(self): pass
     def method7(self): pass
     def method8(self): pass
+    def method9(self): pass
+    def method10(self): pass
 """
         rule = SRPRule()
         context = Mock()
@@ -139,8 +141,8 @@ class OverloadedPublicInterface:
         context.metadata = {}
 
         violations = rule.check(context)
-        # 8 public methods exceeds default threshold of 7
-        assert len(violations) > 0, "Class with 8 public methods should violate"
+        # 10 public methods exceeds default threshold of 9
+        assert len(violations) > 0, "Class with 10 public methods should violate"
 
 
 class TestTypeScriptPrivateMethodExclusion:

@@ -64,7 +64,7 @@ Classes with too many responsibilities are:
 The SRP linter uses multiple heuristics to detect potential SRP violations:
 
 1. **Method Count**: Classes with many methods likely handle multiple responsibilities
-   - Default threshold: 7 methods
+   - Default threshold: 9 methods
    - Configurable per language
 
 2. **Lines of Code (LOC)**: Large classes often violate SRP
@@ -97,15 +97,17 @@ The linter uses Abstract Syntax Tree (AST) parsing for accurate analysis:
 
 **Method Counting (Python):**
 ```python
-class UserService:           # 8 methods
+class UserService:           # 10 methods
     def create_user(self): pass
     def update_user(self): pass
     def delete_user(self): pass
     def find_user(self): pass
+    def list_users(self): pass
+    def archive_user(self): pass
     def send_email(self): pass      # ← Different responsibility
     def log_action(self): pass      # ← Different responsibility
     def validate_data(self): pass   # ← Different responsibility
-    def generate_report(self): pass # ← Violation at method 8 (max: 7)
+    def generate_report(self): pass # ← Violation at method 10 (max: 9)
 ```
 
 **Lines of Code (Python):**
@@ -163,7 +165,7 @@ Add to `.thailint.yaml`:
 ```yaml
 srp:
   enabled: true
-  max_methods: 7    # Maximum methods per class
+  max_methods: 9    # Maximum methods per class
   max_loc: 200      # Maximum lines of code per class
 ```
 
@@ -269,7 +271,7 @@ Configuration is applied with the following priority (highest to lowest):
 
 1. **Language-specific settings** (`python:`, `typescript:`, etc.)
 2. **Top-level defaults** (`max_methods`, `max_loc`)
-3. **Built-in defaults** (7 methods, 200 LOC)
+3. **Built-in defaults** (9 methods, 200 LOC)
 
 ## CLI Usage
 
@@ -400,7 +402,7 @@ if violations:
 
 **Code:**
 ```python
-class UserManager:  # 8 methods - Violation (max: 7)
+class UserManager:  # 10 methods - Violation (max: 9)
     def create(self): pass
     def update(self): pass
     def delete(self): pass
@@ -408,12 +410,14 @@ class UserManager:  # 8 methods - Violation (max: 7)
     def validate(self): pass
     def notify(self): pass
     def log(self): pass
-    def export(self): pass  # ← 8th method triggers violation
+    def archive(self): pass
+    def restore(self): pass
+    def export(self): pass  # ← 10th method triggers violation
 ```
 
 **Violation Message:**
 ```
-src/user.py:1 - Class 'UserManager' may violate SRP: 8 methods (max: 7)
+src/user.py:1 - Class 'UserManager' may violate SRP: 10 methods (max: 9)
 Suggestion: Consider extracting related methods into separate classes
 ```
 
@@ -453,13 +457,13 @@ Suggestion: Avoid generic names like Manager, Handler, Processor
 
 **Code:**
 ```python
-class DataManager:  # 10 methods, 300 LOC, contains "Manager"
+class DataManager:  # 12 methods, 300 LOC, contains "Manager"
     # Multiple violations!
 ```
 
 **Violation Message:**
 ```
-src/manager.py:1 - Class 'DataManager' may violate SRP: 10 methods (max: 7), 300 lines (max: 200), responsibility keyword in name
+src/manager.py:1 - Class 'DataManager' may violate SRP: 12 methods (max: 9), 300 lines (max: 200), responsibility keyword in name
 Suggestion: Consider extracting related methods into separate classes. Consider breaking the class into smaller, focused classes. Avoid generic names like Manager, Handler, Processor
 ```
 
@@ -690,7 +694,7 @@ class FilePlacementLinter:  # 6 methods, ~80 LOC
     # Orchestrates the focused classes above
 ```
 
-**Result**: Each class has a single, well-defined responsibility with ≤7 methods and ≤150 LOC
+**Result**: Each class has a single, well-defined responsibility with ≤9 methods and ≤150 LOC
 
 ## Ignore Directives
 
@@ -907,7 +911,7 @@ srp:
 
 # Target
 srp:
-  max_methods: 7
+  max_methods: 9
   max_loc: 200
 ```
 

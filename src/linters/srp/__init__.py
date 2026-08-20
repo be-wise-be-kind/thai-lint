@@ -47,7 +47,7 @@ def lint(
     Args:
         path: Path to file or directory to lint
         config: Configuration dict (optional, uses defaults if not provided)
-        max_methods: Maximum allowed methods per class (default: 7)
+        max_methods: Maximum allowed methods per class (default: 9)
         max_loc: Maximum allowed lines of code per class (default: 200)
 
     Returns:

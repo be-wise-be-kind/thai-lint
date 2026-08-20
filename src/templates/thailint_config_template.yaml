@@ -59,8 +59,8 @@ srp:
   enabled: true
 
   # Maximum methods per class
-  # Default: 7
-  max_methods: 7
+  # Default: 9
+  max_methods: 9
 
   # Maximum lines of code per class
   # Default: 200

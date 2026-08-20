@@ -24,6 +24,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **SRP linter default `max_methods` raised from 7 to 9** - the 7-method default flagged classes that users consistently judged to be cohesive, making the linter noisy enough to be turned off rather than tuned. Only the built-in default moved; any explicit `max_methods` in `.thailint.yaml` (top-level or under a language key) and the `--max-methods` CLI flag are unaffected. Projects relying on the old value can restore it with `srp: {max_methods: 7}`
+
 ## [0.22.2] - 2026-08-18
 
 ### Fixed
