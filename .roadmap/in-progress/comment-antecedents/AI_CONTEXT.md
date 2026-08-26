@@ -119,21 +119,29 @@ strict tier — to the default tier removes it at no cost to recall. A clause-in
 the same purpose and rejected: it would discard genuine findings that open a comment, such as "Used to be
 mask, now it's recordmask".
 
-Tier 2 is opt-in and does **not** meet the 5% bar. It is documented so the numbers are not rediscovered:
+Tier 2 is opt-in and does **not** meet the 5% bar. Re-measured against the shipped
+`detect_strict_tier`, counting only the hits it adds beyond tier 1:
 
-| Corpus | Tier-2 hits | True | Precision |
+| Corpus | Tier-2 hits beyond tier 1 | True | Precision |
 |---|---|---|---|
-| OSS `site-packages` | 35 | 30 | 86% |
-| qbench first-party | 25 | 24 | 96% |
+| OSS `site-packages` | 17 | 14 | 82% |
+| qbench | 9 | 8 | 89% |
+| **Combined** | **26** | **22** | **85%** |
+
+Earlier drafts of this document recorded 86% and 96%. Those figures described a looser variant that
+accepted a contrast word anywhere in the block; the shipped detector requires one within 80 characters and
+is measured here. Every remaining false positive is the purposive sense — "colons are more frequently used
+to separate field names", "an id set used to tell a fresh sync from a resync" — which is the failure mode
+the grammar gates narrow but do not close.
 
 ## Key Decisions Made
 
 ### Decision 1: Two tiers, and only tier 1 is default-on
 
 Tier 1 (`used to be`, `before this <noun> existed`) measures 100% precision on 188,450 blocks. It ships
-enabled. Tier 2 (`used to` with a nearby contrast word) measures 86% on open-source code, which is a 14%
-false positive rate. thai-lint has no warning severity — `src/core/types.py:28` defines `Severity.ERROR`
-alone — so a 14% false positive rate on a default-on rule would block commits on good comments. Tier 2
+enabled. Tier 2 (`used to` with a contrast word within 80 characters) measures 82% on open-source code,
+which is an 18% false positive rate. thai-lint has no warning severity — `src/core/types.py:28` defines
+`Severity.ERROR` alone — so that rate on a default-on rule would block commits on good comments. Tier 2
 therefore ships behind explicit configuration.
 
 ### Decision 2: Report per comment block, not per line

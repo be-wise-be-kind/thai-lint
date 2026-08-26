@@ -1234,8 +1234,10 @@ An opt-in tier flags the habitual-past sense of `used to` when a contrast word s
 # This route used to refuse outright. It no longer does.
 ```
 
-It measures **86% precision on open-source code**, below the project's 5% false-positive threshold, so it
-stays off unless you ask for it. Enable it when you would rather triage some noise than miss findings.
+It measures **82% precision on open-source code** and 89% on a private codebase, against the project's 5%
+false-positive threshold, so it stays off unless you ask for it. Enable it when you would rather triage
+some noise than miss findings. The residual false positives are all the purposive sense of the phrase —
+"colons are more frequently used to separate field names from their types".
 
 ### Configuration
 

@@ -450,8 +450,8 @@ tests/smoke/test_comment_antecedents_corpora.py        (new)
 **Tier 2 — `comment_antecedents_strict`, default `false`**: `\bused to\b` present, **and** not preceded by
 `is|are|was|were|be|been|being|not|also|only|can be|could be|to be`, **and** not clause-initial (block
 start or after `.` `;` `:` `—` `(` `-`), **and** not comma-preceded, **and** a contrast word (`now`,
-`no longer`, `instead`, `rather than`, `today`, `which meant`) within **80 characters**. Measured 86% on
-the open-source corpus, 96% on qbench — below the 5% acceptance bar, hence opt-in.
+`no longer`, `instead`, `rather than`, `today`, `which meant`) within **80 characters**. Measured 82% on
+the open-source corpus, 89% on qbench — below the 5% acceptance bar, hence opt-in.
 
 **Config additions to `FileHeaderConfig`**:
 ```python
