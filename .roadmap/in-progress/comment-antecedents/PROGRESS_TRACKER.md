@@ -6,7 +6,7 @@
 
 **Overview**: Tracks implementation progress for a rule that flags comments a reader cannot resolve without
     the diff. The pattern set was reduced from fourteen candidate phrases to two after measurement against
-    208,353 mid-file comment blocks in three codebases, two of which are open source. The rule attaches to
+    192,352 mid-file comment blocks in three codebases, two of which are open source. The rule attaches to
     the package that already owns prose scanning, so no CLI, output-format, or registration work is
     required. Implementation is strictly test-first: PR1 lands the full behavioural specification as failing
     tests and PR2 makes them pass. Includes the PR dashboard, checklists, measured release gates, and the

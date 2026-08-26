@@ -481,9 +481,9 @@ comment_antecedents_strict: bool = False
 
 | Corpus | Blocks | Tier-1 hits | Precision |
 |---|---|---|---|
-| OSS `site-packages` | 165,796 | 12 | 100% |
-| qbench first-party | 40,104 | 19 | 100% |
-| thai-lint | 2,453 | 0 | n/a |
+| OSS `site-packages` | 165,952 | 58 | 100% |
+| qbench | 23,978 | 23 | 100% |
+| thai-lint | 2,422 | 0 | n/a |
 
 The private corpora are not committed. The gate reads a corpus path from an environment variable and skips
 when unset, so CI runs the thai-lint baseline and a developer can run the full set locally.
@@ -539,7 +539,7 @@ when unset, so CI runs the thai-lint baseline and a developer can run the full s
 3. The roadmap moves `planning/` → `in-progress/` at PR1 and → `complete/` at PR2.
 
 **Release note requirement**: `check_comment_antecedents` defaults to `true`, so an existing user running
-`file-header` gains body-comment checking on upgrade. The measured false positive rate is 0% across 208,353
+`file-header` gains body-comment checking on upgrade. The measured false positive rate is 0% across 192,352
 comment blocks, but the behaviour change belongs in the CHANGELOG.
 
 ## Success Metrics

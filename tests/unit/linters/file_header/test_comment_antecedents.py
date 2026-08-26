@@ -62,14 +62,16 @@ class TestFormerStateDetection:
 
     def test_the_violation_line_is_the_first_line_of_the_comment_block(self):
         """Should anchor the violation to the block's first line."""
-        code = _py_source("The lock used to be held across the status flip")
+        comment = "The lock used to be held across the status flip"
+        code = _py_source(comment)
+        expected_line = code.split("\n").index(f"    # {comment}") + 1
 
         from src.linters.file_header.comment_antecedent_rule import CommentAntecedentRule
 
         rule = CommentAntecedentRule()
         violations = rule.check(create_mock_context(code, "test.py"))
 
-        assert violations[0].line == 8
+        assert violations[0].line == expected_line
 
     def test_the_violation_message_names_the_offending_phrase(self):
         """Should name the matched phrase in the message."""
@@ -135,6 +137,33 @@ class TestFormerStateDetection:
         violations = rule.check(create_mock_context(code, "test.py"))
 
         assert violations == []
+
+    def test_the_passive_purposive_sense_of_used_to_be_is_not_flagged(self):
+        """Should not flag 'are used to be sure', which means 'used in order to be'."""
+        code = _py_source("16 bytes are used to be sure to cover all dtype alignments")
+
+        from src.linters.file_header.comment_antecedent_rule import CommentAntecedentRule
+
+        rule = CommentAntecedentRule()
+        violations = rule.check(create_mock_context(code, "test.py"))
+
+        assert violations == []
+
+    @pytest.mark.parametrize(
+        "comment",
+        [
+            "Used to be mask, now it's recordmask",
+            "used to be: (Any, Optional[Callable]) -> None",
+        ],
+    )
+    def test_a_block_opening_with_the_phrase_is_still_flagged(self, comment):
+        """Should keep flagging genuine findings that open the comment block."""
+        from src.linters.file_header.comment_antecedent_rule import CommentAntecedentRule
+
+        rule = CommentAntecedentRule()
+        violations = rule.check(create_mock_context(_py_source(comment), "test.py"))
+
+        assert len(violations) == 1
 
 
 class TestPreChangeStateDetection:

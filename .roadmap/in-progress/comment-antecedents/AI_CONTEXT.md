@@ -6,7 +6,7 @@
 
 **Overview**: Establishes why the `comment-antecedents` rule exists, what it detects, and — most importantly —
     which candidate detection patterns survived empirical validation and which were rejected. Every pattern in
-    the shipping set carries a measured precision figure from three independent corpora totalling 208,353
+    the shipping set carries a measured precision figure from three independent corpora totalling 192,352
     mid-file comment blocks. Two patterns that scored well on a single private codebase collapsed under
     open-source validation and are documented here as rejected, so that a later contributor does not
     re-propose them. Also records the framework findings that make this rule cheap to build: no extension-map
@@ -68,15 +68,16 @@ linter cannot have that and must not pretend to. That half stays with a human or
 
 | Corpus | Files | Mid-file comment blocks | Character |
 |---|---|---|---|
-| OSS `site-packages` | 25,525 | 165,796 | Real open-source libraries (numpy, pandas, scipy, mypy, sqlalchemy, requests, matplotlib, pygments, …) |
-| qbench first-party | 8,962 | 40,104 | Private application code, mixed legacy and AI-assisted |
-| thai-lint | 594 | 2,453 | This repository |
-| **Total** | **35,081** | **208,353** | |
+| OSS `site-packages` | 25,525 | 165,952 | Real open-source libraries (numpy, pandas, scipy, mypy, sqlalchemy, requests, matplotlib, pygments, …) |
+| qbench | 8,962 | 23,978 | Private application code, mixed legacy and AI-assisted |
+| thai-lint | 594 | 2,422 | This repository |
+| **Total** | **35,081** | **192,352** | |
 
-Vendored and generated trees were excluded from the private corpora (`site-packages`, minified bundles,
-`.terragrunt-cache`, four bundled copies of `requests` under `apps/qbench/custom/*/`).
+Generated and minified trees were excluded (`.min.js`, `.terragrunt-cache`, vendored asset bundles,
+`pip`'s own vendored tree). Bundled third-party libraries inside the private corpus were left in, so the
+counts reflect what an unconfigured run reports rather than a curated best case.
 
-187 comment blocks were hand-labelled to produce the precision figures below.
+268 comment blocks were hand-labelled to produce the precision figures below.
 
 ### Criterion 2 evidence: the defect tracks AI authorship
 
@@ -98,12 +99,23 @@ Tier 1 is the default-on set. Measured across all three corpora:
 
 | Corpus | Tier-1 hits | True | False | Precision |
 |---|---|---|---|---|
-| OSS `site-packages` | 12 | 12 | 0 | 100% |
-| qbench first-party | 19 | 19 | 0 | 100% |
+| OSS `site-packages` | 58 | 58 | 0 | 100% |
+| qbench | 23 | 23 | 0 | 100% |
 | thai-lint | 0 | — | — | — |
-| **Total** | **31** | **31** | **0** | **100%** |
+| **Total** | **81** | **81** | **0** | **100%** |
 
 False positive rate 0%, against an acceptance bar of 5%.
+
+Four of the qbench hits are the same sentence in four bundled copies of one third-party library, which a
+consuming project would exclude with an ignore pattern; the other nineteen are first-party. The counts are
+pinned by `tests/smoke/test_comment_antecedents_corpora.py`, which fails on drift rather than absorbing it.
+
+One false positive was found during implementation and eliminated rather than tolerated. In
+`joblib/numpy_pickle.py`, "16 bytes are used to be sure to cover all the possible dtypes' alignments" reads
+as "used in order to be", not as habitual past. Applying the passive-voice gate — already present in the
+strict tier — to the default tier removes it at no cost to recall. A clause-initial gate was measured for
+the same purpose and rejected: it would discard genuine findings that open a comment, such as "Used to be
+mask, now it's recordmask".
 
 Tier 2 is opt-in and does **not** meet the 5% bar. It is documented so the numbers are not rediscovered:
 
@@ -116,7 +128,7 @@ Tier 2 is opt-in and does **not** meet the 5% bar. It is documented so the numbe
 
 ### Decision 1: Two tiers, and only tier 1 is default-on
 
-Tier 1 (`used to be`, `before this <noun> existed`) measures 100% precision on 208,353 blocks. It ships
+Tier 1 (`used to be`, `before this <noun> existed`) measures 100% precision on 192,352 blocks. It ships
 enabled. Tier 2 (`used to` with a nearby contrast word) measures 86% on open-source code, which is a 14%
 false positive rate. thai-lint has no warning severity — `src/core/types.py:28` defines `Severity.ERROR`
 alone — so a 14% false positive rate on a default-on rule would block commits on good comments. Tier 2

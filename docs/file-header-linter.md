@@ -1171,6 +1171,106 @@ Implementation: ${7:Notable patterns or decisions}
 """
 ```
 
+## Comment Antecedents
+
+`file-header` carries a second rule, `file-header.comment-antecedents`, which reads the prose **below** the
+header instead of the header itself.
+
+### What it detects
+
+A comment that describes the change instead of the code. Whoever opens the merged file holds no diff, so
+the sentence has nothing to resolve against:
+
+```python
+# The PENDING_TRANSITION lock used to be held across the status flip
+```
+
+```hcl
+# the list every tenant had before this filtering existed
+```
+
+The referent — what the lock *was*, what the list looked like *before* — exists only in a change that is no
+longer reachable. That is worse than no comment, because a reader will not delete something that sounds
+load-bearing.
+
+### What it does not detect
+
+A comment can carry the same defect with no matchable phrase at all, by stating in the present tense the
+problem the change removed. Every term in such a sentence resolves; it is simply false. Detecting that
+needs the diff and a semantic judgement about the code, which a file-at-a-time linter cannot have. That
+half stays with a human or model reviewer.
+
+### Patterns
+
+Two phrases are enabled by default:
+
+| Phrase | Example |
+|---|---|
+| `used to be` | `# overlap used to be bool and is now enum` |
+| `before this <noun> existed \| was \| went live` | `# before this deprecation was instituted` |
+
+Both were chosen because neither can describe something code does while running. Change verbs such as
+`replaces`, `removes`, `adds`, and `strips` were measured and rejected: the runtime reading dominates them,
+so precision collapses. `previously` and `this change` were rejected for the same reason.
+
+### Measured precision
+
+Every hit across three codebases was hand-labelled:
+
+| Corpus | Comment blocks | Hits | True | Precision |
+|---|---|---|---|---|
+| Open-source `site-packages` | 165,952 | 58 | 58 | 100% |
+| Private application code | 23,978 | 23 | 23 | 100% |
+| thai-lint | 2,422 | 0 | — | — |
+
+The rule is quiet by design: roughly 0.4 findings per 1,000 comment blocks.
+
+### Strict mode
+
+An opt-in tier flags the habitual-past sense of `used to` when a contrast word sits within 80 characters:
+
+```python
+# This route used to refuse outright. It no longer does.
+```
+
+It measures **86% precision on open-source code**, below the project's 5% false-positive threshold, so it
+stays off unless you ask for it. Enable it when you would rather triage some noise than miss findings.
+
+### Configuration
+
+```yaml
+file-header:
+  # Scan mid-file comments (default: true)
+  check_comment_antecedents: true
+
+  # Opt in to habitual-past detection (default: false)
+  comment_antecedents_strict: false
+```
+
+Vendored trees (`node_modules/`, `vendor/`, `site-packages/`, `dist/`, `*.min.js`) are excluded by default.
+A project that bundles third-party libraries under non-standard paths should add them to `ignore`.
+
+### Suppression
+
+The rule honours every standard scope. Because it reports on comments, a suppression is a comment beside a
+comment:
+
+```python
+# plan.yml asks which targets this pull request touches  # thailint: ignore[file-header.comment-antecedents]
+```
+
+```python
+# thailint: ignore-next-line[file-header.comment-antecedents]
+# The refusal used to be discoverable only from the response
+```
+
+### Supported file types
+
+Hash comments: `.py`, `.sh`, `.bash`, `.yaml`, `.yml`, `.tf`, `.hcl`, `.just`, `.toml`, `.cfg`
+Slash comments: `.js`, `.ts`, `.tsx`, `.jsx`, `.go`, `.rs`, `.java`
+
+Violations are reported once per contiguous comment block, so a wrapped paragraph yields one finding.
+
 ## Related Documentation
 
 - **[AI Documentation Standard](ai-doc-standard.md)** - AI-optimized header format specification
