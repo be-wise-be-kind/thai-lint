@@ -58,9 +58,10 @@ SKIP_PATH_PARTS = ("/site-packages/pip/", ".min.js", "/vendor/", "/static/qbc/as
 REPO_ROOT = Path(__file__).resolve().parents[2]
 
 
-def scan_corpus(root: str) -> tuple[int, int]:
-    """Count comment blocks and default-tier hits under a directory tree."""
-    blocks = hits = 0
+def scan_corpus(root: str) -> tuple[int, list[str]]:
+    """Count comment blocks and collect located default-tier hits under a directory tree."""
+    blocks = 0
+    hits: list[str] = []
     for dirpath, dirnames, filenames in os.walk(root):
         dirnames[:] = [d for d in dirnames if d not in SKIP_DIRS]
         for filename in filenames:
@@ -76,8 +77,9 @@ def scan_corpus(root: str) -> tuple[int, int]:
                 continue
             for block in extract_comment_blocks(content, suffix):
                 blocks += 1
-                if detect_default_tier(block.text):
-                    hits += 1
+                phrase = detect_default_tier(block.text)
+                if phrase:
+                    hits.append(f"{path}:{block.start_line} [{phrase}]")
     return blocks, hits
 
 
@@ -88,7 +90,7 @@ class TestSelfBaseline:
         """Should find no default-tier hit anywhere in this repository."""
         _blocks, hits = scan_corpus(str(REPO_ROOT))
 
-        assert hits == 0
+        assert hits == [], "unexpected comment antecedents in this repository:\n" + "\n".join(hits)
 
     def test_the_self_scan_reads_a_meaningful_number_of_blocks(self):
         """Should scan a substantial corpus, so a zero result is not an empty walk."""
@@ -103,12 +105,10 @@ class TestExternalCorpusBaselines:
     @pytest.mark.parametrize(
         ("env_var", "expected_hits", "min_blocks"),
         [
-            # Hand-labelled: 23/23 true, 0 false positives. Nineteen are first-party;
-            # four are the same comment in four bundled copies of one third-party library,
-            # which a consuming project would exclude with an ignore pattern.
-            ("THAILINT_CORPUS_QBENCH", 23, 20000),
-            # Hand-labelled: 58/58 true, 0 false positives.
-            ("THAILINT_CORPUS_OSS", 58, 150000),
+            # Hand-labelled: 19/19 true, 0 false positives.
+            ("THAILINT_CORPUS_QBENCH", 19, 20000),
+            # Hand-labelled: 57/57 true, 0 false positives.
+            ("THAILINT_CORPUS_OSS", 57, 150000),
         ],
     )
     def test_external_corpus_reproduces_its_baseline(self, env_var, expected_hits, min_blocks):
@@ -119,5 +119,10 @@ class TestExternalCorpusBaselines:
 
         blocks, hits = scan_corpus(root)
 
-        assert blocks > min_blocks
-        assert hits == expected_hits
+        assert blocks > min_blocks, f"{root} yielded only {blocks} comment blocks"
+        assert len(hits) == expected_hits, (
+            f"{env_var} baseline moved: expected {expected_hits}, found {len(hits)}. "
+            "A corpus at a different revision drifts as readily as a widened rule, so "
+            "compare the located hits below against the labelled set before adjusting "
+            "the baseline:\n" + "\n".join(sorted(hits))
+        )

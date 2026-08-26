@@ -39,6 +39,7 @@ class CommentBlock:
 
     start_line: int
     text: str
+    end_line: int
 
 
 def _marker_for(suffix: str) -> str | None:
@@ -70,12 +71,16 @@ def _docstring_end(lines: list[str], start: int) -> int:
     return len(lines)
 
 
-def _python_header_end(lines: list[str]) -> int:
-    """Index just past a Python module docstring, or the first content line."""
+def _python_header_end(lines: list[str], marker: str) -> int:
+    """Index just past a Python file's header.
+
+    Conventional Python uses a module docstring, but generated files and scripts often lead
+    with a hash comment run instead. Both are the file's header and neither is body prose.
+    """
     start = _first_content_index(lines)
     if start < len(lines) and lines[start].lstrip().startswith(_DOCSTRING_QUOTES):
         return _docstring_end(lines, start)
-    return start
+    return _comment_header_end(lines, marker)
 
 
 def _comment_header_end(lines: list[str], marker: str) -> int:
@@ -84,13 +89,13 @@ def _comment_header_end(lines: list[str], marker: str) -> int:
     index = start
     while index < len(lines) and lines[index].lstrip().startswith(marker):
         index += 1
-    return index if index > start else start
+    return index
 
 
 def _header_end(lines: list[str], suffix: str, marker: str) -> int:
     """Index of the first line below the file's header block."""
     if suffix == ".py":
-        return _python_header_end(lines)
+        return _python_header_end(lines, marker)
     return _comment_header_end(lines, marker)
 
 
@@ -131,7 +136,8 @@ def _run_key(item: tuple[int, tuple[int, str]]) -> int:
 def _block_from(run: Iterator[tuple[int, tuple[int, str]]]) -> CommentBlock:
     """Build one block from a run of consecutive prose comment lines."""
     entries = [entry for _, entry in run]
-    return CommentBlock(entries[0][0], " ".join(text for _, text in entries))
+    joined = " ".join(text for _, text in entries)
+    return CommentBlock(entries[0][0], joined, entries[-1][0])
 
 
 def extract_comment_blocks(content: str, suffix: str) -> list[CommentBlock]:

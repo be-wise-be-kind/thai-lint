@@ -24,6 +24,8 @@ Implementation: Composition over the extractor and detector modules, with suffix
     patterns, and the shared five-scope ignore engine applied before violations are returned
 """
 
+from dataclasses import replace
+
 from src.core.base import BaseLintContext, BaseLintRule
 from src.core.linter_utils import is_ignored_path
 from src.core.types import Severity, Violation
@@ -95,8 +97,8 @@ class CommentAntecedentRule(BaseLintRule):
         blocks = extract_comment_blocks(
             context.file_content or "", self._suffix_of(context).lower()
         )
-        violations = self._violations_for(blocks, context, config)
-        return self._filter_suppressed(violations, context)
+        found = self._violations_for(blocks, context, config)
+        return self._filter_suppressed(found, context)
 
     def _is_analysable(self, context: BaseLintContext) -> bool:
         """Whether the file's suffix is one this rule reads."""
@@ -127,14 +129,15 @@ class CommentAntecedentRule(BaseLintRule):
 
     def _violations_for(
         self, blocks: list[CommentBlock], context: BaseLintContext, config: FileHeaderConfig
-    ) -> list[Violation]:
-        """Build one violation per offending comment block."""
-        violations = []
+    ) -> list[tuple[Violation, CommentBlock]]:
+        """Build one violation per offending comment block, paired with its block."""
+        found = []
         for block in blocks:
             phrase = self._matched_phrase(block.text, config)
             if phrase:
-                violations.append(self._build_violation(phrase, context, block.start_line))
-        return violations
+                violation = self._build_violation(phrase, context, block.start_line)
+                found.append((violation, block))
+        return found
 
     @staticmethod
     def _matched_phrase(text: str, config: FileHeaderConfig) -> str | None:
@@ -160,12 +163,18 @@ class CommentAntecedentRule(BaseLintRule):
         )
 
     def _filter_suppressed(
-        self, violations: list[Violation], context: BaseLintContext
+        self, found: list[tuple[Violation, CommentBlock]], context: BaseLintContext
     ) -> list[Violation]:
-        """Drop violations suppressed by any ignore scope."""
-        file_content = context.file_content or ""
-        return [
-            v
-            for v in violations
-            if not self._ignore_parser.should_ignore_violation(v, file_content)
-        ]
+        """Drop violations suppressed by any ignore scope on any line of their block."""
+        content = context.file_content or ""
+        return [v for v, block in found if not self._is_suppressed(v, block, content)]
+
+    def _is_suppressed(self, violation: Violation, block: CommentBlock, content: str) -> bool:
+        """Whether any line of the block carries a directive suppressing this violation.
+
+        A block is reported at its first line, but the phrase can sit on any line of it, and
+        that is where a reader writes the inline directive.
+        """
+        lines = range(block.start_line, block.end_line + 1)
+        probes = (replace(violation, line=line) for line in lines)
+        return any(self._ignore_parser.should_ignore_violation(p, content) for p in probes)

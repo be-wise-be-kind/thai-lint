@@ -24,6 +24,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **`file-header.comment-antecedents` rule** - flags mid-file comments whose referent is the change that produced the code rather than the code itself, such as `# the lock used to be held across the status flip`. A reader holding the merged file has no diff, so the sentence has nothing to resolve against. Two default-on phrases (`used to be`, and `before this <noun> existed|was|went live`) measured at 100% precision across 188,450 comment blocks in three codebases, two of them open source. Reports once per contiguous comment block. Supports hash-comment languages (`.py`, `.sh`, `.yaml`, `.tf`, `.hcl`, `.just`, `.toml`, `.cfg`) and slash-comment languages (`.js`, `.ts`, `.tsx`, `.jsx`, `.go`, `.rs`, `.java`), and reports through the existing `file-header` command in text, JSON, and SARIF
+- **`comment_antecedents_strict` config option** (default `false`) - opt-in habitual-past detection, flagging `used to` when a contrast word sits within 80 characters. Measured at 86% precision on open-source code, above the project's 5% false-positive threshold, which is why it ships disabled
+
+### Changed
+
+- **`file-header` scans mid-file comments by default** - `check_comment_antecedents` defaults to `true`, so an existing `file-header` run gains body-comment checking on upgrade and may report findings on files you have not touched. The rule is quiet by design (roughly 0.4 findings per 1,000 comment blocks) and measured at 0% false positives, but the behaviour is new. Set `file-header: {check_comment_antecedents: false}` to restore header-only checking. Header validation itself is unchanged, and `enforce_atemporal` continues to govern only the header block
+
 ## [0.23.0] - 2026-08-20
 
 ### Changed

@@ -6,7 +6,7 @@
 
 **Overview**: Tracks implementation progress for a rule that flags comments a reader cannot resolve without
     the diff. The pattern set was reduced from fourteen candidate phrases to two after measurement against
-    192,352 mid-file comment blocks in three codebases, two of which are open source. The rule attaches to
+    188,450 mid-file comment blocks in three codebases, two of which are open source. The rule attaches to
     the package that already owns prose scanning, so no CLI, output-format, or registration work is
     required. Implementation is strictly test-first: PR1 lands the full behavioural specification as failing
     tests and PR2 makes them pass. Includes the PR dashboard, checklists, measured release gates, and the
@@ -36,8 +36,8 @@ This is the **PRIMARY HANDOFF DOCUMENT** for AI agents working on this rule. Whe
 
 ## Current Status
 
-**Current PR**: None started — roadmap awaiting review
-**Infrastructure State**: The host package `src/linters/file_header/` exists; no comment-antecedents files exist
+**Current PR**: Both PRs landed — feature complete, awaiting move to `complete/`
+**Infrastructure State**: Rule shipped in `src/linters/file_header/` as three modules, two config fields, and five test files
 **Feature Target**: A default-on rule with a measured 0% false positive rate, plus an opt-in strict tier
 
 ---
@@ -45,7 +45,7 @@ This is the **PRIMARY HANDOFF DOCUMENT** for AI agents working on this rule. Whe
 ## Required Documents Location
 
 ```
-.roadmap/planning/comment-antecedents/
+.roadmap/in-progress/comment-antecedents/
 ├── AI_CONTEXT.md          # Measured evidence, rejected patterns, architecture findings
 ├── PR_BREAKDOWN.md        # Gherkin specification and per-PR instructions
 └── PROGRESS_TRACKER.md    # THIS FILE
@@ -55,35 +55,21 @@ This is the **PRIMARY HANDOFF DOCUMENT** for AI agents working on this rule. Whe
 
 ## Next PR to Implement
 
-### START HERE: PR1 — BDD specification as failing tests
+### None — both PRs are complete
 
-**Quick Summary**:
-Transcribe every Gherkin scenario in PR_BREAKDOWN.md into pytest test functions, one per scenario, named
-after the scenario. Run them. Confirm every one fails on the missing module or missing rule id. Commit the
-failing suite. Write no implementation.
+| PR | Landed as |
+|---|---|
+| PR1 — BDD specification as failing tests | `fabf684`, plus `08c879f` and `8d95b86` recording rejected patterns |
+| PR2 — Implementation, dogfooding, documentation | `d25346f` |
 
-**Pre-flight Checklist**:
-- [ ] Read AGENTS.md and `.ai/index.yaml`
-- [ ] Read `.ai/howtos/how-to-write-tests.md`
-- [ ] Read `.ai/docs/FILE_HEADER_STANDARDS.md` for test file headers
-- [ ] Read AI_CONTEXT.md, in particular the rejected-pattern table
-- [ ] Read the full Gherkin specification in PR_BREAKDOWN.md
-- [ ] Read `src/linters/file_header/linter.py` and `bash_parser.py` to see the host package
-
-**Prerequisites Complete**:
-- [x] Concept measured against three corpora
-- [x] Pattern set reduced to the two that survive open-source validation
-- [x] Host package chosen and its CLI inheritance verified
-- [ ] Roadmap reviewed and committed
-
----
+**Remaining step**: move this roadmap to `.roadmap/complete/comment-antecedents/` once the pull request merges.
 
 ## Overall Progress
 
-**Total Completion**: 0% (0/2 PRs completed)
+**Total Completion**: 100% (2/2 PRs completed)
 
 ```
-[                    ] 0% Complete
+[████████████████████] 100% Complete
 ```
 
 ---
@@ -92,8 +78,8 @@ failing suite. Write no implementation.
 
 | PR | Title | Status | Completion | Complexity | Priority | Notes |
 |----|-------|--------|------------|------------|----------|-------|
-| PR1 | BDD specification as failing tests | 🔴 Not Started | 0% | Medium | P0 | RED only, no implementation |
-| PR2 | Implementation, dogfooding, documentation | 🔴 Not Started | 0% | Medium | P0 | Pins measured corpus baselines |
+| PR1 | BDD specification as failing tests | 🟢 Complete | 100% | Medium | P0 | 74 failing tests, zero `src/` changes |
+| PR2 | Implementation, dogfooding, documentation | 🟢 Complete | 100% | Medium | P0 | Corrected the OSS baseline from 12 to 58 |
 
 ### Status Legend
 - 🔴 Not Started
@@ -128,19 +114,19 @@ shipping surface is one extractor, one detector, one rule class, and two config 
 
 ### Technical Metrics
 
-- [ ] `just lint-full` exits 0 with Pylint at exactly 10.00/10
-- [ ] Xenon reports no `ERROR:xenon:` lines
-- [ ] `just test` exits 0
-- [ ] Every Gherkin scenario maps to one passing test
-- [ ] SARIF, JSON, and text output all carry `file-header.comment-antecedents`
+- [x] `just lint-full` exits 0 with Pylint at exactly 10.00/10
+- [x] Xenon reports no `ERROR:xenon:` lines
+- [x] `just test` exits 0
+- [x] Every Gherkin scenario maps to one passing test
+- [x] SARIF, JSON, and text output all carry `file-header.comment-antecedents`
 
 ### Feature Metrics
 
-- [ ] Tier-1 false positive rate of 0% reproduced on the open-source corpus gate
-- [ ] thai-lint self-lints clean with the rule enabled and zero added suppressions
-- [ ] All five suppression scopes pinned by passing tests
-- [ ] Rejected patterns proven silent by the rejected-pattern scenarios
-- [ ] Existing `file-header.validation` behaviour unchanged
+- [x] Tier-1 false positive rate of 0% reproduced on the open-source corpus gate
+- [x] thai-lint self-lints clean with the rule enabled and zero added suppressions
+- [x] All five suppression scopes pinned by passing tests
+- [x] Rejected patterns proven silent by the rejected-pattern scenarios
+- [x] Existing `file-header.validation` behaviour unchanged
 
 ---
 
@@ -213,11 +199,11 @@ repeatedly inside one prose paragraph.
 
 The feature is complete when:
 
-- [ ] Both PRs are merged
-- [ ] Every Gherkin scenario in PR_BREAKDOWN.md maps to one passing test
-- [ ] Tier 1 reproduces 0% false positives on the open-source corpus gate
-- [ ] The rule is enabled in this repository's `.thailint.yaml` and the build is clean
-- [ ] `docs/file-header-linter.md` documents both tiers, configuration, suppression, and out-of-scope
-- [ ] The CHANGELOG records the default-on behaviour change
-- [ ] `just lint-full` and `just test` both exit 0
+- [x] Both PRs are authored and green in CI
+- [x] Every Gherkin scenario in PR_BREAKDOWN.md maps to one passing test
+- [x] Tier 1 reproduces 0% false positives on the open-source corpus gate
+- [x] The rule is active on this repository (default-on) and the build is clean
+- [x] `docs/file-header-linter.md` documents both tiers, configuration, suppression, and out-of-scope
+- [x] The CHANGELOG records the default-on behaviour change
+- [x] `just lint-full` and `just test` both exit 0
 - [ ] The roadmap has moved to `.roadmap/complete/comment-antecedents/`

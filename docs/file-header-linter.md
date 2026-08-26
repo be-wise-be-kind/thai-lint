@@ -1174,7 +1174,8 @@ Implementation: ${7:Notable patterns or decisions}
 ## Comment Antecedents
 
 `file-header` carries a second rule, `file-header.comment-antecedents`, which reads the prose **below** the
-header instead of the header itself.
+header instead of the header itself. A file's header is its module docstring where it has one, and
+otherwise the leading run of comment lines after any shebang; neither is scanned by this rule.
 
 ### What it detects
 
@@ -1219,9 +1220,9 @@ Every hit across three codebases was hand-labelled:
 
 | Corpus | Comment blocks | Hits | True | Precision |
 |---|---|---|---|---|
-| Open-source `site-packages` | 165,952 | 58 | 58 | 100% |
-| Private application code | 23,978 | 23 | 23 | 100% |
-| thai-lint | 2,422 | 0 | — | — |
+| Open-source `site-packages` | 162,542 | 57 | 57 | 100% |
+| Private application code | 23,555 | 19 | 19 | 100% |
+| thai-lint | 2,353 | 0 | — | — |
 
 The rule is quiet by design: roughly 0.4 findings per 1,000 comment blocks.
 
@@ -1247,8 +1248,13 @@ file-header:
   comment_antecedents_strict: false
 ```
 
-Vendored trees (`node_modules/`, `vendor/`, `site-packages/`, `dist/`, `*.min.js`) are excluded by default.
-A project that bundles third-party libraries under non-standard paths should add them to `ignore`.
+Vendored trees are excluded by default: `node_modules/`, `vendor/`, `site-packages/`, `dist/`,
+`.terragrunt-cache/`, and `*.min.js`. A project that bundles third-party libraries under non-standard
+paths should add them to `ignore`.
+
+Note that `file-header`'s own `ignore` list applies to this rule too — the two are concatenated. Its
+default is `["test/**", "**/migrations/**", "**/__init__.py"]`, so overriding `ignore` to change what
+header validation sees also changes what the comment rule scans.
 
 ### Suppression
 

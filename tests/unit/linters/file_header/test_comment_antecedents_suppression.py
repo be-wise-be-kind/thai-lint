@@ -1,7 +1,7 @@
 """
 Purpose: Unit tests pinning every suppression scope for the comment-antecedents rule
 
-Scope: Line, preceding-line, file, and configured-path ignore handling, plus rule-id specificity
+Scope: Line, preceding-line, block, file, and configured-path ignore handling, plus rule-id specificity
 
 Overview: Test suite covering the ignore mechanisms for the comment-antecedents rule. This is the
     identified risk area for the feature: the rule reports on prose, some legitimate prose matches, and
@@ -12,7 +12,8 @@ Overview: Test suite covering the ignore mechanisms for the comment-antecedents 
 
 Dependencies: pytest, src.linters.file_header.comment_antecedent_rule, conftest.create_mock_context
 
-Exports: TestLineScopeSuppression, TestFileScopeSuppression, TestRuleIdSpecificity, TestPathSuppression
+Exports: TestLineScopeSuppression, TestFileScopeSuppression, TestBlockScopeSuppression,
+    TestRuleIdSpecificity, TestPathSuppression
 
 Interfaces: Exercises CommentAntecedentRule.check(context) -> list[Violation]
 
@@ -42,6 +43,38 @@ class TestLineScopeSuppression:
         violations = rule.check(create_mock_context(code, "test.py"))
 
         assert violations == []
+
+    def test_a_line_level_ignore_suppresses_a_multi_line_block(self):
+        """Should suppress when the directive sits on a later line of the block.
+
+        Reporting is per block and anchored to its first line, so a directive written beside
+        the offending phrase lands on a different line than the violation. This is the normal
+        case for wrapped prose, not an edge case.
+        """
+        code = (
+            f"{PY_HEADER}\n\n"
+            "# the lock was reworked in this area\n"
+            f"# {PHRASE}  # thailint: ignore[file-header.comment-antecedents]\n"
+            "x = 1\n"
+        )
+
+        from src.linters.file_header.comment_antecedent_rule import CommentAntecedentRule
+
+        rule = CommentAntecedentRule()
+        violations = rule.check(create_mock_context(code, "test.py"))
+
+        assert violations == []
+
+    def test_a_multi_line_block_without_a_directive_still_reports(self):
+        """Should still report a multi-line block carrying no directive."""
+        code = f"{PY_HEADER}\n\n# the lock was reworked in this area\n# {PHRASE}\nx = 1\n"
+
+        from src.linters.file_header.comment_antecedent_rule import CommentAntecedentRule
+
+        rule = CommentAntecedentRule()
+        violations = rule.check(create_mock_context(code, "test.py"))
+
+        assert len(violations) == 1
 
     def test_a_preceding_line_ignore_suppresses_the_violation(self):
         """Should suppress when an ignore-next-line directive precedes the block."""
@@ -80,6 +113,46 @@ class TestFileScopeSuppression:
         violations = rule.check(create_mock_context(code, "test.py"))
 
         assert violations == []
+
+
+class TestBlockScopeSuppression:
+    """Test ignore-start and ignore-end directives, the fifth ignore scope."""
+
+    def test_a_block_scope_ignore_suppresses_violations_inside_the_region(self):
+        """Should suppress a violation sitting between ignore-start and ignore-end."""
+        code = (
+            f"{PY_HEADER}\n\n"
+            "# thailint: ignore-start[file-header.comment-antecedents]\n"
+            f"# {PHRASE}\n"
+            "x = 1\n"
+            "# thailint: ignore-end[file-header.comment-antecedents]\n"
+        )
+
+        from src.linters.file_header.comment_antecedent_rule import CommentAntecedentRule
+
+        rule = CommentAntecedentRule()
+        violations = rule.check(create_mock_context(code, "test.py"))
+
+        assert violations == []
+
+    def test_a_violation_outside_the_region_still_reports(self):
+        """Should still report a violation after the region closes."""
+        code = (
+            f"{PY_HEADER}\n\n"
+            "# thailint: ignore-start[file-header.comment-antecedents]\n"
+            "# nothing to see here\n"
+            "# thailint: ignore-end[file-header.comment-antecedents]\n"
+            "\n"
+            f"# {PHRASE}\n"
+            "y = 2\n"
+        )
+
+        from src.linters.file_header.comment_antecedent_rule import CommentAntecedentRule
+
+        rule = CommentAntecedentRule()
+        violations = rule.check(create_mock_context(code, "test.py"))
+
+        assert len(violations) == 1
 
 
 class TestRuleIdSpecificity:
