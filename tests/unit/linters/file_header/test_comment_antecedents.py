@@ -201,6 +201,11 @@ class TestRejectedPatterns:
             "this drops generated C/C++ files into the source tree",
             "remove the item we added",
             "if the source is set, add the line to the output",
+            # Clause-initial third person is the docstring summary convention, which makes
+            # it the most runtime-bound reading of a change verb rather than the rarest.
+            "Removes dots from the name since ipython assumes dots mean python",
+            "Strips comments from a line",
+            "Adds methods which do not depend on cls",
         ],
     )
     def test_a_rejected_phrase_produces_no_violation(self, comment):

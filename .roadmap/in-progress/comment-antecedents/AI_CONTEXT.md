@@ -141,7 +141,8 @@ These were proposed and must not be reintroduced without new evidence.
 | `the old one` | 0% | Always a runtime referent ("stand up the new cert before the old one leaves"). |
 | `not two`, `REVERSED` | 0% | Prose coincidence. |
 | `before this` (unpaired) | 41% | Runtime ordering ("before this hook runs"). Requires the existence-verb pairing to be usable. |
-| `removes`, `strips`, `adds`, `drops` (bare) | Not measured — rejected on volume | `adds` fires 2,558 times in one open-source dependency tree, `removes` 1,345. Tier 1 fires 12 times in the same corpus. Two orders of magnitude of imperative and runtime prose ("add the line to the output", "TODO add cookie handling"). |
+| `add`, `remove`, `strip`, `drop` (imperative) | Rejected on volume | `add` fires 2,444 times in one open-source dependency tree, `remove` 1,282. Tier 1 fires 12 times in the same corpus. Imperative prose: "add the line to the output", "TODO add cookie handling". |
+| `adds`, `removes`, `strips`, `drops` (third person) | **0%** | Twenty times rarer than the imperative form (120 vs 2,444 for `adds`), which makes the split worth knowing, but every form measures at zero. Clause-initial `Adds …` is **0/20** across both corpora; plain `adds` with a subject is 0/16 sampled. |
 | `this\|we` + `removes\|strips\|adds\|drops` | **5% OSS** vs 75% private | Overfit, and the worst of the family. Of 39 open-source hits, 37 are runtime: `this adds retry and timeout information` describes what the wrapper does, `We added this symbol on previous iteration` describes an algorithm's own loop. |
 
 The `this <change>`, `previously`, and change-verb results are the most important entries in this table.
@@ -167,6 +168,16 @@ This predicts the measurements retroactively and is the cheapest available filte
 could plausibly complete the sentence "at run time, this code ___", expect it to fail.** The principle does
 not replace measurement for plausible candidates, but it does explain why the obvious change verbs are not
 worth measuring twice.
+
+**A corollary worth stating, because it inverts an intuition.** Splitting a change verb into its imperative
+and third-person forms looks promising — `adds` is twenty times rarer than `add` — and for `replaces` the
+clause-initial third-person form did reach 83%. It does not generalise. Clause-initial third person is the
+docstring summary convention: "Removes dots from the name", "Strips comments from a line", "Adds methods
+which do not depend on cls" are how a Python docstring's first line is written. So for a verb code can
+perform, that form is the **most** runtime-bound reading available, not the rarest. Measured 0 true of 20
+across both corpora. The `replaces` result was not the same construction — it came from one private
+repository's house convention of naming a superseded code location by path and line, which nothing else
+shares.
 
 ### Decision 4: A second rule inside `file_header`, sharing the package but not the detector
 
