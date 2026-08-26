@@ -141,10 +141,32 @@ These were proposed and must not be reintroduced without new evidence.
 | `the old one` | 0% | Always a runtime referent ("stand up the new cert before the old one leaves"). |
 | `not two`, `REVERSED` | 0% | Prose coincidence. |
 | `before this` (unpaired) | 41% | Runtime ordering ("before this hook runs"). Requires the existence-verb pairing to be usable. |
+| `removes`, `strips`, `adds`, `drops` (bare) | Not measured — rejected on volume | `adds` fires 2,558 times in one open-source dependency tree, `removes` 1,345. Tier 1 fires 12 times in the same corpus. Two orders of magnitude of imperative and runtime prose ("add the line to the output", "TODO add cookie handling"). |
+| `this\|we` + `removes\|strips\|adds\|drops` | **5% OSS** vs 75% private | Overfit, and the worst of the family. Of 39 open-source hits, 37 are runtime: `this adds retry and timeout information` describes what the wrapper does, `We added this symbol on previous iteration` describes an algorithm's own loop. |
 
-The `this <change>` and `previously` results are the most important entries in this table. Both looked
-shippable after validation on a single codebase. Only the open-source corpus exposed them. **Any future
-pattern addition must be validated on at least one open-source corpus before it ships.**
+The `this <change>`, `previously`, and change-verb results are the most important entries in this table.
+All three looked shippable after validation on a single codebase — 91%, 70–100%, and 75% respectively —
+and all three collapsed on open source, to 29%, 46%, and 5%. **Any future pattern addition must be
+validated on at least one open-source corpus before it ships.**
+
+### The selection principle behind the table
+
+Read down the two lists and one distinction separates them completely.
+
+**Every rejected phrase names something code can do at run time.** `replaces`, `removes`, `strips`, `adds`,
+`drops` are transitive verbs a program executes; `previously` and `before this` are adverbials that modify
+runtime actions as readily as authorship. So the dominant sense in a code comment is the runtime one, and
+the diff-deictic sense is the rare exception competing against it.
+
+**Neither surviving phrase can describe a runtime action.** `used to be` is a past-tense copula — code
+cannot "used to be" anything while executing. `before this <noun> existed` anchors to the existence of a
+construct rather than to the order of operations. Both are statements only an author can make about the
+history of the file.
+
+This predicts the measurements retroactively and is the cheapest available filter: **if a candidate phrase
+could plausibly complete the sentence "at run time, this code ___", expect it to fail.** The principle does
+not replace measurement for plausible candidates, but it does explain why the obvious change verbs are not
+worth measuring twice.
 
 ### Decision 4: A second rule inside `file_header`, sharing the package but not the detector
 

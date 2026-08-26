@@ -192,6 +192,15 @@ class TestRejectedPatterns:
             "formerly defined here, reexposed for backward compatibility",
             "stand up the new cert before the old one leaves",
             "THREE dots, not two",
+            # Change verbs. Every one names an action code performs at run time, which is
+            # why the runtime sense dominates and the diff-deictic sense is the exception.
+            "Wrap the RPC method; this adds retry and timeout information",
+            "We added this symbol on previous iteration",
+            "this removes the axis1 or axis2 prefix from the error message",
+            "NB: This strips trailing .0s to normalize",
+            "this drops generated C/C++ files into the source tree",
+            "remove the item we added",
+            "if the source is set, add the line to the output",
         ],
     )
     def test_a_rejected_phrase_produces_no_violation(self, comment):
