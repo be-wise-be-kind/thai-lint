@@ -20,7 +20,7 @@ name = "thailint"
 version = "0.24.0"
 description = "The AI Linter - Enterprise-grade linting and governance for AI-generated code across multiple languages"
 authors = ["Steve Jackson"]
-maintainers = ["Melvin Caraang, Gabriel Acosta"]
+maintainers = ["Melvin Caraang", "Gabriel Acosta"]
 license = "MIT"
 readme = "README.md"
 homepage = "https://github.com/be-wise-be-kind/thai-lint"
@@ -40,14 +40,28 @@ keywords = [
     "performance",
     "typescript",
     "rust",
+    "pre-commit",
+    "prek",
+    "sarif",
+    "llm",
+    "ai-code-review",
+    "code-review",
+    "complexity",
+    "dry",
+    "javascript",
 ]
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
+    "Intended Audience :: Information Technology",
     "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.11",
+    # Poetry derives the per-version Python classifiers from the `python` constraint
+    # above, so 3.11 through 3.14 are emitted without being listed here.
     "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: JavaScript",
+    "Programming Language :: Rust",
+    "Programming Language :: Unix Shell",
     "Topic :: Software Development :: Libraries :: Python Modules",
     "Topic :: Software Development :: Quality Assurance",
     "Topic :: Software Development :: Testing",
@@ -61,6 +75,7 @@ include = [
     "README.md",
     "LICENSE",
     "CHANGELOG.md",
+    { path = "src/py.typed", format = ["sdist", "wheel"] },
 ]
 exclude = [
     "tests",
