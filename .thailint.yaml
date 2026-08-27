@@ -43,6 +43,7 @@ file-placement:
       allow:
         - '.*\.py$'
         - 'templates/.*\.(yaml|yml)$'  # Config templates in src/templates/
+        - 'py\.typed$'  # PEP 561 marker: makes the Typing :: Typed classifier true
       deny:
         - 'test_.*\.py$'
         - '.*_test\.py$'
