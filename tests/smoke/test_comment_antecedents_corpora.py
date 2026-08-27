@@ -13,12 +13,12 @@ Overview: Guards the precision of the comment-antecedents rule against silent dr
 
 Dependencies: pytest, src.linters.file_header.comment_block_extractor, src.linters.file_header.antecedent_detector
 
-Exports: TestSelfBaseline, TestExternalCorpusBaselines
+Exports: TestSelfBaseline, TestExternalCorpusBaselines, MAX_HIT_RATE_PER_1K
 
 Interfaces: Reads THAILINT_CORPUS_QBENCH and THAILINT_CORPUS_OSS environment variables for optional corpora
 
 Implementation: Directory walk applying the shipped extractor and detector, counting comment blocks and
-    default-tier hits, compared against recorded baselines
+    default-tier hits, asserted as a ceiling on both absolute count and firing rate
 """
 
 import os
@@ -56,6 +56,11 @@ SKIP_DIRS = {
 SKIP_PATH_PARTS = ("/site-packages/pip/", ".min.js", "/vendor/", "/static/qbc/assets/")
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
+
+# Ceiling on firing density, per 1,000 comment blocks. The labelled corpora measured 0.35
+# (OSS) and 0.79 (qbench); this leaves headroom for corpus churn while still failing if the
+# rule starts firing several times more often than it was measured doing.
+MAX_HIT_RATE_PER_1K = 1.5
 
 
 def scan_corpus(root: str) -> tuple[int, list[str]]:
@@ -103,26 +108,40 @@ class TestExternalCorpusBaselines:
     """Baselines for corpora that are not committed to this repository."""
 
     @pytest.mark.parametrize(
-        ("env_var", "expected_hits", "min_blocks"),
+        ("env_var", "baseline_hits", "min_blocks"),
         [
-            # Hand-labelled: 19/19 true, 0 false positives.
+            # Hand-labelled at the revision measured: 19/19 true, 0 false positives.
             ("THAILINT_CORPUS_QBENCH", 19, 20000),
-            # Hand-labelled: 57/57 true, 0 false positives.
+            # Hand-labelled at the revision measured: 57/57 true, 0 false positives.
             ("THAILINT_CORPUS_OSS", 57, 150000),
         ],
     )
-    def test_external_corpus_reproduces_its_baseline(self, env_var, expected_hits, min_blocks):
-        """Should reproduce the recorded hit count for a configured corpus."""
+    def test_external_corpus_does_not_exceed_its_baseline(self, env_var, baseline_hits, min_blocks):
+        """Should not report more than the labelled baseline, by count or by rate.
+
+        Asserted as a ceiling rather than an equality. These corpora are live checkouts that
+        nobody pins: qbench landed 55 commits in the day after the baseline was taken, one of
+        which deleted a comment the baseline counted. An equality assertion reads that as a
+        failure identical to the rule widening, which is the thing the gate exists to catch.
+        A ceiling separates them — deleting a comment cannot trip it, and adding a pattern
+        that widens the rule still does.
+        """
         root = os.environ.get(env_var)
         if not root:
             pytest.skip(f"{env_var} not set")
 
         blocks, hits = scan_corpus(root)
+        rate = len(hits) / blocks * 1000
 
         assert blocks > min_blocks, f"{root} yielded only {blocks} comment blocks"
-        assert len(hits) == expected_hits, (
-            f"{env_var} baseline moved: expected {expected_hits}, found {len(hits)}. "
-            "A corpus at a different revision drifts as readily as a widened rule, so "
-            "compare the located hits below against the labelled set before adjusting "
-            "the baseline:\n" + "\n".join(sorted(hits))
+        assert len(hits) <= baseline_hits, (
+            f"{env_var} reports {len(hits)} hits against a labelled baseline of "
+            f"{baseline_hits}. Every hit below the baseline was hand-checked as a true "
+            "positive; anything beyond it is unlabelled and must be read before the "
+            "baseline moves:\n" + "\n".join(sorted(hits))
+        )
+        assert rate <= MAX_HIT_RATE_PER_1K, (
+            f"{env_var} hit rate {rate:.2f} per 1k blocks exceeds {MAX_HIT_RATE_PER_1K}. "
+            "The rule is firing more densely than the labelled measurement, which a "
+            "shrinking corpus alone cannot cause."
         )
