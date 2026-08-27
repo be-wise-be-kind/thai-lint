@@ -38,7 +38,7 @@ This is the **PRIMARY HANDOFF DOCUMENT** for AI agents working on this rule. Whe
 
 **Current PR**: None — feature complete and merged
 **Infrastructure State**: Rule shipped in `src/linters/file_header/` as three modules, two config fields, and five test files
-**Feature Target**: A default-on rule with a measured 0% false positive rate, plus an opt-in strict tier
+**Feature Target**: A default-on rule with a measured 0% false positive rate (an opt-in strict tier was built, measured at 82%, and removed)
 
 ---
 
@@ -154,7 +154,7 @@ and 29% on open source. `previously` measured 70–100% private and 46% open sou
 validation is how both nearly shipped. **Any new pattern requires an open-source corpus measurement.**
 
 **Severity is ERROR-only.** `src/core/types.py:28`. Issue #253 asks for warning severity; it does not
-exist. This is why the strict tier is opt-in rather than a lower severity.
+exist. This is why the strict tier could only have been a config flag, and ultimately why it was removed rather than shipped disabled.
 
 **Reporting is per comment block.** Not per line. Line-level inflates findings by roughly 60% and fires
 repeatedly inside one prose paragraph.

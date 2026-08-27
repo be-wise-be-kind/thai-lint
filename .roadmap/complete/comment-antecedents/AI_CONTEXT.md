@@ -127,30 +127,19 @@ strict tier — to the default tier removes it at no cost to recall. A clause-in
 the same purpose and rejected: it would discard genuine findings that open a comment, such as "Used to be
 mask, now it's recordmask".
 
-Tier 2 is opt-in and does **not** meet the 5% bar. Re-measured against the shipped
-`detect_strict_tier`, counting only the hits it adds beyond tier 1:
-
-| Corpus | Tier-2 hits beyond tier 1 | True | Precision |
-|---|---|---|---|
-| OSS `site-packages` | 17 | 14 | 82% |
-| qbench | 9 | 8 | 89% |
-| **Combined** | **26** | **22** | **85%** |
-
-Earlier drafts of this document recorded 86% and 96%. Those figures described a looser variant that
-accepted a contrast word anywhere in the block; the shipped detector requires one within 80 characters and
-is measured here. Every remaining false positive is the purposive sense — "colons are more frequently used
-to separate field names", "an id set used to tell a fresh sync from a resync" — which is the failure mode
-the grammar gates narrow but do not close.
-
 ## Key Decisions Made
 
-### Decision 1: Two tiers, and only tier 1 is default-on
+### Decision 1: One tier, default-on, and no opt-in second tier
 
-Tier 1 (`used to be`, `before this <noun> existed`) measures 100% precision on 188,450 blocks. It ships
-enabled. Tier 2 (`used to` with a contrast word within 80 characters) measures 82% on open-source code,
-which is an 18% false positive rate. thai-lint has no warning severity — `src/core/types.py:28` defines
-`Severity.ERROR` alone — so that rate on a default-on rule would block commits on good comments. Tier 2
-therefore ships behind explicit configuration.
+`used to be` and `before this <noun> existed` measure 100% precision on 188,450 blocks. They ship enabled.
+
+A second tier detecting the bare habitual past was built and shipped disabled, then removed. The reasoning
+for removing it is worth keeping, because the same idea will look attractive again. thai-lint has no
+warning severity — `src/core/types.py:28` defines `Severity.ERROR` alone — so an 82%-precision tier could
+only ship as a config flag. Documenting that flag honestly meant writing "this reports a wrong answer
+roughly one time in five", which is advice not to enable it. A flag nobody should turn on is code and
+documentation with no reader. If the precision problem is ever solved, the tier can come back; the
+measurement above is what it has to beat.
 
 ### Decision 2: Report per comment block, not per line
 
@@ -171,6 +160,7 @@ These were proposed and must not be reintroduced without new evidence.
 | `the old one` | 0% | Always a runtime referent ("stand up the new cert before the old one leaves"). |
 | `not two`, `REVERSED` | 0% | Prose coincidence. |
 | `before this` (unpaired) | 41% | Runtime ordering ("before this hook runs"). Requires the existence-verb pairing to be usable. |
+| Bare habitual past — `used to` with a contrast word within 80 characters | **82%** OSS, 89% qbench | Built, measured, and then removed rather than shipped disabled. 18% false positives on an ERROR-only linter, all of them the purposive sense the grammar gates narrow but cannot close: "colons are more frequently used to separate field names from their types". Documenting it honestly amounted to telling users not to enable it, which makes a config flag dead weight. Adds 17 hits on the open-source corpus and 9 on qbench beyond the shipped set — the recall is real, the precision is not good enough to act on. |
 | `add`, `remove`, `strip`, `drop` (imperative) | Rejected on volume | `add` fires 2,444 times in one open-source dependency tree, `remove` 1,282. Tier 1 fires 12 times in the same corpus. Imperative prose: "add the line to the output", "TODO add cookie handling". |
 | `adds`, `removes`, `strips`, `drops` (third person) | **0%** | Twenty times rarer than the imperative form (120 vs 2,444 for `adds`), which makes the split worth knowing, but every form measures at zero. Clause-initial `Adds …` is **0/20** across both corpora; plain `adds` with a subject is 0/16 sampled. |
 | `this\|we` + `removes\|strips\|adds\|drops` | **5% OSS** vs 75% private | Overfit, and the worst of the family. Of 39 open-source hits, 37 are runtime: `this adds retry and timeout information` describes what the wrapper does, `We added this symbol on previous iteration` describes an algorithm's own loop. |

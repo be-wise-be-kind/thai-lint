@@ -31,7 +31,7 @@ from src.core.linter_utils import is_ignored_path
 from src.core.types import Severity, Violation
 from src.linter_config.ignore import get_ignore_parser
 
-from .antecedent_detector import detect_default_tier, detect_strict_tier
+from .antecedent_detector import detect_default_tier
 from .comment_block_extractor import (
     HASH_SUFFIXES,
     SLASH_SUFFIXES,
@@ -97,7 +97,7 @@ class CommentAntecedentRule(BaseLintRule):
         blocks = extract_comment_blocks(
             context.file_content or "", self._suffix_of(context).lower()
         )
-        found = self._violations_for(blocks, context, config)
+        found = self._violations_for(blocks, context)
         return self._filter_suppressed(found, context)
 
     def _is_analysable(self, context: BaseLintContext) -> bool:
@@ -128,24 +128,16 @@ class CommentAntecedentRule(BaseLintRule):
         return is_ignored_path(path, list(config.ignore) + DEFAULT_VENDOR_IGNORES)
 
     def _violations_for(
-        self, blocks: list[CommentBlock], context: BaseLintContext, config: FileHeaderConfig
+        self, blocks: list[CommentBlock], context: BaseLintContext
     ) -> list[tuple[Violation, CommentBlock]]:
         """Build one violation per offending comment block, paired with its block."""
         found = []
         for block in blocks:
-            phrase = self._matched_phrase(block.text, config)
+            phrase = detect_default_tier(block.text)
             if phrase:
                 violation = self._build_violation(phrase, context, block.start_line)
                 found.append((violation, block))
         return found
-
-    @staticmethod
-    def _matched_phrase(text: str, config: FileHeaderConfig) -> str | None:
-        """Return the offending phrase in a block, honouring the strict-tier setting."""
-        phrase = detect_default_tier(text)
-        if phrase or not config.comment_antecedents_strict:
-            return phrase
-        return detect_strict_tier(text)
 
     def _build_violation(self, phrase: str, context: BaseLintContext, line: int) -> Violation:
         """Build a violation naming the offending phrase."""

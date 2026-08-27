@@ -323,7 +323,12 @@ Feature: File selection
     Then no violation is reported
 ```
 
-### Feature: Strict mode (tier 2, opt-in)
+### Feature: Strict mode (tier 2, opt-in) — BUILT, THEN REMOVED
+
+> **This tier is not in the shipped rule.** It was implemented to this specification, measured at 82%
+> precision on open-source code, and removed rather than shipped disabled. The scenarios below record
+> what was built; `AI_CONTEXT.md`'s rejected-pattern table records why it went. Left in place because a
+> later contributor proposing the same idea should be able to see it was already tried.
 
 ```gherkin
 Feature: Strict mode
@@ -447,7 +452,7 @@ tests/smoke/test_comment_antecedents_corpora.py        (new)
 | former-state | `\bused to be\b` | 100% (18/18) |
 | pre-change-state | `\bbefore this \w+ (existed\|exists\|was\|were\|went live\|declared\|landed\|shipped)\b` or `\bbefore this (change\|commit\|PR\|diff)\b` | 100% (12/12) |
 
-**Tier 2 — `comment_antecedents_strict`, default `false`**: `\bused to\b` present, **and** not preceded by
+**Tier 2 — `comment_antecedents_strict`, default `false`** (built to this spec, later removed): `\bused to\b` present, **and** not preceded by
 `is|are|was|were|be|been|being|not|also|only|can be|could be|to be`, **and** not clause-initial (block
 start or after `.` `;` `:` `—` `(` `-`), **and** not comma-preceded, **and** a contrast word (`now`,
 `no longer`, `instead`, `rather than`, `today`, `which meant`) within **80 characters**. Measured 82% on
