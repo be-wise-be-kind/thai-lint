@@ -106,11 +106,19 @@ Tier 1 is the default-on set. Measured across all three corpora:
 
 False positive rate 0%, against an acceptance bar of 5%.
 
-The counts are pinned by `tests/smoke/test_comment_antecedents_corpora.py`. Only the thai-lint baseline
-runs in CI; the external gates read a corpus path from an environment variable and skip when it is unset,
-so they catch drift for a developer running them locally rather than for every push. A failure prints the
-located hits, because a corpus checked out at a different revision drifts as readily as a widened rule and
-the two must not be confused.
+The counts are pinned by `tests/smoke/test_comment_antecedents_corpora.py` as a **ceiling**, not an
+equality. Only the thai-lint baseline runs in CI; the external gates read a corpus path from an
+environment variable and skip when it is unset, so they catch drift for a developer running them locally
+rather than for every push.
+
+The ceiling form was not the first design, and the reason it changed is worth recording. The gate was
+originally an exact-equality assertion, and it broke within a day: qbench landed 55 commits, one of which
+deleted a comment the baseline counted, taking it from 19 to 18. An equality assertion reads that as
+identical to the rule widening, which is the only thing the gate exists to catch. A ceiling separates
+them — deleting a comment cannot trip it, adding a pattern still does. Verified by red-flip: swapping
+`used to be` for the rejected `previously` takes qbench to 40 and the open-source corpus to 223, and the
+gate fails on both. A second assertion caps firing density at 1.5 hits per 1,000 blocks, so a widened rule
+cannot hide behind a corpus that shrank.
 
 One false positive was found during implementation and eliminated rather than tolerated. In
 `joblib/numpy_pickle.py`, "16 bytes are used to be sure to cover all the possible dtypes' alignments" reads
