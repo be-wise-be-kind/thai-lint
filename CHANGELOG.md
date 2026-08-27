@@ -24,6 +24,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.24.0] - 2026-08-27
+
 ### Added
 
 - **`file-header.comment-antecedents` rule** - flags mid-file comments whose referent is the change that produced the code rather than the code itself, such as `# the lock used to be held across the status flip`. A reader holding the merged file has no diff, so the sentence has nothing to resolve against. Two default-on phrases (`used to be`, and `before this <noun> existed|was|went live`) measured at 100% precision across 191,440 comment blocks in four codebases, two of them open source. Reports once per contiguous comment block. Supports hash-comment languages (`.py`, `.sh`, `.yaml`, `.tf`, `.hcl`, `.just`, `.toml`, `.cfg`) and slash-comment languages (`.js`, `.ts`, `.tsx`, `.jsx`, `.go`, `.rs`, `.java`), and reports through the existing `file-header` command in text, JSON, and SARIF
