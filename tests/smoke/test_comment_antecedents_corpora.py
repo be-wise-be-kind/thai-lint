@@ -4,9 +4,9 @@ Purpose: Corpus smoke-test gates pinning measured comment-antecedents precision 
 Scope: Whole-corpus scans over this repository and, when configured, private and open-source corpora
 
 Overview: Guards the precision of the comment-antecedents rule against silent drift. The default tier was
-    selected by hand-labelling every hit across three codebases, and the resulting counts are pinned here
+    selected by hand-labelling every hit across four codebases, and the resulting counts are pinned here
     so that a pattern addition which widens the rule fails the suite rather than passing unnoticed. Only
-    the thai-lint baseline runs unconditionally, because the other two corpora are not committed; those
+    the thai-lint baseline runs unconditionally, because the other three corpora are not committed; those
     read a path from an environment variable and skip when it is unset. The self-scan doubles as a
     dogfooding assertion: this repository is expected to hold no comment carrying an unresolvable
     antecedent.
@@ -63,8 +63,10 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 # rates are 0.35 per 1,000 blocks for open-source Python, 0.79 for the application codebase,
 # and 3.01 for infrastructure-as-code, where change-describing comments are markedly denser.
 # A single global ceiling calibrated on the first two would fail the third for being itself.
-# Each ceiling sits at roughly 1.5x its measurement, leaving room for corpus churn while
-# still failing a rule that starts firing appreciably more often than it was measured doing.
+# Each ceiling sits above its measurement with room for corpus churn. Note which assertion
+# actually binds: with hits capped at the baseline and blocks floored by min_blocks, the rate
+# can never reach its ceiling, so a rule that widens is caught by the count. The rate ceiling
+# guards a future increase of baseline_hits, not today's drift.
 
 
 def scan_corpus(root: str) -> tuple[int, list[str]]:

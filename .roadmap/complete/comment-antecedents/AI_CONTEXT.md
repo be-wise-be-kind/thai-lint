@@ -6,7 +6,7 @@
 
 **Overview**: Establishes why the `comment-antecedents` rule exists, what it detects, and — most importantly —
     which candidate detection patterns survived empirical validation and which were rejected. Every pattern in
-    the shipping set carries a measured precision figure from three independent corpora totalling 188,450
+    the shipping set carries a measured precision figure from four independent corpora totalling 191,440
     mid-file comment blocks. Two patterns that scored well on a single private codebase collapsed under
     open-source validation and are documented here as rejected, so that a later contributor does not
     re-propose them. Also records the framework findings that make this rule cheap to build: no extension-map
@@ -70,9 +70,9 @@ linter cannot have that and must not pretend to. That half stays with a human or
 |---|---|---|---|
 | OSS `site-packages` | 25,525 | 162,542 | Real open-source libraries (numpy, pandas, scipy, mypy, sqlalchemy, requests, matplotlib, pygments, …) |
 | qbench | 8,962 | 23,555 | Private application code, mixed legacy and AI-assisted |
-| infrastructure | 942 | 2,990 | Terraform, HCL, shell and workflow YAML |
+| infrastructure | 476 | 2,990 | Terraform, HCL, shell and workflow YAML |
 | thai-lint | 594 | 2,353 | This repository |
-| **Total** | **36,023** | **191,440** | |
+| **Total** | **35,557** | **191,440** | |
 
 Generated and minified trees were excluded (`.min.js`, `.terragrunt-cache`, vendored asset bundles,
 `pip`'s own vendored tree). Bundled third-party libraries inside the private corpus were left in, so the
@@ -96,7 +96,7 @@ the tooling. The gradient, not the absolute count, is the argument for the rule.
 
 ### Criterion 3 evidence: the shipping set
 
-Tier 1 is the default-on set. Measured across all three corpora:
+Tier 1 is the default-on set. Measured across all four corpora:
 
 | Corpus | Tier-1 hits | True | False | Precision |
 |---|---|---|---|---|
@@ -168,7 +168,7 @@ mask, now it's recordmask".
 
 ### Decision 1: One tier, default-on, and no opt-in second tier
 
-`used to be` and `before this <noun> existed` measure 100% precision on 188,450 blocks. They ship enabled.
+`used to be` and `before this <noun> existed` measure 100% precision on 191,440 blocks. They ship enabled.
 
 A second tier detecting the bare habitual past was built and shipped disabled, then removed. The reasoning
 for removing it is worth keeping, because the same idea will look attractive again. thai-lint has no
