@@ -13,9 +13,10 @@ Overview: Guards the precision of the comment-antecedents rule against silent dr
 
 Dependencies: pytest, src.linters.file_header.comment_block_extractor, src.linters.file_header.antecedent_detector
 
-Exports: TestSelfBaseline, TestExternalCorpusBaselines, MAX_HIT_RATE_PER_1K
+Exports: TestSelfBaseline, TestExternalCorpusBaselines
 
-Interfaces: Reads THAILINT_CORPUS_QBENCH and THAILINT_CORPUS_OSS environment variables for optional corpora
+Interfaces: Reads THAILINT_CORPUS_QBENCH, THAILINT_CORPUS_OSS and THAILINT_CORPUS_INFRA environment
+    variables for optional corpora
 
 Implementation: Directory walk applying the shipped extractor and detector, counting comment blocks and
     default-tier hits, asserted as a ceiling on both absolute count and firing rate
@@ -47,6 +48,7 @@ SKIP_DIRS = {
     "dist",
     "build",
     ".terraform",
+    ".terragrunt-cache",
     ".tox",
     "migrations",
     "htmlcov",
@@ -57,10 +59,12 @@ SKIP_PATH_PARTS = ("/site-packages/pip/", ".min.js", "/vendor/", "/static/qbc/as
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 
-# Ceiling on firing density, per 1,000 comment blocks. The labelled corpora measured 0.35
-# (OSS) and 0.79 (qbench); this leaves headroom for corpus churn while still failing if the
-# rule starts firing several times more often than it was measured doing.
-MAX_HIT_RATE_PER_1K = 1.5
+# Firing density ceilings are per corpus, because corpora legitimately differ: the measured
+# rates are 0.35 per 1,000 blocks for open-source Python, 0.79 for the application codebase,
+# and 3.01 for infrastructure-as-code, where change-describing comments are markedly denser.
+# A single global ceiling calibrated on the first two would fail the third for being itself.
+# Each ceiling sits at roughly 1.5x its measurement, leaving room for corpus churn while
+# still failing a rule that starts firing appreciably more often than it was measured doing.
 
 
 def scan_corpus(root: str) -> tuple[int, list[str]]:
@@ -108,15 +112,21 @@ class TestExternalCorpusBaselines:
     """Baselines for corpora that are not committed to this repository."""
 
     @pytest.mark.parametrize(
-        ("env_var", "baseline_hits", "min_blocks"),
+        ("env_var", "baseline_hits", "min_blocks", "max_rate_per_1k"),
         [
-            # Hand-labelled at the revision measured: 19/19 true, 0 false positives.
-            ("THAILINT_CORPUS_QBENCH", 19, 20000),
-            # Hand-labelled at the revision measured: 57/57 true, 0 false positives.
-            ("THAILINT_CORPUS_OSS", 57, 150000),
+            # Hand-labelled at the revision measured: 19/19 true, 0 false positives. 0.79/1k.
+            ("THAILINT_CORPUS_QBENCH", 19, 20000, 1.5),
+            # Hand-labelled at the revision measured: 57/57 true, 0 false positives. 0.35/1k.
+            ("THAILINT_CORPUS_OSS", 57, 150000, 1.0),
+            # Terraform/HCL infrastructure. Hand-labelled: 9/9 true, 0 false positives. 3.01/1k.
+            # Carries the file types the originating proposal was written about, which the
+            # Python and TypeScript corpora do not exercise at all.
+            ("THAILINT_CORPUS_INFRA", 9, 2000, 4.5),
         ],
     )
-    def test_external_corpus_does_not_exceed_its_baseline(self, env_var, baseline_hits, min_blocks):
+    def test_external_corpus_does_not_exceed_its_baseline(
+        self, env_var, baseline_hits, min_blocks, max_rate_per_1k
+    ):
         """Should not report more than the labelled baseline, by count or by rate.
 
         Asserted as a ceiling rather than an equality. These corpora are live checkouts that
@@ -140,8 +150,8 @@ class TestExternalCorpusBaselines:
             "positive; anything beyond it is unlabelled and must be read before the "
             "baseline moves:\n" + "\n".join(sorted(hits))
         )
-        assert rate <= MAX_HIT_RATE_PER_1K, (
-            f"{env_var} hit rate {rate:.2f} per 1k blocks exceeds {MAX_HIT_RATE_PER_1K}. "
+        assert rate <= max_rate_per_1k, (
+            f"{env_var} hit rate {rate:.2f} per 1k blocks exceeds {max_rate_per_1k}. "
             "The rule is firing more densely than the labelled measurement, which a "
             "shrinking corpus alone cannot cause."
         )

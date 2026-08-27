@@ -70,8 +70,9 @@ linter cannot have that and must not pretend to. That half stays with a human or
 |---|---|---|---|
 | OSS `site-packages` | 25,525 | 162,542 | Real open-source libraries (numpy, pandas, scipy, mypy, sqlalchemy, requests, matplotlib, pygments, …) |
 | qbench | 8,962 | 23,555 | Private application code, mixed legacy and AI-assisted |
+| infrastructure | 942 | 2,990 | Terraform, HCL, shell and workflow YAML |
 | thai-lint | 594 | 2,353 | This repository |
-| **Total** | **35,081** | **188,450** | |
+| **Total** | **36,023** | **191,440** | |
 
 Generated and minified trees were excluded (`.min.js`, `.terragrunt-cache`, vendored asset bundles,
 `pip`'s own vendored tree). Bundled third-party libraries inside the private corpus were left in, so the
@@ -101,10 +102,46 @@ Tier 1 is the default-on set. Measured across all three corpora:
 |---|---|---|---|---|
 | OSS `site-packages` | 57 | 57 | 0 | 100% |
 | qbench | 19 | 19 | 0 | 100% |
+| infrastructure | 9 | 9 | 0 | 100% |
 | thai-lint | 0 | — | — | — |
-| **Total** | **76** | **76** | **0** | **100%** |
+| **Total** | **85** | **85** | **0** | **100%** |
 
 False positive rate 0%, against an acceptance bar of 5%.
+
+### File-type coverage, and what is still unvalidated
+
+The infrastructure corpus was added late, and adding it is worth explaining. The first two corpora are
+Python and TypeScript, and between them they never scanned a single `.tf` or `.hcl` block — the exact file
+types issue #253 was written about. Its opening example is a Terraform comment, and the defect it cites
+sits in `foundation/identity-center/ask-ro.tf`. Validating on the corpora nearest to hand had left the
+motivating case untested.
+
+Coverage of the seventeen declared suffixes, by comment blocks actually scanned:
+
+| Coverage | Suffixes |
+|---|---|
+| Validated on real code | `.py` `.js` `.tsx` `.ts` `.jsx` `.hcl` `.tf` `.sh` `.yml` `.yaml` `.just` `.toml` `.cfg` |
+| **Never scanned** | `.bash` `.go` `.java` `.rs` |
+
+The four unscanned suffixes carry low risk but not zero. `.bash` shares its lexer and its header rule with
+`.sh`, which is validated. `.go`, `.java` and `.rs` share the slash-comment path with `.js`/`.ts`/`.tsx`,
+which together contribute over 16,000 validated blocks; only the suffix gate differs, and that is
+unit-tested. No corpus in reach exercises them, and the honest statement is that they are supported by
+construction rather than by measurement.
+
+### Firing density varies by codebase kind
+
+| Corpus | Hits per 1,000 comment blocks |
+|---|---|
+| OSS `site-packages` | 0.35 |
+| qbench | 0.79 |
+| **infrastructure** | **3.01** |
+
+Infrastructure-as-code is roughly four times denser than application code and nine times denser than
+mature open-source libraries. That is consistent with the AI-authorship gradient recorded above — the
+infrastructure repository is the most recently and most heavily AI-assisted of the three — but it also
+means a single global firing-rate ceiling is the wrong shape for a drift gate. The corpus gates carry a
+per-corpus ceiling for that reason.
 
 The counts are pinned by `tests/smoke/test_comment_antecedents_corpora.py` as a **ceiling**, not an
 equality. Only the thai-lint baseline runs in CI; the external gates read a corpus path from an
