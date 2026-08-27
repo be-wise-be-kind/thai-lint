@@ -6,7 +6,7 @@
 
 **Overview**: Establishes why the `comment-antecedents` rule exists, what it detects, and — most importantly —
     which candidate detection patterns survived empirical validation and which were rejected. Every pattern in
-    the shipping set carries a measured precision figure from three independent corpora totalling 208,353
+    the shipping set carries a measured precision figure from three independent corpora totalling 188,450
     mid-file comment blocks. Two patterns that scored well on a single private codebase collapsed under
     open-source validation and are documented here as rejected, so that a later contributor does not
     re-propose them. Also records the framework findings that make this rule cheap to build: no extension-map
@@ -68,15 +68,16 @@ linter cannot have that and must not pretend to. That half stays with a human or
 
 | Corpus | Files | Mid-file comment blocks | Character |
 |---|---|---|---|
-| OSS `site-packages` | 25,525 | 165,796 | Real open-source libraries (numpy, pandas, scipy, mypy, sqlalchemy, requests, matplotlib, pygments, …) |
-| qbench first-party | 8,962 | 40,104 | Private application code, mixed legacy and AI-assisted |
-| thai-lint | 594 | 2,453 | This repository |
-| **Total** | **35,081** | **208,353** | |
+| OSS `site-packages` | 25,525 | 162,542 | Real open-source libraries (numpy, pandas, scipy, mypy, sqlalchemy, requests, matplotlib, pygments, …) |
+| qbench | 8,962 | 23,555 | Private application code, mixed legacy and AI-assisted |
+| thai-lint | 594 | 2,353 | This repository |
+| **Total** | **35,081** | **188,450** | |
 
-Vendored and generated trees were excluded from the private corpora (`site-packages`, minified bundles,
-`.terragrunt-cache`, four bundled copies of `requests` under `apps/qbench/custom/*/`).
+Generated and minified trees were excluded (`.min.js`, `.terragrunt-cache`, vendored asset bundles,
+`pip`'s own vendored tree). Bundled third-party libraries inside the private corpus were left in, so the
+counts reflect what an unconfigured run reports rather than a curated best case.
 
-187 comment blocks were hand-labelled to produce the precision figures below.
+268 comment blocks were hand-labelled to produce the precision figures below.
 
 ### Criterion 2 evidence: the defect tracks AI authorship
 
@@ -98,28 +99,49 @@ Tier 1 is the default-on set. Measured across all three corpora:
 
 | Corpus | Tier-1 hits | True | False | Precision |
 |---|---|---|---|---|
-| OSS `site-packages` | 12 | 12 | 0 | 100% |
-| qbench first-party | 19 | 19 | 0 | 100% |
+| OSS `site-packages` | 57 | 57 | 0 | 100% |
+| qbench | 19 | 19 | 0 | 100% |
 | thai-lint | 0 | — | — | — |
-| **Total** | **31** | **31** | **0** | **100%** |
+| **Total** | **76** | **76** | **0** | **100%** |
 
 False positive rate 0%, against an acceptance bar of 5%.
 
-Tier 2 is opt-in and does **not** meet the 5% bar. It is documented so the numbers are not rediscovered:
+The counts are pinned by `tests/smoke/test_comment_antecedents_corpora.py`. Only the thai-lint baseline
+runs in CI; the external gates read a corpus path from an environment variable and skip when it is unset,
+so they catch drift for a developer running them locally rather than for every push. A failure prints the
+located hits, because a corpus checked out at a different revision drifts as readily as a widened rule and
+the two must not be confused.
 
-| Corpus | Tier-2 hits | True | Precision |
+One false positive was found during implementation and eliminated rather than tolerated. In
+`joblib/numpy_pickle.py`, "16 bytes are used to be sure to cover all the possible dtypes' alignments" reads
+as "used in order to be", not as habitual past. Applying the passive-voice gate — already present in the
+strict tier — to the default tier removes it at no cost to recall. A clause-initial gate was measured for
+the same purpose and rejected: it would discard genuine findings that open a comment, such as "Used to be
+mask, now it's recordmask".
+
+Tier 2 is opt-in and does **not** meet the 5% bar. Re-measured against the shipped
+`detect_strict_tier`, counting only the hits it adds beyond tier 1:
+
+| Corpus | Tier-2 hits beyond tier 1 | True | Precision |
 |---|---|---|---|
-| OSS `site-packages` | 35 | 30 | 86% |
-| qbench first-party | 25 | 24 | 96% |
+| OSS `site-packages` | 17 | 14 | 82% |
+| qbench | 9 | 8 | 89% |
+| **Combined** | **26** | **22** | **85%** |
+
+Earlier drafts of this document recorded 86% and 96%. Those figures described a looser variant that
+accepted a contrast word anywhere in the block; the shipped detector requires one within 80 characters and
+is measured here. Every remaining false positive is the purposive sense — "colons are more frequently used
+to separate field names", "an id set used to tell a fresh sync from a resync" — which is the failure mode
+the grammar gates narrow but do not close.
 
 ## Key Decisions Made
 
 ### Decision 1: Two tiers, and only tier 1 is default-on
 
-Tier 1 (`used to be`, `before this <noun> existed`) measures 100% precision on 208,353 blocks. It ships
-enabled. Tier 2 (`used to` with a nearby contrast word) measures 86% on open-source code, which is a 14%
-false positive rate. thai-lint has no warning severity — `src/core/types.py:28` defines `Severity.ERROR`
-alone — so a 14% false positive rate on a default-on rule would block commits on good comments. Tier 2
+Tier 1 (`used to be`, `before this <noun> existed`) measures 100% precision on 188,450 blocks. It ships
+enabled. Tier 2 (`used to` with a contrast word within 80 characters) measures 82% on open-source code,
+which is an 18% false positive rate. thai-lint has no warning severity — `src/core/types.py:28` defines
+`Severity.ERROR` alone — so that rate on a default-on rule would block commits on good comments. Tier 2
 therefore ships behind explicit configuration.
 
 ### Decision 2: Report per comment block, not per line
@@ -141,10 +163,43 @@ These were proposed and must not be reintroduced without new evidence.
 | `the old one` | 0% | Always a runtime referent ("stand up the new cert before the old one leaves"). |
 | `not two`, `REVERSED` | 0% | Prose coincidence. |
 | `before this` (unpaired) | 41% | Runtime ordering ("before this hook runs"). Requires the existence-verb pairing to be usable. |
+| `add`, `remove`, `strip`, `drop` (imperative) | Rejected on volume | `add` fires 2,444 times in one open-source dependency tree, `remove` 1,282. Tier 1 fires 12 times in the same corpus. Imperative prose: "add the line to the output", "TODO add cookie handling". |
+| `adds`, `removes`, `strips`, `drops` (third person) | **0%** | Twenty times rarer than the imperative form (120 vs 2,444 for `adds`), which makes the split worth knowing, but every form measures at zero. Clause-initial `Adds …` is **0/20** across both corpora; plain `adds` with a subject is 0/16 sampled. |
+| `this\|we` + `removes\|strips\|adds\|drops` | **5% OSS** vs 75% private | Overfit, and the worst of the family. Of 39 open-source hits, 37 are runtime: `this adds retry and timeout information` describes what the wrapper does, `We added this symbol on previous iteration` describes an algorithm's own loop. |
 
-The `this <change>` and `previously` results are the most important entries in this table. Both looked
-shippable after validation on a single codebase. Only the open-source corpus exposed them. **Any future
-pattern addition must be validated on at least one open-source corpus before it ships.**
+The `this <change>`, `previously`, and change-verb results are the most important entries in this table.
+All three looked shippable after validation on a single codebase — 91%, 70–100%, and 75% respectively —
+and all three collapsed on open source, to 29%, 46%, and 5%. **Any future pattern addition must be
+validated on at least one open-source corpus before it ships.**
+
+### The selection principle behind the table
+
+Read down the two lists and one distinction separates them completely.
+
+**Every rejected phrase names something code can do at run time.** `replaces`, `removes`, `strips`, `adds`,
+`drops` are transitive verbs a program executes; `previously` and `before this` are adverbials that modify
+runtime actions as readily as authorship. So the dominant sense in a code comment is the runtime one, and
+the diff-deictic sense is the rare exception competing against it.
+
+**Neither surviving phrase can describe a runtime action.** `used to be` is a past-tense copula — code
+cannot "used to be" anything while executing. `before this <noun> existed` anchors to the existence of a
+construct rather than to the order of operations. Both are statements only an author can make about the
+history of the file.
+
+This predicts the measurements retroactively and is the cheapest available filter: **if a candidate phrase
+could plausibly complete the sentence "at run time, this code ___", expect it to fail.** The principle does
+not replace measurement for plausible candidates, but it does explain why the obvious change verbs are not
+worth measuring twice.
+
+**A corollary worth stating, because it inverts an intuition.** Splitting a change verb into its imperative
+and third-person forms looks promising — `adds` is twenty times rarer than `add` — and for `replaces` the
+clause-initial third-person form did reach 83%. It does not generalise. Clause-initial third person is the
+docstring summary convention: "Removes dots from the name", "Strips comments from a line", "Adds methods
+which do not depend on cls" are how a Python docstring's first line is written. So for a verb code can
+perform, that form is the **most** runtime-bound reading available, not the rarest. Measured 0 true of 20
+across both corpora. The `replaces` result was not the same construction — it came from one private
+repository's house convention of naming a superseded code location by path and line, which nothing else
+shares.
 
 ### Decision 4: A second rule inside `file_header`, sharing the package but not the detector
 

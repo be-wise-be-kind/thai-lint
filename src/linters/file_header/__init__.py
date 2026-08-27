@@ -1,8 +1,8 @@
 """
 File: src/linters/file_header/__init__.py
 Purpose: File header linter module initialization
-Exports: FileHeaderRule, lint
-Depends: linter.FileHeaderRule, orchestrator.core.Orchestrator
+Exports: FileHeaderRule, CommentAntecedentRule, lint
+Depends: linter.FileHeaderRule, comment_antecedent_rule.CommentAntecedentRule, orchestrator.core.Orchestrator
 Implements: Module-level exports and a lint() convenience function for direct library usage
 Related: linter.py for main rule implementation
 
@@ -29,9 +29,10 @@ from typing import Any
 
 from src.core.types import Violation
 
+from .comment_antecedent_rule import CommentAntecedentRule
 from .linter import FileHeaderRule
 
-__all__ = ["FileHeaderRule", "lint"]
+__all__ = ["CommentAntecedentRule", "FileHeaderRule", "lint"]
 
 
 def lint(path: Path | str, config: dict[str, Any] | None = None) -> list[Violation]:

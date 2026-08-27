@@ -64,8 +64,14 @@ class FileHeaderConfig:
     # Allowed tag vocabulary for the optional Tags field (empty = any tag accepted)
     allowed_tags: list[str] = field(default_factory=list)
 
-    # Enforce atemporal language checking
+    # Enforce atemporal language checking in the header block
     enforce_atemporal: bool = True
+
+    # Scan mid-file comments for antecedents that do not resolve in the tree
+    check_comment_antecedents: bool = True
+
+    # Opt in to habitual-past detection, which trades precision for recall
+    comment_antecedents_strict: bool = False
 
     # Patterns to ignore (file paths)
     ignore: list[str] = field(
@@ -96,6 +102,8 @@ class FileHeaderConfig:
             ),
             allowed_tags=config_dict.get("allowed_tags", defaults.allowed_tags),
             enforce_atemporal=config_dict.get("enforce_atemporal", True),
+            check_comment_antecedents=config_dict.get("check_comment_antecedents", True),
+            comment_antecedents_strict=config_dict.get("comment_antecedents_strict", False),
             ignore=config_dict.get("ignore", defaults.ignore),
         )
 

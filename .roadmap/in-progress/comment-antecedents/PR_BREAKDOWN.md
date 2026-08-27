@@ -450,8 +450,8 @@ tests/smoke/test_comment_antecedents_corpora.py        (new)
 **Tier 2 — `comment_antecedents_strict`, default `false`**: `\bused to\b` present, **and** not preceded by
 `is|are|was|were|be|been|being|not|also|only|can be|could be|to be`, **and** not clause-initial (block
 start or after `.` `;` `:` `—` `(` `-`), **and** not comma-preceded, **and** a contrast word (`now`,
-`no longer`, `instead`, `rather than`, `today`, `which meant`) within **80 characters**. Measured 86% on
-the open-source corpus, 96% on qbench — below the 5% acceptance bar, hence opt-in.
+`no longer`, `instead`, `rather than`, `today`, `which meant`) within **80 characters**. Measured 82% on
+the open-source corpus, 89% on qbench — below the 5% acceptance bar, hence opt-in.
 
 **Config additions to `FileHeaderConfig`**:
 ```python
@@ -481,9 +481,9 @@ comment_antecedents_strict: bool = False
 
 | Corpus | Blocks | Tier-1 hits | Precision |
 |---|---|---|---|
-| OSS `site-packages` | 165,796 | 12 | 100% |
-| qbench first-party | 40,104 | 19 | 100% |
-| thai-lint | 2,453 | 0 | n/a |
+| OSS `site-packages` | 162,542 | 57 | 100% |
+| qbench | 23,555 | 19 | 100% |
+| thai-lint | 2,353 | 0 | n/a |
 
 The private corpora are not committed. The gate reads a corpus path from an environment variable and skips
 when unset, so CI runs the thai-lint baseline and a developer can run the full set locally.
@@ -539,7 +539,7 @@ when unset, so CI runs the thai-lint baseline and a developer can run the full s
 3. The roadmap moves `planning/` → `in-progress/` at PR1 and → `complete/` at PR2.
 
 **Release note requirement**: `check_comment_antecedents` defaults to `true`, so an existing user running
-`file-header` gains body-comment checking on upgrade. The measured false positive rate is 0% across 208,353
+`file-header` gains body-comment checking on upgrade. The measured false positive rate is 0% across 188,450
 comment blocks, but the behaviour change belongs in the CHANGELOG.
 
 ## Success Metrics
