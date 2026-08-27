@@ -36,7 +36,7 @@ This is the **PRIMARY HANDOFF DOCUMENT** for AI agents working on this rule. Whe
 
 ## Current Status
 
-**Current PR**: Both PRs landed — feature complete, awaiting move to `complete/`
+**Current PR**: None — feature complete and merged
 **Infrastructure State**: Rule shipped in `src/linters/file_header/` as three modules, two config fields, and five test files
 **Feature Target**: A default-on rule with a measured 0% false positive rate, plus an opt-in strict tier
 
@@ -45,7 +45,7 @@ This is the **PRIMARY HANDOFF DOCUMENT** for AI agents working on this rule. Whe
 ## Required Documents Location
 
 ```
-.roadmap/in-progress/comment-antecedents/
+.roadmap/complete/comment-antecedents/
 ├── AI_CONTEXT.md          # Measured evidence, rejected patterns, architecture findings
 ├── PR_BREAKDOWN.md        # Gherkin specification and per-PR instructions
 └── PROGRESS_TRACKER.md    # THIS FILE
@@ -60,9 +60,9 @@ This is the **PRIMARY HANDOFF DOCUMENT** for AI agents working on this rule. Whe
 | PR | Landed as |
 |---|---|
 | PR1 — BDD specification as failing tests | `fabf684`, plus `08c879f` and `8d95b86` recording rejected patterns |
-| PR2 — Implementation, dogfooding, documentation | `d25346f` |
+| PR2 — Implementation, dogfooding, documentation | `d25346f`, with review fixes in `d0f6ed4` and `b811d09` |
 
-**Remaining step**: move this roadmap to `.roadmap/complete/comment-antecedents/` once the pull request merges.
+Merged to `main` as #254 (roadmap) and #255 (implementation, squashed to `e4e0206`).
 
 ## Overall Progress
 
@@ -199,11 +199,11 @@ repeatedly inside one prose paragraph.
 
 The feature is complete when:
 
-- [x] Both PRs are authored and green in CI
+- [x] Both PRs are merged
 - [x] Every Gherkin scenario in PR_BREAKDOWN.md maps to one passing test
 - [x] Tier 1 reproduces 0% false positives on the open-source corpus gate
 - [x] The rule is active on this repository (default-on) and the build is clean
 - [x] `docs/file-header-linter.md` documents both tiers, configuration, suppression, and out-of-scope
 - [x] The CHANGELOG records the default-on behaviour change
 - [x] `just lint-full` and `just test` both exit 0
-- [ ] The roadmap has moved to `.roadmap/complete/comment-antecedents/`
+- [x] The roadmap has moved to `.roadmap/complete/comment-antecedents/`
