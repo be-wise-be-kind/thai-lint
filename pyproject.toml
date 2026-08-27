@@ -111,6 +111,9 @@ safety = "^3.2.11"
 pip-audit = "^2.8.0"
 pytest-xdist = "^3.8.0"
 
+# Release tooling (just pypi-stats)
+pypistats = "^1.7.0"
+
 [tool.poetry.scripts]
 thailint = "src.cli_main:cli"
 thai-lint = "src.cli_main:cli"
