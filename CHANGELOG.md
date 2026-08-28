@@ -27,9 +27,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 A linter needs semantic versioning spelled out, because the obvious reading makes every
 new rule a major release. This project's contract is the **interface**, not the finding count:
 
-**Major** — the CLI contract changes (a command or flag is removed or renamed), the library
-API changes (`Linter`, rule classes, `Violation` fields), a config key is removed or its
-meaning changes, or the minimum Python version rises.
+**Major** — the CLI contract changes (a command or flag is removed or renamed); the library
+API changes (`Linter`, rule classes, `Violation` fields); a config key is removed or its
+meaning changes; **a rule id is renamed or removed**; the SARIF output shape changes in a way
+that breaks a consumer; or the minimum Python version rises.
+
+Rule ids deserve the explicit mention: they appear in users' `# thailint: ignore[rule-id]`
+comments and in their config files, so renaming one silently stops their suppressions working.
+A rule id is part of the interface even though it never appears in a function signature.
 
 **Minor** — a new linter or rule is added, a rule is enabled by default, a default threshold
 moves, or detection is widened. **These report new violations on code you did not change.**

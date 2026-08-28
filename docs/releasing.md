@@ -30,8 +30,8 @@ Following [Semantic Versioning](https://semver.org/), interpreted for a linter. 
 "What Counts As A Breaking Change" at the top of `CHANGELOG.md` for the full contract.
 
 - **MAJOR** (x.0.0): The CLI or library interface changes - a command or flag removed or
-  renamed, a config key removed or redefined, `Violation` fields changed, or the minimum
-  Python version raised
+  renamed, a config key removed or redefined, a rule id renamed or removed, `Violation`
+  fields or the SARIF shape changed, or the minimum Python version raised
 - **MINOR** (1.x.0): A new linter or rule, a rule enabled by default, a threshold moved, or
   detection widened. These surface new findings on unchanged code, which is expected of a
   linter that improves and is **not** treated as breaking
