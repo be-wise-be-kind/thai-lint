@@ -22,7 +22,44 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## What Counts As A Breaking Change
+
+A linter needs semantic versioning spelled out, because the obvious reading makes every
+new rule a major release. This project's contract is the **interface**, not the finding count.
+
+While the version is below 1.0 this describes intent rather than a guarantee, and it is the
+contract that takes effect when 1.0 ships:
+
+**Major** — the CLI contract changes (a command or flag is removed or renamed); the library
+API changes (`Linter`, rule classes, `Violation` fields); a config key is removed or its
+meaning changes; **a rule id is renamed or removed**; the SARIF output shape changes in a way
+that breaks a consumer; or the minimum Python version rises.
+
+Rule ids deserve the explicit mention: they appear in users' `# thailint: ignore[rule-id]`
+comments and in their config files, so renaming one silently stops their suppressions working.
+A rule id is part of the interface even though it never appears in a function signature.
+
+**Minor** — a new linter or rule is added, a rule is enabled by default, a default threshold
+moves, or detection is widened. **These report new violations on code you did not change.**
+That is expected of a linter that improves, and it is why a run can newly fail after a minor
+upgrade. Every such change is listed under Changed with the config key that restores the
+previous behaviour.
+
+**Patch** — false positives fixed, crashes fixed, performance, documentation.
+
+If a build failing on new findings after a minor upgrade is unacceptable for you, pin an exact
+version. Every rule ships with a config switch to turn it off.
+
 ## [Unreleased]
+
+## [0.25.0] - 2026-08-28
+
+### Changed
+
+- **Development status raised from Beta to Production/Stable** - the project has shipped
+  continuously for eleven months, carries 2,660 tests at 92% coverage, and is used in
+  production CI pipelines. The Beta classifier understated that and, more practically, put
+  the package on the wrong side of "not alpha/beta/experimental" checks used by curated lists
 
 ## [0.24.0] - 2026-08-27
 
