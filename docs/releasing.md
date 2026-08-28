@@ -26,11 +26,16 @@ This guide covers the complete release process for publishing thailint to PyPI. 
 
 ## Release Types
 
-Following [Semantic Versioning](https://semver.org/):
+Following [Semantic Versioning](https://semver.org/), interpreted for a linter. See
+"What Counts As A Breaking Change" at the top of `CHANGELOG.md` for the full contract.
 
-- **MAJOR** (x.0.0): Breaking changes, incompatible API changes
-- **MINOR** (1.x.0): New features, backwards compatible
-- **PATCH** (1.0.x): Bug fixes, backwards compatible
+- **MAJOR** (x.0.0): The CLI or library interface changes - a command or flag removed or
+  renamed, a config key removed or redefined, `Violation` fields changed, or the minimum
+  Python version raised
+- **MINOR** (1.x.0): A new linter or rule, a rule enabled by default, a threshold moved, or
+  detection widened. These surface new findings on unchanged code, which is expected of a
+  linter that improves and is **not** treated as breaking
+- **PATCH** (1.0.x): False positives fixed, crashes fixed, performance, documentation
 
 ## Pre-Release Checklist
 

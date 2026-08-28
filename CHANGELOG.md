@@ -22,10 +22,31 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## What Counts As A Breaking Change
+
+A linter needs semantic versioning spelled out, because the obvious reading makes every
+new rule a major release. This project's contract is the **interface**, not the finding count:
+
+**Major** — the CLI contract changes (a command or flag is removed or renamed), the library
+API changes (`Linter`, rule classes, `Violation` fields), a config key is removed or its
+meaning changes, or the minimum Python version rises.
+
+**Minor** — a new linter or rule is added, a rule is enabled by default, a default threshold
+moves, or detection is widened. **These report new violations on code you did not change.**
+That is expected of a linter that improves, and it is why a run can newly fail after a minor
+upgrade. Every such change is listed under Changed with the config key that restores the
+previous behaviour.
+
+**Patch** — false positives fixed, crashes fixed, performance, documentation.
+
+If a build failing on new findings after a minor upgrade is unacceptable for you, pin an exact
+version. Every rule ships with a config switch to turn it off.
+
 ## [Unreleased]
 
 ### Changed
 
+- **Version raised to 1.0.0** - eleven months of continuous releases, 2,660 tests at 92% coverage, and production CI use. The `0.x` prefix understated the stability of the CLI and config contract, both of which have been additive for months. The versioning policy above documents what will and will not force a 2.0, so that adding rules - which this project intends to keep doing - stays a minor release
 - **Development status raised from Beta to Production/Stable** - the project has shipped
   continuously for eleven months, carries 2,660 tests at 92% coverage, and is used in
   production CI pipelines. The Beta classifier understated that and, more practically, put
