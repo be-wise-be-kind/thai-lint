@@ -17,11 +17,43 @@ tag, which is the project's exact positioning.
 | More than one contributor | Met — 7 |
 | At least 20 GitHub stars | **Blocked** — see below |
 
+## The entry
+
+Inlined here rather than kept as a `.yml`: the `.roadmap` tree allows Markdown only,
+and widening that rule for one reference file is the wrong trade.
+
+```yaml
+name: thailint
+categories:
+  - linter
+tags:
+  - python
+  - typescript
+  - javascript
+  - rust
+  - yaml
+  - terraform
+  - shell
+  - ai-generated-code
+license: MIT License
+types:
+  - cli
+source: 'https://github.com/be-wise-be-kind/thai-lint'
+homepage: 'https://thai-lint.readthedocs.io/'
+description: >-
+  Multi-language linter targeting anti-patterns that appear disproportionately
+  in AI-generated code: duplicated blocks across files, excessive nesting,
+  magic numbers, Single Responsibility violations, and linter suppressions
+  added without justification. Covers Python, TypeScript, JavaScript and Rust
+  from one configuration, ships a pre-commit hook per rule, and emits text,
+  JSON or SARIF for CI.
+```
+
 ## Submission steps
 
 1. Confirm the star count is at least 20: `gh api repos/be-wise-be-kind/thai-lint --jq .stargazers_count`
 2. Fork `analysis-tools-dev/static-analysis`
-3. Copy `thailint.yml` in this directory to `data/tools/thailint.yml`
+3. Copy the YAML above into `data/tools/thailint.yml`
 4. Optionally run `make render` to check for errors before opening the PR
 5. Open the pull request, disclosing maintainership
 
