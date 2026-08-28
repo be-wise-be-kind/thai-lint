@@ -1104,6 +1104,9 @@ _publish-docker-only:
         echo ""
         echo "To pull: docker pull $DOCKERHUB_USERNAME/thailint:$VERSION"
         echo "To pull: docker pull $DOCKERHUB_USERNAME/thailint:latest"
+        echo ""
+        echo "Step 8: Syncing the Docker Hub page description..."
+        ./scripts/sync-dockerhub-description.sh || echo "⚠ Description sync failed; the image is still published"
     else
         echo "❌ Publishing to Docker Hub failed!"
         exit 1
