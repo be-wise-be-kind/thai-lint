@@ -24,6 +24,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **Development status raised from Beta to Production/Stable** - the project has shipped
+  continuously for eleven months, carries 2,660 tests at 92% coverage, and is used in
+  production CI pipelines. The Beta classifier understated that and, more practically, put
+  the package on the wrong side of "not alpha/beta/experimental" checks used by curated lists
+
 ## [0.24.0] - 2026-08-27
 
 ### Added
