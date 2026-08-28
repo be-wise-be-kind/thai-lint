@@ -52,6 +52,8 @@ version. Every rule ships with a config switch to turn it off.
 
 ## [Unreleased]
 
+## [0.25.0] - 2026-08-28
+
 ### Changed
 
 - **Development status raised from Beta to Production/Stable** - the project has shipped
