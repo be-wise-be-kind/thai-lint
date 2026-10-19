@@ -6,12 +6,13 @@ Scope: Functions for merging missing linter sections into existing config files
 Overview: Provides utilities for the init-config command to add missing linter sections
     to existing configuration files without overwriting user customizations. Handles
     template parsing, section extraction, missing section identification, and content
-    merging while preserving comments and formatting.
+    merging while preserving comments and formatting. Linter sections are read from the
+    template itself, so a newly added linter is picked up without a second list to update.
 
 Dependencies: re for pattern matching, yaml for config parsing, click for output,
     pathlib for file operations
 
-Exports: perform_merge, LINTER_SECTIONS
+Exports: perform_merge
 
 Interfaces: perform_merge(output_path, preset, output, generate_config_fn) -> None
 
@@ -26,21 +27,9 @@ from pathlib import Path
 import click
 import yaml
 
-# Known linter section names that should be in the template
-LINTER_SECTIONS = [
-    "magic-numbers",
-    "nesting",
-    "srp",
-    "dry",
-    "file-placement",
-    "print-statements",
-    "stringly-typed",
-    "file-header",
-    "method-property",
-    "stateless-class",
-    "pipeline",
-    "lazy-ignores",
-]
+# The template marks the end of the linter sections with this banner. The keys
+# below it are global options (exclude, output_format, ...) rather than linters.
+GLOBAL_SETTINGS_HEADER = "# GLOBAL SETTINGS"
 
 
 def _is_section_header_line(line: str) -> bool:
@@ -49,11 +38,55 @@ def _is_section_header_line(line: str) -> bool:
 
 
 def _get_linter_section_name(line: str) -> str | None:
-    """Extract linter section name from line if it's a known linter section."""
+    """Extract a top-level section name from a template line.
+
+    Args:
+        line: Template line to inspect
+
+    Returns:
+        The section name, or None when the line does not start a section
+    """
     section_match = re.match(r"^([a-z][a-z0-9-]*):$", line)
-    if section_match and section_match.group(1) in LINTER_SECTIONS:
+    if section_match:
         return section_match.group(1)
     return None
+
+
+def _find_global_settings_banner(lines: list[str]) -> int | None:
+    """Find the index of the GLOBAL SETTINGS banner in template lines.
+
+    Args:
+        lines: Template lines
+
+    Returns:
+        Index of the banner line, or None when the template has no banner
+    """
+    for index, line in enumerate(lines):
+        if line.strip() == GLOBAL_SETTINGS_HEADER:
+            return index
+    return None
+
+
+def _linter_region_end(lines: list[str]) -> int:
+    """Find the index where the template stops describing linter sections.
+
+    The global settings banner is preceded by a separator line, so the linter
+    region ends at that separator. Ending at the banner itself would let the
+    separator be absorbed into the last linter section.
+
+    Args:
+        lines: Template lines
+
+    Returns:
+        Exclusive end index of the linter region
+    """
+    banner_index = _find_global_settings_banner(lines)
+    if banner_index is None:
+        return len(lines)
+    end = banner_index
+    while end > 0 and lines[end - 1].startswith("# ==="):
+        end -= 1
+    return end
 
 
 def _is_buffer_line(line: str) -> bool:
@@ -120,6 +153,11 @@ def _process_template_line(
 def extract_linter_sections(template: str) -> dict[str, str]:
     """Extract each linter section from template as text blocks.
 
+    The template places every linter section ahead of the GLOBAL SETTINGS
+    banner, and the keys below the banner are global options rather than
+    linters. Reading the sections off the template keeps them in step with
+    the shipped template.
+
     Args:
         template: Full template content
 
@@ -128,11 +166,12 @@ def extract_linter_sections(template: str) -> dict[str, str]:
     """
     sections: dict[str, str] = {}
     lines = template.split("\n")
+    linter_lines = lines[: _linter_region_end(lines)]
     current_section: str | None = None
     current_content: list[str] = []
     header_buffer: list[str] = []
 
-    for line in lines:
+    for line in linter_lines:
         current_section, current_content, header_buffer = _process_template_line(
             line, sections, current_section, current_content, header_buffer
         )

@@ -19,6 +19,10 @@ Implementation: Uses pytest fixtures and Click's CliRunner for integration testi
 
 import yaml
 
+# Top-level keys in the config template that describe global options rather
+# than a linter. Everything else the template defines is a linter section.
+GLOBAL_SETTING_KEYS = {"exclude", "output_format", "fail_on_violations"}
+
 
 class TestExtractLinterSections:
     """Tests for extracting linter sections from template."""
@@ -61,6 +65,36 @@ srp:
         assert "magic-numbers" in sections
         assert "nesting" in sections
         assert "srp" in sections
+
+    def test_extracts_linter_sections_added_after_the_merge_feature(self):
+        """Should extract linter sections added to the template after the merge feature."""
+        from src.cli.config import _generate_config_content
+        from src.cli.config_merge import extract_linter_sections as _extract_linter_sections
+
+        sections = _extract_linter_sections(_generate_config_content("standard"))
+
+        # These linters were added to the shipped template after the merge
+        # feature was written, so they are the ones that get dropped.
+        assert "performance" in sections
+        assert "unwrap-abuse" in sections
+        assert "clone-abuse" in sections
+        assert "blocking-async" in sections
+        assert "law-of-demeter" in sections
+        assert "version-freshness" in sections
+
+    def test_extracts_every_linter_key_defined_by_the_shipped_template(self):
+        """Should extract every linter key the shipped template defines."""
+        from src.cli.config import _generate_config_content
+        from src.cli.config_merge import extract_linter_sections as _extract_linter_sections
+
+        template = _generate_config_content("standard")
+        sections = _extract_linter_sections(template)
+
+        template_keys = set(yaml.safe_load(template))
+        expected_sections = template_keys - GLOBAL_SETTING_KEYS
+
+        assert expected_sections
+        assert expected_sections <= set(sections)
 
 
 class TestIdentifyMissingSections:
@@ -268,6 +302,31 @@ class TestInitConfigMergeMode:
 
         assert result.exit_code == 0
         assert "Added" in result.output or "merged" in result.output.lower()
+
+    def test_merge_adds_every_linter_section_the_template_defines(self, tmp_path):
+        """Should add every linter section the template defines when merging."""
+        from click.testing import CliRunner
+
+        from src.cli.config import _generate_config_content
+        from src.cli_main import cli
+
+        template = _generate_config_content("standard")
+        expected_sections = set(yaml.safe_load(template)) - GLOBAL_SETTING_KEYS
+
+        config_path = tmp_path / ".thailint.yaml"
+        config_path.write_text("magic-numbers:\n  enabled: true\n  allowed_numbers: [42]\n")
+
+        runner = CliRunner()
+        result = runner.invoke(cli, ["init-config", "--non-interactive", "-o", str(config_path)])
+
+        assert result.exit_code == 0
+
+        merged = yaml.safe_load(config_path.read_text())
+
+        # Every linter the template ships must be present after the merge.
+        assert set(merged) == expected_sections
+        # The user's own value must survive the merge.
+        assert 42 in merged["magic-numbers"]["allowed_numbers"]
 
 
 class TestEdgeCases:
