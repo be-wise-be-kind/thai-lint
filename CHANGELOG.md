@@ -52,6 +52,15 @@ version. Every rule ships with a config switch to turn it off.
 
 ## [Unreleased]
 
+### Fixed
+
+- **`init-config` no longer drops linter sections when merging into an existing config** -
+  the merge only restored the linters listed in a hardcoded table that was written once and
+  never updated, so every linter added to the shipped template afterwards was silently left
+  out. Six linters were affected: `performance`, `unwrap-abuse`, `clone-abuse`,
+  `blocking-async`, `law-of-demeter` and `version-freshness`. The linter sections are now
+  read from the config template itself, so a newly added linter is picked up automatically
+
 ## [0.25.0] - 2026-08-28
 
 ### Changed
