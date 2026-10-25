@@ -539,10 +539,10 @@ The authentication API provides secure access to user sessions...
 
 ### CSS/SCSS Files (.css, .scss)
 
-**Format:** Block comment at file start
+**Format:** JSDoc-style block comment (`/** ... */`) at file start. A plain `/* ... */` comment is not read as a header.
 
 ```css
-/*
+/**
 Purpose: Global typography and font styles for the application
 
 Scope: Site-wide typography, all text elements
@@ -559,6 +559,8 @@ Exports: Typography utility classes (.text-sm, .text-lg, .heading-1, etc.)
 Interfaces: CSS custom properties --font-size-*, --line-height-*, --font-weight-*
 
 Implementation: Fluid typography using clamp(), modular scale ratio 1.25
+
+Environment: Evergreen browsers; requires CSS clamp() support
 */
 
 :root {
