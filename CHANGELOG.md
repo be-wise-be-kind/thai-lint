@@ -52,6 +52,18 @@ version. Every rule ships with a config switch to turn it off.
 
 ## [Unreleased]
 
+### Fixed
+
+- **AI doc standard page matches the enforced header format** - `docs/ai-doc-standard.md`
+  documented a superseded field set (`File`, `Depends`, `Related`, `Usage`, `Notes`). It now
+  specifies the fields the file-header linter requires per language, documents the optional
+  `Tags` field and `allowed_tags` vocabulary, and adds Bash, CSS/SCSS, and Jinja/HTML formats
+- **Stray RabbitMQ sections removed from the AI doc standard page** - nested code fences in a
+  650-line sample document closed its code block early, so the sample rendered as real page
+  sections on Read the Docs
+- **CSS header example in the file-header linter docs** - the example used `/* ... */`, which
+  the CSS parser does not read as a header; it now uses `/** ... */`
+
 ## [0.25.0] - 2026-08-28
 
 ### Changed
